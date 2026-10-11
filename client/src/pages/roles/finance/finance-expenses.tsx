@@ -1,7 +1,7 @@
 // client/src/pages/finance/finance-expenses.tsx
 import { ChartTooltip } from "@/components/charts/chart-tooltip";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
 import { useOpenOnAction } from "@/features/quick-search/useOpenOnAction";
 import { PageContainer } from "@/components/refine-ui/views/page-container";
@@ -44,7 +44,10 @@ import { useReimbursements } from "@/features/finance/hooks/use-reimbursements";
 import { PurchaseRequestsPanel, type Notice } from "@/features/finance/components/PurchaseRequestsPanel";
 import { ProcurementPanel } from "@/features/finance/components/ProcurementPanel";
 import { ReimbursementsPanel } from "@/features/finance/components/ReimbursementsPanel";
-import { EXPENSE_CATEGORIES } from "@/config/expense-categories";
+import { CategorySelect } from "@/features/finance/components/CategorySelect";
+import { ManageCategoriesDialog } from "@/features/finance/components/ManageCategoriesDialog";
+import { useExpenseCategories } from "@/features/finance/hooks/use-expense-categories";
+import { categoryKey } from "@/features/finance/lib/category-name";
 import {
   Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
@@ -105,18 +108,7 @@ function RecordExpenseDialog({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Category</Label>
-              <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select" />
-                </SelectTrigger>
-                <SelectContent>
-                  {EXPENSE_CATEGORIES.map((c) => (
-                    <SelectItem key={c} value={c}>
-                      {c}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <CategorySelect value={category} onValueChange={setCategory} />
             </div>
             <div className="space-y-1.5">
               <Label>Amount</Label>
@@ -162,6 +154,18 @@ export default function FinanceExpensesPage() {
   // The server enforces this too (403); the buttons are simply not offered to other roles.
   const canDecide = user?.role === "finance-manager" || user?.role === "admin";
   const pagination = c.pagination;
+  const { categories } = useExpenseCategories();
+  // The Tracking filter lists every category (active and retired) plus any value on the rows shown,
+  // so an old record's category can always be filtered on.
+  const filterCategories = useMemo(() => {
+    const seen = new Map<string, string>();
+    const add = (name: string) => name && !seen.has(categoryKey(name)) && seen.set(categoryKey(name), name);
+    categories.forEach((cat) => add(cat.name));
+    c.breakdown.forEach((b) => add(b.category));
+    pagination.pageItems.forEach((e) => add(e.category));
+    return [...seen.values()];
+  }, [categories, c.breakdown, pagination.pageItems]);
+  const canManageCategories = user?.role === "finance-manager";
   const [pendingDecision, setPendingDecision] = useState<{ id: string; vendor: string; amount: number; decision: "approve" | "reject" } | null>(null);
   const [deciding, setDeciding] = useState(false);
   const [notice, setNotice] = useState<Notice>(null);
@@ -187,7 +191,10 @@ export default function FinanceExpensesPage() {
         title="Expense Management"
         description="Track operational expenses, purchase requests, vendor payments and reimbursements."
         actions={
-          <RecordExpenseDialog creating={c.creating} error={c.createError} onCreate={c.createExpense} />
+          <>
+            {canManageCategories && <ManageCategoriesDialog />}
+            <RecordExpenseDialog creating={c.creating} error={c.createError} onCreate={c.createExpense} />
+          </>
         }
       />
 
@@ -278,7 +285,7 @@ export default function FinanceExpensesPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All categories</SelectItem>
-                      {EXPENSE_CATEGORIES.map((cat) => (
+                      {filterCategories.map((cat) => (
                         <SelectItem key={cat} value={cat}>
                           {cat}
                         </SelectItem>

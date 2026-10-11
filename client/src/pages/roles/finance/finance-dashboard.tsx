@@ -41,7 +41,7 @@ import {
 import { AnimatedBarChart } from "@/components/charts/animated-bar-chart";
 import { CashFlowChart } from "@/components/charts/cash-flow-chart";
 import { DonutChart } from "@/components/charts/donut-chart";
-import { EXPENSE_CATEGORIES } from "@/config/expense-categories";
+import { useExpenseCategories } from "@/features/finance/hooks/use-expense-categories";
 import { groupTopN } from "@/lib/group-top-n";
 import { WaitingOnYouCard } from "@/features/lifecycle/components/WaitingOnYouCard";
 
@@ -65,9 +65,10 @@ export default function FinanceDashboardPage() {
     c.budgets.map((b) => ({ name: b.project, value: b.planned })),
     6,
   );
-  // Every known category, so one with no spend shows a ₱0 bar instead of nothing.
+  // Every active category, so one with no spend shows a ₱0 bar instead of nothing.
+  const { activeCategories } = useExpenseCategories();
   const expensesByCategory = (() => {
-    const map = new Map<string, number>(EXPENSE_CATEGORIES.map((name) => [name, 0]));
+    const map = new Map<string, number>(activeCategories.map((cat) => [cat.name, 0]));
     c.expenses.forEach((e) =>
       map.set(e.category, (map.get(e.category) ?? 0) + e.amount),
     );

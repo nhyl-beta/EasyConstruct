@@ -38,6 +38,7 @@ export const PAGINATION_EXEMPT: PaginationExemption[] = [
   { file: "components/shared/submitted-files.tsx", reason: "Files attached to one item; a short per-item list." },
   { file: "components/users/user-account-dialog.tsx", reason: "Form: role options in a dialog." },
   { file: "features/projects/pages/ProjectCreatePage.tsx", reason: "Wizard: option lists and pickers, no record list." },
+  { file: "features/finance/components/CategorySelect.tsx", reason: "Dropdown control: the options of a form field (the managed category list); the full list is paginated in the Manage categories dialog." },
   { file: "features/requests/components/TransmittalBuilderDialog.tsx", reason: "Dialog: picking the items for one transmittal." },
   { file: "features/requests/components/RequestDetailSheet.tsx", reason: "Attachments and follow-ups of one request (a thread)." },
   { file: "features/lifecycle/components/CloseoutSummaryCard.tsx", reason: "One row per budget category of one project; small and fixed." },

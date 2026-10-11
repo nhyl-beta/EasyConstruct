@@ -100,8 +100,9 @@ import { SearchableSelect } from "@/components/ui/searchable-select";
 import type { CreateBudgetInput } from "@/features/finance/budgets/controllers/budget.controllers";
 import { OwnerDepartmentPicker } from "@/components/shared/owner-department-picker";
 import { useProjects } from "@/features/projects/hooks/useProjects";
-
-const BUDGET_CATEGORIES = ["Materials", "Labor", "Equipment", "Subcontractors", "Permits", "Contingency", "Other"];
+import { CategorySelect } from "@/features/finance/components/CategorySelect";
+import { ManageCategoriesDialog } from "@/features/finance/components/ManageCategoriesDialog";
+import { useAuth } from "@/auth/auth-context";
 
 function NewBudgetDialog({
   creating,
@@ -181,18 +182,7 @@ function NewBudgetDialog({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Category</Label>
-              <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select" />
-                </SelectTrigger>
-                <SelectContent>
-                  {BUDGET_CATEGORIES.map((c) => (
-                    <SelectItem key={c} value={c}>
-                      {c}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <CategorySelect value={category} onValueChange={setCategory} />
             </div>
             <div className="space-y-1.5">
               <Label>Fiscal year</Label>
@@ -229,6 +219,7 @@ export default function FinanceBudget() {
   const reduced = useReducedMotion();
   const [tab, setTab] = useState("overview");
   const c = useBudgets();
+  const { user } = useAuth();
   const approval = useBudgetApproval(c.budgets, c.reload);
 
   const allocation = useBudgetAllocationController(
@@ -291,6 +282,7 @@ export default function FinanceBudget() {
         description="Manage project budgets, allocations, adjustments, and historical baselines across the portfolio."
         actions={
           <>
+            {user?.role === "finance-manager" && <ManageCategoriesDialog />}
             <Button
               variant="outline"
               size="sm"

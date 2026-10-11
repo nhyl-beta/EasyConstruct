@@ -16,12 +16,11 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { KpiStrip } from "@/components/ui/kpi-strip";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SectionCard } from "@/components/ui/section-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { EXPENSE_CATEGORIES } from "@/config/expense-categories";
+import { CategorySelect } from "@/features/finance/components/CategorySelect";
 import { DecisionDialog } from "@/features/finance/components/DecisionDialog";
 import { useReimbursements } from "@/features/finance/hooks/use-reimbursements";
 import { CLAIM_LABELS, shortDate } from "@/features/finance/lib/purchasing-labels";
@@ -98,18 +97,7 @@ function NewClaimDialog({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="claim-cat">Category</Label>
-              <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger id="claim-cat" className="w-full">
-                  <SelectValue placeholder="Select" />
-                </SelectTrigger>
-                <SelectContent>
-                  {EXPENSE_CATEGORIES.map((c) => (
-                    <SelectItem key={c} value={c}>
-                      {c}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <CategorySelect id="claim-cat" value={category} onValueChange={setCategory} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="claim-date">Date incurred</Label>
