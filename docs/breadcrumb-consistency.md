@@ -132,3 +132,27 @@ The brief asks for "what the breadcrumb shows today (read from the running app)"
 
 - The `Header today` and `Breadcrumb today` columns are derived, not observed (see the top of this file).
 - Tab/panel content that contains its own heading (for example the Consultant proposal detail `<h1>`) is below the page header and was not changed.
+
+## Verification (Phase 4)
+
+Run in `client/` on the Phase 3 code (real results):
+
+| Command | Result |
+|---|---|
+| `npx tsc --noEmit` | exit 0 |
+| `npx eslint` on the 9 changed page/component files plus the Phase 2 files | exit 0; 1 pre-existing fast-refresh warning in `shared-hr.tsx` |
+| `npx vitest run` | 6 files, 237 tests passed (142 baseline + 95 new) |
+| `npm run build` | exit 0 (`built in 1m 26s`) |
+
+Still failing before and after, untouched: the two eslint errors in `shared-blueprint-reviews.tsx` and `shared-reports.tsx` (see Baseline).
+
+### Not done: checks in the running app
+
+No page was rendered. Signing in needs real staging credentials, and the local server writes audit rows to the remote Neon database, which this task may not touch. There is no DOM test library installed and no new dependency may be added, so rendering could not be automated either. To be checked by hand, per role (Owner, Admin, IT Designer, Project Manager, Human Resources, Finance Manager, Architect, Engineer, Site Personnel, Consultant), on every page that role can reach:
+
+- [ ] exactly one breadcrumb, home icon first, then the sidebar label; no page shows two breadcrumbs or two titles
+- [ ] every earlier crumb is a working link, the last one is not; Home lands on that role's dashboard
+- [ ] detail pages show the record name (`/designs/:id`, `/projects/:projectId`); create and edit pages show their title (`New project`, `Add employee`, `Edit employee`, `New design`)
+- [ ] migrated pages kept their buttons and status chips (workflows, approvals, payroll review, project detail, HR dashboard, create wizards); forms, approvals and the Approvals badge still work
+- [ ] light and dark themes; narrow width (trail wraps, nothing overlaps, long names truncate with a tooltip); keyboard focus ring on links; screen-reader name of the home link is "Home"
+- [ ] the `MultiStepPage` header now has the larger page-title size and sits inside the `max-w-6xl` container; confirm it looks right on the three wizards
