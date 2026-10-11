@@ -10,9 +10,27 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   SidebarRail,
   useSidebar,
 } from "@/components/ui/sidebar";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  buildSidebarNav,
+  hasSidebarNavConfig,
+} from "@/config/sidebar-nav";
 import { RESOURCE_ICONS } from "@/config/resource-icons";
 import { ROLE_RESOURCE_ACCESS } from "@/config/role-resources";
 import { useRoleConfig } from "@/hooks/use-role-config";
@@ -20,7 +38,8 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/auth/auth-context";
 import { SignOutButton } from "@/components/ui/auth/sign-out-button";
 import { useMenu, useParsed, type TreeMenuItem } from "@refinedev/core";
-import { ListIcon } from "lucide-react";
+import { ChevronRight, ListIcon, type LucideIcon } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { useApprovalsPendingCount } from "@/features/workflows/hooks/useWorkflows";
 import { isNavRouteActive } from "@/lib/nav-active";
@@ -78,6 +97,151 @@ function ApprovalsBadge() {
   );
 }
 
+const ACTIVE_CLASSES =
+  "bg-sidebar-primary font-semibold text-sidebar-primary-foreground hover:bg-sidebar-primary/90 hover:text-sidebar-primary-foreground";
+
+const labelOf = (item: TreeMenuItem) =>
+  (item.meta?.label as string | undefined) ?? item.label ?? item.name;
+
+function NavLeaf({
+  item,
+  active,
+  onNavigate,
+}: {
+  item: TreeMenuItem;
+  active: boolean;
+  onNavigate: (route: string) => void;
+}) {
+  const Icon = getIcon(item);
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton
+        isActive={active}
+        tooltip={labelOf(item)}
+        onClick={() => onNavigate(item.route ?? "/")}
+        className={cn("cursor-pointer", "w-full", { [ACTIVE_CLASSES]: active })}
+      >
+        <Icon className="h-[18px] w-[18px] shrink-0" />
+        {/* Explicit truncate: this span used to rely on the
+            component's own `[&>span:last-child]:truncate`
+            rule, which now targets the badge span below
+            instead once one is present. */}
+        <span className="min-w-0 truncate">{labelOf(item)}</span>
+        {item.name === "approvals" && <ApprovalsBadge />}
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  );
+}
+
+// A parent has no route of its own: it expands/collapses in the full sidebar
+// and opens a flyout when the sidebar is icon-collapsed (the sub list is
+// hidden by CSS in that mode).
+function NavGroup({
+  label,
+  icon: Icon,
+  items,
+  isActive,
+  onNavigate,
+}: {
+  label: string;
+  icon: LucideIcon;
+  items: TreeMenuItem[];
+  isActive: (route: string) => boolean;
+  onNavigate: (route: string) => void;
+}) {
+  const { state, isMobile } = useSidebar();
+  const anyActive = items.some((i) => isActive(i.route ?? ""));
+  const [open, setOpen] = useState(anyActive);
+
+  // Open when a child becomes the active route (load, refresh, back/forward).
+  useEffect(() => {
+    if (anyActive) setOpen(true);
+  }, [anyActive]);
+
+  const parentClasses = cn("cursor-pointer", "w-full", {
+    "font-medium": anyActive,
+  });
+
+  if (state === "collapsed" && !isMobile) {
+    return (
+      <SidebarMenuItem>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <SidebarMenuButton
+              isActive={anyActive}
+              tooltip={label}
+              aria-label={label}
+              className={parentClasses}
+            >
+              <Icon className="h-[18px] w-[18px] shrink-0" />
+              <span className="min-w-0 truncate">{label}</span>
+            </SidebarMenuButton>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent side="right" align="start" className="min-w-44">
+            {items.map((item) => {
+              const active = isActive(item.route ?? "");
+              return (
+                <DropdownMenuItem
+                  key={item.key || item.name}
+                  aria-current={active ? "page" : undefined}
+                  onSelect={() => onNavigate(item.route ?? "/")}
+                  className={cn("cursor-pointer", {
+                    "bg-sidebar-primary font-semibold text-sidebar-primary-foreground focus:bg-sidebar-primary/90 focus:text-sidebar-primary-foreground":
+                      active,
+                  })}
+                >
+                  {labelOf(item)}
+                </DropdownMenuItem>
+              );
+            })}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </SidebarMenuItem>
+    );
+  }
+
+  return (
+    <Collapsible asChild open={open} onOpenChange={setOpen}>
+      <SidebarMenuItem>
+        <CollapsibleTrigger asChild>
+          <SidebarMenuButton
+            isActive={anyActive}
+            tooltip={label}
+            className={cn(parentClasses, "group/nav-group")}
+          >
+            <Icon className="h-[18px] w-[18px] shrink-0" />
+            <span className="min-w-0 truncate">{label}</span>
+            <ChevronRight className="ml-auto h-4 w-4 shrink-0 transition-transform duration-200 motion-reduce:transition-none group-data-[state=open]/nav-group:rotate-90" />
+          </SidebarMenuButton>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <SidebarMenuSub>
+            {items.map((item) => {
+              const active = isActive(item.route ?? "");
+              return (
+                <SidebarMenuSubItem key={item.key || item.name}>
+                  <SidebarMenuSubButton asChild isActive={active}>
+                    <button
+                      type="button"
+                      aria-current={active ? "page" : undefined}
+                      onClick={() => onNavigate(item.route ?? "/")}
+                      className={cn("w-full cursor-pointer text-left", {
+                        [ACTIVE_CLASSES]: active,
+                      })}
+                    >
+                      <span className="min-w-0 truncate">{labelOf(item)}</span>
+                    </button>
+                  </SidebarMenuSubButton>
+                </SidebarMenuSubItem>
+              );
+            })}
+          </SidebarMenuSub>
+        </CollapsibleContent>
+      </SidebarMenuItem>
+    </Collapsible>
+  );
+}
+
 // ── Main Sidebar ──────────────────────────────────────────────────────────────
 
 export function Sidebar() {
@@ -88,7 +252,9 @@ export function Sidebar() {
   const { user } = useAuth();
   const AvatarIcon = config.icon;
 
-  const sections = groupMenuItems(menuItems, identity.role);
+  const grouped = hasSidebarNavConfig(identity.role);
+  const nav = grouped ? buildSidebarNav(identity.role, menuItems) : [];
+  const sections = grouped ? [] : groupMenuItems(menuItems, identity.role);
 
   // C1/C2: shared with header.tsx's `isTabActive` — same rule, one place.
   const isActive = (route: string) => isNavRouteActive(pathname, route);
@@ -117,39 +283,46 @@ export function Sidebar() {
 
       {/* ── Navigation ── */}
       <SidebarContent>
+        {grouped && (
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {nav.map((entry) =>
+                  entry.kind === "item" ? (
+                    <NavLeaf
+                      key={entry.item.key || entry.item.name}
+                      item={entry.item}
+                      active={isActive(entry.item.route ?? "")}
+                      onNavigate={navigate}
+                    />
+                  ) : (
+                    <NavGroup
+                      key={entry.id}
+                      label={entry.label}
+                      icon={entry.icon}
+                      items={entry.items}
+                      isActive={isActive}
+                      onNavigate={navigate}
+                    />
+                  ),
+                )}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
         {sections.map((section) => (
           <SidebarGroup key={section.label}>
             <SidebarGroupLabel>{section.label}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {section.items.map((item) => {
-                  const Icon = getIcon(item);
-                  const active = isActive(item.route ?? "");
-
-                  return (
-                    <SidebarMenuItem key={item.key || item.name}>
-                      <SidebarMenuButton
-                        isActive={active}
-                        tooltip={item.meta?.label ?? item.label ?? item.name}
-                        onClick={() => navigate(item.route ?? "/")}
-                        className={cn("cursor-pointer", "w-full", {
-                          "bg-sidebar-primary font-semibold text-sidebar-primary-foreground hover:bg-sidebar-primary/90 hover:text-sidebar-primary-foreground":
-                            active,
-                        })}
-                      >
-                        <Icon className="h-[18px] w-[18px] shrink-0" />
-                        {/* Explicit truncate: this span used to rely on the
-                            component's own `[&>span:last-child]:truncate`
-                            rule, which now targets the badge span below
-                            instead once one is present. */}
-                        <span className="min-w-0 truncate">
-                          {item.meta?.label ?? item.label ?? item.name}
-                        </span>
-                        {item.name === "approvals" && <ApprovalsBadge />}
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                })}
+                {section.items.map((item) => (
+                  <NavLeaf
+                    key={item.key || item.name}
+                    item={item}
+                    active={isActive(item.route ?? "")}
+                    onNavigate={navigate}
+                  />
+                ))}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
