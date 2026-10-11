@@ -14,6 +14,7 @@ import { ApprovalQueuePanel } from "@/components/workflows/approval-queue-panel"
 import { RequirementApprovalsPanel } from "@/features/requirements/components/RequirementApprovalsPanel";
 import { PmPurchasingPanel } from "@/features/finance/components/PmPurchasingPanel";
 import { useAuth } from "@/auth/auth-context";
+import { PageHeader } from "@/components/refine-ui/views/page-header";
 
 export default function ApprovalsPage() {
   const { user } = useAuth();
@@ -23,6 +24,7 @@ export default function ApprovalsPage() {
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-8">
+      <PageHeader title="Approvals" />
       {decidesRequirements && <RequirementApprovalsPanel />}
       {/* Purchasing is the Project Manager's sub-feature; Admin has no UI for it (the server allows Admin). */}
       {user?.role === "project-manager" && <PmPurchasingPanel />}

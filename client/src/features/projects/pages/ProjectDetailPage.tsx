@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/refine-ui/views/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -196,10 +197,17 @@ export default function ProjectDetailPage() {
     }
   };
 
-  if (loading) return <div className="p-8 text-sm text-muted-foreground">Loading project…</div>;
+  if (loading) {
+    return (
+      <div className="space-y-4 p-4 md:p-8">
+        <PageHeader title="Project" description="Loading project…" />
+      </div>
+    );
+  }
   if (!project) {
     return (
-      <div className="space-y-4 p-8">
+      <div className="space-y-4 p-4 md:p-8">
+        <PageHeader title="Project not found" />
         <p className="text-sm text-destructive-strong">{error ?? "Project not found."}</p>
         <Button asChild variant="outline"><Link to={listRoute}>Back to projects</Link></Button>
       </div>
@@ -215,22 +223,23 @@ export default function ProjectDetailPage() {
       <Button asChild variant="ghost">
         <Link to={listRoute}><ArrowLeft className="mr-2 h-4 w-4" />Back to projects</Link>
       </Button>
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold">{project.name}</h1>
-          <p className="text-sm text-muted-foreground">{project.code}</p>
-        </div>
-        {canEdit && (
-          <Button
-            variant="destructive"
-            onClick={() => setConfirmDeleteOpen(true)}
-            disabled={saving || deleting}
-          >
-            {deleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-            Delete
-          </Button>
-        )}
-      </div>
+      <PageHeader
+        title={project.name}
+        description={project.code}
+        breadcrumbLabel={project.name}
+        actions={
+          canEdit && (
+            <Button
+              variant="destructive"
+              onClick={() => setConfirmDeleteOpen(true)}
+              disabled={saving || deleting}
+            >
+              {deleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+              Delete
+            </Button>
+          )
+        }
+      />
       <ConfirmDialog
         open={confirmDeleteOpen}
         onOpenChange={setConfirmDeleteOpen}

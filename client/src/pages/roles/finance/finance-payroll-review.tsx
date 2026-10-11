@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { PageHeader } from "@/components/refine-ui/views/page-header";
 
 import {
   decidePayrollReview,
@@ -142,21 +143,18 @@ export default function FinancePayrollReviewPage() {
   if (loading) {
     return (
       <div className="p-6">
-        <h1 className="text-2xl font-semibold">Payroll Review</h1>
-        <p className="mt-2 text-muted-foreground">Loading payroll batches...</p>
+        <PageHeader title="Payroll Review" description="Loading payroll batches..." />
       </div>
     );
   }
 
   return (
     <div className="space-y-6 p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold">Payroll Review</h1>
-          <p className="text-sm text-muted-foreground">Review payroll batches submitted by Human Resources.</p>
-        </div>
-
-        <div className="flex items-center gap-2">
+      <PageHeader
+        title="Payroll Review"
+        description="Review payroll batches submitted by Human Resources."
+        actions={
+        <>
         <button
           type="button"
           className="inline-flex h-9 items-center gap-1.5 rounded-xl border px-3 text-xs hover:bg-muted disabled:opacity-50"
@@ -191,8 +189,9 @@ export default function FinancePayrollReviewPage() {
             ))}
           </SelectContent>
         </Select>
-        </div>
-      </div>
+        </>
+        }
+      />
 
       {error && (
         <div className="rounded-md border border-destructive/30 bg-destructive-soft p-3 text-sm text-destructive-strong">{error}</div>

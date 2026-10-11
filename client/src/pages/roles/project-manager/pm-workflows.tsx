@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { PageHeader } from "@/components/refine-ui/views/page-header";
 import { useOpenOnAction } from "@/features/quick-search/useOpenOnAction";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -59,27 +60,21 @@ export default function WorkflowsPage() {
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-8">
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h2 className="text-2xl font-semibold tracking-tight">
-            Workflow builder
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Configure how documents, approvals, and decisions flow across
-            departments.
-          </p>
-        </div>
-        <Button
-         
-          onClick={() => {
-            clearError();
-            setDialogOpen(true);
-          }}
-        >
-          <Plus className="h-4 w-4" />
-          New workflow
-        </Button>
-      </div>
+      <PageHeader
+        title="Workflow builder"
+        description="Configure how documents, approvals, and decisions flow across departments."
+        actions={
+          <Button
+            onClick={() => {
+              clearError();
+              setDialogOpen(true);
+            }}
+          >
+            <Plus className="h-4 w-4" />
+            New workflow
+          </Button>
+        }
+      />
 
       <Tabs defaultValue="active" className="space-y-5">
         <TabsList className="h-10">

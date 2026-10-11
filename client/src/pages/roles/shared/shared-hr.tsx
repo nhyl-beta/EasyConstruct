@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { PageHeader as SharedPageHeader } from "@/components/refine-ui/views/page-header";
 import type { ToneBg } from "@/providers/mock-data";
 import { CheckCircle2, type LucideIcon } from "lucide-react";
 
@@ -163,6 +164,8 @@ export function Capacity({
   );
 }
 
+// The HR pages' header: the shared PageHeader (breadcrumb, title, actions)
+// behind this older `subtitle` API, so the call sites did not need to change.
 export function PageHeader({
   title,
   subtitle,
@@ -172,15 +175,5 @@ export function PageHeader({
   subtitle?: string;
   actions?: React.ReactNode;
 }) {
-  return (
-    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-      <div>
-        <h1 className="text-lg font-semibold tracking-tight">{title}</h1>
-        {subtitle && (
-          <p className="text-xs text-muted-foreground">{subtitle}</p>
-        )}
-      </div>
-      {actions && <div className="flex items-center gap-2">{actions}</div>}
-    </div>
-  );
+  return <SharedPageHeader title={title} description={subtitle} actions={actions} />;
 }
