@@ -1,3 +1,5 @@
+import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
+import { usePagination } from "@/hooks/use-pagination";
 import { PageHeader } from "@/components/refine-ui/views/page-header";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
@@ -23,6 +25,7 @@ import { fileTypeLabel } from "@/lib/file-type-label";
 // no changes, so it moved here rather than being rebuilt.
 export default function ConsultantDesignReviews() {
   const c = useDesignReviews();
+  const pg = usePagination(c.filtered, 10, c.tab);
   const currentRevisions = useCurrentRevisions("design");
   const [revisionsOf, setRevisionsOf] = useState<{ itemType: RevisionItemType; itemId: number } | null>(null);
 
@@ -46,7 +49,7 @@ export default function ConsultantDesignReviews() {
             </div>
           ) : (
             <div className="space-y-2">
-              {c.filtered.map((r) => (
+              {pg.pageItems.map((r) => (
                 <div key={r.id} className="rounded-xl border p-3">
                   <div className="flex items-center justify-between">
                     <div>
@@ -122,6 +125,9 @@ export default function ConsultantDesignReviews() {
                   )}
                 </div>
               ))}
+              <div className="pt-2">
+                <DataTablePagination {...pg} />
+              </div>
             </div>
           )}
         </TabsContent>

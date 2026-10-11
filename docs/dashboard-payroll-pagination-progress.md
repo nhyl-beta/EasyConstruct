@@ -8,7 +8,7 @@ Branch: `staging` only. Four jobs: (A) remove withholding tax from payroll, (B) 
 - [x] Phase 2 — Job A: remove withholding tax
 - [x] Phase 3 — Job B: wider payroll, payslip button, print
 - [x] Phase 4 — Job C: livelier charts
-- [ ] Phase 5 — Job D: pagination everywhere
+- [x] Phase 5 — Job D: pagination everywhere
 - [ ] Phase 6 — verification
 
 ## Baseline (before any change)
@@ -170,3 +170,45 @@ New, under `client/src`: `components/charts/{chart-tooltip,donut-chart,animated-
 - Same shared tooltip and reduced-motion flag applied to `finance-budget.tsx`, `finance-expenses.tsx` and `PmPortfolioCharts.tsx`. `OwnerPayrollSection.tsx` keeps its own three-line tooltip (it shows labor, gross and net together) and only got the reduced-motion flag. Left as they were: the entry animation and interactive legends on those four (the swap there is not a straight replacement).
 - Removed an unused `usePagination` import in `finance-expenses.tsx` that already failed lint.
 - **Not verified:** how the charts look and behave in light/dark, with reduced motion, or on hover. Nothing was rendered.
+
+## Phase 5 — Job D: pagination inventory (done in code, not seen in a browser)
+
+`usePagination` gained an optional `resetKey` (page goes back to 1 when the search, filter or tab changes); the page clamps when data shrinks. `DataTablePagination` is the only footer (`compact` in half-width panels). Exports were not touched: they already fetch their own full sets. `client/src/config/pagination-exempt.ts` lists every exemption with a reason and `pagination-exempt.test.ts` fails when a file renders a table body or a keyed record list without a pagination reference and is not listed there (it also fails on a stale exemption).
+
+"Before" is what the code did; "after" is the code now. `client` = in-memory paging of a fully loaded list; `server` = the existing server-paged hooks. Nothing on the server was changed, so every `client` row below fetches an unbounded list from its endpoint (listed at the end).
+
+| Route or panel | Roles | Lists | Paging | Page size | Before | After |
+|---|---|---|---|---|---|---|
+| `/projects`, `/admin/projects`, `/owner/portfolio` | PM, Admin, IT Designer, Owner | projects | server | existing | paged | paged |
+| `/users`, `/attendance`, `/documents`, `/approvals` queue, `/admin/activity-logs`, `/admin/security`, finance budgets/expenses/payroll batches, HR employees/payroll | various | existing `use*Paged`, `useServerList` or `usePagination` pages | server / client | existing | paged | paged |
+| `/issues` (Site Personnel) | Site Personnel | my issues | client | 10 | missing | paged |
+| `/tasks` | Site Personnel, Engineer, PM | my tasks | client | 10 | missing | paged |
+| `/documents` (Site Personnel) | Site Personnel | field documents | client | 10 | missing | paged |
+| `/requests` | PM, Engineer, Architect, Admin, Consultant | RFI/RFA requests (filters reset the page) | client | 10 | missing | paged |
+| `/transmittals` | PM, Engineer, Architect, Admin | transmittals | client | 10 | missing | paged |
+| `/my-claims` | Engineer, SP, PM, Architect, HR | own reimbursement claims | client | 10 | missing | paged |
+| `/legacy-import` | PM, Admin, Architect | import rows | client | 20 | missing | paged |
+| `/blueprint-reviews` | all | blueprints per tab | client | 10 | missing | paged (resets on tab) |
+| `/blueprints` | Architect | blueprint cards | client | 12 | missing | paged (resets on search/folder) |
+| `/architect/documents` | Architect | document cards | client | 12 | missing | paged (resets on search/category) |
+| `/architect/projects` | Architect | projects | client | 10 | missing | paged |
+| `/consultant/design-reviews` | Consultant | reviews per tab | client | 10 | missing | paged (resets on tab) |
+| `/advisory-docs` | Consultant | advisory documents | client | 10 | missing | paged (resets on search) |
+| Proposal attachments (Consultant proposals) | Consultant | project files | client | 8 | missing | paged |
+| `/impact-review` | Finance Manager | budget change requests | client | 10 | missing | paged |
+| `/expenses` panels (Purchase requests, Procurement, Reimbursements) | Finance Manager, Admin | requests, orders, claims | client | 8 | missing | paged (resets on status filter) |
+| Approvals page, Purchasing panel | PM | to-endorse requests, to-endorse claims, approved requirements, requests, orders, claims | client | 8 each | missing | paged |
+| Approvals page, Requirement approvals | PM, Admin | requirements to decide | client | 8 | missing | paged |
+| Payroll wizard (steps 3 and 4) | HR | per-employee lines | client | 10 | missing | paged |
+| Attendance sheet import | Site Personnel | checked rows | client | 15 | missing | paged |
+| `/archive` | PM, Admin, Architect | archived projects, documents (the old "first 100" cap is gone) | client | 10 each | capped at 100 | paged (resets on search) |
+| Finance dashboard | Finance Manager | project profitability | client | 8 | missing | paged |
+| Project detail | PM, Admin, Engineer, Architect, Consultant | members, designs, filed documents | client | 8 each | missing | paged |
+| Project detail panels | PM and others | milestones, requirements, plan sets, staffing gaps, impact awareness, design change history (per design group), version history | client | 5–8 | missing | paged |
+| HR payroll / Finance review | HR, Finance | per-employee lines | client | 8 | paged | paged |
+
+**Exemptions (43 files, each with a reason in `config/pagination-exempt.ts`):** navigation and shell (sidebar, quick search, calendar grid); tables that only receive an already-paged array (`ProjectsGrid`, `ProjectsTable`, `ProposalsTable`, `RevisionsTable`); the notification bell (pages itself, 8 at a time with Show more); `architect-revisions` (server-paged with its own footer); forms, wizards and dialogs; per-item detail (one workflow's stages, one request's thread, one project's closeout rows and lifecycle history); fixed lists (roles, workflow templates, recovery targets, report types, static resources); print pages; and the ten dashboards (fixed top-N widgets; the HR dashboard's overview tabs run on static sample data from `providers/mock-data`).
+
+**Lists paged on the client whose endpoint has no paging and can return an unbounded number of rows** (a server change is out of scope here): my issues, my tasks, field documents, requests, transmittals, reimbursement claims, purchase requests, procurement orders, budget change requests, blueprints, architect documents, design reviews, advisory documents, project files for a proposal, project members / designs / documents / milestones / requirements / plan sets, archived projects and their documents, project profitability, attendance-sheet import rows, legacy-import rows (client-built), payroll-wizard lines.
+
+**Also changed in this phase:** removed the dead `TABS` constant in `shared-blueprint-reviews.tsx` that already failed lint.

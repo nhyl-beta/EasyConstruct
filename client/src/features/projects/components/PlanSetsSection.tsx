@@ -1,3 +1,5 @@
+import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
+import { usePagination } from "@/hooks/use-pagination";
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
 import { Layers } from "lucide-react";
@@ -37,6 +39,7 @@ export function PlanSetsSection({ projectCode }: { projectCode: string }) {
   const role = user?.role ?? "";
   const canWrite = WRITERS.has(role);
   const [sets, setSets] = useState<PlanSet[]>([]);
+  const pg = usePagination(sets, 8);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sheetDraft, setSheetDraft] = useState<Record<number, string>>({});
@@ -83,7 +86,7 @@ export function PlanSetsSection({ projectCode }: { projectCode: string }) {
         <p className="text-sm text-muted-foreground">Plan sets are created for each chosen discipline when the project moves from Proposal to Design.</p>
       ) : (
         <ul className="space-y-3">
-          {sets.map((d) => (
+          {pg.pageItems.map((d) => (
             <li key={d.id} className="space-y-3 rounded-xl border p-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
@@ -201,6 +204,9 @@ export function PlanSetsSection({ projectCode }: { projectCode: string }) {
               </div>
             </li>
           ))}
+          <li className="list-none pt-2">
+            <DataTablePagination {...pg} compact />
+          </li>
         </ul>
       )}
     </SectionCard>

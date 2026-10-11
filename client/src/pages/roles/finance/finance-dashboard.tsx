@@ -1,3 +1,5 @@
+import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
+import { usePagination } from "@/hooks/use-pagination";
 import { Link } from "react-router";
 import { PageContainer } from "@/components/refine-ui/views/page-container";
 import { PageContent } from "@/components/refine-ui/views/page-content";
@@ -56,6 +58,7 @@ const formatWaiting = (hours: number) => (hours >= 48 ? `Waiting ${Math.floor(ho
 
 export default function FinanceDashboardPage() {
   const c = useFinanceDashboardController();
+  const pg = usePagination(c.projectProfit, 8);
 
   // One slice per project (a project can have several budget rows), top 6 and the rest as "Other".
   const allocation = groupTopN(
@@ -230,7 +233,7 @@ export default function FinanceDashboardPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {c.projectProfit.map((p) => (
+                  {pg.pageItems.map((p) => (
                     <TableRow key={p.project}>
                       <TableCell className="text-sm font-medium">
                         {p.project}
@@ -262,6 +265,9 @@ export default function FinanceDashboardPage() {
                   ))}
                 </TableBody>
               </Table>
+              <div className="pt-2">
+                <DataTablePagination {...pg} />
+              </div>
             </SectionCard>
           </div>
 

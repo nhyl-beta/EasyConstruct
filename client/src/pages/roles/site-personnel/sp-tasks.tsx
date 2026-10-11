@@ -1,3 +1,5 @@
+import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
+import { usePagination } from "@/hooks/use-pagination";
 import { CheckSquare, Clock, ListTodo, Plus, ShieldAlert } from "lucide-react";
 
 import { PageContainer } from "@/components/refine-ui/views/page-container";
@@ -40,6 +42,7 @@ const NEXT_LABEL: Record<string, string> = {
 export default function TasksPage() {
   const { tasks, counts, loading, error, updatingId, advance, createTask, creating } =
     useMyTasks();
+  const pg = usePagination(tasks, 10);
   const { user } = useAuth();
 
   // Mirrors the backend's route gates: POST /tasks is project-manager +
@@ -88,7 +91,7 @@ export default function TasksPage() {
               </div>
             ) : (
               <div className="divide-y divide-border/60">
-                {tasks.map((t) => {
+                {pg.pageItems.map((t) => {
                   const nextLabel = NEXT_LABEL[t.status];
                   return (
                     <div key={t.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -169,6 +172,9 @@ export default function TasksPage() {
                     </div>
                   );
                 })}
+                <div className="pt-2">
+                  <DataTablePagination {...pg} />
+                </div>
               </div>
             )}
           </CardContent>

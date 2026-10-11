@@ -1,3 +1,5 @@
+import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
+import { usePagination } from "@/hooks/use-pagination";
 import { PageHeader } from "@/components/refine-ui/views/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -560,6 +562,7 @@ function TeamMemberPanel({
   readOnly?: boolean;
 }) {
   const { members, loading, error, saving, addMember, removeMember } = useProjectMembers(projectCode, role);
+  const pgMembers = usePagination(members, 8);
   const { users: candidates } = useUsersByRole(role, { enabled: !readOnly });
   const [selected, setSelected] = useState("");
 
@@ -611,7 +614,7 @@ function TeamMemberPanel({
         <p className="text-sm text-muted-foreground">No one assigned yet.</p>
       ) : (
         <ul className="space-y-2">
-          {members.map((m) => (
+          {pgMembers.pageItems.map((m) => (
             <li key={m.id} className="flex items-center justify-between rounded-xl border border-border px-4 py-2 text-sm">
               <span className="font-medium">{m.userName}</span>
               {!readOnly && (
@@ -627,6 +630,9 @@ function TeamMemberPanel({
               )}
             </li>
           ))}
+          <div className="pt-2">
+            <DataTablePagination {...pgMembers} compact />
+          </div>
         </ul>
       )}
     </div>
@@ -647,9 +653,11 @@ function DesignStageSection({
 }) {
   const { members: engineers, loading: engineersLoading } = useProjectMembers(projectCode, "engineer");
   const { designs, loading: designsLoading, error: designsError } = useProjectDesigns(projectCode);
+  const pgDesigns = usePagination(designs, 8);
   const [designFileError, setDesignFileError] = useState<string | null>(null);
 
   const [docs, setDocs] = useState<DocumentRecord[]>([]);
+  const pgDocs = usePagination(docs, 8);
   const [docsLoading, setDocsLoading] = useState(true);
   const [docsError, setDocsError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -739,7 +747,7 @@ function DesignStageSection({
           <p className="mt-2 text-sm text-muted-foreground">No design has been submitted for this project yet.</p>
         ) : (
           <ul className="mt-2 space-y-2">
-            {designs.map((d) => (
+            {pgDesigns.pageItems.map((d) => (
               <li key={d.id} className="space-y-2 rounded-xl border border-border px-4 py-3">
                 <div className="flex items-center justify-between gap-3">
                   <Link to={`/designs/${d.id}`} className="min-w-0 hover:underline">
@@ -779,6 +787,9 @@ function DesignStageSection({
                 )}
               </li>
             ))}
+            <div className="pt-2">
+              <DataTablePagination {...pgDesigns} compact />
+            </div>
           </ul>
         )}
       </div>
@@ -825,7 +836,7 @@ function DesignStageSection({
           <p className="mt-2 text-sm text-muted-foreground">No other files filed against the Design stage.</p>
         ) : (
           <ul className="mt-2 space-y-2">
-            {docs.map((d) => (
+            {pgDocs.pageItems.map((d) => (
               <li key={d.id} className="flex items-center justify-between rounded-xl border border-border px-4 py-2 text-sm">
                 <span className="flex min-w-0 items-center gap-2">
                   <FileText className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
@@ -862,6 +873,9 @@ function DesignStageSection({
                 </span>
               </li>
             ))}
+            <div className="pt-2">
+              <DataTablePagination {...pgDocs} compact />
+            </div>
           </ul>
         )}
       </div>

@@ -1,3 +1,5 @@
+import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
+import { usePagination } from "@/hooks/use-pagination";
 import { useMemo, useState } from "react";
 import { Paperclip } from "lucide-react";
 
@@ -34,6 +36,7 @@ export function ReimbursementsPanel({ claims, canAct, onNotice, onOpenExpense }:
   const [reference, setReference] = useState("");
 
   const rows = useMemo(() => claims.claims.filter((c) => filter === "all" || c.status === filter), [claims.claims, filter]);
+  const pg = usePagination(rows, 8, filter);
 
   const report = (r: ActionResult<unknown>, done?: string): string | null => {
     if (!r.ok) {
@@ -97,7 +100,7 @@ export function ReimbursementsPanel({ claims, canAct, onNotice, onOpenExpense }:
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.map((c) => (
+              {pg.pageItems.map((c) => (
                 <TableRow key={c.id}>
                   <TableCell className="font-mono text-xs">{c.id}</TableCell>
                   <TableCell className="text-sm font-medium">
@@ -160,6 +163,9 @@ export function ReimbursementsPanel({ claims, canAct, onNotice, onOpenExpense }:
               ))}
             </TableBody>
           </Table>
+          <div className="pt-2">
+            <DataTablePagination {...pg} />
+          </div>
         </div>
       )}
 

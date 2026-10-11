@@ -1,3 +1,5 @@
+import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
+import { usePagination } from "@/hooks/use-pagination";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle2, Lock, Trash2, XCircle } from "lucide-react";
 
@@ -217,6 +219,7 @@ export function PayrollWizard({ resumeBatchId, onClose, onChanged }: PayrollWiza
       onClose();
     }, "Failed to discard the draft.");
 
+  const linesPage = usePagination(detail?.lines ?? [], 10);
   const issues = detail?.validation ?? [];
   const blocking = issues.filter((i) => i.severity === "error");
   const duplicateWarning = issues.some((i) => i.code === "duplicate_batch");
@@ -387,7 +390,7 @@ export function PayrollWizard({ resumeBatchId, onClose, onChanged }: PayrollWiza
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {detail.lines.map((l) => (
+                {linesPage.pageItems.map((l) => (
                   <TableRow key={l.id}>
                     <TableCell>
                       <div className="text-sm font-medium">{l.name}</div>
@@ -418,6 +421,7 @@ export function PayrollWizard({ resumeBatchId, onClose, onChanged }: PayrollWiza
                 ))}
               </TableBody>
             </Table>
+            <DataTablePagination {...linesPage} compact />
             <div className="flex flex-wrap items-center gap-2">
               <Select value={addEmployeeId} onValueChange={setAddEmployeeId}>
                 <SelectTrigger className="h-9 w-64 text-xs">
@@ -458,7 +462,7 @@ export function PayrollWizard({ resumeBatchId, onClose, onChanged }: PayrollWiza
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {detail.lines.map((l) => (
+                {linesPage.pageItems.map((l) => (
                   <TableRow key={l.id}>
                     <TableCell className="text-sm">{l.name}</TableCell>
                     <TableCell className="text-right tabular-nums">{formatCurrency(l.gross)}</TableCell>
@@ -470,6 +474,7 @@ export function PayrollWizard({ resumeBatchId, onClose, onChanged }: PayrollWiza
                 ))}
               </TableBody>
             </Table>
+            <DataTablePagination {...linesPage} compact />
             <p className="text-xs text-muted-foreground">
               Rate versions used:{" "}
               {visibleRateVersions(detail.rateVersions)

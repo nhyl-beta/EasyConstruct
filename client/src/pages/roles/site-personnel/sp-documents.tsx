@@ -1,3 +1,5 @@
+import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
+import { usePagination } from "@/hooks/use-pagination";
 import { useRef, useState } from "react";
 
 import { PageContainer } from "@/components/refine-ui/views/page-container";
@@ -28,6 +30,7 @@ export default function SPDocumentsPage() {
     uploading,
     upload,
   } = useFieldDocuments();
+  const pg = usePagination(documents, 10);
 
   const [title, setTitle] = useState("");
   const [project, setProject] = useState("");
@@ -180,7 +183,7 @@ export default function SPDocumentsPage() {
             </p>
           ) : (
             <div className="space-y-2">
-              {documents.map((document) => (
+              {pg.pageItems.map((document) => (
                 <div
                   key={document.id}
                   className="flex items-center justify-between rounded-xl border p-3"
@@ -202,6 +205,9 @@ export default function SPDocumentsPage() {
                   </div>
                 </div>
               ))}
+              <div className="pt-2">
+                <DataTablePagination {...pg} />
+              </div>
             </div>
           )}
         </SectionCard>

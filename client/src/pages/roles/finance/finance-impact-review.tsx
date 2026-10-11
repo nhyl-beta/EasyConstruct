@@ -12,6 +12,8 @@
 // (GET /api/workflows/budget-change-requests), not a parallel store: the
 // request IS the workflow, so Finance is reading the same record it later
 // approves from /approvals.
+import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
+import { usePagination } from "@/hooks/use-pagination";
 import { useMemo, useState } from "react";
 import { ChevronDown, ChevronRight, Wallet } from "lucide-react";
 
@@ -186,6 +188,7 @@ function RequestCard({ request, onRevalidated }: { request: Workflow; onRevalida
 
 export default function ImpactReviewPage() {
   const { requests, loading, error, reload } = useBudgetChangeRequests();
+  const pg = usePagination(requests, 10);
 
   const kpis = useMemo(() => {
     const open = requests.filter((r) => r.status === "active");
@@ -235,9 +238,12 @@ export default function ImpactReviewPage() {
         )}
 
         <div className="space-y-2">
-          {requests.map((request) => (
+          {pg.pageItems.map((request) => (
             <RequestCard key={request.id} request={request} onRevalidated={() => void reload()} />
           ))}
+          <div className="pt-2">
+            <DataTablePagination {...pg} />
+          </div>
         </div>
       </PageContent>
     </PageContainer>

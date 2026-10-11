@@ -12,6 +12,8 @@
 // If the proposal was raised through the Design Proposal Approval workflow,
 // the design document also lives on that workflow as an attachment; the
 // consultant sees that one from /approvals via WorkflowDetailDialog.
+import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
+import { usePagination } from "@/hooks/use-pagination";
 import { useEffect, useState } from "react";
 import { FileText, Paperclip } from "lucide-react";
 
@@ -33,6 +35,7 @@ export function ProposalAttachments({ proposal }: { proposal: Proposal }) {
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<DocumentRecord | null>(null);
   const submitted = useProposalFiles(proposal.id);
+  const pg = usePagination(documents, 8);
 
   useEffect(() => {
     if (!proposal.projectCode) {
@@ -116,7 +119,7 @@ export function ProposalAttachments({ proposal }: { proposal: Proposal }) {
 
         {!loading && !error && documents.length > 0 && (
           <ul className="space-y-2">
-            {documents.map((document) => (
+            {pg.pageItems.map((document) => (
               <li
                 key={document.id}
                 className="flex items-start gap-3 rounded-lg border border-border p-3"
@@ -150,6 +153,9 @@ export function ProposalAttachments({ proposal }: { proposal: Proposal }) {
                 </Button>
               </li>
             ))}
+            <li className="list-none pt-2">
+              <DataTablePagination {...pg} />
+            </li>
           </ul>
         )}
       </div>

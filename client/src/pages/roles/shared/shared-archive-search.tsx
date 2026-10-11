@@ -2,6 +2,8 @@
 // server already limits what each role may list (a PM sees their own projects,
 // an Architect the projects they are staffed on), so this page only filters
 // what came back — it never widens access.
+import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
+import { usePagination } from "@/hooks/use-pagination";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 import { Archive, ExternalLink, Search } from "lucide-react";
@@ -47,6 +49,7 @@ export default function SharedArchiveSearchPage() {
     () => projects.filter((p) => !q || matches(q, p.name, p.code, p.client, p.location, p.projectType, p.pm, p.description)),
     [projects, q],
   );
+  const pgProjects = usePagination(projectHits, 10, q);
   const documentHits = useMemo(
     () =>
       documents.filter(
@@ -54,6 +57,7 @@ export default function SharedArchiveSearchPage() {
       ),
     [documents, archivedCodes, q],
   );
+  const pgDocs = usePagination(documentHits, 10, q);
 
   return (
     <PageContainer>
@@ -81,7 +85,7 @@ export default function SharedArchiveSearchPage() {
                 <p className="p-4 text-center text-sm text-muted-foreground">{projects.length === 0 ? "No archived projects yet." : "No archived project matches."}</p>
               ) : (
                 <ul className="divide-y">
-                  {projectHits.map((p) => (
+                  {pgProjects.pageItems.map((p) => (
                     <li key={p.code} className="py-2.5 text-sm">
                       <Link to={`/projects/${p.id}`} className="font-medium text-primary-strong hover:underline">
                         {p.name}
@@ -91,6 +95,9 @@ export default function SharedArchiveSearchPage() {
                       </div>
                     </li>
                   ))}
+                  <div className="pt-2">
+                    <DataTablePagination {...pgProjects} compact />
+                  </div>
                 </ul>
               )}
             </SectionCard>
@@ -100,7 +107,7 @@ export default function SharedArchiveSearchPage() {
                 <p className="p-4 text-center text-sm text-muted-foreground">No document matches.</p>
               ) : (
                 <ul className="divide-y">
-                  {documentHits.slice(0, 100).map((d) => (
+                  {pgDocs.pageItems.map((d) => (
                     <li key={d.id} className="flex items-start justify-between gap-3 py-2.5 text-sm">
                       <div className="min-w-0">
                         <div className="truncate font-medium">{d.title}</div>
@@ -115,7 +122,9 @@ export default function SharedArchiveSearchPage() {
                       )}
                     </li>
                   ))}
-                  {documentHits.length > 100 && <li className="py-2 text-xs text-muted-foreground">Showing the first 100 — refine your search.</li>}
+                  <div className="pt-2">
+                    <DataTablePagination {...pgDocs} compact />
+                  </div>
                 </ul>
               )}
             </SectionCard>

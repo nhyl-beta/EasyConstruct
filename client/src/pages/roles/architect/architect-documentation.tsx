@@ -1,3 +1,5 @@
+import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
+import { usePagination } from "@/hooks/use-pagination";
 import { useState } from "react";
 import { PageHeader } from "@/components/refine-ui/views/page-header";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -15,6 +17,7 @@ import { useCurrentRevisions } from "@/features/revisions/hooks/useCurrentRevisi
 
 export default function ArchitectDocumentation() {
   const c = useArchitectDocuments();
+  const pg = usePagination(c.docs, 12, `${c.query}|${c.category}`);
   const currentRevisions = useCurrentRevisions("plan");
   // H7: separate from useArchitectDocuments' own read-only table above — an
   // As-Built Drawing (gate X-check territory) has to land in the shared
@@ -59,7 +62,7 @@ export default function ArchitectDocumentation() {
         </div>
       ) : (
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {c.docs.map((d) => (
+          {pg.pageItems.map((d) => (
             <div key={d.id} className="rounded-2xl border p-4">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-2">
@@ -82,6 +85,9 @@ export default function ArchitectDocumentation() {
               </div>
             </div>
           ))}
+          <div className="col-span-full">
+            <DataTablePagination {...pg} />
+          </div>
         </div>
       )}
 

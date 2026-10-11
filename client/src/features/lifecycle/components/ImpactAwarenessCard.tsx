@@ -5,6 +5,8 @@
 // Owner / IT Designer on all). Nothing here changes anything — it only links to
 // where a decision is made. Hidden entirely unless FEATURE_AI is on, because
 // the signals only exist then.
+import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
+import { usePagination } from "@/hooks/use-pagination";
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { Radar } from "lucide-react";
@@ -30,8 +32,9 @@ export function ImpactAwarenessCard({ projectCode, className }: { projectCode?: 
     };
   }, []);
 
-  if (!FEATURES.ai) return null;
   const projects = (data?.projects ?? []).filter((p) => !projectCode || p.projectCode === projectCode);
+  const pg = usePagination(projects, 5, projectCode ?? "");
+  if (!FEATURES.ai) return null;
   const total = projects.reduce((n, p) => n + p.signals.length, 0);
 
   return (
@@ -52,7 +55,7 @@ export function ImpactAwarenessCard({ projectCode, className }: { projectCode?: 
         <p className="text-sm text-muted-foreground">Nothing needs your attention on your projects right now.</p>
       ) : (
         <div className="space-y-4">
-          {projects.map((p) => (
+          {pg.pageItems.map((p) => (
             <section key={p.projectCode} aria-label={`${p.projectName} advisories`}>
               <h4 className="mb-1.5 flex flex-wrap items-baseline gap-2 text-sm font-medium">
                 <Link to={`/projects/${encodeURIComponent(p.projectCode)}`} className="hover:underline">
@@ -69,6 +72,7 @@ export function ImpactAwarenessCard({ projectCode, className }: { projectCode?: 
               </ul>
             </section>
           ))}
+          <DataTablePagination {...pg} compact />
         </div>
       )}
     </SectionCard>

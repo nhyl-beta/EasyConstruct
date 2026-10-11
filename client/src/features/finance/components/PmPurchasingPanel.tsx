@@ -1,3 +1,5 @@
+import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
+import { usePagination } from "@/hooks/use-pagination";
 import { useCallback, useEffect, useState } from "react";
 import { Paperclip } from "lucide-react";
 
@@ -30,11 +32,17 @@ type Rejecting = { kind: "request" | "claim"; id: string; label: string } | null
  */
 export function PmPurchasingPanel() {
   const requests = usePurchaseRequests();
+  const pgToEndorse = usePagination(requests.toEndorse, 8);
+  const pgRequests = usePagination(requests.requests, 8);
   const orders = useProcurement();
+  const pgOrders = usePagination(orders.orders, 8);
   const claims = useReimbursements("all");
+  const pgClaimsToEndorse = usePagination(claims.toEndorse, 8);
+  const pgClaims = usePagination(claims.claims, 8);
   const purchasing = { requests, orders };
 
   const [approved, setApproved] = useState<Requirement[]>([]);
+  const pgApproved = usePagination(approved, 8);
   const [reqLoading, setReqLoading] = useState(true);
   const [notice, setNotice] = useState<string | null>(null);
   const [rejecting, setRejecting] = useState<Rejecting>(null);
@@ -104,7 +112,7 @@ export function PmPurchasingPanel() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {requests.toEndorse.map((r) => (
+                    {pgToEndorse.pageItems.map((r) => (
                       <TableRow key={r.id}>
                         <TableCell className="font-mono text-xs">{r.id}</TableCell>
                         <TableCell className="text-sm">
@@ -126,7 +134,7 @@ export function PmPurchasingPanel() {
                         </TableCell>
                       </TableRow>
                     ))}
-                    {claims.toEndorse.map((c) => (
+                    {pgClaimsToEndorse.pageItems.map((c) => (
                       <TableRow key={c.id}>
                         <TableCell className="font-mono text-xs">{c.id}</TableCell>
                         <TableCell className="text-sm">
@@ -161,6 +169,10 @@ export function PmPurchasingPanel() {
                     ))}
                   </TableBody>
                 </Table>
+                <div className="space-y-2 pt-2">
+                  <DataTablePagination {...pgToEndorse} />
+                  <DataTablePagination {...pgClaimsToEndorse} />
+                </div>
               </div>
             )}
           </TabsContent>
@@ -172,7 +184,7 @@ export function PmPurchasingPanel() {
               <p className="p-4 text-center text-sm text-muted-foreground">No approved requirements on your projects yet.</p>
             ) : (
               <ul className="divide-y divide-border/60">
-                {approved.map((r) => (
+                {pgApproved.pageItems.map((r) => (
                   <li key={r.dbId} className="space-y-1 py-3">
                     <div className="font-mono text-xs text-muted-foreground">
                       {r.id} · {r.project} · {r.category}
@@ -187,6 +199,9 @@ export function PmPurchasingPanel() {
                     />
                   </li>
                 ))}
+                <li className="list-none pt-2">
+                  <DataTablePagination {...pgApproved} />
+                </li>
               </ul>
             )}
           </TabsContent>
@@ -209,7 +224,7 @@ export function PmPurchasingPanel() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {requests.requests.map((r) => (
+                      {pgRequests.pageItems.map((r) => (
                         <TableRow key={r.id}>
                           <TableCell className="font-mono text-xs">{r.id}</TableCell>
                           <TableCell className="text-sm">{r.title}</TableCell>
@@ -222,6 +237,9 @@ export function PmPurchasingPanel() {
                       ))}
                     </TableBody>
                   </Table>
+                  <div className="pt-2">
+                    <DataTablePagination {...pgRequests} />
+                  </div>
                 </div>
               )}
             </section>
@@ -243,7 +261,7 @@ export function PmPurchasingPanel() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {orders.orders.map((o) => (
+                      {pgOrders.pageItems.map((o) => (
                         <TableRow key={o.id}>
                           <TableCell className="font-mono text-xs">{o.id}</TableCell>
                           <TableCell className="text-sm">{o.vendor}</TableCell>
@@ -257,6 +275,9 @@ export function PmPurchasingPanel() {
                       ))}
                     </TableBody>
                   </Table>
+                  <div className="pt-2">
+                    <DataTablePagination {...pgOrders} />
+                  </div>
                 </div>
               )}
             </section>
@@ -264,7 +285,7 @@ export function PmPurchasingPanel() {
               <section aria-label="Claims">
                 <h3 className="mb-2 text-sm font-semibold">Claims on your projects</h3>
                 <ul className="space-y-1 text-sm">
-                  {claims.claims.map((c) => (
+                  {pgClaims.pageItems.map((c) => (
                     <li key={c.id} className="flex items-center justify-between gap-2">
                       <span>
                         <span className="font-mono text-xs text-muted-foreground">{c.id}</span> {c.employee}: {c.purpose}
@@ -275,6 +296,9 @@ export function PmPurchasingPanel() {
                       </span>
                     </li>
                   ))}
+                  <li className="list-none pt-2">
+                    <DataTablePagination {...pgClaims} />
+                  </li>
                 </ul>
               </section>
             )}

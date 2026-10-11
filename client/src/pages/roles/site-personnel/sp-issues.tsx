@@ -1,4 +1,6 @@
 // client/src/pages/roles/site-personnel/sp-issues.tsx — NEW
+import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
+import { usePagination } from "@/hooks/use-pagination";
 import { useState } from "react";
 import { PageContainer } from "@/components/refine-ui/views/page-container";
 import { PageHeader } from "@/components/refine-ui/views/page-header";
@@ -19,6 +21,7 @@ const SEVERITIES = ["Low", "Medium", "High", "Critical"];
 
 export default function SPIssuesPage() {
   const { issues, counts, loading, error, submitting, report } = useMyIssues();
+  const pg = usePagination(issues, 10);
   const [form, setForm] = useState({
     projectCode: "",
     title: "",
@@ -106,7 +109,7 @@ export default function SPIssuesPage() {
             <p className="text-sm text-muted-foreground">You haven't reported any issues yet.</p>
           ) : (
             <div className="space-y-2">
-              {issues.map((i) => (
+              {pg.pageItems.map((i) => (
                 <div key={i.id} className="flex items-center justify-between rounded-xl border p-3">
                   <div>
                     <div className="font-mono text-xs text-muted-foreground">{i.issueCode} · {i.projectCode}</div>
@@ -118,6 +121,9 @@ export default function SPIssuesPage() {
                   </div>
                 </div>
               ))}
+              <div className="pt-2">
+                <DataTablePagination {...pg} />
+              </div>
             </div>
           )}
         </SectionCard>

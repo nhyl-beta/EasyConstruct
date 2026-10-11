@@ -1,3 +1,5 @@
+import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
+import { usePagination } from "@/hooks/use-pagination";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -101,6 +103,7 @@ function PayDialog({
 }
 
 export function ProcurementPanel({ procurement, canAct, onNotice, onOpenExpense }: Props) {
+  const pg = usePagination(procurement.orders, 8);
   const [dialog, setDialog] = useState<Dialog>(null);
   const [eta, setEta] = useState("");
 
@@ -148,7 +151,7 @@ export function ProcurementPanel({ procurement, canAct, onNotice, onOpenExpense 
               </TableRow>
             </TableHeader>
             <TableBody>
-              {procurement.orders.map((o) => {
+              {pg.pageItems.map((o) => {
                 const label = ORDER_LABELS[o.status];
                 const variance = o.invoiceAmount != null ? o.invoiceAmount - o.amount : 0;
                 return (
@@ -222,6 +225,9 @@ export function ProcurementPanel({ procurement, canAct, onNotice, onOpenExpense 
               })}
             </TableBody>
           </Table>
+          <div className="pt-2">
+            <DataTablePagination {...pg} />
+          </div>
         </div>
       )}
 

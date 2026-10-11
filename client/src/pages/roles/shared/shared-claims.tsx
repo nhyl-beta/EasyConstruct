@@ -2,6 +2,8 @@
 // Engineers, Site Personnel, Project Managers, Architects and HR claim costs
 // they paid out of pocket. Finance decides and pays them on Expense Management;
 // project staff's claims are endorsed by the project's PM first.
+import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
+import { usePagination } from "@/hooks/use-pagination";
 import { useState } from "react";
 import { Paperclip, Plus } from "lucide-react";
 
@@ -148,6 +150,7 @@ function NewClaimDialog({
 
 export default function SharedClaimsPage() {
   const claims = useReimbursements("mine");
+  const pg = usePagination(claims.claims, 10);
   const [creating, setCreating] = useState(false);
   const [cancelling, setCancelling] = useState<ReimbursementClaim | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -213,7 +216,7 @@ export default function SharedClaimsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {claims.claims.map((c) => (
+                  {pg.pageItems.map((c) => (
                     <TableRow key={c.id}>
                       <TableCell className="font-mono text-xs">{c.id}</TableCell>
                       <TableCell className="max-w-56 text-sm">
@@ -256,6 +259,9 @@ export default function SharedClaimsPage() {
                   ))}
                 </TableBody>
               </Table>
+              <div className="pt-2">
+                <DataTablePagination {...pg} />
+              </div>
             </div>
           )}
         </SectionCard>

@@ -7,6 +7,8 @@
 // no decide UI at all, only create). Mirrors consultant-design-reviews.tsx:
 // a real Approve / Request changes / Reject action, gated server-side to
 // consultant/project-manager/admin (server/src/blueprints/routes.ts).
+import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
+import { usePagination } from "@/hooks/use-pagination";
 import { useMemo, useState } from "react";
 import { Check, FileCheck2, Send, X } from "lucide-react";
 
@@ -19,8 +21,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useBlueprints } from "@/features/blueprint/hooks/useBlueprints";
 import { useAuth } from "@/auth/auth-context";
 
-const TABS = ["pending", "approved", "other"] as const;
-type Tab = (typeof TABS)[number];
+type Tab = "pending" | "approved" | "other";
 
 const APPROVAL_TONE: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   Approved: "default",
@@ -43,6 +44,7 @@ export default function SharedBlueprintReviewsPage() {
     if (tab === "approved") return blueprints.filter((b) => b.approval === "Approved");
     return blueprints.filter((b) => b.approval === "Rejected" || b.approval === "Revision Required");
   }, [blueprints, tab]);
+  const pg = usePagination(filtered, 10, tab);
 
   return (
     <PageContainer>
@@ -75,7 +77,7 @@ export default function SharedBlueprintReviewsPage() {
               </div>
             ) : (
               <div className="space-y-2">
-                {filtered.map((b) => (
+                {pg.pageItems.map((b) => (
                   <div key={b.id} className="rounded-xl border p-3">
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-2 min-w-0">
@@ -123,6 +125,9 @@ export default function SharedBlueprintReviewsPage() {
                     )}
                   </div>
                 ))}
+                <div className="pt-2">
+                  <DataTablePagination {...pg} />
+                </div>
               </div>
             )}
           </TabsContent>
