@@ -45,7 +45,6 @@ const batch = (o: Partial<Row> = {}): Row => ({
   employerPhilhealth: 11,
   pagibig: 2,
   employerPagibig: 2,
-  withholdingTax: 5,
   employerEc: 1,
   ...o,
 });
@@ -85,7 +84,7 @@ describe("aggregation maths", () => {
 
   test("statutory comes from the stored sums", () => {
     assert.deepEqual(s.statutory.sss, { employee: 40, employer: 80 });
-    assert.equal(s.statutory.withholdingTax, 20);
+    assert.deepEqual(Object.keys(s.statutory).sort(), ["ec", "pagibig", "philhealth", "sss"]);
     assert.equal(s.statutory.ec, 4);
   });
 

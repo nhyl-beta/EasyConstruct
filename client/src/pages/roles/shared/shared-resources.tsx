@@ -229,7 +229,6 @@ const EXTERNAL_LINKS = [
   { href: "https://www.sss.gov.ph", label: "SSS — contributions" },
   { href: "https://www.philhealth.gov.ph", label: "PhilHealth — contributions" },
   { href: "https://www.pagibigfund.gov.ph", label: "Pag-IBIG Fund — contributions" },
-  { href: "https://www.bir.gov.ph", label: "BIR — withholding tax" },
 ];
 
 export default function SharedResourcesPage() {

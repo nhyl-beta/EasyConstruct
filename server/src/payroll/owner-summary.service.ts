@@ -86,7 +86,6 @@ export interface OwnerPayrollSummary {
     sss: { employee: number; employer: number };
     philhealth: { employee: number; employer: number };
     pagibig: { employee: number; employer: number };
-    withholdingTax: number;
     ec: number;
   };
   byProject: { projectCode: string; projectName: string; laborCost: number; share: number }[];
@@ -354,7 +353,6 @@ export const buildOwnerSummary = (
         employee: sum(windowApproved, (r) => r.pagibig),
         employer: sum(windowApproved, (r) => r.employerPagibig),
       },
-      withholdingTax: sum(windowApproved, (r) => r.withholdingTax),
       ec: sum(windowApproved, (r) => r.employerEc),
     },
     byProject: rank([...projectTotals.values()], (laborCost) => ({

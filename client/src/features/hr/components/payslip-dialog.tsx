@@ -1,12 +1,11 @@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatCurrency } from "@/lib/format-currency";
-import type { PayrollLine } from "@/features/hr/payroll-api";
+import { visibleRateVersions, type PayrollLine } from "@/features/hr/payroll-api";
 
 const AGENCY_LABEL: Record<string, string> = {
   sss: "SSS",
   philhealth: "PhilHealth",
   pagibig: "Pag-IBIG",
-  tax: "Withholding tax",
   overtime: "Overtime",
 };
 
@@ -55,7 +54,6 @@ export function PayslipDialog({
               <Row label="SSS" value={formatCurrency(line.sss)} />
               <Row label="PhilHealth" value={formatCurrency(line.philhealth)} />
               <Row label="Pag-IBIG" value={formatCurrency(line.pagibig)} />
-              <Row label="Withholding tax" value={formatCurrency(line.withholdingTax)} />
               <Row label="Total deductions" value={formatCurrency(line.deductions)} bold />
             </section>
 
@@ -66,7 +64,7 @@ export function PayslipDialog({
             <p className="text-overline text-muted-foreground">
               Rates used:{" "}
               {line.rateVersions
-                ? Object.entries(line.rateVersions)
+                ? visibleRateVersions(line.rateVersions)
                     .map(([k, v]) => `${AGENCY_LABEL[k] ?? k} ${v}`)
                     .join(" · ")
                 : "not recorded (generated before rate versions were stored)"}

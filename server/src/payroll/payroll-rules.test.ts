@@ -58,7 +58,7 @@ test("only the review router decides a batch, and it has no create route", () =>
 // ── Request validation ─────────────────────────────────────────────────────
 
 test("line update rejects gross, deductions and net", () => {
-  for (const field of ["gross", "deductions", "net", "sss", "withholdingTax"]) {
+  for (const field of ["gross", "deductions", "net", "sss", "pagibig"]) {
     assert.equal(updatePayrollLineSchema.safeParse({ [field]: 1 }).success, false, field);
   }
   assert.equal(updatePayrollLineSchema.safeParse({ hours: 8, overtime: 1, adjustments: -5 }).success, true);
@@ -100,7 +100,7 @@ const okLine = {
   hours: 160,
   overtime: 0,
   net: 1000,
-  rateVersions: { sss: "a", philhealth: "b", pagibig: "c", tax: "d" },
+  rateVersions: { sss: "a", philhealth: "b", pagibig: "c" },
 };
 
 test("inactive worker, zero pay rate, zero hours and negative net each block submission", () => {
@@ -119,6 +119,11 @@ test("inactive worker, zero pay rate, zero hours and negative net each block sub
     codes({ ...okLine, rateVersions: null as never }, { status: "Active", payRate: 150 }),
     ["missing_rate_version"],
   );
+  // The three agency versions are enough; a missing one still blocks; an old stored extra key is ignored.
+  const extra = { ...okLine, rateVersions: { ...okLine.rateVersions, legacy: "x" } };
+  assert.deepEqual(codes(extra, { status: "Active", payRate: 150 }), []);
+  const noPagibig = { ...okLine, rateVersions: { sss: "a", philhealth: "b" } };
+  assert.deepEqual(codes(noPagibig as never, { status: "Active", payRate: 150 }), ["missing_rate_version"]);
 });
 
 test("a duplicate project/period batch is a warning, not an error", () => {

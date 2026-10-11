@@ -52,7 +52,6 @@ export const REJECTION_REASONS = [
   "incorrect_sss",
   "incorrect_philhealth",
   "incorrect_pagibig",
-  "incorrect_withholding_tax",
   "missing_employee_information",
   "incorrect_government_rate",
   "other",

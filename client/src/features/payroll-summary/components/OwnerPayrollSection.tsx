@@ -364,10 +364,6 @@ export function OwnerPayrollSection({ summary, loading, error }: OwnerPayrollSec
                     </ul>
                     <dl className="space-y-1 border-t border-border pt-3 text-sm">
                       <div className="flex justify-between">
-                        <dt className="text-muted-foreground">Withholding tax</dt>
-                        <dd className="tabular-nums">{formatCurrency(summary.statutory.withholdingTax)}</dd>
-                      </div>
-                      <div className="flex justify-between">
                         <dt className="text-muted-foreground">Employer EC</dt>
                         <dd className="tabular-nums">{formatCurrency(summary.statutory.ec)}</dd>
                       </div>

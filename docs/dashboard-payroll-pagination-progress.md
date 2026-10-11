@@ -5,7 +5,7 @@ Branch: `staging` only. Four jobs: (A) remove withholding tax from payroll, (B) 
 ## Checklist
 
 - [x] Phase 1 — baseline and inventories
-- [ ] Phase 2 — Job A: remove withholding tax
+- [x] Phase 2 — Job A: remove withholding tax
 - [ ] Phase 3 — Job B: wider payroll, payslip button, print
 - [ ] Phase 4 — Job C: livelier charts
 - [ ] Phase 5 — Job D: pagination everywhere
@@ -136,3 +136,14 @@ pages/roles/shared/shared-transmittals.tsx
 pages/roles/shared/print-pages.tsx            (exempt: print page)
 pages/roles/*/*-dashboard.tsx (8 dashboards)  (fixed top-N widgets; checked in phase 5)
 ```
+
+## Phase 2 — Job A (done)
+
+- Engine, `ph-statutory.ts`, service, types, validation, Owner summary, schema, seeds and `ensure-demo-schema.ts` no longer have the tax. `validateBatchLines` requires `sss`, `philhealth`, `pagibig` and ignores any stored extra key (tested both ways).
+- Client: payslip, payroll wizard, HR payroll table and CSV, Finance review figure and CSV, Owner payroll statutory list, the Resources link, "Rates used" lines (only sss / philhealth / pagibig / overtime are shown), the rejection reason (unknown or retired codes read "Other").
+- Regression tests: ₱9,600 gross (64 h) gives SSS 475, PhilHealth 250, Pag-IBIG 192, deductions 917, net 8,683, employer 1,402, employer cost 11,002; a ₱250,000 line has deductions equal to the three contributions only.
+- Search for `withhold|w/tax|taxable|tax|bir|train` in `client/src`, `server/src` and the two docs: only `server/src/scripts/payroll-remove-legacy-tax.ts` matches.
+- **Not run:** `server/src/scripts/payroll-remove-legacy-tax.ts`. No migration, no database change, `withholding_tax` column left in the database (`NOT NULL DEFAULT 0`).
+- Other places that store deductions or net: only `payroll` lines and `payroll_batches` totals. `hr/service.ts` and the Finance review repository read those stored values live; cash flow does not use them; `server/src/cache` holds generic response caches that may serve old totals until they expire.
+
+Owner steps before staged totals are consistent: (1) `cd server && npx tsx src/scripts/payroll-remove-legacy-tax.ts` (dry run, prints counts, rolls back), (2) review the before/after counts, (3) `npx tsx src/scripts/payroll-remove-legacy-tax.ts --apply`, (4) delete the script.

@@ -20,8 +20,7 @@ export interface PayrollLine {
   sss: number;
   philhealth: number;
   pagibig: number;
-  withholdingTax: number;
-  /** Sum of the four employee deductions. */
+  /** Sum of the three employee contributions (SSS + PhilHealth + Pag-IBIG). */
   deductions: number;
   net: number;
   employerSss: number;
@@ -74,7 +73,6 @@ export interface BatchTotals {
   sss: number;
   philhealth: number;
   pagibig: number;
-  withholdingTax: number;
   deductions: number;
   net: number;
   employerSss: number;
@@ -128,14 +126,19 @@ export const REJECTION_REASONS: Array<{ value: string; label: string }> = [
   { value: "incorrect_sss", label: "Incorrect SSS" },
   { value: "incorrect_philhealth", label: "Incorrect PhilHealth" },
   { value: "incorrect_pagibig", label: "Incorrect Pag-IBIG" },
-  { value: "incorrect_withholding_tax", label: "Incorrect withholding tax" },
   { value: "missing_employee_information", label: "Missing employee information" },
   { value: "incorrect_government_rate", label: "Incorrect government rate" },
   { value: "other", label: "Other" },
 ];
 
+// Unknown or legacy codes (a reason that has since been retired) read as "Other".
 export const reasonLabel = (code: string | null | undefined) =>
-  REJECTION_REASONS.find((r) => r.value === code)?.label ?? code ?? "";
+  code ? (REJECTION_REASONS.find((r) => r.value === code)?.label ?? "Other") : "";
+
+/** Agencies whose rate version is shown; any other stored key is ignored. */
+export const RATE_VERSION_AGENCIES = ["sss", "philhealth", "pagibig", "overtime"] as const;
+export const visibleRateVersions = (versions: RateVersions | null | undefined): Array<[string, string]> =>
+  Object.entries(versions ?? {}).filter(([k]) => (RATE_VERSION_AGENCIES as readonly string[]).includes(k));
 
 export const BATCH_STATUS_LABEL: Record<string, string> = {
   draft: "Draft",
@@ -154,7 +157,7 @@ async function unwrap<T>(promise: Promise<any>): Promise<T> {
 type RawLine = Omit<
   PayrollLine,
   | "hours" | "overtime" | "adjustments" | "gross" | "sss" | "philhealth" | "pagibig"
-  | "withholdingTax" | "deductions" | "net" | "employerSss" | "employerEc"
+  | "deductions" | "net" | "employerSss" | "employerEc"
   | "employerPhilhealth" | "employerPagibig" | "employerCost"
 > & Record<string, string | number | null | RateVersions | undefined>;
 
@@ -175,7 +178,6 @@ export function normalizeLine(raw: RawLine): PayrollLine {
     sss: num(raw.sss),
     philhealth: num(raw.philhealth),
     pagibig: num(raw.pagibig),
-    withholdingTax: num(raw.withholdingTax),
     deductions: num(raw.deductions),
     net: num(raw.net),
     employerSss: num(raw.employerSss),

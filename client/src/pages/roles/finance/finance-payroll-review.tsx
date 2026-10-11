@@ -164,8 +164,8 @@ export default function FinancePayrollReviewPage() {
             detail
               ? downloadCsv(
                   `payroll-${detail.batch.id}`,
-                  ["Employee ID", "Name", "Role", "Hours", "Overtime", "Adjustments", "Gross", "SSS", "PhilHealth", "Pag-IBIG", "Withholding tax", "Total deductions", "Net", "Employer cost"],
-                  detail.lines.map((l) => [l.empId, l.name, l.role, l.hours, l.overtime, l.adjustments, l.gross, l.sss, l.philhealth, l.pagibig, l.withholdingTax, l.deductions, l.net, l.employerCost]),
+                  ["Employee ID", "Name", "Role", "Hours", "Overtime", "Adjustments", "Gross", "SSS", "PhilHealth", "Pag-IBIG", "Total deductions", "Net", "Employer cost"],
+                  detail.lines.map((l) => [l.empId, l.name, l.role, l.hours, l.overtime, l.adjustments, l.gross, l.sss, l.philhealth, l.pagibig, l.deductions, l.net, l.employerCost]),
                 )
               : downloadCsv(
                   "payroll-batches",
@@ -277,7 +277,6 @@ export default function FinancePayrollReviewPage() {
                     <Figure label="SSS" value={formatCurrency(t.sss)} />
                     <Figure label="PhilHealth" value={formatCurrency(t.philhealth)} />
                     <Figure label="Pag-IBIG" value={formatCurrency(t.pagibig)} />
-                    <Figure label="Withholding tax" value={formatCurrency(t.withholdingTax)} />
                     <Figure label="Total deductions" value={formatCurrency(t.deductions)} strong />
                     <div className="my-1 border-t" />
                     <Figure label="Net payroll" value={formatCurrency(t.net)} strong />

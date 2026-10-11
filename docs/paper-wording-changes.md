@@ -95,7 +95,7 @@ proposal or design / on-demand validation summary; removal of "Coming soon" plac
 
 | # | Scope bullet | Replacement sentence | Choice |
 |---|---|---|---|
-| Y1 | Payroll limitations | Do not state that payroll is limited to basic pay. The system computes the SSS, PhilHealth and Pag-IBIG contributions and BIR withholding tax (with employer shares and a payslip) from versioned rate tables, and exports tracksheets and agency contribution reports as CSV. State instead that the rate tables must be kept current by HR and that Finance reviews and approves each batch. | corrected in paper |
+| Y1 | Payroll limitations | Do not state that payroll is limited to basic pay. The system computes the SSS, PhilHealth and Pag-IBIG contributions (with employer shares and a payslip; employee deductions are only these three contributions) from versioned rate tables, and exports tracksheets and agency contribution reports as CSV. State instead that the rate tables must be kept current by HR and that Finance reviews and approves each batch. | corrected in paper |
 | Y2 | Owner payroll visibility | The Owner dashboard presents payroll as read-only, aggregate-level summaries of approved payroll (labor cost, trend, pipeline status, spend by project and group, statutory totals and items needing attention). It shows no individual employee pay data, and the Owner cannot approve, reject, edit or generate payroll. | **built** |
 
 ## Purchase requests, procurement and reimbursements

@@ -37,6 +37,7 @@ import {
   type AttendanceReadiness,
   type BatchDetail,
   type PayrollLine,
+  visibleRateVersions,
 } from "@/features/hr/payroll-api";
 import { formatCurrency } from "@/lib/format-currency";
 import { Link } from "react-router-dom";
@@ -453,7 +454,6 @@ export function PayrollWizard({ resumeBatchId, onClose, onChanged }: PayrollWiza
                   <TableHead className="text-right">SSS</TableHead>
                   <TableHead className="text-right">PhilHealth</TableHead>
                   <TableHead className="text-right">Pag-IBIG</TableHead>
-                  <TableHead className="text-right">Withholding tax</TableHead>
                   <TableHead className="text-right">Net</TableHead>
                 </TableRow>
               </TableHeader>
@@ -465,7 +465,6 @@ export function PayrollWizard({ resumeBatchId, onClose, onChanged }: PayrollWiza
                     <TableCell className="text-right tabular-nums">{formatCurrency(l.sss)}</TableCell>
                     <TableCell className="text-right tabular-nums">{formatCurrency(l.philhealth)}</TableCell>
                     <TableCell className="text-right tabular-nums">{formatCurrency(l.pagibig)}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatCurrency(l.withholdingTax)}</TableCell>
                     <TableCell className="text-right font-medium tabular-nums">{formatCurrency(l.net)}</TableCell>
                   </TableRow>
                 ))}
@@ -473,7 +472,7 @@ export function PayrollWizard({ resumeBatchId, onClose, onChanged }: PayrollWiza
             </Table>
             <p className="text-xs text-muted-foreground">
               Rate versions used:{" "}
-              {Object.entries(detail.rateVersions)
+              {visibleRateVersions(detail.rateVersions)
                 .map(([k, v]) => `${k} ${v}`)
                 .join(" · ")}
             </p>

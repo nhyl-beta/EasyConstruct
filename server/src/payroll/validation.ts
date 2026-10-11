@@ -81,7 +81,7 @@ export const validateBatchLines = (
       });
     }
     const versions = line.rateVersions;
-    if (!versions || !versions.sss || !versions.philhealth || !versions.pagibig || !versions.tax) {
+    if (!versions || !versions.sss || !versions.philhealth || !versions.pagibig) {
       issues.push({
         severity: "error",
         code: "missing_rate_version",

@@ -1,8 +1,8 @@
 /**
  * Philippine statutory payroll deductions.
  *
- * Replaces the flat 12% placeholder that stood in for "SSS/PhilHealth/
- * Pag-IBIG/withholding tax" as a single number. Those are four separate
+ * Replaces the flat 12% placeholder that stood in for the SSS, PhilHealth
+ * and Pag-IBIG contributions as a single number. Those are three separate
  * computations on three different bases, and a payslip has to show each one,
  * so each is computed and stored separately here and `deductions` becomes
  * their sum.
@@ -19,9 +19,6 @@
  *  - Pag-IBIG (HDMF Circular 460): 1% employee share up to ₱1,500 monthly
  *    compensation, 2% above it, on a ₱10,000 maximum fund salary — so the
  *    employee share caps at ₱200.
- *  - Withholding tax (TRAIN Act RA 10963, revised 2023-onward brackets):
- *    applied to taxable income, i.e. gross minus the three contributions
- *    above, which are non-taxable by law.
  *
  * Everything is computed on a MONTHLY basis because that is what every one of
  * these schedules is defined on. A payroll run covering a shorter period is
@@ -82,39 +79,11 @@ export const pagibigEmployeeShare = (monthlyCompensation: number): number => {
   return round2(base * rate);
 };
 
-// ── BIR withholding tax ──────────────────────────────────────────────────────
-// TRAIN Act monthly table effective 1 January 2023 onward. Each bracket is
-// "over `floor`: `base` plus `rate` of the excess over `floor`".
-interface TaxBracket {
-  floor: number;
-  base: number;
-  rate: number;
-}
-
-const MONTHLY_TAX_TABLE: TaxBracket[] = [
-  { floor: 0, base: 0, rate: 0 },
-  { floor: 20_833, base: 0, rate: 0.15 },
-  { floor: 33_333, base: 1_875, rate: 0.2 },
-  { floor: 66_667, base: 8_541.8, rate: 0.25 },
-  { floor: 166_667, base: 33_541.8, rate: 0.3 },
-  { floor: 666_667, base: 183_541.8, rate: 0.35 },
-];
-
-export const withholdingTax = (monthlyTaxableIncome: number): number => {
-  if (monthlyTaxableIncome <= MONTHLY_TAX_TABLE[1]!.floor) return 0;
-  // Highest bracket whose floor the income clears.
-  const bracket = [...MONTHLY_TAX_TABLE]
-    .reverse()
-    .find((b) => monthlyTaxableIncome > b.floor)!;
-  return round2(bracket.base + (monthlyTaxableIncome - bracket.floor) * bracket.rate);
-};
-
 export interface StatutoryDeductions {
   sss: number;
   philhealth: number;
   pagibig: number;
-  withholdingTax: number;
-  /** Sum of the four — what lands in payroll.deductions. */
+  /** Sum of the three — what lands in payroll.deductions. */
   total: number;
 }
 
@@ -130,7 +99,7 @@ export const computeStatutoryDeductions = (
   periodsPerMonth = 1,
 ): StatutoryDeductions => {
   if (grossForPeriod <= 0) {
-    return { sss: 0, philhealth: 0, pagibig: 0, withholdingTax: 0, total: 0 };
+    return { sss: 0, philhealth: 0, pagibig: 0, total: 0 };
   }
 
   const divisor = periodsPerMonth > 0 ? periodsPerMonth : 1;
@@ -140,23 +109,16 @@ export const computeStatutoryDeductions = (
   const philhealth = philhealthEmployeeShare(monthlyEquivalent);
   const pagibig = pagibigEmployeeShare(monthlyEquivalent);
 
-  // Contributions are excluded from taxable income (NIRC §32(B)(7)(f)).
-  const monthlyTaxable = Math.max(0, monthlyEquivalent - sss - philhealth - pagibig);
-  const tax = withholdingTax(monthlyTaxable);
-
   const forPeriod = (monthlyAmount: number) => round2(monthlyAmount / divisor);
 
   const perPeriod = {
     sss: forPeriod(sss),
     philhealth: forPeriod(philhealth),
     pagibig: forPeriod(pagibig),
-    withholdingTax: forPeriod(tax),
   };
 
   return {
     ...perPeriod,
-    total: round2(
-      perPeriod.sss + perPeriod.philhealth + perPeriod.pagibig + perPeriod.withholdingTax,
-    ),
+    total: round2(perPeriod.sss + perPeriod.philhealth + perPeriod.pagibig),
   };
 };

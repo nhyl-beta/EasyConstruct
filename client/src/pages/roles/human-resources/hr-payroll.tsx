@@ -132,19 +132,19 @@ export default function HRPayrollPage() {
       "payroll-tracksheet",
       [
         "Employee ID", "Name", "Role", "Period", "Hours", "Overtime", "Adjustments", "Gross",
-        "SSS", "PhilHealth", "Pag-IBIG", "Withholding Tax", "Deductions", "Net",
+        "SSS", "PhilHealth", "Pag-IBIG", "Deductions", "Net",
         "Employer SSS", "Employer EC", "Employer PhilHealth", "Employer Pag-IBIG", "Employer cost", "Status",
       ],
       allRows.map((r) => [
         r.empId, r.name, r.role, r.period, r.hours, r.overtime, r.adjustments, r.gross,
-        r.sss, r.philhealth, r.pagibig, r.withholdingTax, r.deductions, r.net,
+        r.sss, r.philhealth, r.pagibig, r.deductions, r.net,
         r.employerSss, r.employerEc, r.employerPhilhealth, r.employerPagibig, r.employerCost, r.status,
       ]),
     );
   };
 
   // Liabilities per agency for one approved period. The system only reports
-  // them; it does not remit anything to SSS, PhilHealth, Pag-IBIG or BIR.
+  // them; it does not remit anything to SSS, PhilHealth or Pag-IBIG.
   const handleExportContributions = async (agency: Agency, label: string) => {
     if (!trackFilterPeriod) return;
     try {
@@ -352,7 +352,6 @@ export default function HRPayrollPage() {
                 <TableHead className="text-right">SSS</TableHead>
                 <TableHead className="text-right">PhilHealth</TableHead>
                 <TableHead className="text-right">Pag-IBIG</TableHead>
-                <TableHead className="text-right">W/Tax</TableHead>
                 <TableHead className="text-right">Deductions</TableHead>
                 <TableHead className="text-right">Net</TableHead>
                 <TableHead>Status</TableHead>
@@ -362,14 +361,14 @@ export default function HRPayrollPage() {
             <TableBody>
               {loading && (
                 <TableRow>
-                  <TableCell colSpan={13} className="py-8 text-center text-sm text-muted-foreground">
+                  <TableCell colSpan={12} className="py-8 text-center text-sm text-muted-foreground">
                     Loading payroll…
                   </TableCell>
                 </TableRow>
               )}
               {!loading && pagination.total === 0 && (
                 <TableRow>
-                  <TableCell colSpan={13} className="py-8 text-center text-sm text-muted-foreground">
+                  <TableCell colSpan={12} className="py-8 text-center text-sm text-muted-foreground">
                     No payroll generated yet for this period.
                   </TableCell>
                 </TableRow>
@@ -396,7 +395,6 @@ export default function HRPayrollPage() {
                   <TableCell className="text-right text-sm tabular-nums text-muted-foreground">{formatCurrency(p.sss)}</TableCell>
                   <TableCell className="text-right text-sm tabular-nums text-muted-foreground">{formatCurrency(p.philhealth)}</TableCell>
                   <TableCell className="text-right text-sm tabular-nums text-muted-foreground">{formatCurrency(p.pagibig)}</TableCell>
-                  <TableCell className="text-right text-sm tabular-nums text-muted-foreground">{formatCurrency(p.withholdingTax)}</TableCell>
                   <TableCell className="text-right text-sm tabular-nums text-muted-foreground">−{formatCurrency(p.deductions)}</TableCell>
                   <TableCell className="text-right text-sm font-semibold tabular-nums">{formatCurrency(p.net)}</TableCell>
                   <TableCell>
