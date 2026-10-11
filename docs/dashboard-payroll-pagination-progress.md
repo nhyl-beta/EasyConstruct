@@ -7,7 +7,7 @@ Branch: `staging` only. Four jobs: (A) remove withholding tax from payroll, (B) 
 - [x] Phase 1 — baseline and inventories
 - [x] Phase 2 — Job A: remove withholding tax
 - [x] Phase 3 — Job B: wider payroll, payslip button, print
-- [ ] Phase 4 — Job C: livelier charts
+- [x] Phase 4 — Job C: livelier charts
 - [ ] Phase 5 — Job D: pagination everywhere
 - [ ] Phase 6 — verification
 
@@ -155,3 +155,18 @@ Owner steps before staged totals are consistent: (1) `cd server && npx tsx src/s
 - `PayslipButton` (outline, small, document icon, "Payslip", `aria-label` "View payslip for {name}") is used by both Finance review and HR payroll.
 - Payslip dialog footer: Close and Print payslip (`window.print()`). `App.css` has an `@media print` block keyed on `data-print-payslip` that hides everything but the dialog content and its own buttons.
 - **Not verified:** layout at laptop width, the selector not clipping, keyboard use, and the print preview. I have no signed-in browser here (see the breadcrumb notes), so none of it was seen. Check in Chrome: open a payslip, press Print payslip, and confirm the preview shows only the payslip.
+
+## Phase 4 — Job C (done in code, not seen in a browser)
+
+New, under `client/src`: `components/charts/{chart-tooltip,donut-chart,animated-bar-chart,cash-flow-chart}.tsx`, `lib/group-top-n.ts` (+ 7 tests), `hooks/use-reduced-motion.ts`, and a `chart-bar-grow` keyframe in `App.css` (off for reduced motion).
+
+- **Budget allocation:** grouped by project, top 6 + "Other" (muted), token colours, centre total that swaps to the hovered or focused item's name, amount and percent, hovered slice grows and the rest dim, legend rows are focusable and show amount and percent, sweep-in on load, empty state "No budget allocated yet".
+- **Expense distribution:** every known category (so ₱0 categories show a baseline label), staggered grow-in, hover/focus highlight and dim, value labels on bars, tooltip with amount and share, one-line total and largest-category summary, empty state.
+- **Cash flow:** token gradients (`--chart-1`, `--destructive`), draw-in, active dots, dashed crosshair, shared tooltip.
+- Fixed the invalid `hsl(var(...))` strokes by using the existing `CHART_AXIS_STYLE` and `CHART_GRID_STYLE`; no raw colours remain in the chart files touched (searched for hex, `hsl(`, `rgb(`, `oklch(`).
+- `role="img"` with an `aria-label` that lists the values on each chart; the legend and bar labels carry the same numbers as text.
+- Reduced motion: `useReducedMotion` turns off Recharts animation and the hover growth; CSS turns off the bar grow.
+- The "Live" badge is unchanged: the dashboard hook does not poll, so I did not add a "live" indicator.
+- Same shared tooltip and reduced-motion flag applied to `finance-budget.tsx`, `finance-expenses.tsx` and `PmPortfolioCharts.tsx`. `OwnerPayrollSection.tsx` keeps its own three-line tooltip (it shows labor, gross and net together) and only got the reduced-motion flag. Left as they were: the entry animation and interactive legends on those four (the swap there is not a straight replacement).
+- Removed an unused `usePagination` import in `finance-expenses.tsx` that already failed lint.
+- **Not verified:** how the charts look and behave in light/dark, with reduced motion, or on hover. Nothing was rendered.

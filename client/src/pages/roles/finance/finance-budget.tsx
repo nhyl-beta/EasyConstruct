@@ -1,3 +1,5 @@
+import { ChartTooltip } from "@/components/charts/chart-tooltip";
+import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { PageHeader } from "@/components/refine-ui/views/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -224,6 +226,7 @@ function NewBudgetDialog({
 }
 
 export default function FinanceBudget() {
+  const reduced = useReducedMotion();
   const [tab, setTab] = useState("overview");
   const c = useBudgets();
   const approval = useBudgetApproval(c.budgets, c.reload);
@@ -469,13 +472,14 @@ export default function FinanceBudget() {
                       innerRadius={50}
                       outerRadius={85}
                       paddingAngle={2}
+                      isAnimationActive={!reduced}
                     >
                       {allocation.byCategory.map((entry) => (
                         <Cell key={entry.label} fill={entry.color} />
                       ))}
                     </Pie>
                     <Tooltip
-                      formatter={(v: number) => formatCompactCurrency(v)}
+                      content={<ChartTooltip formatValue={formatCompactCurrency} total={allocation.byCategory.reduce((s, d) => s + d.value, 0)} />}
                     />
                   </PieChart>
                 </ResponsiveContainer>
@@ -525,12 +529,15 @@ export default function FinanceBudget() {
                       width={90}
                     />
                     <Tooltip
-                      formatter={(v: number) => formatCompactCurrency(v)}
+                      cursor={{ fill: "var(--muted)", opacity: 0.4 }}
+                      content={<ChartTooltip formatValue={formatCompactCurrency} />}
                     />
                     <Bar
                       dataKey="value"
+                      name="Amount"
                       fill={BUDGET_CHART_COLORS[1]}
                       radius={[0, 6, 6, 0]}
+                      isAnimationActive={!reduced}
                     />
                   </BarChart>
                 </ResponsiveContainer>

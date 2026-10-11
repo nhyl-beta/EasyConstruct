@@ -395,3 +395,18 @@
     animation: none !important;
   }
 }
+
+/* Bars in components/charts/animated-bar-chart.tsx grow from the baseline with a
+   short stagger (the delay is set per bar). Off for reduced motion. */
+@keyframes chart-bar-grow {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+.chart-bar-grow {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: chart-bar-grow 600ms ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .chart-bar-grow { animation: none; }
+}

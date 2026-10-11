@@ -1,5 +1,6 @@
 // Owner dashboard: read-only payroll summary. Aggregates of approved payroll
 // only — no employee names, ids or pay lines exist in the data it renders.
+import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import type { ReactNode } from "react";
 import { Banknote, Clock, FileCheck2, Timer, Undo2 } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -199,6 +200,7 @@ function kpiItems(summary: PayrollSummary): KpiItem[] {
 }
 
 export function OwnerPayrollSection({ summary, loading, error }: OwnerPayrollSectionProps) {
+  const reduced = useReducedMotion();
   const noApproved = !!summary && summary.totals.approvedBatches === 0;
   const noPayroll =
     noApproved &&
@@ -283,7 +285,7 @@ export function OwnerPayrollSection({ summary, loading, error }: OwnerPayrollSec
                             );
                           }}
                         />
-                        <Bar dataKey="laborCost" fill="var(--chart-1)" radius={[6, 6, 0, 0]} />
+                        <Bar dataKey="laborCost" fill="var(--chart-1)" radius={[6, 6, 0, 0]} isAnimationActive={!reduced} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>

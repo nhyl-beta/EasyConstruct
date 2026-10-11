@@ -1,4 +1,6 @@
 // client/src/pages/finance/finance-expenses.tsx
+import { ChartTooltip } from "@/components/charts/chart-tooltip";
+import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { useState } from "react";
 import { useSearchParams } from "react-router";
 import { useOpenOnAction } from "@/features/quick-search/useOpenOnAction";
@@ -35,7 +37,6 @@ import { FEATURES } from "@/config/features";
 import { useAuth } from "@/auth/auth-context";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
-import { usePagination } from "@/hooks/use-pagination";
 import { useExpensesController, type CreateExpenseInput } from "@/features/finance/hooks/use-expenses";
 import { usePurchaseRequests } from "@/features/finance/hooks/use-purchase-requests";
 import { useProcurement } from "@/features/finance/hooks/use-procurement";
@@ -138,6 +139,7 @@ const TABS = ["tracking", "purchase-requests", "reimbursements", "procurement", 
 type Tab = (typeof TABS)[number];
 
 export default function FinanceExpensesPage() {
+  const reduced = useReducedMotion();
   const c = useExpensesController();
   // ?tab= lets the approvals queue and notifications open the right tab.
   const [params, setParams] = useSearchParams();
@@ -390,8 +392,8 @@ export default function FinanceExpensesPage() {
                       <CartesianGrid stroke="var(--border)" strokeOpacity={0.4} vertical={false} />
                       <XAxis dataKey="category" tick={{ fontSize: 10 }} stroke="var(--muted-foreground)" />
                       <YAxis tick={{ fontSize: 10 }} stroke="var(--muted-foreground)" tickFormatter={(v) => formatAxisCurrency(Number(v))} />
-                      <Tooltip formatter={(v: number) => formatCurrency(Number(v))} />
-                      <Bar dataKey="amount" fill="var(--chart-1)" radius={[6, 6, 0, 0]} />
+                      <Tooltip cursor={{ fill: "var(--muted)", opacity: 0.4 }} content={<ChartTooltip formatValue={formatCurrency} />} />
+                      <Bar dataKey="amount" name="Spend" fill="var(--chart-1)" radius={[6, 6, 0, 0]} isAnimationActive={!reduced} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
