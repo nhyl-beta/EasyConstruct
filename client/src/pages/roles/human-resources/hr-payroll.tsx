@@ -34,6 +34,7 @@ import {
 import { BatchStatusPill } from "@/features/hr/components/batch-status-pill";
 import { PayrollWizard } from "@/features/hr/components/payroll-wizard";
 import { PayslipDialog } from "@/features/hr/components/payslip-dialog";
+import { PayslipButton } from "@/features/hr/components/payslip-button";
 import { AlertTriangle, ArrowUpRight, Building2, CheckCircle2, Download, FileText, RefreshCw, Wallet } from "lucide-react";
 import { downloadCsv } from "@/lib/export-csv";
 import { formatCompactCurrency, formatCurrency } from "@/lib/format-currency";
@@ -401,9 +402,7 @@ export default function HRPayrollPage() {
                     <StatusBadge status={p.status} />
                   </TableCell>
                   <TableCell>
-                    <Button size="sm" variant="ghost" className="text-xs" onClick={() => setPayslipLine(p)}>
-                      Payslip
-                    </Button>
+                    <PayslipButton line={p} onOpen={setPayslipLine} />
                   </TableCell>
                 </TableRow>
               ))}

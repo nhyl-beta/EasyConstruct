@@ -15,6 +15,8 @@ import {
 } from "@/features/hr/payroll-api";
 import { BatchStatusPill } from "@/features/hr/components/batch-status-pill";
 import { PayslipDialog } from "@/features/hr/components/payslip-dialog";
+import { PayslipButton } from "@/features/hr/components/payslip-button";
+import { visibleRateVersions } from "@/features/hr/payroll-api";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   Select,
@@ -202,7 +204,7 @@ export default function FinancePayrollReviewPage() {
           <p className="text-muted-foreground">No payroll batches are currently available for review.</p>
         </div>
       ) : (
-        <div className="grid gap-6 lg:grid-cols-[1fr_480px]">
+        <div className="grid gap-6 lg:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]">
           <div className="rounded-lg border">
             <div className="border-b p-4">
               <h2 className="font-semibold">Payroll Batches</h2>
@@ -270,6 +272,7 @@ export default function FinancePayrollReviewPage() {
                     </div>
                   </div>
 
+                  <div className="grid gap-4 xl:grid-cols-2">
                   <section className="rounded-xl border p-3">
                     <Figure label="Gross payroll" value={formatCurrency(t.gross)} strong />
                     <div className="my-1 border-t" />
@@ -296,10 +299,11 @@ export default function FinancePayrollReviewPage() {
                     <div className="my-1 border-t" />
                     <Figure label="Total employer cost" value={formatCurrency(t.employerCost)} strong />
                   </section>
+                  </div>
 
                   <p className="text-xs text-muted-foreground">
                     Rate versions:{" "}
-                    {Object.entries(detail.rateVersions)
+                    {visibleRateVersions(detail.rateVersions)
                       .filter(([k]) => k !== "overtime")
                       .map(([k, v]) => `${k} ${v}`)
                       .join(" · ")}
@@ -309,15 +313,19 @@ export default function FinancePayrollReviewPage() {
 
                   <div>
                     <p className="mb-1 text-xs text-muted-foreground">Per-employee lines</p>
-                    <div className="rounded-lg border">
+                    <div className="@container rounded-lg border">
                       <table className="w-full text-xs">
                         <thead className="bg-muted/60">
                           <tr>
                             <th className="px-2 py-1.5 text-left">Employee</th>
                             <th className="px-2 py-1.5 text-right">Hours</th>
                             <th className="px-2 py-1.5 text-right">Gross</th>
+                            <th className="hidden px-2 py-1.5 text-right @2xl:table-cell">SSS</th>
+                            <th className="hidden px-2 py-1.5 text-right @2xl:table-cell">PhilHealth</th>
+                            <th className="hidden px-2 py-1.5 text-right @2xl:table-cell">Pag-IBIG</th>
+                            <th className="hidden px-2 py-1.5 text-right @2xl:table-cell">Deductions</th>
                             <th className="px-2 py-1.5 text-right">Net</th>
-                            <th />
+                            <th className="px-2 py-1.5 text-right"><span className="sr-only">Payslip</span></th>
                           </tr>
                         </thead>
                         <tbody>
@@ -329,15 +337,13 @@ export default function FinancePayrollReviewPage() {
                                 {line.overtime ? ` + ${line.overtime} OT` : ""}
                               </td>
                               <td className="px-2 py-1.5 text-right tabular-nums">{formatCurrency(line.gross)}</td>
+                              <td className="hidden px-2 py-1.5 text-right tabular-nums @2xl:table-cell">{formatCurrency(line.sss)}</td>
+                              <td className="hidden px-2 py-1.5 text-right tabular-nums @2xl:table-cell">{formatCurrency(line.philhealth)}</td>
+                              <td className="hidden px-2 py-1.5 text-right tabular-nums @2xl:table-cell">{formatCurrency(line.pagibig)}</td>
+                              <td className="hidden px-2 py-1.5 text-right tabular-nums @2xl:table-cell">{formatCurrency(line.deductions)}</td>
                               <td className="px-2 py-1.5 text-right tabular-nums">{formatCurrency(line.net)}</td>
                               <td className="px-2 py-1.5 text-right">
-                                <button
-                                  type="button"
-                                  className="text-primary-strong underline"
-                                  onClick={() => setPayslipLine(line)}
-                                >
-                                  Payslip
-                                </button>
+                                <PayslipButton line={line} onOpen={setPayslipLine} />
                               </td>
                             </tr>
                           ))}

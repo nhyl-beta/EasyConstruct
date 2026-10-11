@@ -6,7 +6,7 @@ Branch: `staging` only. Four jobs: (A) remove withholding tax from payroll, (B) 
 
 - [x] Phase 1 — baseline and inventories
 - [x] Phase 2 — Job A: remove withholding tax
-- [ ] Phase 3 — Job B: wider payroll, payslip button, print
+- [x] Phase 3 — Job B: wider payroll, payslip button, print
 - [ ] Phase 4 — Job C: livelier charts
 - [ ] Phase 5 — Job D: pagination everywhere
 - [ ] Phase 6 — verification
@@ -147,3 +147,11 @@ pages/roles/*/*-dashboard.tsx (8 dashboards)  (fixed top-N widgets; checked in p
 - Other places that store deductions or net: only `payroll` lines and `payroll_batches` totals. `hr/service.ts` and the Finance review repository read those stored values live; cash flow does not use them; `server/src/cache` holds generic response caches that may serve old totals until they expire.
 
 Owner steps before staged totals are consistent: (1) `cd server && npx tsx src/scripts/payroll-remove-legacy-tax.ts` (dry run, prints counts, rolls back), (2) review the before/after counts, (3) `npx tsx src/scripts/payroll-remove-legacy-tax.ts --apply`, (4) delete the script.
+
+## Phase 3 — Job B (done in code, not seen in a browser)
+
+- Finance review: batch list is `minmax(280px,360px)`, details take the rest (`minmax(0,1fr)`), stacked below `lg`. The Gross/Deductions/Net card and the Employer contributions card sit side by side from `xl`. The per-employee table shows SSS, PhilHealth, Pag-IBIG and Deductions columns when the table's own container is at least 672px wide (a container query, so it adapts to the real space), otherwise the previous four.
+- Rows-per-page selector: compact variant `w-[76px]` (was 56), full variant `w-[84px]` (was 70), with `aria-label`.
+- `PayslipButton` (outline, small, document icon, "Payslip", `aria-label` "View payslip for {name}") is used by both Finance review and HR payroll.
+- Payslip dialog footer: Close and Print payslip (`window.print()`). `App.css` has an `@media print` block keyed on `data-print-payslip` that hides everything but the dialog content and its own buttons.
+- **Not verified:** layout at laptop width, the selector not clipping, keyboard use, and the print preview. I have no signed-in browser here (see the breadcrumb notes), so none of it was seen. Check in Chrome: open a payslip, press Print payslip, and confirm the preview shows only the payslip.

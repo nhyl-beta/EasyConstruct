@@ -1,4 +1,13 @@
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Printer } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { formatCurrency } from "@/lib/format-currency";
 import { visibleRateVersions, type PayrollLine } from "@/features/hr/payroll-api";
 
@@ -18,8 +27,9 @@ function Row({ label, value, bold }: { label: string; value: string; bold?: bool
   );
 }
 
-// Shown to HR and Finance. Printable: the dialog body carries print styles so
-// the browser's own Print produces just the payslip.
+// Shown to HR and Finance. Printable: the Print button calls window.print(),
+// and the print rules in App.css (keyed on data-print-payslip) hide everything
+// except this dialog's content, so the paper has only the payslip.
 export function PayslipDialog({
   line,
   onClose,
@@ -29,7 +39,7 @@ export function PayslipDialog({
 }) {
   return (
     <Dialog open={line !== null} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-md rounded-2xl print:max-w-none print:border-0 print:shadow-none">
+      <DialogContent data-print-payslip className="max-w-md rounded-2xl">
         {line && (
           <>
             <DialogHeader>
@@ -69,6 +79,16 @@ export function PayslipDialog({
                     .join(" · ")
                 : "not recorded (generated before rate versions were stored)"}
             </p>
+
+            <DialogFooter data-print-hide className="gap-2 sm:justify-end">
+              <Button type="button" variant="outline" onClick={onClose}>
+                Close
+              </Button>
+              <Button type="button" onClick={() => window.print()}>
+                <Printer className="h-4 w-4" aria-hidden="true" />
+                Print payslip
+              </Button>
+            </DialogFooter>
           </>
         )}
       </DialogContent>
