@@ -9,7 +9,7 @@ Branch: `staging` only. Four jobs: (A) remove withholding tax from payroll, (B) 
 - [x] Phase 3 — Job B: wider payroll, payslip button, print
 - [x] Phase 4 — Job C: livelier charts
 - [x] Phase 5 — Job D: pagination everywhere
-- [ ] Phase 6 — verification
+- [x] Phase 6 — verification (browser checks not done)
 
 ## Baseline (before any change)
 
@@ -212,3 +212,32 @@ New, under `client/src`: `components/charts/{chart-tooltip,donut-chart,animated-
 **Lists paged on the client whose endpoint has no paging and can return an unbounded number of rows** (a server change is out of scope here): my issues, my tasks, field documents, requests, transmittals, reimbursement claims, purchase requests, procurement orders, budget change requests, blueprints, architect documents, design reviews, advisory documents, project files for a proposal, project members / designs / documents / milestones / requirements / plan sets, archived projects and their documents, project profitability, attendance-sheet import rows, legacy-import rows (client-built), payroll-wizard lines.
 
 **Also changed in this phase:** removed the dead `TABS` constant in `shared-blueprint-reviews.tsx` that already failed lint.
+
+## Phase 6 — Verification
+
+Real results (client, run on the Phase 5 code; server last run after Phase 2, and nothing under `server/` changed after that):
+
+| Command | Result |
+|---|---|
+| client `npx tsc --noEmit` | exit 0 |
+| client `npx eslint` on every changed file (35 files plus the two new config files) | exit 0 |
+| client `npx vitest run` | 8 files, 248 tests passed (237 baseline + 7 `groupTopN` + 4 pagination guard) |
+| client `npm run build` | exit 0 (`built in 47.37s`) |
+| server `npx tsc --noEmit` | exit 0 |
+| server `DATABASE_URL=postgres://user:pass@127.0.0.1:5432/baseline_dummy npm test` | 468 tests, 467 passed, 1 failed |
+
+The one server failure is the one that failed before any change (`flag off: validate is a 404 … FEATURE_AI is not set in tests`): `server/.env` sets `FEATURE_AI` on this machine. Baseline was 467 tests with that same failure; the new count is +1 (the new validation test) net of the removed tax edge test.
+
+Raw colours: a search of the chart files touched (`components/charts/*`, the Finance dashboard, budget and expenses pages, `OwnerPayrollSection`, `PmPortfolioCharts`) for hex, `hsl(`, `rgb(` and `oklch(` finds nothing. The only colour expression is a `color-mix(in oklch, var(--chart-1) 45%, var(--card))` made from tokens.
+
+### Not done: anything that needs a signed-in browser
+
+I could not sign in to the app (real staging credentials may not be entered by me, and the local server writes audit rows to the remote Neon database), so none of the following was seen:
+
+- Finance payroll review: three deductions, the wider layout at laptop width, the rows-per-page value not clipping, the Payslip button and the dialog's Print and Close with the keyboard, and the print preview (only the payslip should print).
+- HR payroll: no tax column on screen or in the CSV; Payslip button.
+- Owner payroll summary: no tax line.
+- Finance dashboard charts: hover, focus, legend linking, light and dark, reduced motion on.
+- A pass through every role's lists for the footer, page resets on filter change, and the page clamping.
+
+Everything above is covered by types, lint, tests and the build only.
