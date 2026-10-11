@@ -26,6 +26,7 @@ export function EditView({ children, className }: EditViewProps) {
 type EditViewHeaderProps = PropsWithChildren<{
   resource?: string;
   title?: string;
+  breadcrumbLabel?: string;
   wrapperClassName?: string;
   headerClassName?: string;
   actionsSlot?: React.ReactNode;
@@ -34,6 +35,7 @@ type EditViewHeaderProps = PropsWithChildren<{
 export const EditViewHeader = ({
   resource: resourceFromProps,
   title: titleFromProps,
+  breadcrumbLabel,
   actionsSlot,
   wrapperClassName,
   headerClassName,
@@ -60,7 +62,7 @@ export const EditViewHeader = ({
     <div className={cn("flex flex-col", "gap-4", wrapperClassName)}>
       <div className="flex items-center relative gap-2">
         <div className="bg-background z-[2] pr-4">
-          <Breadcrumb />
+          <Breadcrumb label={breadcrumbLabel} />
         </div>
         <Separator className={cn("absolute", "left-0", "right-0", "z-[1]")} />
       </div>

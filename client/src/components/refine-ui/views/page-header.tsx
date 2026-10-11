@@ -14,6 +14,8 @@ interface PageHeaderProps {
   actions?: ReactNode;
   /** The route breadcrumb is on by default; turn it off for non-resource pages. */
   breadcrumb?: boolean;
+  /** Replaces the last crumb: the record's name, or the create/edit title. */
+  breadcrumbLabel?: string;
   className?: string;
 }
 
@@ -28,6 +30,7 @@ export function PageHeader({
   status,
   actions,
   breadcrumb = true,
+  breadcrumbLabel,
   className,
 }: PageHeaderProps) {
   return (
@@ -37,7 +40,7 @@ export function PageHeader({
         className,
       )}
     >
-      {breadcrumb && <Breadcrumb />}
+      {breadcrumb && <Breadcrumb label={breadcrumbLabel} />}
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
         <div className="flex min-w-0 flex-wrap items-center gap-3">
           <h1 className="text-page-title font-semibold tracking-[-0.02em]">
