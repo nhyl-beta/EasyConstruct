@@ -1,14 +1,15 @@
 import { logAudit } from "../../utils/audit.js";
-import { ConflictError, NotFoundError, ValidationError } from "../../utils/errors.js";
+import { ConflictError, NotFoundError } from "../../utils/errors.js";
 import { categoriesRepository as repo, type CategoryRow } from "./repository.js";
 import {
   assertNameFree,
+  categoryForUpdate,
   assertRenamable,
   assertRetirable,
   emptyUsage,
-  findActive,
   nameKey,
   normalizeName,
+  requireActive,
   type CategoryUsage,
 } from "./rules.js";
 
@@ -30,9 +31,17 @@ async function mustFind(id: number): Promise<CategoryRow> {
  * category. Unknown or retired -> ValidationError (400).
  */
 export async function resolveActiveCategory(input: string): Promise<string> {
-  const name = findActive(await repo.findAll({ activeOnly: true }), input);
-  if (!name) throw new ValidationError("Unknown or retired category");
-  return name;
+  return requireActive(await repo.findAll({ activeOnly: true }), input);
+}
+
+/**
+ * For an update: the canonical name to store when `next` differs from the
+ * record's `current` category, or null to leave it untouched (an unchanged
+ * category is always allowed, even when it has since been retired).
+ */
+export async function resolveCategoryChange(current: string | null, next: string): Promise<string | null> {
+  if (next === current) return null;
+  return categoryForUpdate(await repo.findAll({ activeOnly: true }), current, next);
 }
 
 export const categoriesService = {

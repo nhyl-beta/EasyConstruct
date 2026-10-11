@@ -93,3 +93,20 @@ export function assertRenamable(category: CategoryLike, usage: CategoryUsage): v
 export function assertRetirable(category: CategoryLike): void {
   if (category.isSystem) throw new ConflictError(`"${category.name}" is a system category and cannot be retired`);
 }
+
+/** The canonical name of the active category matching `input`; unknown or retired -> 400. */
+export function requireActive(list: readonly CategoryLike[], input: string): string {
+  const name = findActive(list, input);
+  if (!name) throw new ValidationError("Unknown or retired category");
+  return name;
+}
+
+/**
+ * The category to store on an UPDATE, or null to leave it as it is. A value that
+ * is unchanged is always allowed (the record may carry a since-retired
+ * category); a changed one must be an active category, stored in its canonical casing.
+ */
+export function categoryForUpdate(list: readonly CategoryLike[], current: string | null, next: string): string | null {
+  if (next === current) return null;
+  return requireActive(list, next);
+}

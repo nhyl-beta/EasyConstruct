@@ -1,14 +1,18 @@
 import { describe, test } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { DEFAULT_EXPENSE_CATEGORIES } from "../../constants/expense-categories.js";
 import {
   assertNameFree,
   assertRenamable,
   assertRetirable,
+  categoryForUpdate,
   describeUsage,
   emptyUsage,
   findActive,
   nameKey,
   normalizeName,
+  requireActive,
   totalUsage,
   type CategoryLike,
 } from "./rules.js";
@@ -79,4 +83,40 @@ describe("usage helpers", () => {
     assert.equal(describeUsage(emptyUsage()), "");
   });
   test("nameKey is case and space insensitive", () => assert.equal(nameKey(" Concrete   WORKS"), "concrete works"));
+});
+
+describe("requireActive", () => {
+  test("stores the canonical casing", () => assert.equal(requireActive(LIST, "materials"), "Materials"));
+  test("unknown is a 400", () =>
+    assert.throws(() => requireActive(LIST, "Nope"), (e: Error & { statusCode?: number }) => e.statusCode === 400 && /Unknown or retired/.test(e.message)));
+  test("retired is a 400 on a new entry", () => assert.throws(() => requireActive(LIST, "Old stuff"), /Unknown or retired/));
+});
+
+describe("categoryForUpdate", () => {
+  test("an unchanged category is always allowed, even when retired", () => {
+    assert.equal(categoryForUpdate(LIST, "Old stuff", "Old stuff"), null);
+    assert.equal(categoryForUpdate(LIST, "Materials", "Materials"), null);
+  });
+  test("a changed category must be active and comes back in canonical casing", () => {
+    assert.equal(categoryForUpdate(LIST, "Materials", "permits"), "Permits");
+    assert.throws(() => categoryForUpdate(LIST, "Materials", "Old stuff"), /Unknown or retired/);
+    assert.throws(() => categoryForUpdate(LIST, "Materials", "Nope"), /Unknown or retired/);
+  });
+  test("a record with no category yet can take an active one", () => assert.equal(categoryForUpdate(LIST, null, "materials"), "Materials"));
+});
+
+describe("Labor stays valid for payroll booking", () => {
+  const seeded = readFileSync(new URL("../../../drizzle/0026_expense_categories.sql", import.meta.url), "utf8");
+  const labor = cat(2, "Labor", { isSystem: true });
+
+  test("Labor is seeded as a protected system category", () => {
+    assert.match(seeded, /\('Labor', true,/);
+    assert.throws(() => assertRetirable(labor), /system category/);
+    assert.throws(() => assertRenamable(labor, emptyUsage()), /system category/);
+  });
+  test("the payroll category name resolves as-is", () => assert.equal(requireActive([labor], "Labor"), "Labor"));
+  test("the migration seed lists exactly the default categories, in order", () => {
+    const names = [...seeded.matchAll(/^\s*\('([^']+)', (?:true|false),/gm)].map((m) => m[1]);
+    assert.deepEqual(names, [...DEFAULT_EXPENSE_CATEGORIES]);
+  });
 });

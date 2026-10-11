@@ -5,13 +5,13 @@
 // `committed` / `actual`, segregation of duties, and a second (or concurrent)
 // payment that creates nothing. The services commit their own transactions, so
 // the fixtures are committed under a throwaway project code and removed again
-// in after(). Needs migration 0025 applied. Guarded like the demo scripts.
+// in after(). Needs migrations 0025 and 0026 applied. Guarded like the demo scripts.
 import { after, before, describe, test } from "node:test";
 import assert from "node:assert/strict";
 import { and, eq, inArray } from "drizzle-orm";
 
 import { db } from "../../db/connection.js";
-import { budgets, expenses, procurementOrders, purchaseRequests, reimbursements } from "../../db/schema/finance.js";
+import { budgets, expenseCategories, expenses, procurementOrders, purchaseRequests, reimbursements } from "../../db/schema/finance.js";
 import { projectMembers } from "../../db/schema/project-members.js";
 import { projects } from "../../db/schema/projects.js";
 import { requirements } from "../../db/schema/requirements.js";
@@ -57,6 +57,8 @@ const raiseApproved = async (amountUnits: number) => {
 describe("purchasing chain", () => {
   before(async () => {
     assertDemoDatabase();
+    // Writes are validated against the managed list: make sure the category the test uses exists.
+    await db.insert(expenseCategories).values({ name: "Materials", isSystem: true }).onConflictDoNothing();
     engineer = await actorWith("engineer");
     site = await actorWith("site-personnel");
     pm = await actorWith("project-manager");

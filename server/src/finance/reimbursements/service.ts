@@ -2,7 +2,7 @@ import { db } from "../../db/connection.js";
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "../../utils/errors.js";
 import { logAudit } from "../../utils/audit.js";
 import { assertProjectWritable } from "../../lifecycle/service.js";
-import { isExpenseCategory } from "../../constants/expense-categories.js";
+import { resolveActiveCategory } from "../categories/service.js";
 import type { ClaimAttachment } from "../../db/schema/finance.js";
 import {
   isFinance,
@@ -54,7 +54,7 @@ async function assertMayView(actor: Actor, row: ReimbursementRow): Promise<void>
 export const reimbursementsService = {
   /** A claim needs a receipt. Project staff on a project with a PM go to that PM first. */
   async create(actor: Actor, input: CreateClaimInput) {
-    if (!isExpenseCategory(input.category)) throw new ValidationError("Unknown category");
+    const category = await resolveActiveCategory(input.category);
     if (input.attachments.length === 0) throw new ValidationError("At least one receipt is required");
     const project = await loadProject(input.project);
     await assertProjectWritable(project.code);
@@ -74,7 +74,7 @@ export const reimbursementsService = {
       claimantUserId: actor.id,
       claimantRole: actor.role,
       project: project.code,
-      category: input.category,
+      category,
       incurredOn: input.incurredOn,
       attachments: input.attachments,
     });

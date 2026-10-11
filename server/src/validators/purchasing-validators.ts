@@ -1,7 +1,6 @@
 import { z } from "zod";
-import { EXPENSE_CATEGORIES } from "../constants/expense-categories.js";
-
-const category = z.enum(EXPENSE_CATEGORIES);
+// Bounded only; the service checks it against the managed category list.
+const category = z.string().trim().min(2).max(64);
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use a date as YYYY-MM-DD");
 const note = z.string().trim().max(2000).optional();
 

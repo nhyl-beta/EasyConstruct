@@ -3,7 +3,7 @@ import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from ".
 import { logAudit } from "../../utils/audit.js";
 import { assertProjectWritable } from "../../lifecycle/service.js";
 import * as requirementsRepo from "../../requirements/repository.js";
-import { isExpenseCategory } from "../../constants/expense-categories.js";
+import { resolveActiveCategory, resolveCategoryChange } from "../categories/service.js";
 import {
   assertCanSee,
   isFinance,
@@ -64,7 +64,7 @@ export const purchaseRequestsService = {
     if (requirement.status !== "Approved") {
       throw new ConflictError("Only an approved requirement can be turned into a purchase request");
     }
-    if (!isExpenseCategory(input.category)) throw new ValidationError("Unknown category");
+    const category = await resolveActiveCategory(input.category);
 
     const project = await loadProject(requirement.project);
     await assertProjectWritable(project.code);
@@ -94,7 +94,7 @@ export const purchaseRequestsService = {
       requestedBy: actor.name,
       amount,
       status,
-      category: input.category,
+      category,
       requirementId: requirement.id,
       lineItems: input.lineItems,
       neededBy: input.neededBy ?? null,
@@ -143,10 +143,14 @@ export const purchaseRequestsService = {
     const row = await mustFind(id);
     if (row.requestedByUserId !== actor.id) throw new ForbiddenError("Only the requester can edit this request");
     if (row.status !== "pending-pm") throw new ConflictError(`${id} is ${row.status}; it can only be edited while it waits for the PM`);
-    if (patch.category && !isExpenseCategory(patch.category)) throw new ValidationError("Unknown category");
     const values: Partial<PurchaseRequestRow> = {};
     if (patch.title !== undefined) values.title = patch.title;
-    if (patch.category !== undefined) values.category = patch.category;
+    // Checked against the live list only when the value actually changes: a request
+    // whose category was retired since can still be edited for other fields.
+    if (patch.category !== undefined) {
+      const category = await resolveCategoryChange(row.category, patch.category);
+      if (category !== null) values.category = category;
+    }
     if (patch.neededBy !== undefined) values.neededBy = patch.neededBy;
     if (patch.justification !== undefined) values.justification = patch.justification;
     if (patch.preferredVendor !== undefined) values.preferredVendor = patch.preferredVendor;
