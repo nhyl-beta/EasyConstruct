@@ -735,6 +735,10 @@ async function main() {
   // ... IF NOT EXISTS), so the demo top-up simply runs the same file.
   await pool.query(fs.readFileSync(new URL("../../drizzle/0025_purchasing.sql", import.meta.url), "utf8"));
 
+  // Managed expense categories: migration 0026 (CREATE TABLE IF NOT EXISTS + a seed
+  // that is INSERT ... ON CONFLICT DO NOTHING) is idempotent, so run the same file.
+  await pool.query(fs.readFileSync(new URL("../../drizzle/0026_expense_categories.sql", import.meta.url), "utf8"));
+
   console.log("Demo schema tables and compatibility columns are ready.");
 }
 

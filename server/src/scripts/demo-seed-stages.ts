@@ -395,10 +395,10 @@ async function buildConstructionPartial(c: Ctx, built: Built) {
     await api(`/finance/expenses/${ex.id}/approve`, c.finance.token, { method: "PATCH", body: {} });
   }
 
-  // Extra approved budget line (change order) pushing planned ~10% over the contract value.
+  // Extra approved budget line (change order, filed under "Other": the managed category list has no Change Order) pushing planned ~10% over the contract value.
   const co = await api<{ id: number }>("/finance/budgets", c.finance.token, {
     method: "POST",
-    body: { project: c.code, category: "Change Order", owner: c.finance.name, planned: Math.round(c.p.contractValue * 0.105), fiscalYear: "2026" },
+    body: { project: c.code, category: "Other", owner: c.finance.name, planned: Math.round(c.p.contractValue * 0.105), fiscalYear: "2026" },
   });
   for (const stage of ["draft", "pending-review", "finance-review", "manager-review"] as const) {
     await api("/finance/budget-approval-steps/decide", c.finance.token, {

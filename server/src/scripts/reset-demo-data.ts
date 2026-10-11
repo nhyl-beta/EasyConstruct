@@ -28,7 +28,7 @@ const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 /** Never written. Checksummed before/after. */
 const ACCOUNT_TABLES = ["users", "password_reset_tokens", "roles"];
 /** Never deleted (config / reference / history). */
-const PRESERVE = [...ACCOUNT_TABLES, "workflow_templates", "reference_snapshots", "audit_logs"];
+const PRESERVE = [...ACCOUNT_TABLES, "workflow_templates", "reference_snapshots", "audit_logs", "expense_categories"];
 /** Handled specially. */
 const SPECIAL = ["notifications", "employees"];
 

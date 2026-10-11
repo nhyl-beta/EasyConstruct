@@ -110,6 +110,20 @@ Closeout (Construction) and Turnover (Design) each get one gate: **"No unsettled
 
 Owners of the gate: Project Manager, Admin, Finance. A request that has been ordered is covered by its order, so it is not counted twice.
 
+## Expense categories
+
+There is **one list** of expense categories, kept in the `expense_categories` table and maintained by Finance (**Manage categories** on Budget Management and Expense Management). Budgets, manual expenses, purchase requests, reimbursement claims and the Budget Management / Expense Management filters all read it; nothing is fixed in code.
+
+How a budget line is matched is unchanged: **project + category, by string equality, newest line first.** An approved expense, a committed request or a paid order or claim lands on the budget line whose category text equals its own. Spend only books against a line when both carry the same category, which is why both now come from the one list.
+
+- **Seed.** `Materials, Labor, Equipment, Subcontractors, Permits, PPE, Transport, Services, Contingency, Other`. `Materials`, `Labor` and `Equipment` are *system* categories: they cannot be retired or renamed (approved payroll books against `Labor`). Confirm the list with the company before real use.
+- **Retire, do not delete.** A retired category keeps working on existing records and budget lines and stays visible on them, but it is hidden from every new-entry dropdown and refused by the server on new entries. It can be restored.
+- **Rename only when unused.** A category that appears in any budget line, expense, purchase request, claim, order or allocation cannot be renamed (the server answers 409 with the counts). Retire it and add a new one instead. Unused, non-system categories can be renamed freely.
+- **Writes are checked against the live list.** Creating an expense, budget line, purchase request or claim (and changing the category on an update) needs an *active* category, matched case-insensitively and stored in the list's casing (`materials` is saved as `Materials`). Unknown or retired is a 400 "Unknown or retired category". An update that leaves the category alone is always allowed. The category columns stay plain text; there are no foreign keys, so existing rows are never rewritten.
+- **Who.** Reading the list: Finance, Admin, Project Manager, Engineer, Site Personnel, Architect, Human Resources. Adding, renaming, retiring, restoring: Finance Manager and Admin on the server; the screen is Finance only.
+- **Not covered.** Workflow budget-change line items keep their own fixed set (`materials, labor, equipment, subcontractor, other`) and are not part of this list.
+- **Code.** `server/src/finance/categories/` (rules, repository, service, routes); `resolveActiveCategory` is the helper the other modules call. Migration `server/drizzle/0026_expense_categories.sql` is additive (one table and an idempotent seed).
+
 ## Where it lives
 
 | Role | Place |

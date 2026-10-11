@@ -106,6 +106,7 @@ proposal or design / on-demand validation summary; removal of "Coming soon" plac
 | P2 | Employee claims (all claimant roles) | Engineers, Site Personnel, Project Managers, Architects and Human Resources can claim out-of-pocket costs with a receipt. Project staff's claims are endorsed by their Project Manager, then approved and paid by the Finance Manager. Nobody decides or pays their own claim. | **built** |
 | P3 | One expense per payment | Every payment of an order or claim creates exactly one approved expense, increases the project budget's actual spend and updates that month's cash flow in a single transaction. | **built** |
 | P4 | Closing | A project cannot close (Closeout, or Turnover for a Design project) while any purchase request, order or claim is unsettled. | **built** |
+| P5 | Expense categories | Expense categories are maintained by the Finance Manager in the system, not fixed in code, so the list can follow the company's own chart of costs. Budgets, expenses, purchase requests and claims all use the same list. | **built** |
 
 ## Also built in this pass (remove from "future work")
 
