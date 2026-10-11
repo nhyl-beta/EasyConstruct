@@ -522,3 +522,21 @@ export const payrollBatches = pgTable("payroll_batches", {
 
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+// ── Expense categories ─────────────────────────────────────────────────────
+// The one managed list behind every category dropdown. The category columns on
+// budgets, expenses, purchase requests, reimbursements and orders stay free
+// text (no foreign key): a budget line is still matched by project + category
+// string equality. Writes are validated against this table instead.
+export const expenseCategories = pgTable("expense_categories", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 64 }).notNull(),
+  isActive: boolean("is_active").notNull().default(true),
+  // Protected: cannot be retired or renamed (payroll books against "Labor").
+  isSystem: boolean("is_system").notNull().default(false),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdBy: varchar("created_by", { length: 255 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (t) => [
+  uniqueIndex("expense_categories_name_lower_unique").on(sql`lower(${t.name})`),
+]);

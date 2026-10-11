@@ -9,6 +9,7 @@ import { expensesRouter } from "../finance/expenses/routes.js";
 import { projectProfitabilityRouter } from "../finance/project-profitability/routes.js";
 import { approvalsRouter } from "../finance/approvals/routes.js";
 
+import { categoriesRouter } from "../finance/categories/routes.js";
 import { procurementRouter } from "../finance/procurement/routes.js";
 import { purchaseRequestsRouter } from "../finance/purchase-requests/routes.js";
 import { reimbursementsRouter } from "../finance/reimbursements/routes.js";
@@ -29,6 +30,7 @@ financeRouter.use("/approvals", approvalsRouter);
 financeRouter.use("/purchase-requests", purchaseRequestsRouter);
 financeRouter.use("/reimbursements", reimbursementsRouter);
 financeRouter.use("/procurement", procurementRouter);
+financeRouter.use("/categories", categoriesRouter);
 //financeRouter.use("/ai-insights", aiInsightsRouter);
 //financeRouter.use("/risks", risksRouter);
 //financeRouter.use("/reports", reportsRouter);

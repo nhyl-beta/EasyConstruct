@@ -183,6 +183,13 @@
       "when": 1791000000000,
       "tag": "0025_purchasing",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1791100000000,
+      "tag": "0026_expense_categories",
+      "breakpoints": true
     }
   ]
 }
