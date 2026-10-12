@@ -45,7 +45,6 @@ import workflowRoutes from "./workflows/routes.js";
 import milestoneRoutes from "./milestones/routes.js";
 import planSuggestionRoutes from "./plan-suggestion/routes.js";
 import cronRoutes from "./jobs/routes.js";
-import meRoutes from "./me/routes.js";
 import referenceRoutes from "./reference/routes.js";
 import reconciliationRoutes from "./reconciliation/routes.js";
 import decisionSupportRoutes from "./decision-support/routes.js";
@@ -131,7 +130,6 @@ app.use("/api/plan-suggestions", planSuggestionRoutes);
 // Scheduled jobs (Vercel Cron): guarded by CRON_SECRET, not by a user login.
 app.use("/api/cron", cronRoutes);
 // A signed-in person's own attendance and approved payslips (read-only).
-app.use("/api/me", meRoutes);
 // Shared clients and vendors (reference data with duplicate checks).
 app.use("/api/reference", referenceRoutes);
 // Read-only cross-checks over the stored numbers (Admin, IT Designer, Owner).

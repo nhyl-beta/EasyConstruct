@@ -162,13 +162,6 @@ const allResources: ResourceProps[] = [
     meta: { label: "My claims", group: "Workspace" },
   },
 
-  // A person's own attendance and approved payslips (Engineer, Site Personnel, PM, Architect, HR)
-  {
-    name: "my-pay",
-    list: "/my-pay",
-    meta: { label: "My attendance and pay", group: "Workspace" },
-  },
-
   // Site Personnel
   {
     name: "tasks",

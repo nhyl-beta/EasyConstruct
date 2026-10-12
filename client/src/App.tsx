@@ -58,7 +58,6 @@ import ArchitectProposals from "./pages/roles/architect/architect-proposals";
 import ArchitectRevisions from "./pages/roles/architect/architect-revisions";
 import SharedRequests from "./pages/roles/shared/shared-requests";
 import SharedClaims from "./pages/roles/shared/shared-claims";
-import SharedMyPay from "./pages/roles/shared/shared-my-pay";
 import SharedTransmittals from "./pages/roles/shared/shared-transmittals";
 import { RequestPrintPage, TransmittalPrintPage } from "./pages/roles/shared/print-pages";
 import { AttentionCard } from "./features/requests/components/AttentionCard";
@@ -310,15 +309,6 @@ function App() {
                     element={
                       <RequireRole allow={["engineer", "site_personnel", "project_manager", "architect", "human_resources"]}>
                         <SharedClaims />
-                      </RequireRole>
-                    }
-                  />
-                  {/* A person's own attendance and approved payslips (needs the employee link on their account). */}
-                  <Route
-                    path="/my-pay"
-                    element={
-                      <RequireRole allow={["engineer", "site_personnel", "project_manager", "architect", "human_resources"]}>
-                        <SharedMyPay />
                       </RequireRole>
                     }
                   />
