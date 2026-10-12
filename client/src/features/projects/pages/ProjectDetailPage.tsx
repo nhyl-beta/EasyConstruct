@@ -21,6 +21,7 @@ import { downloadFileUrl } from "@/lib/file-url";
 import { formatCurrency } from "@/lib/format-currency";
 import { useProjectMembers } from "@/features/project-members/hooks/use-project-members";
 import { MilestonesPanel } from "@/features/milestones/components/MilestonesPanel";
+import { SuggestedPlanPanel } from "@/features/plan-suggestions/components/SuggestedPlanPanel";
 import { LocationMapPicker } from "@/components/maps/location-map-picker";
 import { useProjectDesigns } from "@/features/designs/hooks/useProjectDesigns";
 import { ProjectRevisionsPanel } from "@/features/designs/components/ProjectRevisionsPanel";
@@ -511,6 +512,14 @@ export default function ProjectDetailPage() {
       <div className="max-w-4xl">
         <ProjectRequestsSection projectCode={project.code} />
       </div>
+
+      {/* Draft plan from an approved proposal (decision support: the PM accepts item by item).
+          Read access mirrors GET /api/plan-suggestions; only the PM and Admin act. */}
+      {["project-manager", "admin", "architect", "consultant", "owner"].includes(role) && (
+        <div className="max-w-4xl">
+          <SuggestedPlanPanel projectCode={project.code} canAct={role === "project-manager" || role === "admin"} />
+        </div>
+      )}
 
       {/* Requirements and milestones feed the Pre-Construction/Construction gates,
           which a Design project never reaches — hidden there. */}

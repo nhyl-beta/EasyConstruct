@@ -42,6 +42,8 @@ export const PAGINATION_EXEMPT: PaginationExemption[] = [
   { file: "features/requests/components/TransmittalBuilderDialog.tsx", reason: "Dialog: picking the items for one transmittal." },
   { file: "features/requests/components/RequestDetailSheet.tsx", reason: "Attachments and follow-ups of one request (a thread)." },
   { file: "features/lifecycle/components/CloseoutSummaryCard.tsx", reason: "One row per budget category of one project; small and fixed." },
+  { file: "features/tasks/components/AssigneeSuggestions.tsx", reason: "The top three ranked suggestions for one task; fixed by the ranking rules." },
+  { file: "features/plan-suggestions/components/SuggestedPlanPanel.tsx", reason: "The items of one drafted plan (a template of about 60 items); the PM reviews them one by one." },
   { file: "features/lifecycle/components/DecisionSupportSection.tsx", reason: "The few advisory signals for one decision." },
   { file: "features/lifecycle/components/ProjectLifecyclePanel.tsx", reason: "Phase path, checks and history of one project; bounded by the lifecycle phases." },
   { file: "pages/roles/site-personnel/sp-attendance.tsx", reason: "Project picker for the projects the person is staffed on." },

@@ -190,6 +190,13 @@
       "when": 1791100000000,
       "tag": "0026_expense_categories",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1791200000000,
+      "tag": "0027_plan_suggestions",
+      "breakpoints": true
     }
   ]
 }
