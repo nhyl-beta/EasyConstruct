@@ -1,6 +1,7 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, gte, isNull, sql } from "drizzle-orm";
 import { db } from "../db/connection.js";
 import { users } from "../db/schema/users.js";
+import { auditLogs } from "../db/schema/audit-logs.js";
 import { passwordResetTokens } from "../db/schema/password-reset-tokens.js";
 
 export const findByEmail = async (email: string) => {
@@ -60,10 +61,45 @@ export const revokeOpenResetTokens = async (userId: number) => {
     .where(and(eq(passwordResetTokens.userId, userId), isNull(passwordResetTokens.usedAt)));
 };
 
+/**
+ * What the session check needs about an account: when its password last changed
+ * (older tokens are signed out) and whether it is still active (a deactivated
+ * account's existing tokens stop working). undefined when the account is gone.
+ */
+export const findSessionState = async (id: number) => {
+  const [row] = await db
+    .select({ passwordChangedAt: users.passwordChangedAt, isActive: users.isActive })
+    .from(users)
+    .where(eq(users.id, id));
+  return row ? { changedAt: row.passwordChangedAt ?? null, isActive: row.isActive } : undefined;
+};
+
 export const findPasswordChangedAt = async (id: number) => {
   const [row] = await db
     .select({ passwordChangedAt: users.passwordChangedAt })
     .from(users)
     .where(eq(users.id, id));
   return row ? (row.passwordChangedAt ?? null) : undefined;
+};
+
+/**
+ * Times of the most recent failed sign-ins recorded for an email address since
+ * `since` (newest first, at most `limit`). Read from the audit trail that
+ * auth/service.ts already writes, so the account limit needs no table of its own.
+ */
+export const findRecentLoginFailures = async (email: string, since: Date, limit: number): Promise<Date[]> => {
+  const rows = await db
+    .select({ at: auditLogs.createdAt })
+    .from(auditLogs)
+    .where(
+      and(
+        eq(auditLogs.entityType, "auth"),
+        eq(auditLogs.action, "login-failed"),
+        sql`lower(${auditLogs.entityId}) = lower(${email})`,
+        gte(auditLogs.createdAt, since),
+      ),
+    )
+    .orderBy(desc(auditLogs.createdAt))
+    .limit(limit);
+  return rows.map((r) => r.at).filter((d): d is Date => d != null);
 };

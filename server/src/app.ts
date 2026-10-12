@@ -12,6 +12,7 @@ import { corsMiddleware } from "./middleware/cors.js";
 import { errorMiddleware } from "./middleware/error.js";
 import { logger } from "./middleware/logger.js";
 import { requestId } from "./middleware/request-id.js";
+import { securityHeaders } from "./middleware/security-headers.js";
 import { cacheInvalidation } from "./cache/invalidate.js";
 import projectRoutes from "./projects/routes.js";
 import proposalRoutes from "./proposals/routes.js";
@@ -65,6 +66,9 @@ const app = express();
 // nor an AppError and fell through to the generic handler as a bare
 // "Internal server error".
 app.use(express.json({ limit: "12mb" }));
+// Fix 1.5: baseline security headers on every API answer, and no framework banner.
+app.disable("x-powered-by");
+app.use(securityHeaders);
 app.use(corsMiddleware);
 app.use(requestId);
 app.use(logger);

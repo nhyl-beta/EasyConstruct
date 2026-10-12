@@ -5,7 +5,7 @@ import jwt from "jsonwebtoken";
 
 import { env } from "../config/env.js";
 import { UnauthorizedError, ForbiddenError } from "../utils/errors.js";
-import { findPasswordChangedAt } from "../auth/repository.js";
+import { findSessionState } from "../auth/repository.js";
 
 // A password change (reset link, or IT Designer's admin reset) signs out every
 // session issued before it: the token's `iat` is compared with the account's
@@ -13,20 +13,22 @@ import { findPasswordChangedAt } from "../auth/repository.js";
 // query on every request; the process that performs a reset clears its own
 // entry immediately, other instances catch up within the TTL.
 const SESSION_CHECK_TTL_MS = 15_000;
-const passwordChangedCache = new Map<number, { at: number; changedAt: number | null }>();
+const passwordChangedCache = new Map<number, { at: number; changedAt: number | null; isActive: boolean }>();
 
 export const invalidateSessionCache = (userId: number) => {
   passwordChangedCache.delete(userId);
 };
 
-const passwordChangedAtMs = async (userId: number): Promise<number | null | undefined> => {
+// Also carries whether the account is still active: deactivating an account
+// ends its existing sessions (within the cache TTL), not only new sign-ins.
+const sessionState = async (userId: number): Promise<{ changedAt: number | null; isActive: boolean } | undefined> => {
   const cached = passwordChangedCache.get(userId);
-  if (cached && Date.now() - cached.at < SESSION_CHECK_TTL_MS) return cached.changedAt;
-  const changedAt = await findPasswordChangedAt(userId);
-  if (changedAt === undefined) return undefined; // account no longer exists
-  const ms = changedAt ? changedAt.getTime() : null;
-  passwordChangedCache.set(userId, { at: Date.now(), changedAt: ms });
-  return ms;
+  if (cached && Date.now() - cached.at < SESSION_CHECK_TTL_MS) return cached;
+  const state = await findSessionState(userId);
+  if (state === undefined) return undefined; // account no longer exists
+  const entry = { at: Date.now(), changedAt: state.changedAt ? state.changedAt.getTime() : null, isActive: state.isActive };
+  passwordChangedCache.set(userId, entry);
+  return entry;
 };
 
 export interface AuthedRequest extends Request {
@@ -94,10 +96,14 @@ export async function authenticate(
     }
 
     // Signed out by a later password change? (`iat` is in whole seconds.)
-    const changedAt = await passwordChangedAtMs(userId);
-    if (changedAt === undefined) {
+    const state = await sessionState(userId);
+    if (state === undefined) {
       return next(new UnauthorizedError("Account no longer exists"));
     }
+    if (!state.isActive) {
+      return next(new UnauthorizedError("This account has been deactivated. Contact your system administrator."));
+    }
+    const changedAt = state.changedAt;
     if (
       changedAt !== null &&
       typeof verified.iat === "number" &&

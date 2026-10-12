@@ -6,6 +6,13 @@ function required(key: string): string {
   return val;
 }
 
+// Fix 1.5: a missing JWT_SECRET silently falls back to a well-known development
+// value, which would let anyone forge a token. Not made fatal here (that could
+// take a deployment down on a configuration slip), but it is loud in the logs.
+if (!process.env.JWT_SECRET && process.env.NODE_ENV === 'production') {
+  console.error('[security] JWT_SECRET is not set: sessions are signed with the built-in development secret. Set JWT_SECRET now.');
+}
+
 export const env = {
   PORT:         parseInt(process.env.PORT ?? '8000', 10),
   DATABASE_URL: required('DATABASE_URL'),

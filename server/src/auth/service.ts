@@ -2,11 +2,12 @@ import bcrypt from "bcryptjs";
 import crypto from "node:crypto";
 import jwt from "jsonwebtoken";
 import * as repo from "./repository.js";
-import { NotFoundError, UnauthorizedError, ValidationError } from "../utils/errors.js";
+import { AppError, NotFoundError, UnauthorizedError, ValidationError } from "../utils/errors.js";
 import { env } from "../config/env.js";
 import { logAudit } from "../utils/audit.js";
 import { assertMailConfigured, sendMail } from "../mail/mailer.js";
 import { invalidateSessionCache } from "../middleware/auth.js";
+import { LOGIN_THROTTLE, throttleMessage, throttleState } from "./throttle.js";
 import type {
   ForgotPasswordInput,
   LoginInput,
@@ -29,7 +30,7 @@ const PASSWORD_SALT_ROUNDS = 10;
  */
 const recordLoginAttempt = (
   email: string,
-  outcome: "login" | "login-failed",
+  outcome: "login" | "login-failed" | "login-throttled",
   summary: string,
   actorName?: string,
 ) =>
@@ -42,6 +43,20 @@ const recordLoginAttempt = (
   });
 
 export const login = async (input: LoginInput) => {
+  // Fix 1.5: after repeated failures for this account, refuse further attempts for
+  // a while. Read from the audit trail, so it holds on every serverless instance.
+  const since = new Date(Date.now() - LOGIN_THROTTLE.windowMinutes * 60_000);
+  const failures = await repo.findRecentLoginFailures(input.email, since, LOGIN_THROTTLE.maxFailures);
+  const throttle = throttleState(failures);
+  if (throttle.blocked) {
+    // Logged under its own action, which the limit does not count, so a refused
+    // attempt cannot extend its own lockout.
+    await recordLoginAttempt(input.email, "login-throttled", "Sign-in refused: too many failed attempts");
+    throw new AppError(429, "TOO_MANY_ATTEMPTS", throttleMessage(throttle), {
+      retryAfterSeconds: throttle.retryAfterSeconds,
+    });
+  }
+
   const user = await repo.findByEmail(input.email);
   if (!user) {
     await recordLoginAttempt(
