@@ -4,6 +4,7 @@ import { validate } from "../middleware/validate.js";
 import { authenticate, requireRole } from "../middleware/auth.js";
 import {
   createRequirementSchema,
+  generateDraftSchema,
   structureRequirementSchema,
   updateRequirementSchema,
 } from "../validators/requirement-validators.js";
@@ -22,6 +23,13 @@ router.post(
   requireRole("engineer", "admin"),
   validate(structureRequirementSchema),
   controller.structure,
+);
+// Fix 3.4: draft from the template packs. Before "/:id" for the same reason.
+router.post(
+  "/generate-draft",
+  requireRole("engineer", "admin"),
+  validate(generateDraftSchema),
+  controller.generateDraft,
 );
 // G: site-personnel may draft requirements on projects they are staffed on
 // (enforced in service.ts); the PM still decides on the Approvals page.

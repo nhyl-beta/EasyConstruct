@@ -72,6 +72,16 @@ export interface StructuredRequirement {
   description: string;
 }
 
+/** Output of POST /requirements/generate-draft: the same shape plus what the draft was built from. */
+export interface RequirementDraft extends StructuredRequirement {
+  basis: string[];
+}
+
+export interface GenerateDraftInput {
+  projectCode: string;
+  category: string;
+}
+
 export interface StructureRequirementInput {
   text: string;
   title?: string;

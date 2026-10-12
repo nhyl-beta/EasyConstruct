@@ -4,6 +4,8 @@ import { projects } from "../db/schema/projects.js";
 import { and, desc, eq, ilike, SQL } from "drizzle-orm";
 import { ForbiddenError, NotFoundError, ValidationError } from "../utils/errors.js";
 import * as repo from "./repository.js";
+import { loadDraftSources } from "./draft-repository.js";
+import { generateDraft } from "./templates.js";
 import { orderByFor, paginate, type PageRequest } from "../utils/pagination.js";
 import * as projectMemberRepo from "../project-members/repository.js";
 import { assertSitePersonnelMayCreate, assertSitePersonnelMayUpdate } from "./permissions.js";
@@ -141,4 +143,18 @@ export const remove = async (id: number) => {
   const [deleted] = await db.delete(requirements).where(eq(requirements.id, id)).returning();
   if (deleted) await refreshProjectProgress(deleted.project);
   return deleted ?? null;
+};
+
+/** Rule-based draft for the Engineer to edit (fix 3.4). Read-only: nothing is saved. */
+export const generateDraftFor = async (projectCode: string, category: string) => {
+  const { project, proposalText, designText } = await loadDraftSources(projectCode);
+  if (!project) throw new NotFoundError("Project", projectCode);
+  return generateDraft({
+    projectCode,
+    projectName: project.name,
+    projectType: project.projectType,
+    category,
+    proposalText,
+    designText,
+  });
 };

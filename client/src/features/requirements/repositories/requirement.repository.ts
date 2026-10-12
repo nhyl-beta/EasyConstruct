@@ -7,6 +7,8 @@ import type {
   RequirementFilters,
   StructureRequirementInput,
   StructuredRequirement,
+  RequirementDraft,
+  GenerateDraftInput,
 } from "../types/requirements.types";
 
 interface BackendRequirement {
@@ -91,6 +93,11 @@ export const RequirementRepository = {
   /** Rule-based structuring (engineer/admin, FEATURE_AI). Nothing is saved. */
   async structure(input: StructureRequirementInput): Promise<StructuredRequirement> {
     return unwrap<StructuredRequirement>(apiClient.post("/requirements/structure", input));
+  },
+
+  /** Rule-based draft from the template packs (engineer/admin). Nothing is saved. */
+  async generateDraft(input: GenerateDraftInput): Promise<RequirementDraft> {
+    return unwrap<RequirementDraft>(apiClient.post("/requirements/generate-draft", input));
   },
 
   /** Engineer submits a saved draft: Draft → Under Review (pending PM approval). */

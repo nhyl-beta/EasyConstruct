@@ -205,6 +205,9 @@ const COMMON_ELEMENTS: TemplateElement[] = [
 const detectTemplate = (haystack: string): WorkTemplate =>
   TEMPLATES.find((t) => t.detect.test(haystack)) ?? GENERAL_TEMPLATE;
 
+/** The work type a block of text reads as (concrete, masonry...), or "general". Used by the draft generator. */
+export const workTypeOf = (haystack: string): string => detectTemplate(haystack).type;
+
 // --- category ---------------------------------------------------------------
 
 const CATEGORY_TIE_ORDER: StructuredSection[] = ["specifications", "materials", "constraints", "objectives"];
