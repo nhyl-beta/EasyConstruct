@@ -36,6 +36,8 @@ import {
 } from "@/features/hr/attendance-api";
 import { ATTENDANCE_PAGE_SIZES, useAttendancePaged } from "@/features/hr/hooks/use-attendance-paged";
 import { AttendanceVerificationDialog } from "@/components/hr/attendance-verification-dialog";
+import { AttendanceExceptionsPanel } from "@/features/hr/components/AttendanceExceptionsPanel";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import {
   Camera,
@@ -128,6 +130,12 @@ export default function HRAttendancePage() {
         />
       </div>
 
+      <Tabs defaultValue="log" className="gap-4">
+        <TabsList>
+          <TabsTrigger value="log">Attendance log</TabsTrigger>
+          <TabsTrigger value="exceptions">Exceptions</TabsTrigger>
+        </TabsList>
+        <TabsContent value="log">
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
         <Card className="min-w-0 xl:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between space-y-0">
@@ -447,6 +455,11 @@ export default function HRAttendancePage() {
           </CardContent>
         </Card>
       </div>
+        </TabsContent>
+        <TabsContent value="exceptions">
+          <AttendanceExceptionsPanel onChanged={() => void reload()} />
+        </TabsContent>
+      </Tabs>
 
       <ConfirmDialog
         open={confirmBulk}

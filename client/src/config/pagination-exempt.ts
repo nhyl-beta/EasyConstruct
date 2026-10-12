@@ -45,6 +45,7 @@ export const PAGINATION_EXEMPT: PaginationExemption[] = [
   { file: "features/tasks/components/AssigneeSuggestions.tsx", reason: "The top three ranked suggestions for one task; fixed by the ranking rules." },
   { file: "features/plan-suggestions/components/SuggestedPlanPanel.tsx", reason: "The items of one drafted plan (a template of about 60 items); the PM reviews them one by one." },
   { file: "features/workflows/components/ImpactForecastCard.tsx", reason: "The open milestones of one project that a change would move; bounded by that project." },
+  { file: "features/hr/components/AttendanceExceptionsPanel.tsx", reason: "Server-paged (GET /attendance/exceptions?page=); has its own previous/next controls." },
   { file: "features/lifecycle/components/DecisionSupportSection.tsx", reason: "The few advisory signals for one decision." },
   { file: "features/lifecycle/components/ProjectLifecyclePanel.tsx", reason: "Phase path, checks and history of one project; bounded by the lifecycle phases." },
   { file: "pages/roles/site-personnel/sp-attendance.tsx", reason: "Project picker for the projects the person is staffed on." },

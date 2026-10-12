@@ -29,6 +29,14 @@ export const createAttendanceSchema = z.object({
   validatedOffline: z.boolean().optional(),
 });
 
+// HR confirms a likely absence from the daily check (fix 2.3).
+export const markAbsentSchema = z.object({
+  employeeId: z.string().min(1, "Employee is required"),
+  projectCode: z.string().min(1, "Project is required").max(50),
+  logDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD"),
+  remarks: z.string().max(300).optional(),
+});
+
 // `status` is the HR verification outcome (Verified | Flagged | Pending), as
 // opposed to `attendanceStatus` (Present | Absent | …). It is deliberately
 // absent from the create schema — clock-in derives it from the geofence

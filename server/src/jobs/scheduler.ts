@@ -5,6 +5,7 @@
 // jobs/routes.ts and server/vercel.json). Started only from src/index.ts, never
 // from server/index.ts, and never when VERCEL or DISABLE_SCHEDULER is set.
 import { runSignalScan } from "../signals/scan.js";
+import { runDailyCheck as runAttendanceCheck } from "../attendance/exceptions-service.js";
 
 const HOUR_MS = 60 * 60 * 1000;
 let started = false;
@@ -24,4 +25,5 @@ export function startScheduledJobs(): void {
   if (started || process.env.VERCEL || process.env.DISABLE_SCHEDULER === "true") return;
   started = true;
   every("signals", 6 * HOUR_MS, () => runSignalScan());
+  every("attendance-exceptions", 6 * HOUR_MS, () => runAttendanceCheck());
 }

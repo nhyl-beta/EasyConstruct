@@ -4,6 +4,7 @@ import { validate } from "../middleware/validate.js";
 import { authenticate, requireRole } from "../middleware/auth.js";
 import {
   createAttendanceSchema,
+  markAbsentSchema,
   updateAttendanceSchema,
 } from "../validators/attendance-validators.js";
 import multer from "multer";
@@ -38,6 +39,9 @@ router.get("/", controller.getAll);
 // E1: declared before "/:id" so these are not read as ids.
 router.get("/heatmap", controller.heatmap);
 router.post("/bulk-verify", requireRole("human-resources", "admin"), controller.bulkVerify);
+// Fix 2.3: exception flags and the one-click "Mark absent". Before "/:id".
+router.get("/exceptions", requireRole("human-resources", "admin"), controller.exceptions);
+router.post("/mark-absent", requireRole("human-resources", "admin"), validate(markAbsentSchema), controller.markAbsent);
 router.get("/:id", controller.getById);
 router.post(
   "/",

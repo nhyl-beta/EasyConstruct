@@ -11,6 +11,7 @@ import { env } from "../config/env.js";
 import { formatSuccess } from "../utils/response.js";
 import { ForbiddenError, UnauthorizedError } from "../utils/errors.js";
 import { runSignalScan } from "../signals/scan.js";
+import { runDailyCheck as runAttendanceCheck } from "../attendance/exceptions-service.js";
 
 export const secretMatches = (provided: string | undefined, expected: string | undefined): boolean => {
   if (!expected || !provided) return false;
@@ -43,5 +44,9 @@ const job = (name: string, run: () => Promise<unknown>) => async (_req: Request,
 const signals = job("signals", () => runSignalScan());
 router.get("/signals", signals);
 router.post("/signals", signals);
+
+const attendance = job("attendance-exceptions", () => runAttendanceCheck());
+router.get("/attendance-exceptions", attendance);
+router.post("/attendance-exceptions", attendance);
 
 export default router;

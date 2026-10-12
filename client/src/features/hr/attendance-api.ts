@@ -197,3 +197,69 @@ export async function setAttendanceVerification(
     ...(remarks !== undefined ? { remarks } : {}),
   });
 }
+
+// ── Exceptions (objectives fix 2.3) ──────────────────────────────────────
+
+export type ExceptionKind =
+  | "missing_clock_out"
+  | "late"
+  | "outside_geofence"
+  | "duplicate_entry"
+  | "missing_photo"
+  | "absent_task_due"
+  | "likely_absent";
+
+export const EXCEPTION_LABELS: Record<ExceptionKind, string> = {
+  missing_clock_out: "Missing clock-out",
+  late: "Late",
+  outside_geofence: "Outside geofence",
+  duplicate_entry: "Duplicate entry",
+  missing_photo: "Missing photo",
+  absent_task_due: "Absent, task due",
+  likely_absent: "Likely absent",
+};
+
+export interface AttendanceExceptionItem {
+  kind: ExceptionKind;
+  recordId: number | null;
+  employeeId: string;
+  employeeName: string;
+  logDate: string;
+  projectCode: string | null;
+  message: string;
+}
+
+export interface AttendanceExceptionPage {
+  items: AttendanceExceptionItem[];
+  total: number;
+  page: number;
+  pages: number;
+  summary: Record<ExceptionKind, number>;
+  from: string;
+  to: string;
+  rules: { shiftStart: string; lateGraceMinutes: number };
+}
+
+export async function listAttendanceExceptions(query: {
+  page: number;
+  pageSize: number;
+  kind?: string;
+}): Promise<AttendanceExceptionPage> {
+  const params = new URLSearchParams({ page: String(query.page), pageSize: String(query.pageSize) });
+  if (query.kind && query.kind !== "all") params.set("kind", query.kind);
+  const json = (await apiClient.get(`/attendance/exceptions?${params.toString()}`)) as {
+    data: AttendanceExceptionItem[];
+    meta: Omit<AttendanceExceptionPage, "items">;
+  };
+  return { items: json.data, ...json.meta };
+}
+
+/** HR confirms a likely absence. Creates the record through the normal attendance service. */
+export async function markAbsent(input: {
+  employeeId: string;
+  projectCode: string;
+  logDate: string;
+  remarks?: string;
+}): Promise<void> {
+  await apiClient.post("/attendance/mark-absent", input);
+}
