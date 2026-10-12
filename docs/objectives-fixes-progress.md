@@ -87,7 +87,7 @@ Priority P1 = claim had no working feature, P2 = partly met or strengthens a met
 
 ## Manual steps for the owner
 
-1. **Apply the migrations before deploying this branch.** `projects.client_id` is read by every projects query, so code that selects projects will fail until `0030` is applied. All five are additive and safe to run twice (`IF NOT EXISTS`): `0027_plan_suggestions`, `0028_signal_findings`, `0029_payroll_acknowledgements`, `0030_reference_data`, `0031_decision_support_events`. Run `npm --prefix server run db:migrate`, or paste each file into the Neon SQL editor one statement at a time. Nothing in this work touched the shared database.
+1. **Apply the migrations before deploying this branch.** `projects.client_id` is read by every projects query, so code that selects projects will fail until `0030` is applied. All five are additive and safe to run twice (`IF NOT EXISTS`): `0027_plan_suggestions` to `0031_decision_support_events`. See "How migrations are applied" below.
 2. **Server environment (Vercel):** set `CRON_SECRET` (a long random string; Vercel sends it as the Bearer token on cron calls). Check `JWT_SECRET` is set to a long random value and `CORS_ORIGIN` is the real client URL. `FEATURE_AI` needs no change (now on); set `FEATURE_AI=false` to turn decision support off. Optional tuning variables are listed in `server/.env.example` (`ATTENDANCE_*`, `PAYROLL_*`).
 3. **Client environment:** `VITE_FEATURE_AI` needs no change (now on); `VITE_FEATURE_AI=false` hides the surfaces.
 4. **Vercel cron:** confirm the server project root is `server/` so `server/vercel.json` is read, and that the plan allows two cron jobs. Schedules: signals `0 22 * * *` UTC (06:00 Manila), attendance exceptions `0 11 * * *` UTC (19:00 Manila).
@@ -95,6 +95,13 @@ Priority P1 = claim had no working feature, P2 = partly met or strengthens a met
 6. **Baseline the data checks:** `npm --prefix server run reconcile` (read-only) and note which checks fail on real data.
 7. **Neon backup and restore:** fill in the checklist in `docs/SECURITY_CHECKLIST.md` section 7 (plan, restore window, restore drill).
 8. **Not fixed, as instructed:** the RFI/RFA overdue sweep does not run on Vercel (needs a secret-authenticated GET endpoint and a cron entry).
+
+## How migrations are applied
+
+- `npm --prefix server run db:migrate` runs `src/scripts/migrate.ts`. It reads `server/drizzle/meta/_journal.json`, compares each migration's hash with `drizzle.__drizzle_migrations`, applies the missing ones in order (one transaction each) and prints `applied <tag>` per migration or `Nothing to apply`. `-- --dry-run` lists what would run and changes nothing. `-- --print-sql` prints the SQL of 0027 onward without a database.
+- Cause of the earlier no-op: the journal was complete, but the database's `drizzle.__drizzle_migrations` table was empty (the schema had been built another way). `drizzle-kit migrate` decides by "newer than the latest recorded timestamp", so it cannot be trusted on a database like that. If the table is empty and the schema exists, `db:migrate` now stops and explains instead of guessing. Record the old migrations once with `-- --baseline-through=0026_expense_categories` (bookkeeping rows only, the old SQL is not run), then run `db:migrate`.
+- `src/db/migrations.test.ts` fails when a `.sql` file has no journal entry, or the reverse, or the entries are out of order.
+- Deploy order: **migrate first, then deploy.** The old tool is still available as `db:migrate:drizzle-kit`.
 
 ## Not verified (the app was not run against real data)
 
