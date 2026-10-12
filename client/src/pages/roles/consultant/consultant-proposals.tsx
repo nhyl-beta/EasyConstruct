@@ -27,7 +27,8 @@ import { ProposalAttachments } from "@/pages/roles/consultant/proposal-attachmen
 import { WorkflowRepository } from "@/features/workflows/repositories/workflow.repository";
 import type { Proposal } from "@/features/proposals/types/proposal.types";
 import { FEATURES } from "@/config/features";
-import { ProposalValidationPanel, isStaleValidation } from "@/features/proposals/components/ProposalValidationPanel";
+import { ProposalValidationPanel } from "@/features/proposals/components/ProposalValidationPanel";
+import { isStaleValidation } from "@/features/proposals/lib/validation-format";
 
 /*
  * ============================================================
