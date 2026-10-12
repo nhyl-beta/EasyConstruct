@@ -261,6 +261,20 @@ export const getBatchDetail = async (id: string, actor: Actor = SYSTEM_ACTOR) =>
   };
 };
 
+// The rules in force today and what is still unverified (fix 2.8). Read-only.
+export const getRulesSummary = () => {
+  const rules = getRules();
+  return {
+    versions: rules.versions,
+    needsVerification: rules.needsVerification,
+    overtimeMultiplier: rules.overtimeMultiplier,
+    hoursPerDay: rules.hoursPerDay,
+    workingDaysPerMonth: rules.workingDaysPerMonth,
+    notCertified:
+      "Not a certified payroll engine. It computes SSS, PhilHealth and Pag-IBIG contributions from built-in rate tables and overtime from one multiplier. It does not do 13th-month pay, de minimis benefits, withholding tax or year-end adjustments, and it does not remit anything to an agency.",
+  };
+};
+
 // How one stored line was worked out (fix 2.5): the steps, the attendance behind
 // the hours and the rate versions used. Read-only; same visibility as the line.
 export const getLineTrace = async (id: number, actor: Actor = SYSTEM_ACTOR) => {

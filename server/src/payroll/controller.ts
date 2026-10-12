@@ -42,6 +42,15 @@ export const getAll = async (req: AuthedRequest, res: Response, next: NextFuncti
   }
 };
 
+// Fix 2.8: the rules the engine applies right now, including the values nobody has verified yet.
+export const getRulesSummary = async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    res.json(formatSuccess(service.getRulesSummary(), "Payroll rules"));
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const getById = async (req: AuthedRequest, res: Response, next: NextFunction) => {
   try {
     const data = await service.getById(Number(req.params.id), actorOf(req));

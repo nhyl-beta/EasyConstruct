@@ -35,6 +35,7 @@ import { BatchStatusPill } from "@/features/hr/components/batch-status-pill";
 import { PayrollWizard } from "@/features/hr/components/payroll-wizard";
 import { PayslipDialog } from "@/features/hr/components/payslip-dialog";
 import { PayslipButton } from "@/features/hr/components/payslip-button";
+import { PayrollRulesNotice } from "@/features/hr/components/PayrollRulesNotice";
 import { PayrollTraceButton, PayrollTraceSheet } from "@/features/hr/components/PayrollTraceSheet";
 import { AlertTriangle, ArrowUpRight, Building2, CheckCircle2, Download, FileText, RefreshCw, Wallet } from "lucide-react";
 import { downloadCsv } from "@/lib/export-csv";
@@ -206,6 +207,8 @@ export default function HRPayrollPage() {
           </>
         }
       />
+
+      <PayrollRulesNotice />
 
       {shownError && (
         <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive-strong">

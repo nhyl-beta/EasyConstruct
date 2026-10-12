@@ -28,6 +28,8 @@ router.get(
 
 // Tracksheet
 router.get("/", canRead, controller.getAll);
+// Fix 2.8: before "/:id".
+router.get("/rules", canRead, controller.getRulesSummary);
 
 // G5: prefill for Generate — verified attendance summed per employee. Must
 // come before "/:id" or Express would match "attendance-summary" as an id.

@@ -378,6 +378,21 @@ export async function getAttendanceReadiness(
   return unwrap<AttendanceReadiness>(apiClient.get(`/payroll/attendance-readiness?${params.toString()}`));
 }
 
+// ── Payroll rules in force (objectives fix 2.8) ──────────────────────────
+
+export interface PayrollRulesSummary {
+  versions: RateVersions;
+  needsVerification: string[];
+  overtimeMultiplier: number;
+  hoursPerDay: number;
+  workingDaysPerMonth: number;
+  notCertified: string;
+}
+
+export async function getPayrollRules(): Promise<PayrollRulesSummary> {
+  return unwrap<PayrollRulesSummary>(apiClient.get("/payroll/rules", { staleTime: 5 * 60_000 }));
+}
+
 // ── Calculation trace (objectives fix 2.5) ───────────────────────────────
 
 export interface TraceStep {

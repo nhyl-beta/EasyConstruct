@@ -16,6 +16,7 @@ import {
 import { BatchStatusPill } from "@/features/hr/components/batch-status-pill";
 import { PayslipDialog } from "@/features/hr/components/payslip-dialog";
 import { PayslipButton } from "@/features/hr/components/payslip-button";
+import { PayrollRulesNotice } from "@/features/hr/components/PayrollRulesNotice";
 import { PayrollTraceButton, PayrollTraceSheet } from "@/features/hr/components/PayrollTraceSheet";
 import { visibleRateVersions } from "@/features/hr/payroll-api";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -196,6 +197,8 @@ export default function FinancePayrollReviewPage() {
         </>
         }
       />
+
+      <PayrollRulesNotice />
 
       {error && (
         <div className="rounded-md border border-destructive/30 bg-destructive-soft p-3 text-sm text-destructive-strong">{error}</div>
