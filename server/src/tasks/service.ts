@@ -6,6 +6,14 @@ import { assertProjectWritable, refreshProjectProgress } from "../lifecycle/serv
 import * as repo from "./repository.js";
 import * as milestonesRepo from "../milestones/repository.js";
 import * as notificationsService from "../notifications/service.js";
+import { todayManila, addDaysIso } from "../utils/dates.js";
+import {
+  ALLOCATION_CONFIG,
+  allocateTasks,
+  assessAssignment,
+  rankAssignees,
+  type AssignmentWarning,
+} from "./suggest.js";
 import type { CreateTaskInput, TaskFilters, UpdateTaskInput } from "./types.js";
 
 // G2/J1: PM-facing notice, routed through the shared notifyProject helper.
@@ -184,4 +192,73 @@ export const remove = async (id: number) => {
   if (!deleted) throw new NotFoundError("Task", String(id));
   await refreshProjectProgress(existing.projectCode);
   return deleted;
+};
+
+// ── Decision support: allocation and workload warnings (fixes 2.1, 2.2) ──
+// Read-only advice. Nothing below writes a task or blocks one.
+
+const windowStart = (today: string) => addDaysIso(today, -(ALLOCATION_CONFIG.attendanceWindowDays - 1));
+
+export const suggestAssignees = async (q: { projectCode: string; title: string; dueDate?: string; milestoneId?: number }) => {
+  const today = todayManila();
+  let dueDate = q.dueDate;
+  if (!dueDate && q.milestoneId != null) {
+    const milestone = await milestonesRepo.findById(q.milestoneId);
+    if (milestone && milestone.projectCode === q.projectCode) dueDate = milestone.estimatedCompletionDate ?? undefined;
+  }
+  const { candidates, unlinked } = await repo.loadAllocationData(q.projectCode, today, windowStart(today));
+  const result = rankAssignees(candidates, { title: q.title, dueDate });
+  return {
+    projectCode: q.projectCode,
+    dueDate: dueDate ?? null,
+    suggestions: result.ranked,
+    excluded: [
+      ...result.excluded,
+      ...unlinked.map((u) => ({ userId: u.userId, name: u.name, reason: "no linked employee record" })),
+    ],
+    basis: result.basis,
+  };
+};
+
+export const suggestAllocation = async (projectCode: string) => {
+  const today = todayManila();
+  const [{ candidates }, unassigned] = await Promise.all([
+    repo.loadAllocationData(projectCode, today, windowStart(today)),
+    repo.findUnassigned(projectCode),
+  ]);
+  const proposals = allocateTasks(
+    candidates,
+    unassigned.map((t) => ({ id: t.id, title: t.title, dueDate: t.dueDate })),
+  );
+  return {
+    projectCode,
+    basis: rankAssignees([], { title: "" }).basis,
+    items: unassigned.map((t, i) => ({
+      taskId: t.id,
+      taskCode: t.taskCode,
+      title: t.title,
+      dueDate: t.dueDate,
+      suggestions: proposals[i]?.suggestions ?? [],
+    })),
+  };
+};
+
+/** Warnings for giving `userId` a task due `dueDate`. Never throws on a rule; an unknown user yields none. */
+export const assignmentWarnings = async (
+  userId: number | null | undefined,
+  dueDate: string | null | undefined,
+  excludeTaskId?: number,
+): Promise<AssignmentWarning[]> => {
+  if (userId == null) return [];
+  try {
+    const today = todayManila();
+    const { candidates } = await repo.loadAllocationDataForUsers([{ userId, userName: "" }], today, windowStart(today));
+    const c = candidates[0];
+    if (!c) return [];
+    const open = c.openTasks.filter((t) => t.id !== excludeTaskId);
+    return assessAssignment({ ...c, openTasks: open }, dueDate);
+  } catch (err) {
+    console.error("[tasks] assignment warnings failed", err);
+    return [];
+  }
 };

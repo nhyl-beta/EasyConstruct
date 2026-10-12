@@ -31,7 +31,10 @@ import { ProjectPicker } from "@/components/shared/project-picker";
 import { useMilestones } from "@/features/milestones/hooks/use-milestones";
 import { isRealFileUrl, openFileUrl } from "@/lib/file-url";
 import { formatRelativeTime } from "@/lib/format-relative-time";
-import type { TaskRecord } from "@/features/tasks/repositories/task.repository";
+import type { AssignmentWarning, TaskRecord } from "@/features/tasks/repositories/task.repository";
+import { AssigneeSuggestionsPanel, AssignmentWarnings } from "@/features/tasks/components/AssigneeSuggestions";
+import { SuggestAllocationCard } from "@/features/tasks/components/SuggestAllocationCard";
+import { useAssignmentWarnings } from "@/features/tasks/hooks/use-assignee-suggestions";
 import { useState } from "react";
 
 const NEXT_LABEL: Record<string, string> = {
@@ -40,7 +43,7 @@ const NEXT_LABEL: Record<string, string> = {
 };
 
 export default function TasksPage() {
-  const { tasks, counts, loading, error, updatingId, advance, createTask, creating } =
+  const { tasks, counts, loading, error, updatingId, advance, createTask, creating, refresh } =
     useMyTasks();
   const pg = usePagination(tasks, 10);
   const { user } = useAuth();
@@ -76,6 +79,7 @@ export default function TasksPage() {
         />
 
         {canCreate && <NewTaskCard onCreate={createTask} creating={creating} />}
+        {canCreate && <SuggestAllocationCard onAccepted={() => void refresh()} />}
 
         <Card>
           <CardContent className="p-0">
@@ -209,7 +213,7 @@ function NewTaskCard({
     assignedToUserId?: number;
     assignedToName?: string;
     milestoneId?: number;
-  }) => Promise<{ id: number } | null>;
+  }) => Promise<{ id: number; warnings?: AssignmentWarning[] } | null>;
   creating: boolean;
 }) {
   const [assignee, setAssignee] = useState("");
@@ -234,10 +238,15 @@ function NewTaskCard({
   const [dueDate, setDueDate] = useState("");
   const [localError, setLocalError] = useState<string | null>(null);
   const [created, setCreated] = useState<string | null>(null);
+  // Fix 2.2: workload warnings for the person picked, shown before saving and
+  // again from the server's response after it. They never block the save.
+  const [savedWarnings, setSavedWarnings] = useState<AssignmentWarning[]>([]);
+  const liveWarnings = useAssignmentWarnings(assignee ? Number(assignee) : null, dueDate || milestoneDue);
 
   const submit = async () => {
     setLocalError(null);
     setCreated(null);
+    setSavedWarnings([]);
     if (!projectCode.trim() || !title.trim()) {
       setLocalError("Project code and title are required.");
       return;
@@ -272,6 +281,7 @@ function NewTaskCard({
     });
     if (createdTask) {
       setCreated(taskCode);
+      setSavedWarnings(createdTask.warnings ?? []);
       setTitle("");
       setDescription("");
       setDueDate("");
@@ -404,6 +414,16 @@ function NewTaskCard({
           </div>
         </div>
 
+        <AssigneeSuggestionsPanel
+          projectCode={projectCode}
+          title={title}
+          dueDate={dueDate || milestoneDue}
+          milestoneId={milestoneId ? Number(milestoneId) : undefined}
+          selectedUserId={assignee ? Number(assignee) : null}
+          onAssign={(userId) => setAssignee(String(userId))}
+        />
+        {!created && <AssignmentWarnings warnings={liveWarnings} />}
+
         <div className="space-y-1.5">
           <Label htmlFor="task-desc">Description</Label>
           <Textarea
@@ -421,6 +441,7 @@ function NewTaskCard({
             Created <span className="font-mono">{created}</span>.
           </p>
         )}
+        {created && <AssignmentWarnings warnings={savedWarnings} />}
 
         <Button
          

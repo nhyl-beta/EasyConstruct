@@ -70,7 +70,10 @@ export const getById = async (req: AuthedRequest, res: Response, next: NextFunct
 
 export const create = async (req: AuthedRequest, res: Response, next: NextFunction) => {
   try {
+    await assertProjectVisible(req.authUser, req.body.projectCode, "tasks");
     const data = await service.create(req.body);
+    // Fix 2.2: advice about the chosen assignee, returned with the task; never blocks.
+    const warnings = await service.assignmentWarnings(data.assignedToUserId, data.dueDate, data.id);
     await logAudit({
       entityType: "task",
       entityId: String(data.id),
@@ -79,7 +82,7 @@ export const create = async (req: AuthedRequest, res: Response, next: NextFuncti
       summary: `Created task "${data.title}" for project ${data.projectCode}`,
       projectCode: data.projectCode,
     });
-    res.status(HTTP.CREATED).json(formatSuccess(data, MSG.tasks.created));
+    res.status(HTTP.CREATED).json(formatSuccess({ ...data, warnings }, MSG.tasks.created));
   } catch (err) {
     next(err);
   }
@@ -112,8 +115,11 @@ export const updateStatus = async (req: AuthedRequest, res: Response, next: Next
 
 export const update = async (req: AuthedRequest, res: Response, next: NextFunction) => {
   try {
+    const existing = await service.getById(Number(req.params.id));
+    await assertProjectVisible(req.authUser, existing.projectCode, "tasks");
     const data = await service.update(Number(req.params.id), req.body);
-    res.json(formatSuccess(data, MSG.tasks.updated));
+    const warnings = await service.assignmentWarnings(data.assignedToUserId, data.dueDate, data.id);
+    res.json(formatSuccess({ ...data, warnings }, MSG.tasks.updated));
   } catch (err) {
     next(err);
   }
@@ -123,6 +129,36 @@ export const remove = async (req: AuthedRequest, res: Response, next: NextFuncti
   try {
     const data = await service.remove(Number(req.params.id));
     res.json(formatSuccess(data, MSG.tasks.deleted));
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ── Decision support (fixes 2.1, 2.2): read-only, project-scoped ──────────
+
+export const suggestAssignees = async (req: AuthedRequest, res: Response, next: NextFunction) => {
+  try {
+    const q = res.locals.query as { projectCode: string; title: string; dueDate?: string; milestoneId?: number };
+    await assertProjectVisible(req.authUser, q.projectCode, "tasks");
+    res.json(formatSuccess(await service.suggestAssignees(q), "Assignee suggestions"));
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const suggestAllocation = async (req: AuthedRequest, res: Response, next: NextFunction) => {
+  try {
+    await assertProjectVisible(req.authUser, req.body.projectCode, "tasks");
+    res.json(formatSuccess(await service.suggestAllocation(req.body.projectCode), "Allocation suggestions"));
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const assignmentWarnings = async (_req: AuthedRequest, res: Response, next: NextFunction) => {
+  try {
+    const q = res.locals.query as { userId: number; dueDate?: string; excludeTaskId?: number };
+    res.json(formatSuccess(await service.assignmentWarnings(q.userId, q.dueDate, q.excludeTaskId), "Assignment warnings"));
   } catch (err) {
     next(err);
   }
