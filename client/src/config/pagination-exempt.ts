@@ -20,7 +20,9 @@ export const PAGINATION_EXEMPT: PaginationExemption[] = [
   { file: "components/refine-ui/layout/sidebar.tsx", reason: "Navigation menu; fixed by role." },
   { file: "components/notifications/notification-bell.tsx", reason: "Pages itself: 8 at a time with a Show more button." },
   { file: "features/quick-search/QuickSearchPalette.tsx", reason: "Command palette; the result list is capped." },
-  { file: "features/calendar/components/CalendarWidget.tsx", reason: "Month grid; fixed 7-column calendar, not a record list." },
+  { file: "features/calendar/components/CalendarViews.tsx", reason: "Month, week and agenda views of one visible period (at most one month of events, fetched by date range); not a record table." },
+  { file: "features/calendar/components/CalendarDayPanel.tsx", reason: "Everything on one day, grouped by type; the day is the page." },
+  { file: "features/calendar/components/CalendarFilterBar.tsx", reason: "Filter controls (four legend toggles and a project select), not a record list." },
 
   // ── Receive an already-paged array
   { file: "features/projects/components/ProjectsGrid.tsx", reason: `${PARENT} (pm-projects, admin-projects, owner-portfolio use ProjectsPagination.)` },

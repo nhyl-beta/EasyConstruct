@@ -6,14 +6,10 @@ import { AlertTriangle, Clock } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { attentionLabel } from "../lib/calendar-logic";
+import { attentionLabel, eventAccessibleName } from "../lib/calendar-logic";
 import type { CalendarEvent } from "../types/calendar.types";
 import { EventDetails } from "./EventDetails";
 import { EVENT_STYLE } from "./event-style";
-
-/** Screen-reader name: type, title, project, date and any attention text. */
-export const eventAccessibleName = (e: CalendarEvent) =>
-  [EVENT_STYLE[e.type].label, e.title, e.projectName, e.date, attentionLabel(e)].filter(Boolean).join(", ");
 
 export function CalendarEventButton({
   event,

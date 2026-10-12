@@ -6,12 +6,15 @@ import {
   applyFilters,
   applyScopeFilters,
   countByType,
+  eventAccessibleName,
   eventHref,
   fetchRange,
   fromIso,
   groupByDate,
   groupByType,
   hasActiveFilters,
+  inPeriod,
+  periodRange,
   moveDay,
   parseState,
   projectOptions,
@@ -145,5 +148,25 @@ describe("URL state", () => {
   it("a remembered project applies only when the URL does not say otherwise", () => {
     expect(parseState(new URLSearchParams(), { ...defaults, project: "P-3" }).filters.project).toBe("P-3");
     expect(parseState(new URLSearchParams("cproject="), { ...defaults, project: "P-3" }).filters.project).toBe("");
+  });
+});
+
+describe("period of a view", () => {
+  it("month is the grid, week is Sunday to Saturday, agenda is the calendar month", () => {
+    const a = fromIso("2026-10-15"); // a Thursday
+    expect(periodRange("month", a)).toEqual({ from: "2026-09-27", to: "2026-10-31" });
+    expect(periodRange("week", a)).toEqual({ from: "2026-10-11", to: "2026-10-17" });
+    expect(periodRange("agenda", a)).toEqual({ from: "2026-10-01", to: "2026-10-31" });
+  });
+  it("keeps only events inside the period", () => {
+    const events = [ev(1, { date: "2026-10-10" }), ev(2, { date: "2026-10-11" }), ev(3, { date: "2026-10-17" }), ev(4, { date: "2026-10-18" })];
+    expect(inPeriod(events, periodRange("week", fromIso("2026-10-15"))).map((e) => e.id)).toEqual(["e2", "e3"]);
+  });
+});
+
+describe("accessible name", () => {
+  it("says the type, title, project, date and the attention text, not just a colour", () => {
+    expect(eventAccessibleName(ev(1, { attention: "overdue", title: "Slab pour" }))).toBe("Milestone, Slab pour, Alpha, 2026-10-12, Overdue");
+    expect(eventAccessibleName(ev(2, { type: "submission", attention: "waiting" }))).toContain("Waiting for action");
   });
 });

@@ -19,6 +19,15 @@ export function fetchRange(anchor: Date): { from: string; to: string } {
   return { from: iso(startOfWeek(startOfMonth(anchor))), to: iso(endOfWeek(endOfMonth(anchor))) };
 }
 
+/** The dates a view actually shows: the month grid, one week, or the calendar month. */
+export function periodRange(view: CalendarView, anchor: Date): { from: string; to: string } {
+  if (view === "month") return fetchRange(anchor);
+  if (view === "week") return { from: iso(startOfWeek(anchor)), to: iso(endOfWeek(anchor)) };
+  return { from: iso(startOfMonth(anchor)), to: iso(endOfMonth(anchor)) };
+}
+
+export const inPeriod = (events: CalendarEvent[], r: { from: string; to: string }) => events.filter((e) => e.date >= r.from && e.date <= r.to);
+
 /** Move the cursor by one period of the current view. */
 export function shiftAnchor(view: CalendarView, anchor: Date, direction: 1 | -1): Date {
   return view === "week" ? addWeeks(anchor, direction) : addMonths(anchor, direction);
@@ -102,6 +111,11 @@ export function projectOptions(events: CalendarEvent[], selected: string): { cod
 /** "Waiting for action" / "Overdue" text, so the cue never relies on colour. */
 export const attentionLabel = (e: CalendarEvent): string | null =>
   e.attention === "overdue" ? "Overdue" : e.attention === "waiting" ? "Waiting for action" : null;
+
+const TYPE_LABEL: Record<CalendarEventType, string> = { milestone: "Milestone", submission: "Submission", progress: "Progress update", task: "My task due" };
+
+/** Screen-reader name of an event button: type, title, project, date and any attention text. */
+export const eventAccessibleName = (e: CalendarEvent): string => [TYPE_LABEL[e.type], e.title, e.projectName, e.date, attentionLabel(e)].filter(Boolean).join(", ");
 
 /** Where "Open" goes. Submissions open the workflow where the role can see workflows; otherwise the project. */
 export function eventHref(e: CalendarEvent, role: string): string {
