@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatRelativeTime } from "@/lib/format-relative-time";
+import { useEffect, useState } from "react";
+import { recordDecisionSupport } from "@/features/decision-support/events.api";
 import { useMyActions } from "../hooks/useMyActions";
 import type { MyActionItem } from "../types/my-actions.types";
 
@@ -28,6 +30,17 @@ function actionIcon(a: MyActionItem) {
 export function WaitingOnYouCard() {
   const { actions, loading } = useMyActions();
   const navigate = useNavigate();
+  // Fix 3.7: detected issues shown here, and the answer to "was this useful".
+  const [answered, setAnswered] = useState<Set<string>>(new Set());
+  const keyOf = (a: MyActionItem) => `${a.projectCode}|${a.title}`;
+  useEffect(() => {
+    recordDecisionSupport(
+      actions
+        .slice(0, 6)
+        .filter((a) => a.kind === "signal")
+        .map((a) => ({ kind: "finding" as const, itemKey: keyOf(a), projectCode: a.projectCode, action: "shown" as const })),
+    );
+  }, [actions]);
 
   return (
     <Card>
@@ -84,6 +97,32 @@ export function WaitingOnYouCard() {
                 {a.kind === "signal" && a.firstSeen && (
                   <span className="mt-0.5 block text-overline text-muted-foreground">
                     Open since {formatRelativeTime(a.firstSeen)}. A person decides what to do.
+                  </span>
+                )}
+                {a.kind === "signal" && (
+                  <span className="mt-1 flex items-center gap-2 text-overline text-muted-foreground" onClick={(e) => e.stopPropagation()}>
+                    {answered.has(keyOf(a)) ? (
+                      <span>Thanks, noted.</span>
+                    ) : (
+                      <>
+                        Was this useful?
+                        {(["accepted", "dismissed"] as const).map((action) => (
+                          <span
+                            key={action}
+                            role="button"
+                            tabIndex={0}
+                            className="underline underline-offset-2 hover:text-foreground"
+                            onClick={() => {
+                              recordDecisionSupport([{ kind: "finding", itemKey: keyOf(a), projectCode: a.projectCode, action }]);
+                              setAnswered((prev) => new Set(prev).add(keyOf(a)));
+                            }}
+                            onKeyDown={(e) => e.key === "Enter" && (e.currentTarget as HTMLElement).click()}
+                          >
+                            {action === "accepted" ? "Yes" : "No"}
+                          </span>
+                        ))}
+                      </>
+                    )}
                   </span>
                 )}
               </span>

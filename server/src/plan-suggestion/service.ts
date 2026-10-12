@@ -26,6 +26,7 @@ import * as milestonesService from "../milestones/service.js";
 import * as tasksService from "../tasks/service.js";
 import * as tasksRepo from "../tasks/repository.js";
 import * as notificationsService from "../notifications/service.js";
+import * as decisionSupport from "../decision-support/service.js";
 import { ALLOCATION_CONFIG, allocateTasks, type RankedCandidate } from "../tasks/suggest.js";
 
 export interface Actor {
@@ -195,14 +196,20 @@ export const accept = async (
   const decided = await repo.decideItem(itemId, { state: "accepted", createdRef, decidedBy: actor.name });
   if (!decided) throw new ConflictError("This item was already decided");
   await refreshStatus(suggestionId);
+  await decisionSupport.recordQuietly(actor.id, [
+    { kind: "plan-item", itemKey: `${suggestionId}:${itemId}`, projectCode: suggestion.projectCode, action: "accepted" },
+  ]);
   return decided;
 };
 
 export const discard = async (suggestionId: number, itemId: number, actor: Actor) => {
-  await loadPendingItem(suggestionId, itemId);
+  const { suggestion } = await loadPendingItem(suggestionId, itemId);
   const decided = await repo.decideItem(itemId, { state: "discarded", decidedBy: actor.name });
   if (!decided) throw new ConflictError("This item was already decided");
   await refreshStatus(suggestionId);
+  await decisionSupport.recordQuietly(actor.id, [
+    { kind: "plan-item", itemKey: `${suggestionId}:${itemId}`, projectCode: suggestion.projectCode, action: "dismissed" },
+  ]);
   return decided;
 };
 

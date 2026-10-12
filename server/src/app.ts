@@ -48,6 +48,7 @@ import cronRoutes from "./jobs/routes.js";
 import meRoutes from "./me/routes.js";
 import referenceRoutes from "./reference/routes.js";
 import reconciliationRoutes from "./reconciliation/routes.js";
+import decisionSupportRoutes from "./decision-support/routes.js";
 import myActionsRoutes from "./lifecycle/my-actions.js";
 import aiValidationRoutes from "./ai-validation/routes.js";
 import calendarRoutes from "./calendar/routes.js";
@@ -135,6 +136,8 @@ app.use("/api/me", meRoutes);
 app.use("/api/reference", referenceRoutes);
 // Read-only cross-checks over the stored numbers (Admin, IT Designer, Owner).
 app.use("/api/admin/reconciliation", reconciliationRoutes);
+// Usefulness of decision support: events from the screens, summary for Admin and Owner.
+app.use("/api/decision-support", decisionSupportRoutes);
 // K1: cross-project "what's waiting on me" — deliberately its own top-level
 // mount, not nested under /api/projects/:id/lifecycle, since it spans every
 // project the caller is relevant to rather than one.

@@ -24,6 +24,7 @@ import { formatDue } from "@/features/projects/lib/project-format";
 import { formatRelativeTime } from "@/lib/format-relative-time";
 import { useNavigate } from "react-router";
 import { OwnerPayrollSection } from "@/features/payroll-summary/components/OwnerPayrollSection";
+import { UsefulnessCard } from "@/features/decision-support/UsefulnessCard";
 import { CycleTimesCard } from "@/features/dashboard/components/CycleTimesCard";
 import { ImpactAwarenessCard } from "@/features/lifecycle/components/ImpactAwarenessCard";
 
@@ -107,6 +108,7 @@ export default function OwnerDashboardPage() {
 
       {/* Fix 1.4: how long approvals, responses, payroll sign-off and issue resolution take */}
       <CycleTimesCard />
+      <UsefulnessCard />
 
       {/* ── Payroll: read-only aggregates of approved payroll ── */}
       <OwnerPayrollSection

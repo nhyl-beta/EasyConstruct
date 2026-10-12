@@ -218,6 +218,13 @@
       "when": 1791500000000,
       "tag": "0030_reference_data",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1791600000000,
+      "tag": "0031_decision_support_events",
+      "breakpoints": true
     }
   ]
 }

@@ -2,6 +2,8 @@ import { AlertTriangle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { DecisionSupportLabel } from "@/components/shared/decision-support-label";
+import { useEffect } from "react";
+import { recordDecisionSupport } from "@/features/decision-support/events.api";
 import { useAssigneeSuggestions } from "../hooks/use-assignee-suggestions";
 import type { AssignmentWarning } from "../repositories/task.repository";
 
@@ -41,6 +43,14 @@ export function AssigneeSuggestionsPanel({
   onAssign: (userId: number, name: string) => void;
 }) {
   const { data, loading, error, ready } = useAssigneeSuggestions({ projectCode, title, dueDate, milestoneId });
+
+  // Fix 3.7: what was shown, taken or dismissed. One key per project, task title and person.
+  const keyFor = (userId: number) => `${projectCode}|${title.trim().toLowerCase().slice(0, 60)}|${userId}`;
+  useEffect(() => {
+    if (!data || data.suggestions.length === 0) return;
+    recordDecisionSupport(data.suggestions.map((s) => ({ kind: "assignee", itemKey: keyFor(s.userId), projectCode, action: "shown" })));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data]);
 
   if (!ready) {
     return (
@@ -87,13 +97,27 @@ export function AssigneeSuggestionsPanel({
                 size="sm"
                 variant={selectedUserId === s.userId ? "secondary" : "outline"}
                 className="h-7 shrink-0"
-                onClick={() => onAssign(s.userId, s.name)}
+                onClick={() => {
+                  recordDecisionSupport([{ kind: "assignee", itemKey: keyFor(s.userId), projectCode, action: "accepted" }]);
+                  onAssign(s.userId, s.name);
+                }}
               >
                 {selectedUserId === s.userId ? "Selected" : "Assign"}
               </Button>
             </li>
           ))}
         </ol>
+      )}
+      {data && data.suggestions.length > 0 && (
+        <button
+          type="button"
+          className="text-overline text-muted-foreground underline underline-offset-2"
+          onClick={() =>
+            recordDecisionSupport(data.suggestions.map((s) => ({ kind: "assignee", itemKey: keyFor(s.userId), projectCode, action: "dismissed" })))
+          }
+        >
+          These suggestions are not helpful
+        </button>
       )}
       {data && <p className="text-overline text-muted-foreground">{data.basis}</p>}
       {data && data.excluded.length > 0 && (

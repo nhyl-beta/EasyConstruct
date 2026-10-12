@@ -1,7 +1,8 @@
 // Suggested plan on an approved proposal (objectives fix 3.1). Draft milestones,
 // tasks and a responsibilities checklist the Project Manager accepts or discards
 // item by item. Nothing is applied until a person accepts it.
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { recordDecisionSupport } from "@/features/decision-support/events.api";
 import { Check, ChevronDown, ChevronRight, RefreshCw, X } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -178,6 +179,19 @@ function PlanBody({
 
 export function SuggestedPlanPanel({ projectCode, canAct }: { projectCode: string; canAct: boolean }) {
   const { suggestions, loading, error, actionError, busyItem, accept, discard, regenerate } = usePlanSuggestions(projectCode);
+
+  // Fix 3.7: the milestones and tasks put in front of the PM count as shown. Accepting and
+  // discarding are recorded by the server when the PM acts, so they cannot be missed.
+  useEffect(() => {
+    if (!canAct) return;
+    recordDecisionSupport(
+      suggestions.flatMap((s) =>
+        s.items
+          .filter((i) => i.state === "pending" && i.kind !== "responsibility")
+          .map((i) => ({ kind: "plan-item" as const, itemKey: `${s.id}:${i.id}`, projectCode, action: "shown" as const })),
+      ),
+    );
+  }, [suggestions, canAct, projectCode]);
 
   return (
     <Card>

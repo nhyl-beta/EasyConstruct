@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { ProjectPicker } from "@/components/shared/project-picker";
 import { DecisionSupportLabel } from "@/components/shared/decision-support-label";
+import { recordDecisionSupport } from "@/features/decision-support/events.api";
 import { tasksRepository, type AllocationProposal } from "../repositories/task.repository";
 
 /**
@@ -20,14 +21,22 @@ export function SuggestAllocationCard({ onAccepted }: { onAccepted?: () => void 
   const [error, setError] = useState<string | null>(null);
   const [busyTask, setBusyTask] = useState<number | null>(null);
   const [accepted, setAccepted] = useState<Set<number>>(new Set());
+  const [skipped, setSkipped] = useState<Set<number>>(new Set());
 
   const run = useCallback(async () => {
     if (!projectCode) return;
     setLoading(true);
     setError(null);
     setAccepted(new Set());
+    setSkipped(new Set());
     try {
-      setProposal(await tasksRepository.suggestAllocation(projectCode));
+      const result = await tasksRepository.suggestAllocation(projectCode);
+      setProposal(result);
+      recordDecisionSupport(
+        result.items
+          .filter((i) => i.suggestions[0])
+          .map((i) => ({ kind: "allocation" as const, itemKey: `${i.taskId}:${i.suggestions[0]!.userId}`, projectCode, action: "shown" as const })),
+      );
     } catch (e) {
       setError(e instanceof Error ? e.message : "Couldn't load suggestions");
     } finally {
@@ -40,6 +49,7 @@ export function SuggestAllocationCard({ onAccepted }: { onAccepted?: () => void 
     setError(null);
     try {
       await tasksRepository.update(taskId, { assignedToUserId: userId, assignedToName: name });
+      recordDecisionSupport([{ kind: "allocation", itemKey: `${taskId}:${userId}`, projectCode, action: "accepted" }]);
       setAccepted((prev) => new Set(prev).add(taskId));
       onAccepted?.();
     } catch (e) {
@@ -103,17 +113,33 @@ export function SuggestAllocationCard({ onAccepted }: { onAccepted?: () => void 
                   {best &&
                     (accepted.has(item.taskId) ? (
                       <span className="text-xs text-success-strong">Assigned to {best.name}</span>
+                    ) : skipped.has(item.taskId) ? (
+                      <span className="text-xs text-muted-foreground">Skipped</span>
                     ) : (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        className="h-7 shrink-0"
-                        disabled={busyTask === item.taskId}
-                        onClick={() => void accept(item.taskId, best.userId, best.name)}
-                      >
-                        {busyTask === item.taskId ? "Saving…" : `Assign ${best.name.split(" ")[0]}`}
-                      </Button>
+                      <div className="flex shrink-0 items-center gap-1.5">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="h-7"
+                          disabled={busyTask === item.taskId}
+                          onClick={() => void accept(item.taskId, best.userId, best.name)}
+                        >
+                          {busyTask === item.taskId ? "Saving…" : `Assign ${best.name.split(" ")[0]}`}
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          className="h-7"
+                          onClick={() => {
+                            recordDecisionSupport([{ kind: "allocation", itemKey: `${item.taskId}:${best.userId}`, projectCode, action: "dismissed" }]);
+                            setSkipped((prev) => new Set(prev).add(item.taskId));
+                          }}
+                        >
+                          Skip
+                        </Button>
+                      </div>
                     ))}
                 </li>
               );
