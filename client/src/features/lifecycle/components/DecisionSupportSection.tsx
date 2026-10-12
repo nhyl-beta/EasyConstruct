@@ -4,8 +4,9 @@
 // mutation. Rendered beneath the gate checklist in ProjectLifecyclePanel,
 // visibly separate (own heading, divider, muted background) so it can never
 // be mistaken for part of the gate checks above it.
+import { DecisionSupportLabel } from "@/components/shared/decision-support-label";
 import { Link } from "react-router";
-import { AlertTriangle, Info, Sparkles, TriangleAlert } from "lucide-react";
+import { AlertTriangle, Info, TriangleAlert } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { Signal, Severity } from "../types/lifecycle.types";
 
@@ -49,10 +50,7 @@ export function DecisionSupportSection({ signals }: { signals: Signal[] }) {
   return (
     <div className="space-y-2 rounded-xl border border-ai/20 bg-ai-soft/30 p-3">
       <div className="flex items-center gap-2">
-        <Badge variant="outline" className="gap-1 rounded-full border-ai/30 bg-background/60 text-overline text-ai">
-          <Sparkles className="h-3 w-3" />
-          AI
-        </Badge>
+        <DecisionSupportLabel />
         <div>
           <p className="text-xs font-medium uppercase tracking-wide text-foreground">Decision support</p>
           <p className="text-overline text-muted-foreground">Rule-based advisories — they never block approval.</p>

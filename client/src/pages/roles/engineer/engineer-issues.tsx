@@ -1,3 +1,4 @@
+import { DecisionSupportLabel } from "@/components/shared/decision-support-label";
 import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
 import { useEffect, useState } from "react";
 import { AlertTriangle, CheckCircle2, Clock, ShieldAlert, Sparkles } from "lucide-react";
@@ -169,6 +170,7 @@ function IssueRow({
           <p className="flex items-center gap-1.5 font-medium text-foreground">
             <Sparkles className="h-3 w-3 text-ai" />
             Similar issue resolved before
+            <DecisionSupportLabel className="ml-auto" />
           </p>
           <ul className="mt-1 space-y-2 text-muted-foreground">
             {precedents.map((p) => (

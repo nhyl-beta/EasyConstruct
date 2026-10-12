@@ -1,3 +1,4 @@
+import { DecisionSupportLabel } from "@/components/shared/decision-support-label";
 import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
 import { useState, type FormEvent } from "react";
 import { RequirementPurchase } from "@/features/finance/components/RequirementPurchase";
@@ -298,8 +299,9 @@ function NewRequirementDialog({
             )}
             {FEATURES.ai && canStructure && before && (
               <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-3 text-xs">
-                <p className="text-muted-foreground">
-                  Rule-based structuring — decision support only. Review the text above; nothing was saved.
+                <p className="flex flex-wrap items-center gap-2 text-muted-foreground">
+                  <DecisionSupportLabel />
+                  Rule-based structuring. Review the text above; nothing was saved.
                 </p>
                 {rewrites.length > 0 && (
                   <ul className="space-y-1">

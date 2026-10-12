@@ -1,3 +1,4 @@
+import { DecisionSupportLabel } from "@/components/shared/decision-support-label";
 import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
 import { useEffect, useState } from "react";
 
@@ -515,8 +516,9 @@ export default function ConsultantProposalsPage() {
 
                 <div className="border-b p-6">
 
-                  <h2 className="font-semibold">
+                  <h2 className="flex flex-wrap items-center gap-2 font-semibold">
                     Rule-based validation summary
+                    <DecisionSupportLabel />
                   </h2>
 
                   <p className="mt-1 text-sm text-muted-foreground">

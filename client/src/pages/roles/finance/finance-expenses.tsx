@@ -406,7 +406,7 @@ export default function FinanceExpensesPage() {
                 </div>
               </SectionCard>
               {FEATURES.ai && (
-                <SectionCard title="Anomaly detection" subtitle="Rule-based: duplicate payments and amounts far above history. Advisory only.">
+                <SectionCard title="Anomaly detection" subtitle="Rule-based: duplicate payments and amounts far above history. A person decides." badge="Decision support">
                   <ul className="space-y-2">
                     {c.anomalies
                       .map((e) => (

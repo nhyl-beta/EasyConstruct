@@ -5,6 +5,7 @@
 // Owner / IT Designer on all). Nothing here changes anything — it only links to
 // where a decision is made. Hidden entirely unless FEATURE_AI is on, because
 // the signals only exist then.
+import { DecisionSupportLabel } from "@/components/shared/decision-support-label";
 import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
 import { usePagination } from "@/hooks/use-pagination";
 import { useEffect, useState } from "react";
@@ -43,7 +44,12 @@ export function ImpactAwarenessCard({ projectCode, className }: { projectCode?: 
       title="Impact awareness"
       subtitle="Rule-based advisories on cost, change, schedule and quality. Read-only; they never block a decision."
       badge={data ? (total === 0 ? "No advisories" : `${total} advisory${total === 1 ? "" : "ies"}`.replace("advisoryies", "advisories")) : undefined}
-      actions={<Radar className="h-4 w-4 text-muted-foreground" aria-hidden />}
+      actions={
+        <span className="flex items-center gap-2">
+          <DecisionSupportLabel />
+          <Radar className="h-4 w-4 text-muted-foreground" aria-hidden />
+        </span>
+      }
     >
       {error ? (
         <p role="alert" className="text-sm text-destructive-strong">{error}</p>

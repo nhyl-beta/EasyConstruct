@@ -1,7 +1,6 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import { ensureValidation, PROPOSAL_VALIDATE_ROLES } from "./validation.js";
-import { proposalService } from "./service.js";
 import { NotFoundError, ForbiddenError } from "../utils/errors.js";
 import { requireRole, type AuthedRequest } from "../middleware/auth.js";
 
@@ -32,7 +31,10 @@ describe("ensureValidation", () => {
   });
 });
 
-test("flag off: validate is a 404 and does nothing (FEATURE_AI is not set in tests)", async () => {
+test("flag off: validate is a 404 and does nothing (FEATURE_AI=false)", async () => {
+  // FEATURES is read when the service first loads, so set the flag before importing it.
+  process.env.FEATURE_AI = "false";
+  const { proposalService } = await import("./service.js");
   await assert.rejects(proposalService.validate(1), NotFoundError);
 });
 

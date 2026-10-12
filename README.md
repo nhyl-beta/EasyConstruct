@@ -59,13 +59,16 @@ MAIL_APP_PASSWORD=xxxx xxxx xxxx xxxx
 # served through the authenticated GET /api/uploads/file route). Falls back to local
 # disk (server/uploads) in development if unset.
 BLOB_READ_WRITE_TOKEN=
-# Required for the AI-validation decision-support layer (proposal validation,
-# cost-comparison, the five advisory signals under DecisionSupportSection) —
-# set true for any demo/presentation environment. Defaults to false/off.
+# Decision-support layer (proposal validation, cost comparison, advisory
+# signals, suggested plans, task allocation advice, impact forecasts).
+# ON by default; set false to switch it all off. Rule-based advice only: a
+# person always decides.
 FEATURE_AI=true
+# Secret for scheduled jobs on Vercel (/api/cron/*). Leave empty locally.
+CRON_SECRET=
 ```
 
-The client reads `VITE_API_BASE` to decide whether to talk to the real API or use mock data; set it in a `.env` file inside `client/` (e.g. `VITE_API_BASE=http://localhost:8000` — **no `/api` suffix**: `client/src/services/api.client.ts`'s `apiUrl()` always appends `/api` itself, so a value ending in `/api` here produces a double `/api/api/...` and every request 404s) once the server is running. It also needs its own `VITE_FEATURE_AI=true` (separate flag, separate `.env`, same gate) to show the same AI-validation surfaces client-side — the server-side `FEATURE_AI` alone does not turn on the UI.
+The client reads `VITE_API_BASE` to decide whether to talk to the real API or use mock data; set it in a `.env` file inside `client/` (e.g. `VITE_API_BASE=http://localhost:8000` — **no `/api` suffix**: `client/src/services/api.client.ts`'s `apiUrl()` always appends `/api` itself, so a value ending in `/api` here produces a double `/api/api/...` and every request 404s) once the server is running. Decision-support surfaces are on by default on the client too; set `VITE_FEATURE_AI=false` (separate flag, separate `.env`, same gate) together with the server's `FEATURE_AI=false` to hide them.
 
 ### 3. Set up the database
 
