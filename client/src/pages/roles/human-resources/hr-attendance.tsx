@@ -36,6 +36,7 @@ import {
 } from "@/features/hr/attendance-api";
 import { ATTENDANCE_PAGE_SIZES, useAttendancePaged } from "@/features/hr/hooks/use-attendance-paged";
 import { AttendanceVerificationDialog } from "@/components/hr/attendance-verification-dialog";
+import { SavedFiltersBar } from "@/components/shared/SavedFiltersBar";
 import { AttendanceExceptionsPanel } from "@/features/hr/components/AttendanceExceptionsPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -208,6 +209,16 @@ export default function HRAttendancePage() {
                 <X className="h-3 w-3" /> Clear
               </Button>
             )}
+            <SavedFiltersBar
+              page="hr-attendance"
+              current={{ search: a.query, verification: a.filters.verification, status: a.filters.status }}
+              hasActive={a.hasActiveFilters}
+              onApply={(f: { search: string; verification: string; status: string }) => {
+                a.setQuery(f.search);
+                a.setFilter("verification", f.verification);
+                a.setFilter("status", f.status);
+              }}
+            />
           </div>
 
           <CardContent className="overflow-hidden px-0 [&_[data-slot=table-container]]:overflow-x-hidden [&_td]:whitespace-normal [&_td]:break-words [&_td]:px-2 [&_th]:px-2">
