@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRoleConfig } from "@/hooks/use-role-config";
+import { CalendarDayPanel } from "@/features/calendar/components/CalendarDayPanel";
 import { CalendarEventButton } from "@/features/calendar/components/CalendarEventButton";
 import { EventDetails } from "@/features/calendar/components/EventDetails";
 import { EVENT_STYLE } from "@/features/calendar/components/event-style";
@@ -39,6 +40,7 @@ export function CalendarWidget() {
   const role = identity.role;
   const isMobile = !!useIsMobile();
   const [selected, setSelected] = useState<CalendarEvent | null>(null);
+  const [openDay, setOpenDay] = useState<string | null>(null);
   const { events, loading, error } = useCalendarEvents(fetchRange(month));
 
   const eventsByDate = useMemo(() => {
@@ -111,23 +113,33 @@ export function CalendarWidget() {
                 return (
                   <div
                     key={key}
-                    className={`min-h-24 border-b border-r border-border/50 p-1.5 last:border-r-0 ${
+                    onClick={(e) => e.target === e.currentTarget && setOpenDay(key)}
+                    className={`min-h-24 cursor-pointer border-b border-r border-border/50 p-1.5 last:border-r-0 ${
                       inMonth ? "" : "bg-muted/20"
                     }`}
                   >
-                    <div
-                      className={`mb-1 inline-flex h-5 w-5 items-center justify-center rounded-full text-overline ${
+                    <button
+                      type="button"
+                      aria-label={`${format(day, "EEEE d MMMM")}, ${dayEvents.length} event${dayEvents.length === 1 ? "" : "s"}. Open day`}
+                      onClick={() => setOpenDay(key)}
+                      className={`mb-1 inline-flex h-5 w-5 items-center justify-center rounded-full text-overline hover:ring-1 hover:ring-border focus-visible:outline-2 focus-visible:outline-ring ${
                         today ? "bg-primary font-semibold text-primary-foreground" : inMonth ? "text-foreground" : "text-muted-foreground/50"
                       }`}
                     >
                       {format(day, "d")}
-                    </div>
+                    </button>
                     <div className="space-y-0.5">
                       {dayEvents.slice(0, 3).map((event) => (
                         <CalendarEventButton key={event.id} event={event} role={role} mobile={isMobile} onSelect={setSelected} />
                       ))}
                       {dayEvents.length > 3 && (
-                        <div className="px-1 text-overline text-muted-foreground">+{dayEvents.length - 3} more</div>
+                        <button
+                          type="button"
+                          onClick={() => setOpenDay(key)}
+                          className="px-1 text-overline text-primary-strong underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+                        >
+                          +{dayEvents.length - 3} more
+                        </button>
                       )}
                     </div>
                   </div>
@@ -137,6 +149,14 @@ export function CalendarWidget() {
           </div>
         )}
       </div>
+      <CalendarDayPanel
+        day={openDay}
+        events={openDay ? (eventsByDate.get(openDay) ?? []) : []}
+        hiddenCount={0}
+        role={role}
+        mobile={isMobile}
+        onClose={() => setOpenDay(null)}
+      />
       {/* Phone: the details open in a bottom sheet (desktop uses a popover on the event). */}
       <Sheet open={selected !== null} onOpenChange={(o) => !o && setSelected(null)}>
         <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto rounded-t-xl p-4">
