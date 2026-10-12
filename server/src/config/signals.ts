@@ -9,6 +9,11 @@ export const SIGNAL_THRESHOLDS = {
   burnVsProgress: { warnPoints: 20, criticalPoints: 35 },
   issueRecurrence: { warnCount: 3, criticalCount: 5, windowDays: 30 },
   stalledStage: { warnHours: 48, criticalHours: 120 },
+  // Forecast of a proposed change (forecast/change-impact.ts): days the schedule slips.
+  changeImpact: { slipWarnDays: 7, slipCriticalDays: 21 },
+  // projected-finish rule: pace over the trailing window, and how many days
+  // past the last milestone the projected finish may fall before it is raised.
+  projectedFinish: { windowDays: 28, warnDays: 7, criticalDays: 21 },
 } as const;
 
 // Dice-coefficient floor below which a cost-catalog match is discarded

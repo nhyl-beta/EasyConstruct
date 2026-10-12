@@ -11,6 +11,7 @@ import {
   updateDesignRequestSchema,
 } from "../validators/design-request-validators.js";
 import * as controller from "./controller.js";
+import * as forecastController from "../forecast/controller.js";
 
 const router = Router();
 router.use(authenticate);
@@ -22,6 +23,8 @@ router.get("/attention", requireRole("admin", "owner", "it-designer"), controlle
 router.post("/sweep", requireRole("admin"), controller.sweep);
 router.get("/assignees", controller.assignees);
 router.get("/:id", controller.getById);
+// Fix 3.2: what approving this request would do to cost and schedule (read-only).
+router.get("/:id/impact-forecast", forecastController.requestForecast);
 
 // Raising: PM and Engineer (Admin as break-glass). An Engineer's request is a draft until the PM sends it.
 const raisers = requireRole("project-manager", "engineer", "admin");

@@ -2,6 +2,7 @@ import { Router } from "express";
 import * as controller from "./controller.js";
 import { validate } from "../middleware/validate.js";
 import { authenticate, requireRole } from "../middleware/auth.js";
+import * as forecastController from "../forecast/controller.js";
 import { advisoryDocumentUpload } from "../documents/upload.js";
 import {
   addAttachmentSchema,
@@ -61,6 +62,8 @@ router.get(
 );
 router.get("/", controller.getAll);
 router.get("/:id", controller.getById);
+// Fix 3.2: read-only forecast of a cost change, same project scoping as the workflow.
+router.get("/:id/impact-forecast", forecastController.workflowForecast);
 
 router.post("/", canInitiateWorkflow, validate(createWorkflowSchema), controller.create);
 

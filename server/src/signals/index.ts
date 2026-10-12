@@ -6,6 +6,7 @@ import { cumulativeChangeImpactRule } from "./cumulative-change-impact.js";
 import { burnVsProgressRule } from "./burn-vs-progress.js";
 import { issueRecurrenceRule } from "./issue-recurrence.js";
 import { stalledStageRule } from "./stalled-stage.js";
+import { projectedFinishRule } from "./projected-finish.js";
 import { FEATURES } from "../config/features.js";
 
 const RULES: SignalRule[] = [
@@ -14,6 +15,7 @@ const RULES: SignalRule[] = [
   burnVsProgressRule,
   issueRecurrenceRule,
   stalledStageRule,
+  projectedFinishRule,
 ];
 
 const SEVERITY_ORDER: Record<Signal["severity"], number> = { critical: 0, warn: 1, info: 2 };

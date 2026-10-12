@@ -31,6 +31,7 @@ import {
 } from "@/components/workflows/workflow-submission-panel";
 import { WorkflowStagePipeline } from "@/components/workflows/workflow-stage-pipeline";
 import { useBudgetChangeRequests } from "@/features/workflows/hooks/useWorkflows";
+import { ImpactForecastCard } from "@/features/workflows/components/ImpactForecastCard";
 import { WorkflowRepository } from "@/features/workflows/repositories/workflow.repository";
 import { formatCurrency } from "@/lib/format-currency";
 import { formatRelativeTime } from "@/lib/format-relative-time";
@@ -159,6 +160,8 @@ function RequestCard({ request, onRevalidated }: { request: Workflow; onRevalida
                 </p>
               )}
             </section>
+
+            <ImpactForecastCard workflowId={request.id} />
 
             <section className="space-y-2">
               <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">

@@ -134,3 +134,40 @@ export const WorkflowRepository = {
     return unwrap<Workflow>(apiClient.post(`/workflows/${workflowId}/revalidate`, {}));
   },
 };
+// ── Impact forecast (objectives fix 3.2): read-only decision support ──────
+
+export interface ImpactForecastData {
+  contractValue: number | null;
+  currentPlanned: number;
+  actualToDate: number;
+  requestedAmount: number;
+  newTotal: number;
+  percentOverContract: number | null;
+  completionPct: number | null;
+  estimateAtCompletion: number | null;
+  estimateAtCompletionIfApproved: number | null;
+  projectedOverrun: number | null;
+  scheduleSlipDays: number;
+  movedMilestones: { id: number; title: string; from: string; to: string }[];
+  severity: "info" | "warn" | "critical";
+  basis: string[];
+  sentence: string;
+}
+
+export type WorkflowImpactForecast =
+  | { applicable: false; reason: string }
+  | {
+      applicable: true;
+      workflowId: number;
+      projectCode: string;
+      template: string;
+      forecast: ImpactForecastData;
+      notes: string[];
+    };
+
+export const WorkflowForecastRepository = {
+  get: (workflowId: number, timeImpactDays = 0): Promise<WorkflowImpactForecast> =>
+    unwrap<WorkflowImpactForecast>(
+      apiClient.get(`/workflows/${workflowId}/impact-forecast?timeImpactDays=${timeImpactDays}`),
+    ),
+};

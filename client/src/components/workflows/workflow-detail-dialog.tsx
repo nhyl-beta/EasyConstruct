@@ -13,6 +13,7 @@
 // rendered the pipeline only, which is why the Admin's final approval, the
 // PM's sign-off and the Consultant's review all ended up deciding without the
 // documents that had moved through the earlier stages.
+import { ImpactForecastCard } from "@/features/workflows/components/ImpactForecastCard";
 import {
   Dialog,
   DialogContent,
@@ -108,6 +109,9 @@ export function WorkflowDetailDialog({
             <Section title="Approval chain">
               <WorkflowStagePipeline stages={workflow.stages} direction="row" />
             </Section>
+
+            {/* Fix 3.2: shown for budget changes and change orders only (the card hides itself otherwise). */}
+            <ImpactForecastCard workflowId={workflow.id} />
 
             <div className={hasLineItems ? "grid gap-6 lg:grid-cols-2" : ""}>
               {/* Rendered only for workflows that actually have cost lines —
