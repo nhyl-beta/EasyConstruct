@@ -27,6 +27,7 @@ import { ProposalAttachments } from "@/pages/roles/consultant/proposal-attachmen
 import { WorkflowRepository } from "@/features/workflows/repositories/workflow.repository";
 import type { Proposal } from "@/features/proposals/types/proposal.types";
 import { FEATURES } from "@/config/features";
+import { ProposalValidationPanel, isStaleValidation } from "@/features/proposals/components/ProposalValidationPanel";
 
 /*
  * ============================================================
@@ -119,7 +120,9 @@ export default function ConsultantProposalsPage() {
   }, []);
 
   useEffect(() => {
-    if (!FEATURES.ai || !selectedProposal || selectedProposal.aiValidation) return;
+    if (!FEATURES.ai || !selectedProposal) return;
+    // Missing, or made by an older set of checks: compute it again (the server keeps a current one as it is).
+    if (selectedProposal.aiValidation && !isStaleValidation(selectedProposal.aiValidation)) return;
     const id = selectedProposal.id;
     if (validationTried.has(id)) return;
     setValidationTried((prev) => new Set(prev).add(id));
@@ -528,56 +531,21 @@ export default function ConsultantProposalsPage() {
                 </div>
 
                 <div className="p-6">
-                  {(() => {
-                    if (!selectedProposal.aiValidation) {
-                      return (
-                        <p className="text-sm text-muted-foreground">
-                          {validationFailed
-                            ? "The validation summary could not be generated right now."
-                            : "Preparing the validation summary…"}
-                        </p>
-                      );
+                  <ProposalValidationPanel
+                    raw={selectedProposal.aiValidation}
+                    emptyText={
+                      validationFailed
+                        ? "The validation summary could not be generated right now."
+                        : "Preparing the validation summary…"
                     }
-                    let parsed: { passed: boolean; issues: string[]; warnings: string[] } | null = null;
-                    try {
-                      parsed = JSON.parse(selectedProposal.aiValidation);
-                    } catch {
-                      parsed = null;
-                    }
-                    if (!parsed) {
-                      return (
-                        <p className="whitespace-pre-wrap text-sm leading-7">
-                          {selectedProposal.aiValidation}
-                        </p>
-                      );
-                    }
-                    return (
-                      <div className="space-y-3 text-sm">
-                        <div className={`font-medium ${parsed.passed ? "text-success-strong" : "text-destructive-strong"}`}>
-                          {parsed.passed ? "No blocking issues found" : "Blocking issues found"}
-                        </div>
-                        {parsed.issues.length > 0 && (
-                          <div>
-                            <p className="mb-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">Issues</p>
-                            <ul className="list-inside list-disc space-y-0.5 text-destructive-strong">
-                              {parsed.issues.map((i) => <li key={i}>{i}</li>)}
-                            </ul>
-                          </div>
-                        )}
-                        {parsed.warnings.length > 0 && (
-                          <div>
-                            <p className="mb-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">Warnings</p>
-                            <ul className="list-inside list-disc space-y-0.5 text-muted-foreground">
-                              {parsed.warnings.map((w) => <li key={w}>{w}</li>)}
-                            </ul>
-                          </div>
-                        )}
-                        {parsed.issues.length === 0 && parsed.warnings.length === 0 && (
-                          <p className="text-muted-foreground">No issues or warnings raised.</p>
-                        )}
-                      </div>
-                    );
-                  })()}
+                    onRerun={() => {
+                      setValidationTried((prev) => {
+                        const next = new Set(prev);
+                        next.delete(selectedProposal.id);
+                        return next;
+                      });
+                    }}
+                  />
                 </div>
 
               </div>

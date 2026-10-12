@@ -53,6 +53,8 @@ interface ValidationResult {
   passed: boolean;
   issues: string[];
   warnings: string[];
+  /** What the checks compared the proposal with (fix 3.3); absent on older results. */
+  basis?: string[];
 }
 
 function parseValidation(raw: string | null): ValidationResult | null {
@@ -69,7 +71,7 @@ function ValidationSummary({ raw }: { raw: string | null }) {
   if (!result) return <span className="text-muted-foreground">—</span>;
 
   return (
-    <div className="space-y-1 text-xs">
+    <div className="space-y-1 text-xs" title={result.basis?.join(" ")}>
       <div className={`flex items-center gap-1 font-medium ${result.passed ? "text-success-strong" : "text-destructive-strong"}`}>
         {result.passed ? <CheckCircle2 className="h-3 w-3" /> : <AlertTriangle className="h-3 w-3" />}
         Rule-based validation — human review required

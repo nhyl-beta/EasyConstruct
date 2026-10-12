@@ -20,6 +20,20 @@ export const SIGNAL_THRESHOLDS = {
   milestoneSlip: { warnDays: 1, criticalDays: 14 },
 } as const;
 
+// Proposal validation (proposals/validation.ts): how a proposal is compared with
+// its surroundings. Every warning it raises names the sample it used.
+export const PROPOSAL_CHECKS = {
+  // Fewest past proposals of the same project type worth comparing against.
+  minSample: 3,
+  // Flag an amount this many times the median, or at most this fraction of it.
+  highFactor: 2,
+  lowFactor: 0.4,
+  // Possible duplicate: title similarity at least this, amounts within this share of each other, filed within this many days.
+  duplicateTitleSimilarity: 0.7,
+  duplicateAmountPct: 0.1,
+  duplicateWindowDays: 30,
+} as const;
+
 // Dice-coefficient floor below which a cost-catalog match is discarded
 // (matcher.ts bestMatch) — see S-3.
 export const SIMILARITY_FLOOR = 0.40;
