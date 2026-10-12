@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { PLAN_TEMPLATES, RESPONSIBILITIES } from "./templates.js";
 import {
   buildPlan,
   itemsToAddOnRegenerate,
@@ -92,4 +93,19 @@ test("accepting a milestone builds a draft-milestone input; a task links to it a
 
 test("task codes fit the 20 character column", () => {
   assert.ok(taskCodeFor(1_790_000_123_456, 99).length <= 20);
+});
+
+test("every template is usable: dated milestones with tasks, and the responsibility table covers the main roles", () => {
+  for (const [key, t] of Object.entries(PLAN_TEMPLATES)) {
+    assert.equal(t.key, key);
+    assert.ok(t.milestones.length >= 3, `${key} has too few milestones`);
+    assert.equal(new Set(t.milestones.map((m) => m.key)).size, t.milestones.length, `${key} repeats a milestone key`);
+    for (const m of t.milestones) {
+      assert.ok(m.durationDays > 0 && m.tasks.length >= 1, `${key}/${m.key}`);
+    }
+  }
+  const roles = new Set(RESPONSIBILITIES.map((r) => r.role));
+  for (const role of ["project-manager", "architect", "engineer", "consultant", "finance-manager", "human-resources", "site-personnel"]) {
+    assert.ok(roles.has(role), `no responsibility for ${role}`);
+  }
 });
