@@ -35,7 +35,7 @@ const SPECIAL = ["notifications", "employees"];
 /** Delete order: children before parents (derived from the real FK map). */
 const DELETE_ORDER = [
   "validation_results", "workflow_attachments", "workflow_line_items", "workflow_stages",
-  "plan_suggestion_items", "plan_suggestions",
+  "plan_suggestion_items", "plan_suggestions", "signal_findings",
   "proposals", "workflows",
   "budget_adjustments", "budget_allocations", "budget_approval_steps", "budget_comments",
   "budget_documents", "budget_history", "budgets",

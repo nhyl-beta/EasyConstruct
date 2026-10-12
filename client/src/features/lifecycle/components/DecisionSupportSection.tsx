@@ -29,6 +29,16 @@ export function SignalRow({ signal }: { signal: Signal }) {
       <div className="min-w-0 flex-1 space-y-1">
         <p className="font-medium leading-snug">{signal.label}</p>
         <p className="text-xs text-muted-foreground">{signal.detail}</p>
+        {signal.suggestedResolution && (
+          <p className="text-xs text-foreground/80">
+            <span className="font-medium">Suggested:</span> {signal.suggestedResolution.action}
+          </p>
+        )}
+        {signal.suggestedResolution?.precedents?.map((p) => (
+          <p key={p.issueCode} className="text-overline text-muted-foreground">
+            Similar resolved issue {p.issueCode} ({Math.round(p.score * 100)}% match): {p.resolutionNotes.slice(0, 160)}
+          </p>
+        ))}
         {signal.sources && signal.sources.length > 0 && (
           <p className="text-overline text-muted-foreground/80">
             {signal.sources

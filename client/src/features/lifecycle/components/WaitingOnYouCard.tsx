@@ -7,6 +7,7 @@ import { useNavigate } from "react-router";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatRelativeTime } from "@/lib/format-relative-time";
 import { useMyActions } from "../hooks/useMyActions";
 import type { MyActionItem } from "../types/my-actions.types";
 
@@ -62,13 +63,29 @@ export function WaitingOnYouCard() {
                   <span className="block text-sm font-medium leading-tight">{a.title}</span>
                   {a.kind === "signal" && (
                     <Badge variant="outline" className="rounded-full border-ai/30 text-[9px] text-ai">
-                      AI
+                      Decision support
                     </Badge>
                   )}
                 </span>
                 <span className="mt-0.5 block text-xs text-muted-foreground">
                   {a.projectName} · {a.detail}
                 </span>
+                {a.kind === "signal" && a.suggestedResolution && (
+                  <span className="mt-0.5 block text-xs text-foreground/80">
+                    Suggested: {a.suggestedResolution.action}
+                    {a.suggestedResolution.precedents && a.suggestedResolution.precedents.length > 0 && (
+                      <>
+                        {" "}Similar resolved issue: {a.suggestedResolution.precedents[0]!.issueCode}, "
+                        {a.suggestedResolution.precedents[0]!.resolutionNotes.slice(0, 120)}"
+                      </>
+                    )}
+                  </span>
+                )}
+                {a.kind === "signal" && a.firstSeen && (
+                  <span className="mt-0.5 block text-overline text-muted-foreground">
+                    Open since {formatRelativeTime(a.firstSeen)}. A person decides what to do.
+                  </span>
+                )}
               </span>
               <ChevronRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
             </button>

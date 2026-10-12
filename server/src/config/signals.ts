@@ -14,6 +14,10 @@ export const SIGNAL_THRESHOLDS = {
   // projected-finish rule: pace over the trailing window, and how many days
   // past the last milestone the projected finish may fall before it is raised.
   projectedFinish: { windowDays: 28, warnDays: 7, criticalDays: 21 },
+  // overdue-tasks rule: open tasks whose due date has passed.
+  overdueTasks: { warnCount: 3, criticalCount: 8 },
+  // milestone-slip rule: an active or at-risk milestone past its estimated date.
+  milestoneSlip: { warnDays: 1, criticalDays: 14 },
 } as const;
 
 // Dice-coefficient floor below which a cost-catalog match is discarded

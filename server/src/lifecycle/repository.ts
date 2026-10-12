@@ -163,8 +163,11 @@ export const loadSnapshots = async (projectCodes: string[]) => {
   const resolvedWithNotes = allOpenCategories.length
     ? await db
         .select({
+          id: issues.id,
           issueCode: issues.issueCode,
+          projectCode: issues.projectCode,
           title: issues.title,
+          description: issues.description,
           category: issues.category,
           resolutionNotes: issues.resolutionNotes,
           updatedAt: issues.updatedAt,
@@ -181,8 +184,11 @@ export const loadSnapshots = async (projectCodes: string[]) => {
     : [];
 
   type Precedent = {
+    id: number;
     issueCode: string;
+    projectCode: string;
     title: string;
+    description: string;
     category: string;
     resolutionNotes: string;
     updatedAt: Date | null;

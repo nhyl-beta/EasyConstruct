@@ -32,6 +32,9 @@ export const env = {
   // convert catalog USD prices to PHP with this dated constant rather than a
   // live FX API — S-2. Every stored comparison records both fields so the
   // rate used is always visible, not just the current default.
+  // Shared secret for scheduled jobs under /api/cron (Vercel Cron sends it as a
+  // Bearer token). When unset the cron endpoints refuse every request.
+  CRON_SECRET: process.env.CRON_SECRET || undefined,
   FX_RATE_USD_PHP: parseFloat(process.env.FX_RATE_USD_PHP ?? '62.73'),
   FX_RATE_AS_OF:   process.env.FX_RATE_AS_OF ?? '2026-09-22',
 } as const;

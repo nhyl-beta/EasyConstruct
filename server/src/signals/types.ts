@@ -15,6 +15,12 @@ export interface SignalSource {
   fxAsOf?: string;
 }
 
+/** What a person could do about a signal, from the playbook; precedents are similar resolved issues. */
+export interface SuggestedResolution {
+  action: string;
+  precedents?: import("../issues/precedents.js").RankedPrecedent[];
+}
+
 export interface Signal {
   key: string;
   rule: string;
@@ -24,6 +30,8 @@ export interface Signal {
   detail: string;
   link?: string;
   sources?: SignalSource[];
+  /** Advice on what to do next. Never applied automatically. */
+  suggestedResolution?: SuggestedResolution;
 }
 
 export interface SignalContext {

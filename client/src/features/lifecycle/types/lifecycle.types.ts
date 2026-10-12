@@ -67,6 +67,11 @@ export interface Signal {
   detail: string;
   link?: string;
   sources?: SignalSource[];
+  /** Fix 3.5: playbook advice, with similar resolved issues when there are any. */
+  suggestedResolution?: {
+    action: string;
+    precedents?: { issueCode: string; projectCode: string; title: string; resolutionNotes: string; score: number }[];
+  };
 }
 
 export interface LifecycleView {
