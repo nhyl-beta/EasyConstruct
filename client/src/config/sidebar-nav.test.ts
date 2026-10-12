@@ -124,12 +124,12 @@ describe("buildSidebarNav", () => {
     });
     expect(shape("project_manager")).toEqual({
       "Project Delivery": ["issues", "tasks", "reports"],
-      "Records & Requests": ["requests", "my-claims", "archive-search", "legacy-import"],
+      "Records & Requests": ["requests", "my-claims", "my-pay", "archive-search", "legacy-import"],
     });
     expect(shape("architect")).toEqual({
       "Designs & Proposals": ["designs", "proposals"],
       "Design Files": ["blueprints", "revisions", "architect-documents"],
-      "Records & Requests": ["requests", "my-claims", "archive-search", "legacy-import"],
+      "Records & Requests": ["requests", "my-claims", "my-pay", "archive-search", "legacy-import"],
     });
   });
 });

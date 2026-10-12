@@ -44,6 +44,7 @@ import workflowRoutes from "./workflows/routes.js";
 import milestoneRoutes from "./milestones/routes.js";
 import planSuggestionRoutes from "./plan-suggestion/routes.js";
 import cronRoutes from "./jobs/routes.js";
+import meRoutes from "./me/routes.js";
 import myActionsRoutes from "./lifecycle/my-actions.js";
 import aiValidationRoutes from "./ai-validation/routes.js";
 import calendarRoutes from "./calendar/routes.js";
@@ -122,6 +123,8 @@ app.use("/api/milestones", milestoneRoutes);
 app.use("/api/plan-suggestions", planSuggestionRoutes);
 // Scheduled jobs (Vercel Cron): guarded by CRON_SECRET, not by a user login.
 app.use("/api/cron", cronRoutes);
+// A signed-in person's own attendance and approved payslips (read-only).
+app.use("/api/me", meRoutes);
 // K1: cross-project "what's waiting on me" — deliberately its own top-level
 // mount, not nested under /api/projects/:id/lifecycle, since it spans every
 // project the caller is relevant to rather than one.

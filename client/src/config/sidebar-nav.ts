@@ -45,7 +45,7 @@ const group = (
 
 // "Records & Requests" and "Design Files" are usability groupings, not
 // scope-tagged; the rest follow the scope tags noted beside them.
-const RECORDS = ["requests", "my-claims", "archive-search", "legacy-import"];
+const RECORDS = ["requests", "my-claims", "my-pay", "archive-search", "legacy-import"];
 
 export const SIDEBAR_NAV: Record<string, SidebarNavConfigEntry[]> = {
   admin: [

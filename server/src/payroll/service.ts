@@ -13,6 +13,7 @@ import * as repo from "./repository.js";
 import { orderByFor, paginate, type PageRequest } from "../utils/pagination.js";
 import * as batchRepo from "./batch-repository.js";
 import { computeLine, getRules, periodEndDate, round2, type PayrollRules } from "./engine.js";
+import { buildTrace } from "./trace.js";
 import { periodRange, unacknowledged, validateBatchLines, type WarningContext } from "./validation.js";
 import {
   EDITABLE_BATCH_STATUSES,
@@ -257,6 +258,63 @@ export const getBatchDetail = async (id: string, actor: Actor = SYSTEM_ACTOR) =>
     validation: EDITABLE_BATCH_STATUSES.includes(batch.status)
       ? await validateBatch(batch, lines)
       : ([] as ValidationIssue[]),
+  };
+};
+
+// How one stored line was worked out (fix 2.5): the steps, the attendance behind
+// the hours and the rate versions used. Read-only; same visibility as the line.
+export const getLineTrace = async (id: number, actor: Actor = SYSTEM_ACTOR) => {
+  const line = await getById(id, actor);
+  const batch = line.batchId ? await batchRepo.findById(line.batchId) : null;
+  const employee = await employeesRepo.findByEmployeeId(line.empId);
+  if (!employee) throw new NotFoundError("Employee", line.empId);
+
+  const period = periodRange(batch?.period ?? line.period);
+  const rows =
+    batch?.projectCode && period
+      ? (
+          await attendanceRepo.findForProject({
+            projectCode: batch.projectCode,
+            dateFrom: period.start,
+            dateTo: period.end,
+          })
+        ).filter((r) => r.employeeId === line.empId)
+      : [];
+
+  const trace = buildTrace({
+    line: {
+      hours: Number(line.hours),
+      overtime: Number(line.overtime),
+      adjustments: Number(line.adjustments),
+      gross: Number(line.gross),
+      sss: Number(line.sss),
+      philhealth: Number(line.philhealth),
+      pagibig: Number(line.pagibig),
+      deductions: Number(line.deductions),
+      net: Number(line.net),
+      employerSss: Number(line.employerSss),
+      employerEc: Number(line.employerEc),
+      employerPhilhealth: Number(line.employerPhilhealth),
+      employerPagibig: Number(line.employerPagibig),
+      employerCost: Number(line.employerCost),
+      rateVersions: line.rateVersions,
+    },
+    employee: { payRate: Number(employee.payRate), rateType: employee.rateType },
+    attendance: rows.map((r) => ({
+      id: r.id,
+      logDate: r.logDate,
+      clockIn: r.clockIn,
+      clockOut: r.clockOut,
+      hours: Number(r.hours ?? 0),
+      attendanceStatus: r.attendanceStatus,
+      verification: r.status,
+    })),
+    rules: getRules(periodEndDate(line.period)),
+  });
+  return {
+    line: { id: line.id, empId: line.empId, name: line.name, period: line.period, batchId: line.batchId },
+    notCertified: "Rule-based calculation. Not a certified payroll engine: no 13th-month, de minimis or year-end adjustments.",
+    ...trace,
   };
 };
 

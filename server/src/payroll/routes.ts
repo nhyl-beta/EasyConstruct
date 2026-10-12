@@ -49,6 +49,7 @@ router.delete("/batches/:id", canWrite, controller.removeBatch);
 // Contribution reports per agency and period (employee + employer share)
 router.get("/reports/contributions", canRead, controller.contributionReport);
 
+router.get("/:id/trace", canRead, controller.getLineTrace);
 router.get("/:id", canRead, controller.getById);
 router.patch("/:id", canWrite, validate(updatePayrollLineSchema), controller.update);
 router.delete("/:id", canWrite, controller.remove);

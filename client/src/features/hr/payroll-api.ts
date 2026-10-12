@@ -377,3 +377,39 @@ export async function getAttendanceReadiness(
   if (dateTo) params.set("dateTo", dateTo);
   return unwrap<AttendanceReadiness>(apiClient.get(`/payroll/attendance-readiness?${params.toString()}`));
 }
+
+// ── Calculation trace (objectives fix 2.5) ───────────────────────────────
+
+export interface TraceStep {
+  label: string;
+  formula: string;
+  amount: number | null;
+}
+
+export interface TraceAttendanceRow {
+  id: number;
+  logDate: string;
+  clockIn: string;
+  clockOut: string | null;
+  hours: number;
+  attendanceStatus: string;
+  verification: string;
+  counted: boolean;
+  regular: number;
+  overtime: number;
+}
+
+export interface PayrollTrace {
+  line: { id: number; empId: string; name: string; period: string; batchId: string | null };
+  notCertified: string;
+  steps: TraceStep[];
+  rateVersions: Record<string, string> | null;
+  attendance: TraceAttendanceRow[];
+  attendanceTotals: { regular: number; overtime: number; unverifiedRecords: number };
+  hoursNote: string;
+  recomputed: { matches: boolean; differences: string[] };
+}
+
+export async function getPayrollTrace(lineId: number): Promise<PayrollTrace> {
+  return unwrap<PayrollTrace>(apiClient.get(`/payroll/${lineId}/trace`));
+}

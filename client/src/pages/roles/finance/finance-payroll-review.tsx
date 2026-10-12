@@ -16,6 +16,7 @@ import {
 import { BatchStatusPill } from "@/features/hr/components/batch-status-pill";
 import { PayslipDialog } from "@/features/hr/components/payslip-dialog";
 import { PayslipButton } from "@/features/hr/components/payslip-button";
+import { PayrollTraceButton, PayrollTraceSheet } from "@/features/hr/components/PayrollTraceSheet";
 import { visibleRateVersions } from "@/features/hr/payroll-api";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
@@ -68,6 +69,7 @@ export default function FinancePayrollReviewPage() {
   const [comment, setComment] = useState("");
   const [confirming, setConfirming] = useState<"approved" | "rejected" | null>(null);
   const [payslipLine, setPayslipLine] = useState<PayrollLine | null>(null);
+  const [traceLineId, setTraceLineId] = useState<number | null>(null);
 
   async function loadBatches() {
     setError("");
@@ -343,7 +345,10 @@ export default function FinancePayrollReviewPage() {
                               <td className="hidden px-2 py-1.5 text-right tabular-nums @2xl:table-cell">{formatCurrency(line.deductions)}</td>
                               <td className="px-2 py-1.5 text-right tabular-nums">{formatCurrency(line.net)}</td>
                               <td className="px-2 py-1.5 text-right">
-                                <PayslipButton line={line} onOpen={setPayslipLine} />
+                                <div className="flex items-center justify-end gap-1">
+                                  <PayslipButton line={line} onOpen={setPayslipLine} />
+                                  <PayrollTraceButton lineId={line.id} onOpen={setTraceLineId} />
+                                </div>
                               </td>
                             </tr>
                           ))}
@@ -451,6 +456,7 @@ export default function FinancePayrollReviewPage() {
       />
 
       <PayslipDialog line={payslipLine} onClose={() => setPayslipLine(null)} />
+      <PayrollTraceSheet lineId={traceLineId} onClose={() => setTraceLineId(null)} />
     </div>
   );
 }

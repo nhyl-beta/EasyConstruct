@@ -35,6 +35,7 @@ import { BatchStatusPill } from "@/features/hr/components/batch-status-pill";
 import { PayrollWizard } from "@/features/hr/components/payroll-wizard";
 import { PayslipDialog } from "@/features/hr/components/payslip-dialog";
 import { PayslipButton } from "@/features/hr/components/payslip-button";
+import { PayrollTraceButton, PayrollTraceSheet } from "@/features/hr/components/PayrollTraceSheet";
 import { AlertTriangle, ArrowUpRight, Building2, CheckCircle2, Download, FileText, RefreshCw, Wallet } from "lucide-react";
 import { downloadCsv } from "@/lib/export-csv";
 import { formatCompactCurrency, formatCurrency } from "@/lib/format-currency";
@@ -60,6 +61,7 @@ export default function HRPayrollPage() {
   useOpenOnAction("generate-payroll", () => setWizardOpen(true));
   const [resumeBatchId, setResumeBatchId] = useState<string | null>(null);
   const [payslipLine, setPayslipLine] = useState<PayrollLine | null>(null);
+  const [traceLineId, setTraceLineId] = useState<number | null>(null);
   // F1: the filter drives what the tracksheet below actually displays.
   const [trackFilterPeriod, setTrackFilterPeriod] = useState<string | null>(null);
 
@@ -402,7 +404,10 @@ export default function HRPayrollPage() {
                     <StatusBadge status={p.status} />
                   </TableCell>
                   <TableCell>
-                    <PayslipButton line={p} onOpen={setPayslipLine} />
+                    <div className="flex items-center gap-1">
+                      <PayslipButton line={p} onOpen={setPayslipLine} />
+                      <PayrollTraceButton lineId={p.id} onOpen={setTraceLineId} />
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -417,6 +422,7 @@ export default function HRPayrollPage() {
       </Card>
 
       <PayslipDialog line={payslipLine} onClose={() => setPayslipLine(null)} />
+      <PayrollTraceSheet lineId={traceLineId} onClose={() => setTraceLineId(null)} />
     </div>
   );
 }

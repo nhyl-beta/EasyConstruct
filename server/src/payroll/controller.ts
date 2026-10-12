@@ -51,6 +51,15 @@ export const getById = async (req: AuthedRequest, res: Response, next: NextFunct
   }
 };
 
+// Fix 2.5: the calculation trace for one line (HR, Finance, Admin).
+export const getLineTrace = async (req: AuthedRequest, res: Response, next: NextFunction) => {
+  try {
+    res.json(formatSuccess(await service.getLineTrace(Number(req.params.id), actorOf(req)), "Calculation trace"));
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const update = async (req: AuthedRequest, res: Response, next: NextFunction) => {
   try {
     const data = await service.update(Number(req.params.id), req.body);
