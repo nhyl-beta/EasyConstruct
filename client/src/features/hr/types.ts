@@ -35,6 +35,8 @@ export interface EmployeeInput {
   phone?: string;
   payRate?: number;
   rateType?: string;
+  /** Create anyway although an employee with the same or a very similar name exists. */
+  confirmDuplicate?: boolean;
 }
 
 export interface EmployeeQuery {

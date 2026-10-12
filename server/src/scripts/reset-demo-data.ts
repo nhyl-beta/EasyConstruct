@@ -48,7 +48,7 @@ const DELETE_ORDER = [
   "scheduled_reports", "payroll", "payroll_batch_decisions", "payroll_batch_acknowledgements", "payroll_batches", "attendance",
   "transmittal_acknowledgements", "transmittal_items", "transmittals", "design_request_files", "design_requests",
   "project_deliverables",
-  "project_phase_history", "project_members", "projects",
+  "project_phase_history", "project_members", "projects", "clients", "vendors",
 ];
 
 async function checksums(c: pg.PoolClient) {

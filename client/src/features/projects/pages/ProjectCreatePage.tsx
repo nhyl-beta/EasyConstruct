@@ -18,6 +18,9 @@ import { MilestoneRepository } from "@/features/milestones/repositories/mileston
 import { LocationMapPicker } from "@/components/maps/location-map-picker";
 import { useGeocodeSearch, type GeocodeSuggestion } from "@/components/maps/use-geocode-search";
 import { useAuth } from "@/auth/auth-context";
+import { ReferencePicker } from "@/features/reference/components/ReferencePicker";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { errorCode } from "@/lib/api-error";
 import { useUsersByRole } from "@/features/users/hooks/use-users-by-role";
 import { Flag, Info, MapPin, Trash2, UserCheck } from "lucide-react";
 import { useState } from "react";
@@ -200,6 +203,10 @@ export default function ProjectCreatePage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  // Fix 1.2: the shared client record picked (the name is also kept as text), and the
+  // warning shown when a project with a similar name already exists.
+  const [clientId, setClientId] = useState<number | undefined>(undefined);
+  const [similarProject, setSimilarProject] = useState<string | null>(null);
 
   // Editing a field clears its own error; the rest stay until fixed.
   const clearError = (key: string) =>
@@ -239,7 +246,7 @@ export default function ProjectCreatePage() {
 
   const handleCancel = () => navigate(projectsListRoute);
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (confirmSimilar = false) => {
     // Every step was validated on the way through; re-check them all here so
     // a step that was edited after passing (or skipped via the stepper) can't
     // slip through, and jump back to the first step that has a problem.
@@ -260,6 +267,8 @@ export default function ProjectCreatePage() {
         name: data.name.trim(),
         code: data.code.trim(),
         client: data.client,
+        clientId,
+        confirmSimilar: confirmSimilar || undefined,
         currency: data.currency,
         location: data.location.trim(),
         risk: data.risk,
@@ -319,9 +328,14 @@ export default function ProjectCreatePage() {
 
       navigate(projectsListRoute);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to create project.",
-      );
+      // Fix 1.2: a project with a similar name exists. Ask before creating another.
+      if (errorCode(err) === "SIMILAR_PROJECT") {
+        setSimilarProject(err instanceof Error ? err.message : "A similar project already exists.");
+      } else {
+        setError(
+          err instanceof Error ? err.message : "Failed to create project.",
+        );
+      }
     } finally {
       setSubmitting(false);
     }
@@ -339,14 +353,22 @@ export default function ProjectCreatePage() {
         setStep((s) => Math.max(s - 1, 1));
       }}
       onCancel={handleCancel}
-      onSubmit={handleSubmit}
+      onSubmit={() => void handleSubmit()}
       isLastStep={step === STEPS.length}
       isFirstStep={step === 1}
       submitting={submitting}
       error={error}
       aiHint="Use AI to generate project timeline from a proposal or document."
     >
-      {step === 1 && <StepProjectInfo data={data} set={set} errors={fieldErrors} />}
+      {step === 1 && (
+        <StepProjectInfo
+          data={data}
+          set={set}
+          errors={fieldErrors}
+          onClientId={setClientId}
+          canAddClient={["project-manager", "admin", "it_designer", "it-designer"].includes(user?.role ?? "")}
+        />
+      )}
       {step === 2 && <StepScopeSchedule data={data} set={set} milestones={milestones} setMilestones={setMilestones} />}
       {step === 3 && <StepBudget data={data} set={set} />}
       {step === 4 && (
@@ -364,6 +386,19 @@ export default function ProjectCreatePage() {
         />
       )}
       {step === 5 && <StepReview data={data} />}
+      <ConfirmDialog
+        open={similarProject !== null}
+        onOpenChange={(open) => !open && setSimilarProject(null)}
+        title="A similar project already exists"
+        description={similarProject ?? undefined}
+        confirmLabel="Create anyway"
+        destructive={false}
+        loading={submitting}
+        onConfirm={() => {
+          setSimilarProject(null);
+          void handleSubmit(true);
+        }}
+      />
     </MultiStepPage>
   );
 }
@@ -385,6 +420,8 @@ function StepProjectInfo({
   data,
   set,
   errors,
+  onClientId,
+  canAddClient,
 }: {
   data: ProjectFormData;
   set: <K extends keyof ProjectFormData>(
@@ -392,6 +429,8 @@ function StepProjectInfo({
     value: ProjectFormData[K],
   ) => void;
   errors: FieldErrors;
+  onClientId: (id: number | undefined) => void;
+  canAddClient: boolean;
 }) {
   // Part B item 6: the free-text Location input wasn't wired to the map at
   // all — typing an address did nothing until the pin was dragged by hand.
@@ -490,29 +529,24 @@ function StepProjectInfo({
           <FieldError message={errors.code} />
         </div>
 
-        {/* Project.client is stored/rendered as free text, not a slug — the
-            datalist just suggests existing clients while still letting the
-            admin type a brand-new one. */}
+        {/* Fix 1.2: clients come from the shared list (one spelling per company), with Add new. The
+            project still stores the name as text beside the link, so older screens keep working. */}
         <div className="space-y-1.5">
           <Label>
             Client / Owner <span className="text-destructive-strong">*</span>
           </Label>
-          <Input
-            list="client-options"
-            placeholder="Select or type a new client"
+          <ReferencePicker
+            kind="clients"
             value={data.client}
-            onChange={(e) => set("client", e.target.value)}
-            className={cn("rounded-xl", invalidClass(errors.client))}
-            aria-invalid={!!errors.client}
+            onChange={(name, id) => {
+              set("client", name);
+              onClientId(id);
+            }}
+            invalid={!!errors.client}
+            canAdd={canAddClient}
+            placeholder="Select a client"
           />
           <FieldError message={errors.client} />
-          <datalist id="client-options">
-            <option value="Westgate Health Group" />
-            <option value="Harbor Freight Corp" />
-            <option value="City of Riverside" />
-            <option value="NR Airport Authority" />
-            <option value="GreenPower Inc." />
-          </datalist>
         </div>
 
         <div className="space-y-1.5">

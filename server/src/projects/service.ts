@@ -4,7 +4,9 @@ import { projectKpis, type ProjectKpis } from "../dashboard/aggregates.js";
 import { orderByFor, paginate, type PageRequest } from "../utils/pagination.js";
 import * as projectMemberRepo from "../project-members/repository.js";
 import * as usersRepo from "../users/repository.js";
-import { ForbiddenError, NotFoundError, ValidationError } from "../utils/errors.js";
+import { AppError, ForbiddenError, NotFoundError, ValidationError } from "../utils/errors.js";
+import * as referenceRepo from "../reference/repository.js";
+import { findNameMatches, normalizeName } from "../reference/names.js";
 import { assertProjectWritable } from "../lifecycle/service.js";
 import { sortProjects } from "./ordering.js";
 import { MEMBERSHIP_SCOPED_ROLES, filterRowsToCodes, isSkipped, type VisibilityOptions } from "./visibility.js";
@@ -236,7 +238,43 @@ const findPmUserId = async (name: string | undefined): Promise<number | undefine
   return pms.length === 1 ? pms[0]!.id : undefined;
 };
 
+// Fix 1.2: a project whose name is the same as, or close to, an existing one is
+// stopped with the matches unless the caller confirms it is a different project.
+// The code is already unique in the database; this catches the same job entered
+// again under a new code.
+const assertNotDuplicateName = async (name: string, confirmSimilar: boolean | undefined) => {
+  if (confirmSimilar) return;
+  const all = await repo.findAll({});
+  const matches = findNameMatches(name, all.map((p) => ({ id: p.id, name: p.name })));
+  if (matches.length === 0) return;
+  const codeById = new Map(all.map((p) => [p.id, p.code]));
+  throw new AppError(
+    409,
+    "SIMILAR_PROJECT",
+    `A project with a similar name already exists: ${matches.map((m) => `${m.name} (${codeById.get(m.id)})`).join(", ")}. Confirm this is a different project to continue.`,
+    { matches: matches.map((m) => ({ ...m, code: codeById.get(m.id) })) },
+  );
+};
+
+// Resolves the client link: an explicit clientId wins (and sets the text from the
+// shared record); otherwise the text is linked when it names an existing client.
+const resolveClient = async (input: { client?: string; clientId?: number }) => {
+  if (input.clientId != null) {
+    const client = await referenceRepo.findById("clients", input.clientId);
+    if (!client) throw new ValidationError(`Client ${input.clientId} does not exist`);
+    return { client: client.name, clientId: client.id };
+  }
+  if (input.client?.trim()) {
+    const match = await referenceRepo.findByKey("clients", normalizeName(input.client));
+    if (match) return { client: input.client, clientId: match.id };
+  }
+  return {};
+};
+
 export const create = async (input: CreateProjectInput, pmUserId?: number) => {
+  const { confirmSimilar, ...fields } = input;
+  await assertNotDuplicateName(fields.name, confirmSimilar);
+  input = { ...fields, ...(await resolveClient(fields)) };
   pmUserId ??= await findPmUserId(input.pm);
   // Every project starts at Proposal/0% regardless of what the client sent —
   // see lifecycle/phases.ts. statusTone follows PHASE_TONE rather than the
@@ -263,6 +301,7 @@ export const update = async (id: number, input: UpdateProjectInput, scope?: Proj
   }
   const existing = await getById(id, scope);
   await assertProjectWritable(existing.code);
+  if (input.clientId != null) input = { ...input, ...(await resolveClient({ clientId: input.clientId })) };
   // Reassigning the PM by name must move the ownership link with it, or the
   // previous PM keeps seeing the project and the new one can't.
   const reassignedPmUserId =

@@ -13,6 +13,8 @@ import { Info } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { createEmployee, getEmployee, updateEmployee } from "@/features/hr/hr-api";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { errorCode } from "@/lib/api-error";
 
 type EmployeeStatus = "Active" | "On Leave" | "Suspended" | "Archived";
 
@@ -103,7 +105,10 @@ export default function EmployeeCreatePage() {
 
   const handleCancel = () => navigate("/employees");
 
-  const handleSubmit = async () => {
+  // Fix 1.2: set when the server finds an employee with the same or a very similar name.
+  const [duplicateName, setDuplicateName] = useState<string | null>(null);
+
+  const handleSubmit = async (confirmDuplicate = false) => {
     setSubmitting(true);
     setError(null);
     try {
@@ -121,12 +126,16 @@ export default function EmployeeCreatePage() {
         rateType: data.rateType,
       };
       if (editingId) await updateEmployee(editingId, input);
-      else await createEmployee(input);
+      else await createEmployee(confirmDuplicate ? { ...input, confirmDuplicate: true } : input);
       navigate("/employees");
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to create employee.",
-      );
+      if (errorCode(err) === "DUPLICATE_NAME") {
+        setDuplicateName(err instanceof Error ? err.message : "An employee with this name already exists.");
+      } else {
+        setError(
+          err instanceof Error ? err.message : "Failed to create employee.",
+        );
+      }
     } finally {
       setSubmitting(false);
     }
@@ -141,7 +150,7 @@ export default function EmployeeCreatePage() {
       onNext={() => setStep((s) => Math.min(s + 1, STEPS.length))}
       onBack={() => setStep((s) => Math.max(s - 1, 1))}
       onCancel={handleCancel}
-      onSubmit={handleSubmit}
+      onSubmit={() => void handleSubmit()}
       isLastStep={step === STEPS.length}
       isFirstStep={step === 1}
       submitting={submitting}
@@ -152,6 +161,19 @@ export default function EmployeeCreatePage() {
       {step === 1 && <StepPersonalInfo data={data} set={set} />}
       {step === 2 && <StepEmployment data={data} set={set} />}
       {step === 3 && <StepReview data={data} />}
+      <ConfirmDialog
+        open={duplicateName !== null}
+        onOpenChange={(open) => !open && setDuplicateName(null)}
+        title="An employee with this name already exists"
+        description={duplicateName ?? undefined}
+        confirmLabel="Add anyway"
+        destructive={false}
+        loading={submitting}
+        onConfirm={() => {
+          setDuplicateName(null);
+          void handleSubmit(true);
+        }}
+      />
     </MultiStepPage>
   );
 }

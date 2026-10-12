@@ -1,4 +1,5 @@
-import { ConflictError, NotFoundError } from "../utils/errors.js";
+import { AppError, ConflictError, NotFoundError } from "../utils/errors.js";
+import { findNameMatches } from "../reference/names.js";
 import * as repo from "./repository.js";
 import { asc } from "drizzle-orm";
 import { employees } from "../db/schema/employees.js";
@@ -62,7 +63,8 @@ export const getById = async (id: number) => {
   return employee;
 };
 
-export const create = async (input: CreateEmployeeInput) => {
+export const create = async (rawInput: CreateEmployeeInput) => {
+  const { confirmDuplicate, ...input } = rawInput;
   const existingId = await repo.findByEmployeeId(input.employeeId);
 
   if (existingId) {
@@ -77,6 +79,27 @@ export const create = async (input: CreateEmployeeInput) => {
     if (existingEmail) {
       throw new ConflictError(
         `Email ${input.email} is already in use`,
+      );
+    }
+  }
+
+  // Fix 1.2: the same or a very similar name is stopped with the matches unless
+  // HR confirms it is a different person (two people can share a name).
+  if (!confirmDuplicate) {
+    const everyone = await repo.findAll();
+    const matches = findNameMatches(
+      input.name,
+      everyone.map((e) => ({ id: e.id, name: e.name })),
+    );
+    if (matches.length > 0) {
+      const byId = new Map(everyone.map((e) => [e.id, e]));
+      throw new AppError(
+        409,
+        "DUPLICATE_NAME",
+        `An employee with the same or a very similar name already exists: ${matches
+          .map((m) => `${m.name} (${byId.get(m.id)?.employeeId})`)
+          .join(", ")}. Confirm this is a different person to continue.`,
+        { matches: matches.map((m) => ({ ...m, employeeId: byId.get(m.id)?.employeeId })) },
       );
     }
   }

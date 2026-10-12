@@ -11,6 +11,7 @@ import { KpiStrip } from "@/components/ui/kpi-strip";
 import { SectionCard } from "@/components/ui/section-card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { ReferencePicker } from "@/features/reference/components/ReferencePicker";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -99,7 +100,7 @@ function RecordExpenseDialog({
         <div className="space-y-4">
           <div className="space-y-1.5">
             <Label>Vendor</Label>
-            <Input value={vendor} onChange={(e) => setVendor(e.target.value)} placeholder="ABC Steel Supply" />
+            <ReferencePicker kind="vendors" value={vendor} onChange={(name) => setVendor(name)} placeholder="Select a vendor" />
           </div>
           <div className="space-y-1.5">
             <Label>Project</Label>

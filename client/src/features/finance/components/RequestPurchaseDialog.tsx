@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { ReferencePicker } from "@/features/reference/components/ReferencePicker";
 import { expenseCategoryForRequirement } from "@/config/expense-categories";
 import { formatCurrency } from "@/lib/format-currency";
 import { useExpenseCategories } from "../hooks/use-expense-categories";
@@ -151,7 +152,7 @@ export function RequestPurchaseDialog({ requirement, onClose, onSubmit, routingH
             </div>
             <div className="space-y-1.5 sm:col-span-2">
               <Label htmlFor="pr-vendor">Preferred vendor (optional)</Label>
-              <Input id="pr-vendor" value={vendor} onChange={(e) => setVendor(e.target.value)} />
+              <ReferencePicker kind="vendors" id="pr-vendor" value={vendor} onChange={(name) => setVendor(name)} placeholder="Select a vendor (optional)" />
             </div>
           </div>
           {error && (
