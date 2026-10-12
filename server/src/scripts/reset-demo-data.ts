@@ -45,7 +45,7 @@ const DELETE_ORDER = [
   "architect_documents", "blueprints", "design_reviews", "design_revisions", "design_engineers", "designs",
   "revisions", "engineering_reports", "documents", "expenses", "financial_risks", "cash_flow_entries",
   "ai_insights", "approvals_queue",
-  "scheduled_reports", "payroll", "payroll_batch_decisions", "payroll_batches", "attendance",
+  "scheduled_reports", "payroll", "payroll_batch_decisions", "payroll_batch_acknowledgements", "payroll_batches", "attendance",
   "transmittal_acknowledgements", "transmittal_items", "transmittals", "design_request_files", "design_requests",
   "project_deliverables",
   "project_phase_history", "project_members", "projects",

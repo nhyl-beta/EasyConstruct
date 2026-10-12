@@ -74,3 +74,22 @@ export const payrollBatchDecisions = pgTable(
 );
 
 export type PayrollBatchDecision = typeof payrollBatchDecisions.$inferSelect;
+
+
+// Warnings HR acknowledged when submitting a batch (objectives fix 2.4): one row
+// per submission round, listing exactly what was acknowledged. A separate table
+// so the existing payroll_batches queries are untouched.
+export const payrollBatchAcknowledgements = pgTable(
+  "payroll_batch_acknowledgements",
+  {
+    id: serial("id").primaryKey(),
+    batchId: varchar("batch_id", { length: 32 }).notNull(),
+    round: integer("round").notNull(),
+    acknowledgedBy: varchar("acknowledged_by", { length: 255 }).notNull(),
+    acknowledgedAt: timestamp("acknowledged_at").defaultNow().notNull(),
+    items: jsonb("items").$type<{ key: string; message: string }[]>().notNull(),
+  },
+  (t) => [unique("payroll_batch_acks_batch_round_unique").on(t.batchId, t.round)],
+);
+
+export type PayrollBatchAcknowledgement = typeof payrollBatchAcknowledgements.$inferSelect;

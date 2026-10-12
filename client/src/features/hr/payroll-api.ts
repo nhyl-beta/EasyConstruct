@@ -87,6 +87,9 @@ export interface ValidationIssue {
   code: string;
   message: string;
   empId?: string;
+  /** Stable id of a warning HR must tick before submitting (objectives fix 2.4). */
+  key?: string;
+  requiresAck?: boolean;
 }
 
 export interface BatchDetail {
@@ -319,10 +322,14 @@ export async function discardBatch(id: string): Promise<void> {
   await apiClient.del(`/payroll/batches/${encodeURIComponent(id)}`);
 }
 
-export async function submitBatch(id: string, confirmDuplicate = false): Promise<PayrollBatch> {
+export async function submitBatch(
+  id: string,
+  confirmDuplicate = false,
+  acknowledgedWarnings: string[] = [],
+): Promise<PayrollBatch> {
   return normalizeBatch(
     await unwrap<Record<string, unknown>>(
-      apiClient.post(`/payroll/batches/${encodeURIComponent(id)}/submit`, { confirmDuplicate }),
+      apiClient.post(`/payroll/batches/${encodeURIComponent(id)}/submit`, { confirmDuplicate, acknowledgedWarnings }),
     ),
   );
 }

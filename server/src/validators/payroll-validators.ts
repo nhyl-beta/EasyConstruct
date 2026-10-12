@@ -20,6 +20,7 @@ export const generatePayrollSchema = z
     entries: z.array(payrollEntrySchema).min(1, "At least one employee entry is required"),
     submit: z.boolean().optional(),
     confirmDuplicate: z.boolean().optional(),
+    acknowledgedWarnings: z.array(z.string().max(80)).max(500).optional(),
   })
   .strict();
 
@@ -33,5 +34,5 @@ export const updatePayrollLineSchema = z
   .strict();
 
 export const submitBatchSchema = z
-  .object({ confirmDuplicate: z.boolean().optional() })
+  .object({ confirmDuplicate: z.boolean().optional(), acknowledgedWarnings: z.array(z.string().max(80)).max(500).optional() })
   .strict();

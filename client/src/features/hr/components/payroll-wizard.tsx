@@ -112,6 +112,8 @@ export function PayrollWizard({ resumeBatchId, onClose, onChanged }: PayrollWiza
   const [error, setError] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [acknowledgeDuplicate, setAcknowledgeDuplicate] = useState(false);
+  // Fix 2.4: warnings HR has ticked (by key). Only keys still raised are sent on submit.
+  const [acknowledged, setAcknowledged] = useState<Set<string>>(new Set());
 
   const editable = detail ? ["draft", "revision_required"].includes(detail.batch.status) : true;
 
@@ -206,7 +208,7 @@ export function PayrollWizard({ resumeBatchId, onClose, onChanged }: PayrollWiza
   const submit = () =>
     guard(async () => {
       if (!batchId) return;
-      await submitBatch(batchId, acknowledgeDuplicate);
+      await submitBatch(batchId, acknowledgeDuplicate, ackKeys.filter((k) => acknowledged.has(k)));
       setConfirmOpen(false);
       onChanged();
       onClose();
@@ -228,7 +230,16 @@ export function PayrollWizard({ resumeBatchId, onClose, onChanged }: PayrollWiza
     [activeEmployees, detail],
   );
 
-  const canSubmit = blocking.length === 0 && (!duplicateWarning || acknowledgeDuplicate);
+  const ackKeys = issues.filter((i) => i.requiresAck && i.key).map((i) => i.key as string);
+  const allAcknowledged = ackKeys.every((k) => acknowledged.has(k));
+  const canSubmit = blocking.length === 0 && (!duplicateWarning || acknowledgeDuplicate) && allAcknowledged;
+  const toggleAck = (key: string, on: boolean) =>
+    setAcknowledged((prev) => {
+      const next = new Set(prev);
+      if (on) next.add(key);
+      else next.delete(key);
+      return next;
+    });
 
   return (
     <Card>
@@ -506,10 +517,27 @@ export function PayrollWizard({ resumeBatchId, onClose, onChanged }: PayrollWiza
                   ) : (
                     <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning-strong" />
                   )}
-                  {i.message}
+                  <div className="space-y-1">
+                    <div>{i.message}</div>
+                    {i.requiresAck && i.key && (
+                      <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <input
+                          type="checkbox"
+                          checked={acknowledged.has(i.key)}
+                          onChange={(e) => toggleAck(i.key as string, e.target.checked)}
+                        />
+                        I have checked this and want to submit anyway.
+                      </label>
+                    )}
+                  </div>
                 </li>
               ))}
             </ul>
+            {ackKeys.length > 0 && (
+              <p className="text-xs text-muted-foreground">
+                Tick each warning above to continue. What you acknowledged is recorded with the batch ({ackKeys.filter((k) => acknowledged.has(k)).length} of {ackKeys.length} ticked).
+              </p>
+            )}
             {duplicateWarning && (
               <label className="flex items-center gap-2 text-sm">
                 <input
@@ -547,7 +575,8 @@ export function PayrollWizard({ resumeBatchId, onClose, onChanged }: PayrollWiza
             </p>
             {!canSubmit && (
               <p className="text-sm text-destructive-strong">
-                Fix the blocking checks{duplicateWarning ? " and confirm the duplicate warning" : ""} in step 5 first.
+                Fix the blocking checks{duplicateWarning ? " and confirm the duplicate warning" : ""}
+                {!allAcknowledged ? " and tick each warning" : ""} in step 5 first.
               </p>
             )}
           </div>
@@ -573,7 +602,7 @@ export function PayrollWizard({ resumeBatchId, onClose, onChanged }: PayrollWiza
             </Button>
           )}
           {step === 5 && (
-            <Button disabled={busy || blocking.length > 0} onClick={() => setStep(6)}>
+            <Button disabled={busy || blocking.length > 0 || !allAcknowledged} onClick={() => setStep(6)}>
               Next: Submit
             </Button>
           )}

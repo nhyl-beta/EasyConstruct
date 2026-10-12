@@ -117,6 +117,13 @@ export const findByEmployeeId = async (
  * Several employees by their human code in ONE query (replaces a
  * findByEmployeeId call per row). Unknown ids are simply absent from the map.
  */
+/** Pay rates of every Active employee, for comparing people in the same position (payroll warnings). */
+export const findActivePayRates = async () =>
+  db
+    .select({ role: employees.role, rateType: employees.rateType, payRate: employees.payRate })
+    .from(employees)
+    .where(eq(employees.status, "Active"));
+
 export const findByEmployeeIds = async (employeeIds: string[]) => {
   const unique = [...new Set(employeeIds)];
   const byId = new Map<string, typeof employees.$inferSelect>();
