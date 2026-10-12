@@ -19,22 +19,24 @@ import {
   startOfWeek,
   subMonths,
 } from "date-fns";
-import { ChevronLeft, ChevronRight, Flag, GitCommitHorizontal, Send } from "lucide-react";
+import { CheckSquare, ChevronLeft, ChevronRight, Flag, GitCommitHorizontal, Send } from "lucide-react";
 
 import { SectionCard } from "@/components/ui/section-card";
 import { Button } from "@/components/ui/button";
 import { useCalendarEvents } from "@/features/calendar/hooks/useCalendarEvents";
 import type { CalendarEvent, CalendarEventType } from "@/features/calendar/types/calendar.types";
+import { fetchRange } from "@/features/calendar/lib/calendar-logic";
 
 const EVENT_STYLE: Record<CalendarEventType, { label: string; dot: string; icon: typeof Flag }> = {
   milestone: { label: "Milestone", dot: "bg-primary", icon: Flag },
   submission: { label: "Submission", dot: "bg-warning", icon: Send },
   progress: { label: "Progress update", dot: "bg-success", icon: GitCommitHorizontal },
+  task: { label: "My task due", dot: "bg-muted-foreground", icon: CheckSquare },
 };
 
 export function CalendarWidget() {
-  const { events, loading, error } = useCalendarEvents();
   const [month, setMonth] = useState(() => startOfMonth(new Date()));
+  const { events, loading, error } = useCalendarEvents(fetchRange(month));
 
   const eventsByDate = useMemo(() => {
     const map = new Map<string, CalendarEvent[]>();
