@@ -3,6 +3,8 @@ import { db } from "../db/connection.js";
 import { attendance } from "../db/schema/attendance.js";
 import { employees } from "../db/schema/employees.js";
 import { payroll } from "../db/schema/payroll.js";
+import { loadFairnessData, type FairnessFilters } from "./fairness-repository.js";
+import { summarizeFairness } from "./fairness.js";
 
 export interface WorkforceReportFilters {
   department?: string;
@@ -101,5 +103,20 @@ export const getSummary = async (filters: WorkforceReportFilters) => {
       totalGrossLabor: Number(totalGrossLabor.toFixed(2)),
       totalNetPay: Number(totalNetPay.toFixed(2)),
     },
+  };
+};
+
+
+// Fairness (objectives fix 2.6): read-only.
+
+export const getFairness = async (filters: FairnessFilters) => {
+  const { rows, rates } = await loadFairnessData(filters);
+  const { positions, flags } = summarizeFairness(rows, rates);
+  return {
+    rows: rows.sort((a, b) => a.projectCode.localeCompare(b.projectCode) || b.hours - a.hours || a.name.localeCompare(b.name)),
+    positions,
+    flags,
+    basis:
+      "Hours, overtime (beyond 8 hours a day) and tasks are totals per worker per project. Pay rates are compared with the median of the same position and rate type. Flags are for HR to look at; nothing is changed.",
   };
 };
