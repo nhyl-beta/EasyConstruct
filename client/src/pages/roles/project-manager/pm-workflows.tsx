@@ -43,7 +43,8 @@ export default function WorkflowsPage() {
   // Same dialog the Approvals page opens, so what a PM can see here before
   // signing off is exactly what they see there — these two views drifting
   // apart is what left the PM approving without the workflow's documents.
-  const [detailWorkflowId, setDetailWorkflowId] = useState<number | null>(null);
+  // ?open=<id> (from a calendar event) opens that workflow's detail straight away.
+  const [detailWorkflowId, setDetailWorkflowId] = useState<number | null>(() => Number(new URLSearchParams(window.location.search).get("open")) || null);
   const [deletingWorkflow, setDeletingWorkflow] = useState<Workflow | null>(null);
   const [deletingBusy, setDeletingBusy] = useState(false);
   const [resubmittingStageId, setResubmittingStageId] = useState<number | null>(null);

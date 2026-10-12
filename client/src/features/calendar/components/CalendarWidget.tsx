@@ -19,23 +19,26 @@ import {
   startOfWeek,
   subMonths,
 } from "date-fns";
-import { CheckSquare, ChevronLeft, ChevronRight, Flag, GitCommitHorizontal, Send } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { SectionCard } from "@/components/ui/section-card";
 import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useRoleConfig } from "@/hooks/use-role-config";
+import { CalendarEventButton } from "@/features/calendar/components/CalendarEventButton";
+import { EventDetails } from "@/features/calendar/components/EventDetails";
+import { EVENT_STYLE } from "@/features/calendar/components/event-style";
 import { useCalendarEvents } from "@/features/calendar/hooks/useCalendarEvents";
 import type { CalendarEvent, CalendarEventType } from "@/features/calendar/types/calendar.types";
 import { fetchRange } from "@/features/calendar/lib/calendar-logic";
 
-const EVENT_STYLE: Record<CalendarEventType, { label: string; dot: string; icon: typeof Flag }> = {
-  milestone: { label: "Milestone", dot: "bg-primary", icon: Flag },
-  submission: { label: "Submission", dot: "bg-warning", icon: Send },
-  progress: { label: "Progress update", dot: "bg-success", icon: GitCommitHorizontal },
-  task: { label: "My task due", dot: "bg-muted-foreground", icon: CheckSquare },
-};
-
 export function CalendarWidget() {
   const [month, setMonth] = useState(() => startOfMonth(new Date()));
+  const { identity } = useRoleConfig();
+  const role = identity.role;
+  const isMobile = !!useIsMobile();
+  const [selected, setSelected] = useState<CalendarEvent | null>(null);
   const { events, loading, error } = useCalendarEvents(fetchRange(month));
 
   const eventsByDate = useMemo(() => {
@@ -121,14 +124,7 @@ export function CalendarWidget() {
                     </div>
                     <div className="space-y-0.5">
                       {dayEvents.slice(0, 3).map((event) => (
-                        <div
-                          key={event.id}
-                          title={`${event.title} · ${event.projectName}${event.detail ? ` · ${event.detail}` : ""}`}
-                          className="flex items-center gap-1 truncate rounded px-1 py-0.5 text-overline leading-tight hover:bg-muted/60"
-                        >
-                          <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${EVENT_STYLE[event.type].dot}`} />
-                          <span className="truncate">{event.title}</span>
-                        </div>
+                        <CalendarEventButton key={event.id} event={event} role={role} mobile={isMobile} onSelect={setSelected} />
                       ))}
                       {dayEvents.length > 3 && (
                         <div className="px-1 text-overline text-muted-foreground">+{dayEvents.length - 3} more</div>
@@ -141,6 +137,16 @@ export function CalendarWidget() {
           </div>
         )}
       </div>
+      {/* Phone: the details open in a bottom sheet (desktop uses a popover on the event). */}
+      <Sheet open={selected !== null} onOpenChange={(o) => !o && setSelected(null)}>
+        <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto rounded-t-xl p-4">
+          <SheetHeader className="p-0">
+            <SheetTitle className="sr-only">Event details</SheetTitle>
+            <SheetDescription className="sr-only">Details of the selected calendar event</SheetDescription>
+          </SheetHeader>
+          {selected && <EventDetails event={selected} role={role} onOpen={() => setSelected(null)} />}
+        </SheetContent>
+      </Sheet>
     </SectionCard>
   );
 }
