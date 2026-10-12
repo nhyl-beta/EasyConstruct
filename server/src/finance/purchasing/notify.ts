@@ -32,3 +32,10 @@ export const links = {
   requirements: "/requirements",
   claims: "/my-claims",
 } as const;
+
+/**
+ * Where a claimant is sent from a claim notification. Only Engineers and Site Personnel can open
+ * /my-claims; a claim filed earlier by another role still notifies them, but to a page they can open.
+ */
+export const claimLink = (claimantRole: string | null | undefined): string =>
+  claimantRole === "engineer" || claimantRole === "site-personnel" ? links.claims : "/dashboard";

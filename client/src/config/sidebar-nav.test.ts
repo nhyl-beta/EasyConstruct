@@ -124,12 +124,28 @@ describe("buildSidebarNav", () => {
     });
     expect(shape("project_manager")).toEqual({
       "Project Delivery": ["issues", "tasks", "reports"],
-      "Records & Requests": ["requests", "my-claims", "archive-search", "legacy-import"],
+      "Records & Requests": ["requests", "archive-search", "legacy-import"],
     });
     expect(shape("architect")).toEqual({
       "Designs & Proposals": ["designs", "proposals"],
       "Design Files": ["blueprints", "revisions", "architect-documents"],
-      "Records & Requests": ["requests", "my-claims", "archive-search", "legacy-import"],
+      "Records & Requests": ["requests", "archive-search", "legacy-import"],
     });
+  });
+});
+
+describe("My claims", () => {
+  it("is in the sidebar only for Engineer and Site Personnel", () => {
+    for (const role of Object.keys(ROLE_RESOURCE_ACCESS)) {
+      const shown = flatNames(buildSidebarNav(role, registered)).includes("my-claims");
+      expect(shown, role).toBe(role === "engineer" || role === "site_personnel");
+    }
+  });
+  it("is granted to no other role, including PM, Architect, HR, Finance, Admin, Owner, IT Designer and Consultant", () => {
+    const holders = Object.entries(ROLE_RESOURCE_ACCESS)
+      .filter(([, names]) => names.includes("my-claims"))
+      .map(([role]) => role)
+      .sort();
+    expect(holders).toEqual(["engineer", "site_personnel"]);
   });
 });

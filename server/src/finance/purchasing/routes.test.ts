@@ -103,11 +103,12 @@ describe("procurement routes", async () => {
 describe("reimbursement routes", async () => {
   const { reimbursementsRouter } = await import("../reimbursements/routes.js");
   const routes = routesOf(reimbursementsRouter);
-  const CLAIMANTS = ["architect", "engineer", "human-resources", "project-manager", "site-personnel"];
+  const CLAIMANTS = ["engineer", "site-personnel"];
 
   const expected: [string, string, string[]][] = [
     ["get", "/mine", CLAIMANTS],
     ["get", "/", ["admin", "finance-manager", "project-manager"]],
+    ["get", "/:id", ["admin", "engineer", "finance-manager", "project-manager", "site-personnel"]],
     ["post", "/", CLAIMANTS],
     ["post", "/:id/endorse", ["admin", "project-manager"]],
     ["post", "/:id/approve", FINANCE],

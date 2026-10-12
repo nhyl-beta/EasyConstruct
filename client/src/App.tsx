@@ -307,7 +307,7 @@ function App() {
                   <Route
                     path="/my-claims"
                     element={
-                      <RequireRole allow={["engineer", "site_personnel", "project_manager", "architect", "human_resources"]}>
+                      <RequireRole allow={["engineer", "site_personnel"]}>
                         <SharedClaims />
                       </RequireRole>
                     }

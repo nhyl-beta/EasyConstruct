@@ -15,7 +15,7 @@ import {
 } from "../purchasing/access.js";
 import { applyApprovedSpend } from "../purchasing/booking.js";
 import { nextId } from "../purchasing/ids.js";
-import { links, toFinance, toProject, toUser } from "../purchasing/notify.js";
+import { claimLink, links, toFinance, toProject, toUser } from "../purchasing/notify.js";
 import { assertDecisionNote, assertNotSelf, assertTransition, claimStatusAfterRaise } from "../purchasing/rules.js";
 import { expensesRepository } from "../expenses/repository.js";
 import { annotateSpendExpense } from "../expenses/services.js";
@@ -112,7 +112,7 @@ export const reimbursementsService = {
     if (!updated) return lost(id, "endorsed");
     await logAudit({ entityType: ENTITY, entityId: id, action: "endorsed", actor: actor.name, projectCode: row.project });
     await toFinance(row.project, { title: "Claim awaiting approval", body: `${id} · ${row.purpose} was endorsed by ${actor.name}.`, link: finLink });
-    await toUser(row.claimantUserId, row.project, { title: "Claim endorsed", body: `${id} was endorsed by ${actor.name} and now waits for Finance.`, link: links.claims }, actor.id);
+    await toUser(row.claimantUserId, row.project, { title: "Claim endorsed", body: `${id} was endorsed by ${actor.name} and now waits for Finance.`, link: claimLink(row.claimantRole) }, actor.id);
     return updated;
   },
 
@@ -130,7 +130,7 @@ export const reimbursementsService = {
     });
     if (!updated) return lost(id, "approved");
     await logAudit({ entityType: ENTITY, entityId: id, action: "approved", actor: actor.name, projectCode: row.project ?? undefined });
-    await toUser(row.claimantUserId, row.project ?? undefined, { title: "Claim approved", body: `${id} was approved by ${actor.name}; payment is next.`, link: links.claims }, actor.id);
+    await toUser(row.claimantUserId, row.project ?? undefined, { title: "Claim approved", body: `${id} was approved by ${actor.name}; payment is next.`, link: claimLink(row.claimantRole) }, actor.id);
     return updated;
   },
 
@@ -157,7 +157,7 @@ export const reimbursementsService = {
     });
     if (!updated) return lost(id, "rejected");
     await logAudit({ entityType: ENTITY, entityId: id, action: "rejected", actor: actor.name, summary: note, projectCode: row.project ?? undefined });
-    await toUser(row.claimantUserId, row.project ?? undefined, { title: "Claim rejected", body: `${id} was rejected by ${actor.name}: ${note}`, link: links.claims }, actor.id);
+    await toUser(row.claimantUserId, row.project ?? undefined, { title: "Claim rejected", body: `${id} was rejected by ${actor.name}: ${note}`, link: claimLink(row.claimantRole) }, actor.id);
     return updated;
   },
 
@@ -207,7 +207,7 @@ export const reimbursementsService = {
     );
 
     await logAudit({ entityType: ENTITY, entityId: id, action: "paid", actor: actor.name, summary: `${result.expense.id} · ${paymentReference}`, projectCode: project });
-    const msg = { title: "Claim paid", body: `${id} was paid (${paymentReference}).`, link: links.claims };
+    const msg = { title: "Claim paid", body: `${id} was paid (${paymentReference}).`, link: claimLink(row.claimantRole) };
     await toUser(row.claimantUserId, project, msg, actor.id);
     await toProject(project, ["project-manager"], { ...msg, link: links.approvals });
     return result;

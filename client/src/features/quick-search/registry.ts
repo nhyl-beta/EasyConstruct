@@ -282,9 +282,9 @@ export const ACTIONS: QuickEntry[] = [
     keywords: ["claim", "reimbursement", "reimburse", "receipt", "expense claim", "refund"],
     icon: Receipt,
     route: "/my-claims?action=new-claim",
-    roles: ["engineer", "site_personnel", "project_manager", "architect", "human_resources"],
+    roles: ["engineer", "site_personnel"],
     resource: "my-claims",
-    changesData: true, // server: finance/reimbursements/routes.ts POST = these five roles
+    changesData: true, // server: finance/reimbursements/routes.ts POST = these two roles
   },
 
   // — Requests (RFI / RFA) —

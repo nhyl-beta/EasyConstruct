@@ -6,13 +6,13 @@ import { reimbursementsController as c } from "./controller.js";
 
 export const reimbursementsRouter = Router();
 
-// Anyone who can claim sees their own; "mine" must come before "/:id".
-const claimants = requireRole("engineer", "site-personnel", "project-manager", "architect", "human-resources");
+// Only Engineers and Site Personnel file and see their own claims; "mine" must come before "/:id".
+const claimants = requireRole("engineer", "site-personnel");
 reimbursementsRouter.get("/mine", claimants, c.mine);
 // Finance / Admin see all; a PM the claims on their projects (scoped in the service).
 reimbursementsRouter.get("/", requireRole("finance-manager", "admin", "project-manager"), c.list);
 // The claimant, Finance / Admin and the project's PM (checked in the service).
-reimbursementsRouter.get("/:id", requireRole("finance-manager", "admin", "project-manager", "engineer", "site-personnel", "architect", "human-resources"), c.get);
+reimbursementsRouter.get("/:id", requireRole("finance-manager", "admin", "project-manager", "engineer", "site-personnel"), c.get);
 
 reimbursementsRouter.post("/", claimants, validate(createClaimSchema), c.create);
 reimbursementsRouter.post("/:id/endorse", requireRole("project-manager", "admin"), c.endorse);

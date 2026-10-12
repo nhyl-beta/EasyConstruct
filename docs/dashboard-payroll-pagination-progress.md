@@ -186,7 +186,7 @@ New, under `client/src`: `components/charts/{chart-tooltip,donut-chart,animated-
 | `/documents` (Site Personnel) | Site Personnel | field documents | client | 10 | missing | paged |
 | `/requests` | PM, Engineer, Architect, Admin, Consultant | RFI/RFA requests (filters reset the page) | client | 10 | missing | paged |
 | `/transmittals` | PM, Engineer, Architect, Admin | transmittals | client | 10 | missing | paged |
-| `/my-claims` | Engineer, SP, PM, Architect, HR | own reimbursement claims | client | 10 | missing | paged |
+| `/my-claims` | Engineer, SP | own reimbursement claims | client | 10 | missing | paged |
 | `/legacy-import` | PM, Admin, Architect | import rows | client | 20 | missing | paged |
 | `/blueprint-reviews` | all | blueprints per tab | client | 10 | missing | paged (resets on tab) |
 | `/blueprints` | Architect | blueprint cards | client | 12 | missing | paged (resets on search/folder) |

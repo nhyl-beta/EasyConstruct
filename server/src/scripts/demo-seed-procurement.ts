@@ -94,7 +94,8 @@ const PLANS: PrPlan[] = [
 
 interface ClaimPlan {
   id: string;
-  claimant: "engineer" | "site" | "pm" | "architect" | "hr";
+  // Only Engineers and Site Personnel can file claims (finance/reimbursements/routes.ts).
+  claimant: "engineer" | "site";
   status: "pending-pm" | "pending-finance" | "approved" | "rejected" | "paid" | "cancelled";
   purpose: string;
   category: "Materials" | "Equipment" | "PPE" | "Transport" | "Services";
@@ -107,10 +108,10 @@ interface ClaimPlan {
 const CLAIMS: ClaimPlan[] = [
   { id: "RMB-D001", claimant: "site", status: "pending-pm", purpose: "Nails and tie wire bought on site", category: "Materials", amount: 1_240, ageDays: 1 },
   { id: "RMB-D002", claimant: "engineer", status: "pending-finance", purpose: "Taxi to the supplier for a sample check", category: "Transport", amount: 860, ageDays: 3 },
-  { id: "RMB-D003", claimant: "architect", status: "approved", purpose: "Printing of drawing sets for the client meeting", category: "Services", amount: 3_150, ageDays: 5 },
-  { id: "RMB-D004", claimant: "hr", status: "rejected", purpose: "Team lunch", category: "Services", amount: 2_400, ageDays: 7, note: "Meals are not reimbursable." },
+  { id: "RMB-D003", claimant: "engineer", status: "approved", purpose: "Printing of drawing sets for the client meeting", category: "Services", amount: 3_150, ageDays: 5 },
+  { id: "RMB-D004", claimant: "site", status: "rejected", purpose: "Team lunch", category: "Services", amount: 2_400, ageDays: 7, note: "Meals are not reimbursable." },
   { id: "RMB-D005", claimant: "site", status: "paid", purpose: "Emergency repair of the water pump hose", category: "Equipment", amount: 1_875, ageDays: 15, expenseId: "EXP-D002" },
-  { id: "RMB-D006", claimant: "pm", status: "cancelled", purpose: "Duplicate of an earlier claim", category: "Transport", amount: 540, ageDays: 4 },
+  { id: "RMB-D006", claimant: "site", status: "cancelled", purpose: "Duplicate of an earlier claim", category: "Transport", amount: 540, ageDays: 4 },
 ];
 
 const key = (category: string) => `${PROJECT}|${category}`;
@@ -127,9 +128,7 @@ async function main() {
   const site = await person(EMAILS.site);
   const pm = await person(EMAILS.pm);
   const finance = await person(EMAILS.finance);
-  const architect = await person(EMAILS.architect);
-  const hr = await person(EMAILS.hr);
-  const claimants = { engineer, site, pm, architect, hr };
+  const claimants = { engineer, site };
 
   const existing = new Set<string>([
     ...(await db.select({ id: purchaseRequests.id }).from(purchaseRequests)).map((r) => r.id),
@@ -268,7 +267,8 @@ async function main() {
     for (const c of CLAIMS) {
       if (existing.has(c.id)) continue;
       const who = claimants[c.claimant];
-      const staffed = c.claimant === "engineer" || c.claimant === "site" || c.claimant === "architect";
+      // Claimants are always staffed on the project, so a claim past "pending-pm" was endorsed by the PM.
+      const endorsed = c.status !== "pending-pm" && c.status !== "cancelled";
       await tx.insert(reimbursements).values({
         id: c.id,
         employee: who.name,
@@ -282,8 +282,8 @@ async function main() {
         category: c.category,
         incurredOn: isoDay(c.ageDays + 1),
         attachments: [{ url: `/uploads/demo/${c.id}.png`, filename: `${c.id}-receipt.png`, contentType: "image/png", sizeBytes: 20_000 }],
-        endorsedBy: staffed && c.status !== "pending-pm" ? pm.name : null,
-        endorsedAt: staffed && c.status !== "pending-pm" ? ago(Math.max(0, c.ageDays - 1)) : null,
+        endorsedBy: endorsed ? pm.name : null,
+        endorsedAt: endorsed ? ago(Math.max(0, c.ageDays - 1)) : null,
         decidedBy: ["approved", "rejected", "paid"].includes(c.status) ? finance.name : null,
         decidedAt: ["approved", "rejected", "paid"].includes(c.status) ? ago(Math.max(0, c.ageDays - 2)) : null,
         decisionNote: c.note ?? null,
