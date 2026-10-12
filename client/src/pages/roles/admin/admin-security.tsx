@@ -9,6 +9,7 @@ import { usePagination } from "@/hooks/use-pagination";
 import { useAuditLogs } from "@/features/audit-logs/hooks/useAuditLogs";
 import { useSecurityOverview } from "@/features/audit-logs/hooks/useSecurityOverview";
 import { formatRelativeTime } from "@/lib/format-relative-time";
+import { ReconciliationPanel } from "@/features/reconciliation/ReconciliationPanel";
 
 // Sensitive actions worth surfacing prominently — the audit-logs table
 // already records "rejected"/"deleted" across every module, so this filters
@@ -43,6 +44,7 @@ export default function AdminSecurityPage() {
         description="Sensitive operational events (rejections, deletions) drawn from the audit trail."
       />
       <PageContent className="space-y-6 p-6 md:p-8">
+        <ReconciliationPanel />
         <div className="space-y-3">
           <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
             <ShieldAlert className="h-4 w-4 text-destructive-strong" />

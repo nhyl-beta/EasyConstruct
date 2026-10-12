@@ -48,6 +48,7 @@ export const PAGINATION_EXEMPT: PaginationExemption[] = [
   { file: "features/hr/components/AttendanceExceptionsPanel.tsx", reason: "Server-paged (GET /attendance/exceptions?page=); has its own previous/next controls." },
   { file: "features/hr/components/PayrollTraceSheet.tsx", reason: "The attendance days behind one payroll line (at most one period); detail drawer, not a register." },
   { file: "features/workforce/components/FairnessPanel.tsx", reason: "Server-paged (GET /workforce-reports/fairness?page=); the flag list and position table are short summaries." },
+  { file: "features/reconciliation/ReconciliationPanel.tsx", reason: "A fixed set of nine checks, each listing at most 20 mismatches (the full list is the CLI)." },
   { file: "features/lifecycle/components/DecisionSupportSection.tsx", reason: "The few advisory signals for one decision." },
   { file: "features/lifecycle/components/ProjectLifecyclePanel.tsx", reason: "Phase path, checks and history of one project; bounded by the lifecycle phases." },
   { file: "pages/roles/site-personnel/sp-attendance.tsx", reason: "Project picker for the projects the person is staffed on." },
