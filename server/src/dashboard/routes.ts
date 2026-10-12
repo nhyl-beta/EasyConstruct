@@ -1,6 +1,8 @@
 // server/src/dashboard/routes.ts — mounted at /api/dashboard
 import { NextFunction, Response, Router } from "express";
-import { authenticate, type AuthedRequest } from "../middleware/auth.js";
+import { authenticate, requireRole, type AuthedRequest } from "../middleware/auth.js";
+import { loadCycleSamples } from "./cycle-times.repository.js";
+import { summarizeCycles } from "./cycle-times.js";
 import { UnauthorizedError } from "../utils/errors.js";
 import { formatSuccess } from "../utils/response.js";
 import * as service from "./service.js";
@@ -22,6 +24,21 @@ router.get("/summary", async (req: AuthedRequest, res: Response, next: NextFunct
     const load = () => service.getSummary(req.authUser!);
     const data = scope ? await cached("dashboard", scope, 45, load, { deps: [ALL_DOMAIN] }) : await load();
     res.json(formatSuccess(data, "Dashboard summary retrieved"));
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Fix 1.4: how long approvals, request responses, payroll sign-off and issue
+// resolution take, from timestamps already stored. Same for every caller. 5 minutes.
+router.get("/cycle-times", requireRole("owner", "admin", "it-designer"), async (_req: AuthedRequest, res: Response, next: NextFunction) => {
+  try {
+    const data = await cached("dashboard", "all", 300, async () => ({
+      months: 12,
+      series: summarizeCycles(await loadCycleSamples(12)),
+      note: "Worked out from existing start and end timestamps over the last 12 months. Issue time to resolve uses the last update of a resolved issue.",
+    }), { deps: [ALL_DOMAIN] });
+    res.json(formatSuccess(data, "Cycle times retrieved"));
   } catch (err) {
     next(err);
   }

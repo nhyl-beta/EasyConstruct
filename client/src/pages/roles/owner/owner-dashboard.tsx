@@ -24,6 +24,7 @@ import { formatDue } from "@/features/projects/lib/project-format";
 import { formatRelativeTime } from "@/lib/format-relative-time";
 import { useNavigate } from "react-router";
 import { OwnerPayrollSection } from "@/features/payroll-summary/components/OwnerPayrollSection";
+import { CycleTimesCard } from "@/features/dashboard/components/CycleTimesCard";
 import { ImpactAwarenessCard } from "@/features/lifecycle/components/ImpactAwarenessCard";
 
 const riskToneClasses: Record<string, string> = {
@@ -103,6 +104,9 @@ export default function OwnerDashboardPage() {
           { label: "Recorded actions", value: `${c.auditEventCount}`, icon: ShieldCheck },
         ]}
       />
+
+      {/* Fix 1.4: how long approvals, responses, payroll sign-off and issue resolution take */}
+      <CycleTimesCard />
 
       {/* ── Payroll: read-only aggregates of approved payroll ── */}
       <OwnerPayrollSection
