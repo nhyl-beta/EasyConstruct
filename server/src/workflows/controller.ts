@@ -2,6 +2,7 @@
 import fs from "node:fs";
 import { Response, NextFunction } from "express";
 import { storeBuffer } from "../uploads/service.js";
+import { assertContentMatches } from "../uploads/sniff.js";
 import type { AuthedRequest } from "../middleware/auth.js";
 import { HTTP } from "../constants/http-status.js";
 import { MSG } from "../constants/messages.js";
@@ -296,11 +297,15 @@ export const uploadAttachment = async (req: AuthedRequest, res: Response, next: 
     // multer wrote the bytes to a temp file, which does not survive the next serverless
     // invocation. Move them into the durable store (Vercel Blob) and keep THAT url, so the
     // file is still there when the Consultant opens the proposal.
-    const stored = await storeBuffer({
-      buffer: await fs.promises.readFile(req.file.path),
-      filename: req.file.originalname,
-      contentType: req.file.mimetype || "application/octet-stream",
-    }).finally(() => fs.promises.rm(req.file!.path, { force: true }).catch(() => undefined));
+    const stored = await (async () => {
+      const buffer = await fs.promises.readFile(req.file!.path);
+      assertContentMatches(req.file!.originalname, req.file!.mimetype || "", buffer);
+      return storeBuffer({
+        buffer,
+        filename: req.file!.originalname,
+        contentType: req.file!.mimetype || "application/octet-stream",
+      });
+    })().finally(() => fs.promises.rm(req.file!.path, { force: true }).catch(() => undefined));
 
     const data = await service.addAttachment(
       parseIdParam(req.params.id, "id"),

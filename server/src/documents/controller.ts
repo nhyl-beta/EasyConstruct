@@ -7,6 +7,7 @@ import { formatSuccess } from "../utils/response.js";
 import { logAudit } from "../utils/audit.js";
 
 import * as service from "./service.js";
+import { assertDiskFileMatches } from "../uploads/sniff.js";
 import { assignedCodesFor, isAssignedScoped } from "../projects/scope.js";
 
 import type { AuthedRequest } from "../middleware/auth.js";
@@ -116,6 +117,9 @@ export const upload = async (
         code: "FILE_REQUIRED",
       });
     }
+
+    // Refuse (and delete) a file whose bytes are not the type it claims, before anything else.
+    await assertDiskFileMatches(req.file.path, req.file.originalname, req.file.mimetype || "");
 
     const project = String(
       req.body.project ?? "",
