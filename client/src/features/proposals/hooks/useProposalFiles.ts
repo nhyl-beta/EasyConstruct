@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { apiClient } from "@/services/api.client";
 
 /** A file the Architect submitted with a proposal (server: GET /proposals/:id/files). */
@@ -11,18 +11,20 @@ export interface ProposalFile {
   uploadedBy: string;
   stage: string | null;
   filedAt: string | null;
+  /** False when the row exists but its stored bytes are gone (uploaded to ephemeral disk earlier). */
+  available?: boolean;
 }
 
 export function useProposalFiles(proposalId: number | null) {
   const [files, setFiles] = useState<ProposalFile[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
-    if (proposalId == null) {
-      setFiles([]);
-      return;
-    }
+    // Never show another proposal's files while this one loads.
+    setFiles([]);
+    if (proposalId == null) return;
     let cancelled = false;
     setLoading(true);
     setError(null);
@@ -41,7 +43,8 @@ export function useProposalFiles(proposalId: number | null) {
     return () => {
       cancelled = true;
     };
-  }, [proposalId]);
+  }, [proposalId, attempt]);
 
-  return { files, loading, error };
+  const reload = useCallback(() => setAttempt((n) => n + 1), []);
+  return { files, loading, error, reload };
 }

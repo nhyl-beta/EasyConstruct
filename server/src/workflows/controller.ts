@@ -1,5 +1,7 @@
 // server/src/workflows/controller.ts
+import fs from "node:fs";
 import { Response, NextFunction } from "express";
+import { storeBuffer } from "../uploads/service.js";
 import type { AuthedRequest } from "../middleware/auth.js";
 import { HTTP } from "../constants/http-status.js";
 import { MSG } from "../constants/messages.js";
@@ -290,13 +292,22 @@ export const uploadAttachment = async (req: AuthedRequest, res: Response, next: 
         ? `${sizeInMb.toFixed(2)} MB`
         : `${Math.max(1, Math.round(req.file.size / 1024))} KB`;
 
+    // multer wrote the bytes to a temp file, which does not survive the next serverless
+    // invocation. Move them into the durable store (Vercel Blob) and keep THAT url, so the
+    // file is still there when the Consultant opens the proposal.
+    const stored = await storeBuffer({
+      buffer: await fs.promises.readFile(req.file.path),
+      filename: req.file.originalname,
+      contentType: req.file.mimetype || "application/octet-stream",
+    }).finally(() => fs.promises.rm(req.file!.path, { force: true }).catch(() => undefined));
+
     const data = await service.addAttachment(
       Number(req.params.id),
       {
         kind: "document",
         label: String(req.body.label ?? "").trim() || req.file.originalname,
         content: req.body.content ? String(req.body.content) : undefined,
-        fileUrl: `/uploads/documents/${req.file.filename}`,
+        fileUrl: stored.url,
         fileName: req.file.originalname,
         fileSize,
       },

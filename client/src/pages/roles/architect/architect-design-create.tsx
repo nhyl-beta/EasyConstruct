@@ -13,6 +13,9 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { ProjectPicker } from "@/components/shared/project-picker";
+import { ReferencePicker } from "@/features/reference/components/ReferencePicker";
+import { useProjects } from "@/features/projects/hooks/useProjects";
+import { clientToPrefill } from "@/features/designs/lib/prefill-client";
 import { Paperclip, X } from "lucide-react";
 import {
   useDesignCreate,
@@ -232,6 +235,7 @@ function StepProject({
   set: SetFn;
   errors: string[];
 }) {
+  const { projects } = useProjects();
   return (
     <div className="space-y-6">
       <div>
@@ -247,17 +251,26 @@ function StepProject({
           </Label>
           <ProjectPicker
             value={data.projectCode}
-            onChange={(v) => set("projectCode", v)}
+            onChange={(v) => {
+              set("projectCode", v);
+              // Fill the Client from the project, unless one was already chosen.
+              const fill = clientToPrefill(data.client, projects.find((p) => p.code === v));
+              if (fill) set("client", fill);
+            }}
             className="w-full"
           />
         </div>
         <div className="space-y-1.5">
           <Label>Client</Label>
-          <Input
+          {/* The design stores the client name only (no client id column); the picker keeps the
+              spelling shared with projects. The Architect can pick but not add: adding a client is
+              for the roles that create projects (server: POST /api/reference/clients). */}
+          <ReferencePicker
+            kind="clients"
             value={data.client}
-            onChange={(e) => set("client", e.target.value)}
-            placeholder="Client name"
-           
+            onChange={(name) => set("client", name)}
+            canAdd={false}
+            placeholder="Select a client"
           />
         </div>
         <div className="space-y-1.5">

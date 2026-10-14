@@ -1,5 +1,5 @@
 import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useOpenOnAction } from "@/features/quick-search/useOpenOnAction";
 
 import {
@@ -87,6 +87,30 @@ function ValidationSummary({ raw }: { raw: string | null }) {
         </div>
       ))}
     </div>
+  );
+}
+
+/** Attach (or re-attach) a file to an already submitted proposal's approval workflow. */
+function AttachFileButton({ proposal, busy, onPick }: { proposal: Proposal; busy: boolean; onPick: (file: File) => void }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  return (
+    <>
+      <input
+        ref={inputRef}
+        type="file"
+        className="sr-only"
+        tabIndex={-1}
+        aria-label={`Choose a file for ${proposal.proposalId}`}
+        onChange={(e) => {
+          const picked = e.target.files?.[0];
+          e.target.value = "";
+          if (picked) onPick(picked);
+        }}
+      />
+      <Button variant="ghost" size="icon" className="h-8 w-8" disabled={busy} title="Attach a file" aria-label={`Attach a file to ${proposal.proposalId}`} onClick={() => inputRef.current?.click()}>
+        <Paperclip className="h-3.5 w-3.5" />
+      </Button>
+    </>
   );
 }
 
@@ -241,11 +265,11 @@ export default function ArchitectProposals() {
     }
 
     setSubmitNotice(
-      result.workflow
+      (result.workflow
         ? `${result.proposal.proposalId} submitted — approval workflow ${result.workflow.code} started (${result.workflow.stages
             .map((stage) => stage.roleLabel)
             .join(" → ")}).`
-        : `${result.proposal.proposalId} submitted.`,
+        : `${result.proposal.proposalId} submitted.`) + (result.fileAttached ? "" : " The file was not attached; see below."),
     );
 
     setTitle("");
@@ -288,12 +312,26 @@ export default function ArchitectProposals() {
 
       {/* The proposal saved but its workflow did not start — reported rather
           than rolled back, since discarding a saved proposal would be worse. */}
-      {designSubmission.warning && (
-        <p
+      {designSubmission.pendingUpload && (
+        <div
           role="alert"
-          className="rounded-lg border border-warning/30 bg-warning/5 px-3 py-2 text-sm text-warning-strong"
+          className="flex flex-wrap items-center gap-3 rounded-lg border border-warning/30 bg-warning/5 px-3 py-2 text-sm text-warning-strong"
         >
-          {designSubmission.warning}
+          <span>
+            {designSubmission.pendingUpload.proposalId} was saved, but the file "{designSubmission.pendingUpload.file.name}" was NOT attached:{" "}
+            {designSubmission.pendingUpload.message} The Consultant will not see it until it is uploaded.
+          </span>
+          <Button size="sm" variant="outline" className="h-7 text-xs" disabled={designSubmission.uploading} onClick={() => void designSubmission.retryUpload()}>
+            {designSubmission.uploading ? "Uploading…" : "Retry upload"}
+          </Button>
+          <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={designSubmission.dismissPendingUpload}>
+            Dismiss
+          </Button>
+        </div>
+      )}
+      {designSubmission.uploadedNotice && (
+        <p role="status" className="rounded-lg border border-success/30 bg-success/5 px-3 py-2 text-sm text-success-strong">
+          {designSubmission.uploadedNotice}
         </p>
       )}
 
@@ -556,6 +594,13 @@ export default function ArchitectProposals() {
                           proposal={proposal}
                           saving={c.saving}
                           onUpdate={c.updateProposal}
+                        />
+                      )}
+                      {proposal.workflowId != null && (
+                        <AttachFileButton
+                          proposal={proposal}
+                          busy={designSubmission.uploading}
+                          onPick={(picked) => void designSubmission.attachFile(proposal.proposalId, proposal.workflowId as number, picked)}
                         />
                       )}
                       <Button

@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { ReferencePicker } from "@/features/reference/components/ReferencePicker";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -153,7 +154,7 @@ function CreateOrderDialog({
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="po-vendor">Vendor</Label>
-              <Input id="po-vendor" value={vendor} onChange={(e) => setVendor(e.target.value)} placeholder="ABC Steel Supply" />
+              <ReferencePicker kind="vendors" id="po-vendor" value={vendor} onChange={(name) => setVendor(name)} placeholder="Select a vendor" />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="po-eta">Expected delivery</Label>

@@ -17,6 +17,8 @@ export interface SubmittedFile {
   url: string | null;
   /** Free text under the name, e.g. "PDF · 2.4 MB · Ana Villanueva". */
   meta?: string;
+  /** Set when the file's bytes are gone: shown under the name and the View button is off. */
+  unavailableNote?: string;
 }
 
 export function SubmittedFiles({
@@ -25,21 +27,29 @@ export function SubmittedFiles({
   error = null,
   emptyText,
   compact = false,
+  onRetry,
 }: {
   files: SubmittedFile[];
   loading?: boolean;
   error?: string | null;
   emptyText: string;
   compact?: boolean;
+  /** Shown as a Retry button next to a load error. */
+  onRetry?: () => void;
 }) {
   const [preview, setPreview] = useState<SubmittedFile | null>(null);
 
   if (loading) return <p className="text-sm text-muted-foreground">Loading files…</p>;
   if (error) {
     return (
-      <p role="alert" className="text-sm text-destructive-strong">
-        {error}
-      </p>
+      <div role="alert" className="flex flex-wrap items-center gap-2 text-sm text-destructive-strong">
+        <span>{error}</span>
+        {onRetry && (
+          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={onRetry}>
+            Retry
+          </Button>
+        )}
+      </div>
     );
   }
   if (files.length === 0) return <p className="text-xs text-muted-foreground">{emptyText}</p>;
@@ -58,13 +68,14 @@ export function SubmittedFiles({
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium">{file.name}</p>
               {file.meta && <p className="mt-0.5 text-xs text-muted-foreground">{file.meta}</p>}
+              {file.unavailableNote && <p className="mt-0.5 text-xs text-warning-strong">{file.unavailableNote}</p>}
             </div>
             <Button
               size="sm"
               variant="outline"
               className="h-7 shrink-0 text-xs"
-              disabled={!isRealFileUrl(file.url)}
-              title={isRealFileUrl(file.url) ? undefined : "This record has no file behind it"}
+              disabled={!isRealFileUrl(file.url) || !!file.unavailableNote}
+              title={file.unavailableNote ?? (isRealFileUrl(file.url) ? undefined : "This record has no file behind it")}
               onClick={() => setPreview(file)}
             >
               <Paperclip className="h-3.5 w-3.5" /> View file
