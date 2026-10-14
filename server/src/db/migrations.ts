@@ -65,6 +65,16 @@ export function checkJournal(drizzleDir: string): string[] {
   return problems;
 }
 
+/**
+ * Hashes of migration files as they were BEFORE an idempotence-only edit. A database that ran the
+ * old file recorded the old hash; this keeps it counted as applied instead of re-running the file.
+ * Only ever add a hash here for an edit that changed nothing but "IF NOT EXISTS" guards.
+ */
+export const LEGACY_HASHES: Record<string, readonly string[]> = {
+  // 0006 added columns that 0005 had already added, so a new database failed. Guards added.
+  "0006_eager_nova": ["c2653576ae7ad8b5e7e7cd5bce0b18f0bbad5b4b949e1392bccb43a08bb9dbb7"],
+};
+
 export interface Plan {
   /** Not recorded in the database and to be applied now, in order. */
   pending: MigrationFile[];
@@ -73,6 +83,7 @@ export interface Plan {
 
 /** Hash based, not timestamp based: a migration is pending when its hash is not recorded. */
 export function planMigrations(all: MigrationFile[], recordedHashes: Set<string>): Plan {
-  const pending = all.filter((m) => !recordedHashes.has(m.hash));
+  const isRecorded = (m: MigrationFile) => recordedHashes.has(m.hash) || (LEGACY_HASHES[m.tag] ?? []).some((h) => recordedHashes.has(h));
+  const pending = all.filter((m) => !isRecorded(m));
   return { pending, alreadyApplied: all.length - pending.length };
 }
