@@ -76,7 +76,7 @@ async function main() {
 
   // 2. discover real ids / codes per resource from the list endpoints (read with the widest-access role)
   const sample: Record<string, { id?: string; code?: string }> = {};
-  const resources = [...new Set(inventory.map((r) => r.path.split("/")[2]).filter(Boolean))];
+  const resources = [...new Set(inventory.map((r) => r.path.split("/")[2]).filter((x): x is string => !!x))];
   for (const res of resources) {
     for (const role of [ "admin", "project-manager", "it-designer", "hr", "finance", "owner" ]) {
       if (!tokens[role]) continue;
@@ -94,7 +94,7 @@ async function main() {
   const fill = (path: string, ghost: boolean): string =>
     path.replace(/:([A-Za-z0-9_]+)\??/g, (_m, name: string) => {
       if (ghost) return GHOST_ID;
-      const res = path.split("/")[2];
+      const res = path.split("/")[2] ?? "";
       if (/project.*code|^code$/i.test(name)) return encodeURIComponent(projectSample.code ?? "DEMO-S4");
       if (/project/i.test(name)) return projectSample.id ?? "1";
       const s = sample[res];
