@@ -67,7 +67,6 @@ The brief asks for "what the breadcrumb shows today (read from the running app)"
 | `/architect/documents` | ArchitectDocumentation | Arch | PageHeader | ⌂ › Documentation | ⌂ › Documentation | none | [x] |
 | `/blueprints` | ArchitectBlueprints | Arch | PageHeader | ⌂ › Blueprints | ⌂ › Blueprints | none | [x] |
 | `/requests` | SharedRequests | Adm, PM, Arch, Eng, Con | PageHeader | ⌂ › Requests | ⌂ › Requests | none | [x] |
-| `/my-claims` | SharedClaims | Eng, SP | PageHeader | ⌂ › My claims | ⌂ › My claims | none | [x] |
 | `/transmittals` | SharedTransmittals | all | PageHeader | ⌂ only (no resource match) | ⌂ › Transmittals | fallback entry | [x] |
 | `/progress` | EngineerProgress | Eng | PageHeader | ⌂ › Progress | ⌂ › Progress | none | [x] |
 | `/requirements` | EngineerRequirements | Eng, SP | PageHeader | ⌂ › Requirements | ⌂ › Requirements | none | [x] |

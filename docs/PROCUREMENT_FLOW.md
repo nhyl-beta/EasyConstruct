@@ -1,5 +1,8 @@
 # Purchase requests, procurement and reimbursements
 
+> **Update:** the reimbursement claims feature (My claims, the Reimbursements tab, the claim endorsement step and the `/api/finance/reimbursements` routes) was removed. Everything below that mentions claims is historical. The `reimbursements` table is retained, unused; see `docs/objectives-fixes-progress.md`, "Removing claims data".
+
+
 Every peso that is actually spent ends up as **one approved expense, one budget `actual` and one cash-flow month**. This document describes how money gets there, who may do what, and what each step does to the budget.
 
 It is delivered as sub-features of the roles that use it, not as new top-level modules.
