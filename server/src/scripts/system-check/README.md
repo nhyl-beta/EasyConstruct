@@ -12,3 +12,12 @@ Whole-system check for EasyConstruct. Replaces clicking through every role by ha
 | `run-all.sh` | Runs the lot |
 
 Safe by design: refuses any API that is not `localhost:8123` (see `demo-guard.ts`). Never point it at staging/prod data.
+
+## Second pass (gaps closed)
+All need the same local throwaway DB + API (8123) + Vite (5173) and `playwright` installed. Several have `/tmp/claude-0/...` paths from the original sandbox at the top: adjust. They write to / delete from the throwaway DB.
+- `action-check.mjs` - presses approve/reject/confirm/delete/send buttons for every role.
+- `expense-probe.mjs` - Finance "Record expense" end to end (adds a vendor first).
+- `mobile-layout-check.mjs` - 390x844 touch viewport, all roles: sideways scroll, menu, tap targets.
+- `attendance-scenarios.mjs` - emulated GPS inside/outside geofence, photo upload, offline queue + auto-sync.
+- `attendance-sync-conflict.mjs` - sync latency and the duplicate-in-queue case.
+- `smtp-sink.py` + `mail-check.mjs` - start the sink (`python3 smtp-sink.py`), start the API with `MAIL_USER=a@b.c MAIL_APP_PASSWORD=x MAIL_HOST=127.0.0.1 MAIL_PORT=2525`, then run mail-check (forgot password, reset, owner recovery, sign-out).
