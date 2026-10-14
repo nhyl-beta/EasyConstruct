@@ -1,8 +1,8 @@
-import { NextFunction, Request, Response } from "express";
-import { HTTP } from "../constants/http-status.js";
+import { NextFunction, Response } from "express";
 import { MSG } from "../constants/messages.js";
 import { formatSuccess } from "../utils/response.js";
 import { UnauthorizedError } from "../utils/errors.js";
+import { parseIdParam } from "../utils/params.js";
 import type { AuthedRequest } from "../middleware/auth.js";
 import * as service from "./service.js";
 import * as stream from "./stream.js";
@@ -20,16 +20,10 @@ export const getAll = async (req: AuthedRequest, res: Response, next: NextFuncti
   } catch (err) { next(err); }
 };
 
-export const create = async (req: Request, res: Response, next: NextFunction) => {
+export const markRead = async (req: AuthedRequest, res: Response, next: NextFunction) => {
   try {
-    const data = await service.create(req.body);
-    res.status(HTTP.CREATED).json(formatSuccess(data, MSG.notifications.created));
-  } catch (err) { next(err); }
-};
-
-export const markRead = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const data = await service.markRead(Number(req.params.id));
+    if (!req.authUser) throw new UnauthorizedError();
+    const data = await service.markRead(parseIdParam(req.params.id), { userId: req.authUser.id, role: req.authUser.role });
     res.json(formatSuccess(data, MSG.notifications.updated));
   } catch (err) { next(err); }
 };
