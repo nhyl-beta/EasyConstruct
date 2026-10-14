@@ -8,6 +8,7 @@ import { ValidationError } from "../utils/errors.js";
 import { HTTP } from "../constants/http-status.js";
 import { formatSuccess } from "../utils/response.js";
 import * as service from "./service.js";
+import { assertCanOpenFile } from "./finance-files.js";
 import type { AuthedRequest } from "../middleware/auth.js";
 
 export const upload = async (req: AuthedRequest, res: Response, next: NextFunction) => {
@@ -94,6 +95,7 @@ export const download = async (req: AuthedRequest, res: Response, next: NextFunc
   try {
     const url = typeof req.query.url === "string" ? req.query.url : "";
     if (!url) throw new ValidationError("url is required");
+    await assertCanOpenFile(url, req.authUser);
     const file = await service.openStoredFile(url);
     res.setHeader("Content-Type", file.contentType);
     if (file.sizeBytes != null) res.setHeader("Content-Length", String(file.sizeBytes));
