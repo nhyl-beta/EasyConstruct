@@ -1,8 +1,6 @@
 import { describe, test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  CLAIM_STATUSES,
-  CLAIM_TRANSITIONS,
   ORDER_STATUSES,
   ORDER_TRANSITIONS,
   PR_STATUSES,
@@ -16,10 +14,8 @@ import {
   budgetImpact,
   budgetRemaining,
   canTransition,
-  claimStatusAfterRaise,
   committedAfter,
   isOverBudget,
-  isUnsettledClaim,
   isUnsettledOrder,
   isUnsettledRequest,
   lineItemsTotal,
@@ -34,7 +30,6 @@ describe("transitions: every pair is checked against the table", () => {
   for (const [kind, statuses, table] of [
     ["purchase-request", PR_STATUSES, PR_TRANSITIONS],
     ["procurement-order", ORDER_STATUSES, ORDER_TRANSITIONS],
-    ["reimbursement", CLAIM_STATUSES, CLAIM_TRANSITIONS],
   ] as const) {
     test(kind, () => {
       const t = table as Record<string, readonly string[]>;
@@ -52,10 +47,8 @@ describe("transitions: every pair is checked against the table", () => {
   test("terminal statuses go nowhere", () => {
     for (const s of ["rejected", "cancelled"] as const) {
       assert.deepEqual(PR_TRANSITIONS[s], []);
-      assert.deepEqual(CLAIM_TRANSITIONS[s], []);
     }
     assert.deepEqual(ORDER_TRANSITIONS.paid, []);
-    assert.deepEqual(CLAIM_TRANSITIONS.paid, []);
   });
 
   test("a request cannot be cancelled once ordered; the order's cancel puts it back to approved", () => {
@@ -74,23 +67,16 @@ describe("transitions: every pair is checked against the table", () => {
   });
 });
 
-describe("where a request or claim starts", () => {
+describe("where a request starts", () => {
   test("an Engineer's request waits for the PM; a PM's or Admin's goes to Finance", () => {
     assert.equal(prStatusAfterRaise("engineer"), "pending-pm");
     assert.equal(prStatusAfterRaise("project-manager"), "pending-finance");
     assert.equal(prStatusAfterRaise("admin"), "pending-finance");
   });
-
-  test("a claim goes to the PM only for staff on a project that has another PM", () => {
-    assert.equal(claimStatusAfterRaise({ staffedOnProject: true, projectHasPm: true, isProjectPm: false }), "pending-pm");
-    assert.equal(claimStatusAfterRaise({ staffedOnProject: true, projectHasPm: true, isProjectPm: true }), "pending-finance");
-    assert.equal(claimStatusAfterRaise({ staffedOnProject: true, projectHasPm: false, isProjectPm: false }), "pending-finance");
-    assert.equal(claimStatusAfterRaise({ staffedOnProject: false, projectHasPm: true, isProjectPm: false }), "pending-finance");
-  });
 });
 
 describe("segregation of duties", () => {
-  test("nobody acts on their own request or claim", () => {
+  test("nobody acts on their own request", () => {
     assert.throws(() => assertNotSelf(5, 5, "approve"), ForbiddenError);
     assert.doesNotThrow(() => assertNotSelf(5, 6, "approve"));
     assert.doesNotThrow(() => assertNotSelf(5, null, "approve"));
@@ -204,19 +190,13 @@ describe("unsettled (closing gate)", () => {
     for (const s of ["paid", "cancelled"]) assert.equal(isUnsettledOrder(s), false, s);
   });
 
-  test("claims: pending or approved-unpaid", () => {
-    for (const s of ["pending-pm", "pending-finance", "approved"]) assert.equal(isUnsettledClaim(s), true, s);
-    for (const s of ["paid", "rejected", "cancelled"]) assert.equal(isUnsettledClaim(s), false, s);
-  });
-
   test("an ordered request is settled by its order, not counted twice", () => {
     assert.deepEqual(
       unsettledIds({
         requests: [{ id: "PR-1", status: "ordered" }, { id: "PR-2", status: "approved" }],
         orders: [{ id: "PO-1", status: "in-transit" }, { id: "PO-2", status: "paid" }],
-        claims: [{ id: "RMB-1", status: "paid" }, { id: "RMB-2", status: "pending-pm" }],
       }),
-      ["PR-2", "PO-1", "RMB-2"],
+      ["PR-2", "PO-1"],
     );
   });
 });

@@ -72,7 +72,6 @@ export interface PayrollSummary {
     sss: EmployeeEmployerShare;
     philhealth: EmployeeEmployerShare;
     pagibig: EmployeeEmployerShare;
-    withholdingTax: number;
     ec: number;
   };
   byProject: { projectCode: string; projectName: string; laborCost: number; share: number }[];

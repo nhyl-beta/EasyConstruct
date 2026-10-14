@@ -1,5 +1,5 @@
 import { uploadsRepository } from "@/features/uploads/repositories/uploads.repository";
-import type { ClaimAttachment } from "../types/purchasing.types";
+import type { ReceiptAttachment } from "../types/purchasing.types";
 
 const readAsDataUrl = (file: File): Promise<string> =>
   new Promise((resolve, reject) => {
@@ -10,7 +10,7 @@ const readAsDataUrl = (file: File): Promise<string> =>
   });
 
 /** Stores one file through POST /api/uploads (the same path requirements use). */
-export async function uploadReceipt(file: File): Promise<ClaimAttachment> {
+export async function uploadReceipt(file: File): Promise<ReceiptAttachment> {
   const res = await uploadsRepository.upload(file.name, file.type || "application/octet-stream", await readAsDataUrl(file));
   return {
     url: res.data.url,
@@ -18,10 +18,4 @@ export async function uploadReceipt(file: File): Promise<ClaimAttachment> {
     contentType: res.data.contentType,
     sizeBytes: res.data.sizeBytes,
   };
-}
-
-export async function uploadReceipts(files: File[]): Promise<ClaimAttachment[]> {
-  const out: ClaimAttachment[] = [];
-  for (const f of files) out.push(await uploadReceipt(f));
-  return out;
 }

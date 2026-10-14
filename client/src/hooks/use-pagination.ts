@@ -23,9 +23,25 @@ export interface Pagination<T> {
   total: number;
 }
 
-export function usePagination<T>(items: T[], initialPageSize = 10): Pagination<T> {
+/**
+ * `resetKey`: pass anything that identifies the current search, filter or tab
+ * (a string, or a joined key); the list goes back to page 1 whenever it changes.
+ */
+export function usePagination<T>(
+  items: T[],
+  initialPageSize = 10,
+  resetKey?: string | number | null,
+): Pagination<T> {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSizeState] = useState(initialPageSize);
+
+  // Adjusting state while rendering (the documented pattern) so a changed
+  // filter never shows a frame of the old page number.
+  const [lastKey, setLastKey] = useState(resetKey);
+  if (lastKey !== resetKey) {
+    setLastKey(resetKey);
+    setCurrentPage(1);
+  }
 
   const pageCount = Math.max(1, Math.ceil(items.length / pageSize));
 

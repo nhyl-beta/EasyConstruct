@@ -4,6 +4,8 @@
 // (donut) and where the open work sits (bar: open tasks per project). Both are
 // computed from data the dashboard already has access to (own projects, own
 // tasks) — nothing new on the server.
+import { ChartTooltip } from "@/components/charts/chart-tooltip";
+import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 import { SectionCard } from "@/components/ui/section-card";
@@ -40,6 +42,7 @@ export function PmPortfolioCharts({
   loading: boolean;
 }) {
   const tasks = { loading };
+  const reduced = useReducedMotion();
 
   return (
     <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -51,12 +54,12 @@ export function PmPortfolioCharts({
             <div className="h-48 w-48 shrink-0" role="img" aria-label={`Projects by phase: ${byPhase.map((d) => `${d.name} ${d.value}`).join(", ")}`}>
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={byPhase} dataKey="value" nameKey="name" innerRadius={48} outerRadius={80} paddingAngle={2}>
+                  <Pie data={byPhase} dataKey="value" nameKey="name" innerRadius={48} outerRadius={80} paddingAngle={2} isAnimationActive={!reduced}>
                     {byPhase.map((d, i) => (
                       <Cell key={d.name} fill={PALETTE[i % PALETTE.length]} />
                     ))}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip content={<ChartTooltip formatValue={(v) => String(v)} total={byPhase.reduce((s, d) => s + d.value, 0)} />} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -85,9 +88,9 @@ export function PmPortfolioCharts({
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="project" tick={{ fontSize: 11 }} interval={0} />
                 <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-                <Tooltip />
-                <Bar dataKey="inProgress" name="In progress" stackId="w" fill={PALETTE[0]} />
-                <Bar dataKey="pending" name="Pending" stackId="w" fill={PALETTE[2]} radius={[4, 4, 0, 0]} />
+                <Tooltip cursor={{ fill: "var(--muted)", opacity: 0.4 }} content={<ChartTooltip formatValue={(v) => String(v)} />} />
+                <Bar dataKey="inProgress" name="In progress" stackId="w" fill={PALETTE[0]} isAnimationActive={!reduced} />
+                <Bar dataKey="pending" name="Pending" stackId="w" fill={PALETTE[2]} radius={[4, 4, 0, 0]} isAnimationActive={!reduced} />
               </BarChart>
             </ResponsiveContainer>
           </div>

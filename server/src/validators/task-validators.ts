@@ -37,3 +37,22 @@ export const updateTaskStatusSchema = z
       message: "Describe what was completed before marking the task done",
     },
   );
+
+// ── Decision support (fixes 2.1, 2.2): read-only queries ──────────────────
+
+export const suggestAssigneesQuerySchema = z.object({
+  projectCode: z.string().min(1).max(50),
+  title: z.string().min(1).max(255),
+  dueDate: z.string().max(20).optional(),
+  milestoneId: z.coerce.number().int().positive().optional(),
+});
+
+export const suggestAllocationSchema = z.object({
+  projectCode: z.string().min(1).max(50),
+});
+
+export const assignmentWarningsQuerySchema = z.object({
+  userId: z.coerce.number().int().positive(),
+  dueDate: z.string().max(20).optional(),
+  excludeTaskId: z.coerce.number().int().positive().optional(),
+});

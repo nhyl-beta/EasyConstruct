@@ -1,3 +1,4 @@
+import { DecisionSupportLabel } from "@/components/shared/decision-support-label";
 import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
 import { useState, type FormEvent } from "react";
 import { RequirementPurchase } from "@/features/finance/components/RequirementPurchase";
@@ -45,6 +46,8 @@ import {
   type Requirement,
   type RequirementAttachment,
   type RequirementCategory,
+  type GenerateDraftInput,
+  type RequirementDraft,
   type StructureRequirementInput,
   type StructuredRequirement,
   type StructuredRewrite,
@@ -88,6 +91,7 @@ async function uploadAttachments(files: File[]): Promise<RequirementAttachment[]
 function NewRequirementDialog({
   createRequirement,
   structureRequirement,
+  generateDraft,
   engineerName,
   canStructure,
   allowedProjectCodes,
@@ -101,6 +105,7 @@ function NewRequirementDialog({
     createdBy: string;
   }) => Promise<void>;
   structureRequirement: (input: StructureRequirementInput) => Promise<StructuredRequirement>;
+  generateDraft: (input: GenerateDraftInput) => Promise<RequirementDraft>;
   engineerName: string;
   /** Rule-based structuring is for engineers/admins only (the endpoint refuses others). */
   canStructure: boolean;
@@ -126,7 +131,31 @@ function NewRequirementDialog({
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [rewrites, setRewrites] = useState<StructuredRewrite[]>([]);
 
+  // "Generate draft" (rule-based template packs). The draft is added to the text
+  // box for the engineer to edit; Undo restores what was there before.
+  const [generating, setGenerating] = useState(false);
+  const [draftBasis, setDraftBasis] = useState<string[]>([]);
+
+  const runGenerateDraft = async () => {
+    if (!project || !category) return;
+    setStructureError(null);
+    setGenerating(true);
+    try {
+      const draft = await generateDraft({ projectCode: project, category });
+      setBefore((current) => current ?? { description, category });
+      setDescription(description.trim() ? `${description.trim()}
+
+${draft.description}` : draft.description);
+      setDraftBasis(draft.basis);
+    } catch (err) {
+      setStructureError(err instanceof Error ? err.message : "Could not generate a draft.");
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   const clearStructuring = () => {
+    setDraftBasis([]);
     setBefore(null);
     setSuggestions([]);
     setPicked(new Set());
@@ -275,6 +304,17 @@ function NewRequirementDialog({
                     variant="outline"
                     size="sm"
                     className="h-7 gap-1 px-2 text-xs"
+                    disabled={generating || !project || !category}
+                    title={!project || !category ? "Pick a project and a category first" : "Fill the text box from the template pack for this category and project type"}
+                    onClick={() => void runGenerateDraft()}
+                  >
+                    <ListChecks className="h-3 w-3" /> {generating ? "Generating…" : "Generate draft"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-7 gap-1 px-2 text-xs"
                     disabled={structuring || description.trim().length < 10}
                     title={description.trim().length < 10 ? "Write a rough description first (10+ characters)" : "Organize into Objectives, Materials, Constraints and Specifications"}
                     onClick={() => void runStructure()}
@@ -296,10 +336,24 @@ function NewRequirementDialog({
                 {structureError} You can keep writing the description yourself.
               </p>
             )}
+            {FEATURES.ai && canStructure && draftBasis.length > 0 && (
+              <div className="space-y-1 rounded-lg border border-border bg-muted/30 p-3 text-xs">
+                <p className="flex flex-wrap items-center gap-2 text-muted-foreground">
+                  <DecisionSupportLabel />
+                  Draft from templates. Edit the [specify] blanks; nothing was saved.
+                </p>
+                <ul className="list-inside list-disc text-muted-foreground">
+                  {draftBasis.map((b) => (
+                    <li key={b}>{b}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
             {FEATURES.ai && canStructure && before && (
               <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-3 text-xs">
-                <p className="text-muted-foreground">
-                  Rule-based structuring — decision support only. Review the text above; nothing was saved.
+                <p className="flex flex-wrap items-center gap-2 text-muted-foreground">
+                  <DecisionSupportLabel />
+                  Rule-based structuring. Review the text above; nothing was saved.
                 </p>
                 {rewrites.length > 0 && (
                   <ul className="space-y-1">
@@ -379,7 +433,7 @@ function NewRequirementDialog({
 
 export default function RequirementsPage() {
   const { user } = useAuth();
-  const { requirements, loading, counts, pagination, createRequirement, submitRequirement, addAttachments, structureRequirement } =
+  const { requirements, loading, counts, pagination, createRequirement, submitRequirement, addAttachments, structureRequirement, generateDraft } =
     useRequirements();
   const [busyId, setBusyId] = useState<number | null>(null);
   const role = user?.role;
@@ -434,6 +488,7 @@ export default function RequirementsPage() {
             <NewRequirementDialog
               createRequirement={createRequirement}
               structureRequirement={structureRequirement}
+              generateDraft={generateDraft}
               engineerName={user?.name ?? "Unknown"}
               canStructure={!isSitePersonnel}
               allowedProjectCodes={isSitePersonnel ? staffedSiteCodes : undefined}

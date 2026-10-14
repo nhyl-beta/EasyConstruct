@@ -371,3 +371,42 @@
   .meter[data-tone="danger"] > span { background: var(--destructive); }
   .meter[data-tone="brand"] > span { background: var(--primary); }
 }
+
+/* Payslip dialog (features/hr/components/payslip-dialog.tsx): the Print button
+   calls window.print(). While that dialog is open, print only its content, not
+   the sidebar, header, page or the dialog's own buttons. */
+@media print {
+  body:has([data-print-payslip]) > *:not([data-print-payslip]):not(:has([data-print-payslip])) {
+    display: none !important;
+  }
+  body:has([data-print-payslip]) [data-slot="dialog-close"],
+  [data-print-payslip] [data-print-hide] {
+    display: none !important;
+  }
+  [data-print-payslip] {
+    position: static !important;
+    inset: auto !important;
+    translate: none !important;
+    transform: none !important;
+    max-width: none !important;
+    width: 100% !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    animation: none !important;
+  }
+}
+
+/* Bars in components/charts/animated-bar-chart.tsx grow from the baseline with a
+   short stagger (the delay is set per bar). Off for reduced motion. */
+@keyframes chart-bar-grow {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+.chart-bar-grow {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: chart-bar-grow 600ms ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .chart-bar-grow { animation: none; }
+}

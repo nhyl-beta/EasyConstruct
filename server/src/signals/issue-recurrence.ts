@@ -12,6 +12,8 @@
 import type { Signal, SignalContext, SignalRule } from "./types.js";
 import type { LifecycleSnapshot } from "../lifecycle/repository.js";
 import { SIGNAL_THRESHOLDS } from "../config/signals.js";
+import { actionFor } from "./playbook.js";
+import { rankPrecedents } from "../issues/precedents.js";
 
 const OPEN_STATUSES = new Set(["Submitted", "Under Review"]);
 const trim = (text: string, max: number): string => (text.length > max ? `${text.slice(0, max - 1)}…` : text);
@@ -41,6 +43,17 @@ export const issueRecurrenceRule: SignalRule = {
         .map((p) => `"${p.title}" resolved ${p.updatedAt ? new Date(p.updatedAt).toISOString().slice(0, 10) : "previously"}: ${trim(p.resolutionNotes, 160)}`)
         .join(" · ");
 
+      // Similar resolved issues, ranked by text similarity to the newest open issue
+      // in this category (issues/precedents.ts). Empty when nothing clears the floor.
+      const subject = s.issues
+        .filter((i) => i.category === category && OPEN_STATUSES.has(i.status))
+        .sort((a, b) => b.id - a.id)[0];
+      const ranked = subject ? rankPrecedents(subject, s.issuePrecedents) : [];
+      const resolution = (key: string) => ({
+        action: actionFor("issue-recurrence", key),
+        ...(ranked.length > 0 ? { precedents: ranked } : {}),
+      });
+
       if (recentCount >= SIGNAL_THRESHOLDS.issueRecurrence.warnCount) {
         const severity =
           recentCount >= SIGNAL_THRESHOLDS.issueRecurrence.criticalCount ? "critical" : "warn";
@@ -55,6 +68,7 @@ export const issueRecurrenceRule: SignalRule = {
             `${recentCount} ${category} issue(s) reported on this project in the last ${SIGNAL_THRESHOLDS.issueRecurrence.windowDays} days` +
             (precedentText ? `. Precedent(s): ${precedentText}` : "."),
           link: "/issues",
+          suggestedResolution: resolution(`issue-recurrence:${category}`),
         });
       } else if (precedents.length > 0) {
         signals.push({
@@ -65,6 +79,7 @@ export const issueRecurrenceRule: SignalRule = {
           severity: "info",
           detail: `An open ${category} issue on this project resembles a resolved one elsewhere. Precedent(s): ${precedentText}`,
           link: "/issues",
+          suggestedResolution: resolution(`issue-precedent:${category}`),
         });
       }
     }

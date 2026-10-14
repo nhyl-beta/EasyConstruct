@@ -3,6 +3,7 @@ import { db } from "../db/connection.js";
 import { projects } from "../db/schema/projects.js";
 import { eq } from "drizzle-orm";
 import { ensureValidation, validateProposal } from "./validation.js";
+import { loadValidationContext } from "./validation-context.js";
 import { FEATURES } from "../config/features.js";
 import { assertProjectWritable, refreshProjectProgress } from "../lifecycle/service.js";
 import { createWorkflow, decideStage } from "../workflows/service.js";
@@ -74,7 +75,11 @@ export const proposalService = {
     if (!FEATURES.ai) throw new NotFoundError("Proposal validation is not enabled");
     const proposal = await this.getById(id);
     const [project] = await db.select().from(projects).where(eq(projects.code, proposal.projectCode));
-    const { changed, aiValidation } = ensureValidation(proposal, !!project);
+    const context = await loadValidationContext({
+      projectCode: proposal.projectCode,
+      excludeProposalId: proposal.id,
+    });
+    const { changed, aiValidation } = ensureValidation(proposal, !!project, context);
     if (!changed) return proposal;
     const updated = await proposalRepository.update(id, { aiValidation });
     return updated ?? proposal;
@@ -126,6 +131,7 @@ export const proposalService = {
             { title: data.title, content: data.content, amount: data.amount },
             true,
             data.projectCode,
+            await loadValidationContext({ projectCode: data.projectCode }),
           ),
         )
       : null;
@@ -181,6 +187,7 @@ export const proposalService = {
             { title: data.title, content: data.content, amount: data.amount },
             true,
             data.projectCode,
+            await loadValidationContext({ projectCode: data.projectCode }),
           ),
         )
       : null;

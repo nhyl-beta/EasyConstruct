@@ -44,13 +44,16 @@ export default function ArchitectDesignDetail() {
 
   if (c.loading) {
     return (
-      <div className="p-8 text-sm text-muted-foreground">Loading design…</div>
+      <div className="space-y-4 p-4 md:p-8">
+        <PageHeader title="Design" breadcrumbLabel="Design" description="Loading design…" />
+      </div>
     );
   }
 
   if (c.error || !c.design) {
     return (
       <div className="flex-1 space-y-4 p-4 md:p-8">
+        <PageHeader title="Design not found" breadcrumbLabel="Design" />
         <Button
           variant="ghost"
           size="sm"
@@ -103,6 +106,7 @@ export default function ArchitectDesignDetail() {
 
       <PageHeader
         title={d.name}
+        breadcrumbLabel={d.name}
         description={`${d.code} · ${d.projectCode}`}
         actions={
           <>

@@ -344,6 +344,50 @@ export const create = async (
 };
 
 /**
+ * HR confirms an absence (fix 2.3), usually from the daily exceptions list.
+ * Goes through the same checks as any attendance write: the employee and
+ * project must exist, the project must be open for changes, and the person must
+ * not already have a record that day. The record is written only because a
+ * person asked for it; the daily check itself never creates one.
+ */
+export const markAbsent = async (
+  input: { employeeId: string; projectCode: string; logDate: string; remarks?: string },
+  actor: { name: string },
+) => {
+  const employee = await employeesRepo.findByEmployeeId(input.employeeId);
+  if (!employee) throw new NotFoundError("Employee", input.employeeId);
+  if (employee.status !== "Active") {
+    throw new ValidationError(`${employee.name} is ${employee.status}, not Active, so an absence cannot be recorded`);
+  }
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
+  if (input.logDate > today) throw new ValidationError("An absence cannot be recorded for a future date");
+
+  const project = await db.select().from(projects).where(eq(projects.code, input.projectCode)).then((rows) => rows[0]);
+  if (!project) throw new NotFoundError("Project", input.projectCode);
+  await assertProjectWritable(input.projectCode);
+
+  const existing = await repo.findAll({ employeeId: input.employeeId, dateFrom: input.logDate, dateTo: input.logDate });
+  if (existing.length > 0) {
+    throw new ConflictError(`${employee.name} already has an attendance record for ${input.logDate}`);
+  }
+
+  return repo.create({
+    employeeId: input.employeeId,
+    site: project.name,
+    projectCode: input.projectCode,
+    clockIn: "00:00",
+    logDate: input.logDate,
+    attendanceStatus: "Absent",
+    // No photo or coordinates stand behind an absence; HR confirming it is the verification.
+    geofence: "Unverified",
+    photo: "Not captured",
+    status: "Verified",
+    source: "HR",
+    remarks: [`Marked absent by ${actor.name}`, input.remarks].filter(Boolean).join(": "),
+  } as Parameters<typeof repo.create>[0]);
+};
+
+/**
  * Ownership + field scoping for Site Personnel.
  *
  * A worker may PATCH attendance only to close out their own still-open

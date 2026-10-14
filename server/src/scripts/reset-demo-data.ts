@@ -28,13 +28,14 @@ const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 /** Never written. Checksummed before/after. */
 const ACCOUNT_TABLES = ["users", "password_reset_tokens", "roles"];
 /** Never deleted (config / reference / history). */
-const PRESERVE = [...ACCOUNT_TABLES, "workflow_templates", "reference_snapshots", "audit_logs"];
+const PRESERVE = [...ACCOUNT_TABLES, "workflow_templates", "reference_snapshots", "audit_logs", "expense_categories"];
 /** Handled specially. */
 const SPECIAL = ["notifications", "employees"];
 
 /** Delete order: children before parents (derived from the real FK map). */
 const DELETE_ORDER = [
   "validation_results", "workflow_attachments", "workflow_line_items", "workflow_stages",
+  "plan_suggestion_items", "plan_suggestions", "signal_findings", "decision_support_events",
   "proposals", "workflows",
   "budget_adjustments", "budget_allocations", "budget_approval_steps", "budget_comments",
   "budget_documents", "budget_history", "budgets",
@@ -44,10 +45,10 @@ const DELETE_ORDER = [
   "architect_documents", "blueprints", "design_reviews", "design_revisions", "design_engineers", "designs",
   "revisions", "engineering_reports", "documents", "expenses", "financial_risks", "cash_flow_entries",
   "ai_insights", "approvals_queue",
-  "scheduled_reports", "payroll", "payroll_batch_decisions", "payroll_batches", "attendance",
+  "scheduled_reports", "payroll", "payroll_batch_decisions", "payroll_batch_acknowledgements", "payroll_batches", "attendance",
   "transmittal_acknowledgements", "transmittal_items", "transmittals", "design_request_files", "design_requests",
   "project_deliverables",
-  "project_phase_history", "project_members", "projects",
+  "project_phase_history", "project_members", "projects", "clients", "vendors",
 ];
 
 async function checksums(c: pg.PoolClient) {

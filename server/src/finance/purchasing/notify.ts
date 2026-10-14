@@ -27,8 +27,7 @@ export const toProject = (projectCode: string, roles: string[], m: Message) =>
 
 /** A row changed under the caller's feet: 409 naming the status it is in now. */
 export const links = {
-  finance: (tab: "purchase-requests" | "procurement" | "reimbursements") => `/expenses?tab=${tab}`,
+  finance: (tab: "purchase-requests" | "procurement") => `/expenses?tab=${tab}`,
   approvals: "/approvals",
   requirements: "/requirements",
-  claims: "/my-claims",
 } as const;

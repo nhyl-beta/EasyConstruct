@@ -3,6 +3,8 @@
 // Every row goes through the same POST /documents/upload an ordinary upload
 // uses, so access scoping, file-type limits and the closed-project guard apply
 // unchanged — a row the server refuses is reported, never silently skipped.
+import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
+import { usePagination } from "@/hooks/use-pagination";
 import { useMemo, useRef, useState } from "react";
 import { CheckCircle2, Download, FileUp, XCircle } from "lucide-react";
 
@@ -115,6 +117,7 @@ export default function SharedLegacyImportPage() {
     const failed = rows.filter((r) => r.state === "failed" || r.state === "invalid").length;
     return `${rows.length} row${rows.length === 1 ? "" : "s"} · ${doneCount} imported · ${failed} need attention`;
   }, [rows, doneCount]);
+  const pg = usePagination(rows, 20);
 
   return (
     <PageContainer>
@@ -168,7 +171,7 @@ export default function SharedLegacyImportPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((r) => (
+                  {pg.pageItems.map((r) => (
                     <tr key={r.line} className="border-b last:border-0">
                       <td className="py-2 pr-3 tabular-nums text-muted-foreground">{r.line}</td>
                       <td className="py-2 pr-3 font-mono text-xs">{r.project}</td>
@@ -190,6 +193,9 @@ export default function SharedLegacyImportPage() {
                   ))}
                 </tbody>
               </table>
+              <div className="pt-2">
+                <DataTablePagination {...pg} />
+              </div>
             </div>
           </SectionCard>
         )}

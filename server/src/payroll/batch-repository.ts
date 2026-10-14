@@ -1,7 +1,7 @@
 import { and, desc, eq, inArray, ne } from "drizzle-orm";
 import { db } from "../db/connection.js";
 import { payrollBatches } from "../db/schema/finance.js";
-import { payrollBatchDecisions } from "../db/schema/payroll.js";
+import { payrollBatchAcknowledgements, payrollBatchDecisions } from "../db/schema/payroll.js";
 import type { Db } from "./repository.js";
 
 export type BatchRow = typeof payrollBatches.$inferSelect;
@@ -104,3 +104,27 @@ export const insertDecision = async (
   const [row] = await client.insert(payrollBatchDecisions).values(data).returning();
   return row;
 };
+
+
+/** Records the warnings HR acknowledged for one submission round (re-submitting the same round replaces it). */
+export const saveAcknowledgements = async (data: {
+  batchId: string;
+  round: number;
+  acknowledgedBy: string;
+  items: { key: string; message: string }[];
+}) => {
+  await db
+    .insert(payrollBatchAcknowledgements)
+    .values(data)
+    .onConflictDoUpdate({
+      target: [payrollBatchAcknowledgements.batchId, payrollBatchAcknowledgements.round],
+      set: { acknowledgedBy: data.acknowledgedBy, items: data.items, acknowledgedAt: new Date() },
+    });
+};
+
+export const findAcknowledgements = async (batchId: string) =>
+  db
+    .select()
+    .from(payrollBatchAcknowledgements)
+    .where(eq(payrollBatchAcknowledgements.batchId, batchId))
+    .orderBy(desc(payrollBatchAcknowledgements.round));

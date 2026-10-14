@@ -4,6 +4,8 @@
 // file is checked by the server first (POST /attendance/import/preview) and
 // shown here row by row with the reason for each rejected row; nothing is
 // saved until "Import" is pressed, and only the valid rows are imported.
+import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
+import { usePagination } from "@/hooks/use-pagination";
 import { useRef, useState } from "react";
 import { AlertTriangle, CheckCircle2, Download, FileSpreadsheet, Loader2, Upload } from "lucide-react";
 
@@ -56,6 +58,7 @@ export function AttendanceSheetImport({
   const [busy, setBusy] = useState<"check" | "import" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const input = useRef<HTMLInputElement>(null);
+  const pg = usePagination(report?.rows ?? [], 15);
 
   const form = () => {
     const data = new FormData();
@@ -244,7 +247,7 @@ export function AttendanceSheetImport({
                   </tr>
                 </thead>
                 <tbody>
-                  {report.rows.map((r) => (
+                  {pg.pageItems.map((r) => (
                     <tr
                       key={r.row}
                       className={`border-t border-border align-top ${r.errors.length > 0 ? "bg-destructive/5" : ""}`}
@@ -276,6 +279,9 @@ export function AttendanceSheetImport({
                   ))}
                 </tbody>
               </table>
+              <div className="pt-2">
+                <DataTablePagination {...pg} />
+              </div>
             </div>
           </div>
         )}

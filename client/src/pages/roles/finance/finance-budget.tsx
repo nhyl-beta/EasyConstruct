@@ -1,3 +1,5 @@
+import { ChartTooltip } from "@/components/charts/chart-tooltip";
+import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { PageHeader } from "@/components/refine-ui/views/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -98,8 +100,9 @@ import { SearchableSelect } from "@/components/ui/searchable-select";
 import type { CreateBudgetInput } from "@/features/finance/budgets/controllers/budget.controllers";
 import { OwnerDepartmentPicker } from "@/components/shared/owner-department-picker";
 import { useProjects } from "@/features/projects/hooks/useProjects";
-
-const BUDGET_CATEGORIES = ["Materials", "Labor", "Equipment", "Subcontractors", "Permits", "Contingency", "Other"];
+import { CategorySelect } from "@/features/finance/components/CategorySelect";
+import { ManageCategoriesDialog } from "@/features/finance/components/ManageCategoriesDialog";
+import { useAuth } from "@/auth/auth-context";
 
 function NewBudgetDialog({
   creating,
@@ -179,18 +182,7 @@ function NewBudgetDialog({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Category</Label>
-              <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select" />
-                </SelectTrigger>
-                <SelectContent>
-                  {BUDGET_CATEGORIES.map((c) => (
-                    <SelectItem key={c} value={c}>
-                      {c}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <CategorySelect value={category} onValueChange={setCategory} />
             </div>
             <div className="space-y-1.5">
               <Label>Fiscal year</Label>
@@ -224,8 +216,10 @@ function NewBudgetDialog({
 }
 
 export default function FinanceBudget() {
+  const reduced = useReducedMotion();
   const [tab, setTab] = useState("overview");
   const c = useBudgets();
+  const { user } = useAuth();
   const approval = useBudgetApproval(c.budgets, c.reload);
 
   const allocation = useBudgetAllocationController(
@@ -288,6 +282,7 @@ export default function FinanceBudget() {
         description="Manage project budgets, allocations, adjustments, and historical baselines across the portfolio."
         actions={
           <>
+            {user?.role === "finance-manager" && <ManageCategoriesDialog />}
             <Button
               variant="outline"
               size="sm"
@@ -469,13 +464,14 @@ export default function FinanceBudget() {
                       innerRadius={50}
                       outerRadius={85}
                       paddingAngle={2}
+                      isAnimationActive={!reduced}
                     >
                       {allocation.byCategory.map((entry) => (
                         <Cell key={entry.label} fill={entry.color} />
                       ))}
                     </Pie>
                     <Tooltip
-                      formatter={(v: number) => formatCompactCurrency(v)}
+                      content={<ChartTooltip formatValue={formatCompactCurrency} total={allocation.byCategory.reduce((s, d) => s + d.value, 0)} />}
                     />
                   </PieChart>
                 </ResponsiveContainer>
@@ -525,12 +521,15 @@ export default function FinanceBudget() {
                       width={90}
                     />
                     <Tooltip
-                      formatter={(v: number) => formatCompactCurrency(v)}
+                      cursor={{ fill: "var(--muted)", opacity: 0.4 }}
+                      content={<ChartTooltip formatValue={formatCompactCurrency} />}
                     />
                     <Bar
                       dataKey="value"
+                      name="Amount"
                       fill={BUDGET_CHART_COLORS[1]}
                       radius={[0, 6, 6, 0]}
+                      isAnimationActive={!reduced}
                     />
                   </BarChart>
                 </ResponsiveContainer>

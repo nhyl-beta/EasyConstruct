@@ -10,6 +10,8 @@ import {
 import { PageHeader } from "@/pages/roles/shared/shared-hr";
 import { DatePicker } from "@/components/ui/date-picker";
 
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { FairnessPanel } from "@/features/workforce/components/FairnessPanel";
 import { useWorkforceBoard } from "@/features/hr/hooks/use-workforce-board";
 
 export default function HRWorkforcePage() {
@@ -53,6 +55,12 @@ export default function HRWorkforcePage() {
         </div>
       </div>
 
+      <Tabs defaultValue="overview" className="gap-4">
+        <TabsList>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="fairness">Fairness</TabsTrigger>
+        </TabsList>
+        <TabsContent value="overview" className="space-y-6">
       {/* Loading */}
       {loading && (
         <p className="text-sm text-muted-foreground">
@@ -195,6 +203,11 @@ export default function HRWorkforcePage() {
           </Card>
         </>
       )}
+        </TabsContent>
+        <TabsContent value="fairness">
+          <FairnessPanel dateFrom={from || undefined} dateTo={to || undefined} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

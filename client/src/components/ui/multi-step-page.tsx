@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/refine-ui/views/page-header";
 import { Button } from "@/components/ui/button";
 import { FEATURES } from "@/config/features";
 import { cn } from "@/lib/utils";
@@ -47,10 +48,12 @@ export function MultiStepPage({
   return (
     <div className="flex-1 p-4 md:p-6">
       <div className="mx-auto max-w-6xl">
-        <div className="mb-5">
-          <h2 className="text-xl font-semibold text-foreground">{title}</h2>
-          <p className="mt-1 text-sm text-muted-foreground">{description}</p>
-        </div>
+        <PageHeader
+          title={title}
+          description={description}
+          breadcrumbLabel={title}
+          className="mb-5"
+        />
 
         <div className="flex overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
           {/* Left — stepper */}

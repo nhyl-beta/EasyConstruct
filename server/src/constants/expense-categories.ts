@@ -1,9 +1,16 @@
-// The one list of expense categories. Expenses, purchase requests, procurement
-// orders and reimbursement claims all use it, because a budget line is matched
-// by `project + category` string equality. The client keeps an identical copy
-// in client/src/config/expense-categories.ts.
-export const EXPENSE_CATEGORIES = ["Materials", "Equipment", "PPE", "Transport", "Services"] as const;
-export type ExpenseCategory = (typeof EXPENSE_CATEGORIES)[number];
-
-export const isExpenseCategory = (value: string): value is ExpenseCategory =>
-  (EXPENSE_CATEGORIES as readonly string[]).includes(value);
+// Seed defaults for the managed expense-category list (table `expense_categories`).
+// Used by the migration's seed, the demo schema top-up and the demo scripts ONLY.
+// Nothing validates against this at runtime: the live list is the table, which
+// Finance maintains (see finance/categories). Order matches the seed.
+export const DEFAULT_EXPENSE_CATEGORIES = [
+  "Materials",
+  "Labor",
+  "Equipment",
+  "Subcontractors",
+  "Permits",
+  "PPE",
+  "Transport",
+  "Services",
+  "Contingency",
+  "Other",
+] as const;

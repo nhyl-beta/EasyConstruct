@@ -37,6 +37,11 @@ export const structureRequirementSchema = z.object({
   category: z.string().max(50).optional(),
 });
 
+export const generateDraftSchema = z.object({
+  projectCode: z.string().min(1).max(50),
+  category: z.enum(["Objectives", "Materials", "Constraints", "Specifications", "Other"]),
+});
+
 export const updateRequirementSchema = createRequirementSchema.partial();
 
 export type CreateRequirementInput = z.infer<typeof createRequirementSchema>;

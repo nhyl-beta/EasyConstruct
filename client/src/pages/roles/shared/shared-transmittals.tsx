@@ -1,3 +1,5 @@
+import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
+import { usePagination } from "@/hooks/use-pagination";
 import { useState } from "react";
 import { Link } from "react-router";
 import { Plus, Printer } from "lucide-react";
@@ -67,6 +69,7 @@ export default function SharedTransmittals() {
   const { user } = useAuth();
   const canWrite = WRITERS.has(user?.role ?? "");
   const { transmittals, loading, error, reload } = useTransmittals();
+  const pg = usePagination(transmittals, 10);
   const [building, setBuilding] = useState(false);
   const [receiving, setReceiving] = useState<Transmittal | null>(null);
 
@@ -107,7 +110,7 @@ export default function SharedTransmittals() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {transmittals.map((t) => (
+              {pg.pageItems.map((t) => (
                 <TableRow key={t.id}>
                   <TableCell className="font-mono text-xs">{t.controlNo}</TableCell>
                   <TableCell className="whitespace-normal text-sm">
@@ -155,6 +158,9 @@ export default function SharedTransmittals() {
               ))}
             </TableBody>
           </Table>
+          <div className="pt-2">
+            <DataTablePagination {...pg} />
+          </div>
         </div>
       )}
 

@@ -4,6 +4,7 @@ import {
   integer, text, timestamp, numeric, jsonb,
 } from 'drizzle-orm/pg-core';
 import { users } from './users.js';
+import { clients } from './reference.js';
 
 export const projects = pgTable('projects', {
   id:          serial('id').primaryKey(),
@@ -21,6 +22,9 @@ export const projects = pgTable('projects', {
   risk:        varchar('risk',        { length: 20  }).notNull().default('Low'),
   location:    varchar('location',    { length: 255 }),
   client:      varchar('client',      { length: 255 }),
+  // Objectives fix 1.2: link to the shared clients table. Nullable; the text above
+  // stays authoritative for older rows and is kept in step when a link is set.
+  clientId:    integer('client_id').references(() => clients.id),
   // ISO 4217 code the project's amounts (contractValue, budgets, expenses)
   // are denominated in. Defaults to PHP because that is what every existing
   // row was implicitly stored in before this column existed.

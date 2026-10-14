@@ -1,9 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { computeLine, getRules, periodEndDate, sssMsc, withholdingTaxFor } from "./engine.js";
+import { computeLine, getRules, periodEndDate, sssMsc } from "./engine.js";
 import { computeStatutoryDeductions } from "./ph-statutory.js";
 
 const rules = getRules("2026-07-31");
+const round = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
 
 // Monthly pay of 176 hours × (rate/176) makes gross == the monthly rate.
 const lineFor = (gross: number) =>
@@ -13,19 +14,19 @@ const lineFor = (gross: number) =>
   );
 
 test("expected results table (employee side)", () => {
-  const cases: Array<[number, number, number, number, number, number]> = [
-    [10_000, 500, 250, 200, 0, 9_050],
-    [25_000, 1_250, 625, 200, 313.8, 22_611.2],
-    [50_000, 1_750, 1_250, 200, 4_568.4, 42_231.6],
-    [100_000, 1_750, 2_500, 200, 15_762.55, 79_787.45],
+  const cases: Array<[number, number, number, number, number]> = [
+    [10_000, 500, 250, 200, 9_050],
+    [25_000, 1_250, 625, 200, 22_925],
+    [50_000, 1_750, 1_250, 200, 46_800],
+    [100_000, 1_750, 2_500, 200, 95_550],
   ];
-  for (const [gross, sss, ph, pi, tax, net] of cases) {
+  for (const [gross, sss, ph, pi, net] of cases) {
     const l = lineFor(gross);
     assert.equal(l.gross, gross);
     assert.equal(l.sss, sss, `sss @${gross}`);
     assert.equal(l.philhealth, ph, `philhealth @${gross}`);
     assert.equal(l.pagibig, pi, `pagibig @${gross}`);
-    assert.equal(l.withholdingTax, tax, `tax @${gross}`);
+    assert.equal(l.deductions, sss + ph + pi, `deductions @${gross}`);
     assert.equal(l.net, net, `net @${gross}`);
   }
 });
@@ -60,9 +61,28 @@ test("Pag-IBIG bracket edge at 1,500 / 1,501", () => {
   assert.equal(lineFor(1_501).pagibig, 30.02);
 });
 
-test("tax edge at taxable income 20,833 / 20,834", () => {
-  assert.equal(withholdingTaxFor(20_833, rules), 0);
-  assert.equal(withholdingTaxFor(20_834, rules), 0.15);
+test("a ₱9,600 line (64 hours) matches the figures Finance review already showed", () => {
+  const l = computeLine(
+    { payRate: 150, rateType: "Hourly", regularHours: 64, overtimeHours: 0, adjustments: 0 },
+    rules,
+  );
+  assert.equal(l.gross, 9_600);
+  assert.deepEqual([l.sss, l.philhealth, l.pagibig], [475, 250, 192]);
+  assert.equal(l.deductions, 917);
+  assert.equal(l.net, 8_683);
+  assert.equal(l.employerContributions, 1_402);
+  assert.equal(l.employerCost, 11_002);
+});
+
+test("a high gross is only ever the three contributions", () => {
+  const l = lineFor(250_000);
+  assert.equal(l.deductions, round(l.sss + l.philhealth + l.pagibig));
+  assert.equal(l.net, round(l.gross - l.deductions));
+  assert.deepEqual(Object.keys(l.versions).sort(), ["overtime", "pagibig", "philhealth", "sss"]);
+  assert.deepEqual(Object.keys(l).sort(), [
+    "deductions", "employerContributions", "employerCost", "employerEc", "employerPagibig",
+    "employerPhilhealth", "employerSss", "gross", "hourlyRate", "net", "pagibig", "philhealth", "sss", "versions",
+  ]);
 });
 
 test("zero and negative gross give all zeros", () => {
@@ -99,7 +119,6 @@ test("reproduces the legacy ph-statutory employee-side results", () => {
     assert.equal(l.sss, legacy.sss, `sss @${gross}`);
     assert.equal(l.philhealth, legacy.philhealth, `philhealth @${gross}`);
     assert.equal(l.pagibig, legacy.pagibig, `pagibig @${gross}`);
-    assert.equal(l.withholdingTax, legacy.withholdingTax, `tax @${gross}`);
     assert.equal(l.deductions, legacy.total, `total @${gross}`);
   }
 });

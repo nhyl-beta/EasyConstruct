@@ -8,6 +8,8 @@
 // server's milestone_links table already exists for that correlation to grow
 // into later (see server/src/db/schema/milestones.ts) without another
 // migration on top of this one.
+import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
+import { usePagination } from "@/hooks/use-pagination";
 import { useState } from "react";
 import { CalendarClock, Flag, Pencil, Plus, Trash2 } from "lucide-react";
 
@@ -53,6 +55,7 @@ interface MilestonesPanelProps {
 export function MilestonesPanel({ projectCode, canManage }: MilestonesPanelProps) {
   const { milestones, loading, saving, error, createDraft, update, remove } =
     useMilestones(projectCode);
+  const pg = usePagination(milestones, 8);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingMilestone, setEditingMilestone] = useState<Milestone | null>(null);
 
@@ -83,7 +86,7 @@ export function MilestonesPanel({ projectCode, canManage }: MilestonesPanelProps
         <p className="text-sm text-muted-foreground">No milestones drafted yet.</p>
       ) : (
         <ul className="space-y-2">
-          {milestones.map((m) => (
+          {pg.pageItems.map((m) => (
             <li
               key={m.id}
               className="flex items-start justify-between gap-3 rounded-xl border border-border px-4 py-3"
@@ -140,6 +143,9 @@ export function MilestonesPanel({ projectCode, canManage }: MilestonesPanelProps
               )}
             </li>
           ))}
+          <div className="pt-2">
+            <DataTablePagination {...pg} compact />
+          </div>
         </ul>
       )}
 

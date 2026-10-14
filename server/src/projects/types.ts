@@ -49,6 +49,10 @@ export interface CreateProjectInput {
   risk?: string;
   location?: string;
   client?: string;
+  /** Link to the shared clients table (fix 1.2). The text above is set from it. */
+  clientId?: number;
+  /** Create anyway although a project with a similar name exists (fix 1.2). Never stored. */
+  confirmSimilar?: boolean;
   currency?: string;
   workforce?: number;
   description?: string;

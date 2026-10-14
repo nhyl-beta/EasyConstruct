@@ -221,15 +221,14 @@ async function main() {
       ADD COLUMN IF NOT EXISTS created_by_user_id integer REFERENCES users(id);
 
     -- Payroll deductions were one flat 12% figure standing in for every
-    -- statutory contribution at once. Philippine payroll is four separate
-    -- computations (SSS, PhilHealth, Pag-IBIG, BIR withholding tax) on
-    -- different bases, and a payslip has to show each one — so each gets its
-    -- own column and the deductions column becomes their sum.
+    -- statutory contribution at once. Philippine payroll is three separate
+    -- computations (SSS, PhilHealth, Pag-IBIG) on different bases, and a
+    -- payslip has to show each one — so each gets its own column and the
+    -- deductions column becomes their sum.
     ALTER TABLE payroll
       ADD COLUMN IF NOT EXISTS sss numeric(10, 2) NOT NULL DEFAULT 0,
       ADD COLUMN IF NOT EXISTS philhealth numeric(10, 2) NOT NULL DEFAULT 0,
-      ADD COLUMN IF NOT EXISTS pagibig numeric(10, 2) NOT NULL DEFAULT 0,
-      ADD COLUMN IF NOT EXISTS withholding_tax numeric(10, 2) NOT NULL DEFAULT 0;
+      ADD COLUMN IF NOT EXISTS pagibig numeric(10, 2) NOT NULL DEFAULT 0;
 
     -- duplicate_table, not just duplicate_object: on a re-run Postgres fails
     -- on the *index* backing the constraint (42P07), which duplicate_object
@@ -731,10 +730,15 @@ async function main() {
       ADD COLUMN IF NOT EXISTS completed_at timestamp;
   `);
 
-  // Purchase requests, procurement orders, reimbursements and expense sources:
+  // Purchase requests, procurement orders, expense sources (and the retained, unused
+  // reimbursements table; the claims feature was removed but the table is kept):
   // migration 0025 is additive and idempotent (ADD COLUMN IF NOT EXISTS, CREATE
   // ... IF NOT EXISTS), so the demo top-up simply runs the same file.
   await pool.query(fs.readFileSync(new URL("../../drizzle/0025_purchasing.sql", import.meta.url), "utf8"));
+
+  // Managed expense categories: migration 0026 (CREATE TABLE IF NOT EXISTS + a seed
+  // that is INSERT ... ON CONFLICT DO NOTHING) is idempotent, so run the same file.
+  await pool.query(fs.readFileSync(new URL("../../drizzle/0026_expense_categories.sql", import.meta.url), "utf8"));
 
   console.log("Demo schema tables and compatibility columns are ready.");
 }

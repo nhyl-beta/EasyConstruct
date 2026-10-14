@@ -6,7 +6,7 @@
 // below calls evaluateSignals, which is gated by FEATURES.ai.
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import { runSignals, evaluateSignals } from "./index.js";
+import { runSignals } from "./index.js";
 import type { LifecycleSnapshot } from "../lifecycle/repository.js";
 import type { SignalRule } from "./types.js";
 
@@ -436,15 +436,5 @@ describe("runSignals — cross-cutting behavior", () => {
       assert.ok(signal.detail.length > 0, `${signal.rule} has an empty detail`);
       assert.match(signal.detail, /\d/, `${signal.rule}'s detail has no digit: "${signal.detail}"`);
     }
-  });
-
-  test("evaluateSignals returns [] when FEATURES.ai is off", () => {
-    const snapshot = withOverrides({
-      project: { ...emptySnapshot().project, contractValue: "4500000" },
-      budgets: [{ planned: "5320000", actual: "0" }] as any, // eslint-disable-line @typescript-eslint/no-explicit-any
-    });
-    // The test suite runs with FEATURE_AI unset, so FEATURES.ai is false —
-    // this asserts the actual default, not a mocked one.
-    assert.deepEqual(evaluateSignals(snapshot, NOW), []);
   });
 });

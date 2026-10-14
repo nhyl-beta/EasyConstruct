@@ -19,6 +19,8 @@ export const createEmployeeSchema = z.object({
   phone: z.string().max(30).optional().or(z.literal("")),
   payRate: z.union([z.number(), z.string()]).optional(),
   rateType: z.enum(["Monthly", "Daily", "Hourly"]).optional(),
+  // Not stored: confirms a new employee whose name matches an existing one.
+  confirmDuplicate: z.boolean().optional(),
 });
 
 export const updateEmployeeSchema = createEmployeeSchema.partial();

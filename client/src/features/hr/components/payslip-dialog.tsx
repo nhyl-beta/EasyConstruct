@@ -1,12 +1,20 @@
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Printer } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { formatCurrency } from "@/lib/format-currency";
-import type { PayrollLine } from "@/features/hr/payroll-api";
+import { visibleRateVersions, type PayrollLine } from "@/features/hr/payroll-api";
 
 const AGENCY_LABEL: Record<string, string> = {
   sss: "SSS",
   philhealth: "PhilHealth",
   pagibig: "Pag-IBIG",
-  tax: "Withholding tax",
   overtime: "Overtime",
 };
 
@@ -19,8 +27,9 @@ function Row({ label, value, bold }: { label: string; value: string; bold?: bool
   );
 }
 
-// Shown to HR and Finance. Printable: the dialog body carries print styles so
-// the browser's own Print produces just the payslip.
+// Shown to HR and Finance. Printable: the Print button calls window.print(),
+// and the print rules in App.css (keyed on data-print-payslip) hide everything
+// except this dialog's content, so the paper has only the payslip.
 export function PayslipDialog({
   line,
   onClose,
@@ -30,7 +39,7 @@ export function PayslipDialog({
 }) {
   return (
     <Dialog open={line !== null} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-md rounded-2xl print:max-w-none print:border-0 print:shadow-none">
+      <DialogContent data-print-payslip className="max-w-md rounded-2xl">
         {line && (
           <>
             <DialogHeader>
@@ -55,7 +64,6 @@ export function PayslipDialog({
               <Row label="SSS" value={formatCurrency(line.sss)} />
               <Row label="PhilHealth" value={formatCurrency(line.philhealth)} />
               <Row label="Pag-IBIG" value={formatCurrency(line.pagibig)} />
-              <Row label="Withholding tax" value={formatCurrency(line.withholdingTax)} />
               <Row label="Total deductions" value={formatCurrency(line.deductions)} bold />
             </section>
 
@@ -66,11 +74,21 @@ export function PayslipDialog({
             <p className="text-overline text-muted-foreground">
               Rates used:{" "}
               {line.rateVersions
-                ? Object.entries(line.rateVersions)
+                ? visibleRateVersions(line.rateVersions)
                     .map(([k, v]) => `${AGENCY_LABEL[k] ?? k} ${v}`)
                     .join(" · ")
                 : "not recorded (generated before rate versions were stored)"}
             </p>
+
+            <DialogFooter data-print-hide className="gap-2 sm:justify-end">
+              <Button type="button" variant="outline" onClick={onClose}>
+                Close
+              </Button>
+              <Button type="button" onClick={() => window.print()}>
+                <Printer className="h-4 w-4" aria-hidden="true" />
+                Print payslip
+              </Button>
+            </DialogFooter>
           </>
         )}
       </DialogContent>

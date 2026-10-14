@@ -26,14 +26,11 @@ export const payroll = pgTable("payroll", {
   adjustments: numeric("adjustments", { precision: 12, scale: 2 }).notNull().default("0"),
   gross: numeric("gross", { precision: 10, scale: 2 }).notNull(),
   // Philippine statutory deductions, each computed on its own base — see
-  // payroll/ph-statutory.ts. `deductions` stays as the total of the four so
+  // payroll/ph-statutory.ts. `deductions` stays as the total of the three so
   // existing readers (Finance payroll review, batch rollups) keep working.
   sss: numeric("sss", { precision: 10, scale: 2 }).notNull().default("0"),
   philhealth: numeric("philhealth", { precision: 10, scale: 2 }).notNull().default("0"),
   pagibig: numeric("pagibig", { precision: 10, scale: 2 }).notNull().default("0"),
-  withholdingTax: numeric("withholding_tax", { precision: 10, scale: 2 })
-    .notNull()
-    .default("0"),
   deductions: numeric("deductions", { precision: 10, scale: 2 }).notNull(),
   // Employer-side statutory contributions (not deducted from pay) and the
   // resulting labor cost: gross + employer contributions.
@@ -77,3 +74,22 @@ export const payrollBatchDecisions = pgTable(
 );
 
 export type PayrollBatchDecision = typeof payrollBatchDecisions.$inferSelect;
+
+
+// Warnings HR acknowledged when submitting a batch (objectives fix 2.4): one row
+// per submission round, listing exactly what was acknowledged. A separate table
+// so the existing payroll_batches queries are untouched.
+export const payrollBatchAcknowledgements = pgTable(
+  "payroll_batch_acknowledgements",
+  {
+    id: serial("id").primaryKey(),
+    batchId: varchar("batch_id", { length: 32 }).notNull(),
+    round: integer("round").notNull(),
+    acknowledgedBy: varchar("acknowledged_by", { length: 255 }).notNull(),
+    acknowledgedAt: timestamp("acknowledged_at").defaultNow().notNull(),
+    items: jsonb("items").$type<{ key: string; message: string }[]>().notNull(),
+  },
+  (t) => [unique("payroll_batch_acks_batch_round_unique").on(t.batchId, t.round)],
+);
+
+export type PayrollBatchAcknowledgement = typeof payrollBatchAcknowledgements.$inferSelect;

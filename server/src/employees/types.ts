@@ -30,6 +30,8 @@ export interface CreateEmployeeInput {
   phone?: string;
   payRate?: number | string;
   rateType?: string;
+  /** Create anyway although an employee with the same or a very similar name exists (fix 1.2). Never stored. */
+  confirmDuplicate?: boolean;
 }
 
 export interface UpdateEmployeeInput extends Partial<CreateEmployeeInput> {}

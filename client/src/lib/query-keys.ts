@@ -56,7 +56,7 @@ export const qk = {
     payrollReview: (params: Params) => api("finance", "payroll-review", params),
   },
   lifecycle: { myActions: api("lifecycle", "my-actions"), impact: api("lifecycle", "impact") },
-  calendar: { events: api("calendar", "events") },
+  calendar: { events: (from: string, to: string) => api("calendar", "events", { from, to }) },
 } as const;
 
 /** "/projects/12?x=1" -> "projects" */

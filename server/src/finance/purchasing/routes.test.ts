@@ -100,37 +100,20 @@ describe("procurement routes", async () => {
   });
 });
 
-describe("reimbursement routes", async () => {
-  const { reimbursementsRouter } = await import("../reimbursements/routes.js");
-  const routes = routesOf(reimbursementsRouter);
-  const CLAIMANTS = ["architect", "engineer", "human-resources", "project-manager", "site-personnel"];
+describe("the finance router has no reimbursements mount", async () => {
+  const { financeRouter } = await import("../../routes/finance.js");
 
-  const expected: [string, string, string[]][] = [
-    ["get", "/mine", CLAIMANTS],
-    ["get", "/", ["admin", "finance-manager", "project-manager"]],
-    ["post", "/", CLAIMANTS],
-    ["post", "/:id/endorse", ["admin", "project-manager"]],
-    ["post", "/:id/approve", FINANCE],
-    ["post", "/:id/reject", ["admin", "finance-manager", "project-manager"]],
-    ["post", "/:id/pay", FINANCE],
-    ["post", "/:id/cancel", CLAIMANTS],
-  ];
-  for (const [method, path, roles] of expected) {
-    test(`${method.toUpperCase()} ${path}`, () => {
-      assert.deepEqual(rolesAllowed(find(routes, method, path)), [...roles].sort());
-    });
-  }
-
-  test("/mine is registered before /:id", () => {
-    const mine = routes.findIndex((r) => r.path === "/mine");
-    const byId = routes.findIndex((r) => r.path === "/:id");
-    assert.ok(mine >= 0 && byId >= 0 && mine < byId);
+  test("nothing under /reimbursements is registered, so requests get the 404 handler", () => {
+    const mounts = (financeRouter as unknown as { stack: { regexp?: RegExp; matchers?: ((p: string) => unknown)[] }[] }).stack;
+    // Express 5 layers expose matchers; try each one against the retired path.
+    const handled = mounts.some((layer) => (layer.matchers ?? []).some((m) => m("/reimbursements/mine")));
+    assert.equal(handled, false);
   });
 
-  test("Owner, IT Designer, Consultant and Admin cannot raise a claim; Finance cannot raise one it would decide", () => {
-    const post = find(routes, "post", "/");
-    for (const role of ["owner", "it-designer", "consultant", "admin", "finance-manager"]) {
-      assert.equal(allows(post, role), false, role);
+  test("the live purchasing mounts are still there", () => {
+    const mounts = (financeRouter as unknown as { stack: { matchers?: ((p: string) => unknown)[] }[] }).stack;
+    for (const path of ["/purchase-requests", "/procurement", "/approvals", "/expenses"]) {
+      assert.ok(mounts.some((layer) => (layer.matchers ?? []).some((m) => m(path))), path);
     }
   });
 });

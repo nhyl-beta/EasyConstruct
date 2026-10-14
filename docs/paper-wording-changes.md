@@ -95,7 +95,7 @@ proposal or design / on-demand validation summary; removal of "Coming soon" plac
 
 | # | Scope bullet | Replacement sentence | Choice |
 |---|---|---|---|
-| Y1 | Payroll limitations | Do not state that payroll is limited to basic pay. The system computes the SSS, PhilHealth and Pag-IBIG contributions and BIR withholding tax (with employer shares and a payslip) from versioned rate tables, and exports tracksheets and agency contribution reports as CSV. State instead that the rate tables must be kept current by HR and that Finance reviews and approves each batch. | corrected in paper |
+| Y1 | Payroll limitations | Do not state that payroll is limited to basic pay. The system computes the SSS, PhilHealth and Pag-IBIG contributions (with employer shares and a payslip; employee deductions are only these three contributions) from versioned rate tables, and exports tracksheets and agency contribution reports as CSV. State instead that the rate tables must be kept current by HR and that Finance reviews and approves each batch. | corrected in paper |
 | Y2 | Owner payroll visibility | The Owner dashboard presents payroll as read-only, aggregate-level summaries of approved payroll (labor cost, trend, pipeline status, spend by project and group, statutory totals and items needing attention). It shows no individual employee pay data, and the Owner cannot approve, reject, edit or generate payroll. | **built** |
 
 ## Purchase requests, procurement and reimbursements
@@ -106,6 +106,7 @@ proposal or design / on-demand validation summary; removal of "Coming soon" plac
 | P2 | Employee claims (all claimant roles) | Engineers, Site Personnel, Project Managers, Architects and Human Resources can claim out-of-pocket costs with a receipt. Project staff's claims are endorsed by their Project Manager, then approved and paid by the Finance Manager. Nobody decides or pays their own claim. | **built** |
 | P3 | One expense per payment | Every payment of an order or claim creates exactly one approved expense, increases the project budget's actual spend and updates that month's cash flow in a single transaction. | **built** |
 | P4 | Closing | A project cannot close (Closeout, or Turnover for a Design project) while any purchase request, order or claim is unsettled. | **built** |
+| P5 | Expense categories | Expense categories are maintained by the Finance Manager in the system, not fixed in code, so the list can follow the company's own chart of costs. Budgets, expenses, purchase requests and claims all use the same list. | **built** |
 
 ## Also built in this pass (remove from "future work")
 

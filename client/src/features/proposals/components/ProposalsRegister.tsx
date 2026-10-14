@@ -26,6 +26,7 @@ import { FEATURES } from "@/config/features";
 import { useProposals } from "../hooks/useProposals";
 import type { Proposal } from "../types/proposal.types";
 import { ProposalsTable } from "./ProposalsTable";
+import { ProposalValidationPanel } from "./ProposalValidationPanel";
 
 interface ProposalsRegisterProps {
   title: string;
@@ -119,7 +120,10 @@ export function ProposalsRegister({
               <Section label="Review comment" body={selected.reviewComment} />
             )}
             {FEATURES.ai && selected.aiValidation && (
-              <Section label="AI validation" body={selected.aiValidation} />
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Rule-based validation</p>
+                <ProposalValidationPanel raw={selected.aiValidation} />
+              </div>
             )}
 
             <div className="flex justify-end">

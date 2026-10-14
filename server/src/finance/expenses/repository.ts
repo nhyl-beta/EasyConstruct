@@ -123,7 +123,7 @@ export const expensesRepository = {
 
   /**
    * An expense that is already approved because a payment created it
-   * (purchase order or reimbursement). (source_type, source_id) is unique, so
+   * (a purchase order). (source_type, source_id) is unique, so
    * paying twice cannot produce a second row: the insert conflicts and nothing
    * is returned.
    */
@@ -134,7 +134,7 @@ export const expensesRepository = {
       project: string;
       category: string;
       amount: number;
-      sourceType: "purchase-order" | "reimbursement";
+      sourceType: "purchase-order";
       sourceId: string;
       receiptUrl?: string | null;
     },

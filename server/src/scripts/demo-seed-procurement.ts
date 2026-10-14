@@ -1,6 +1,6 @@
 // server/src/scripts/demo-seed-procurement.ts
 //
-// Demo data for purchase requests, procurement orders and reimbursement claims,
+// Demo data for purchase requests and procurement orders,
 // on a demo database only (assertDemoDatabase refuses anything that is not
 // local or listed in DEMO_RESET_ALLOWED_HOSTS, and needs ALLOW_DEMO_RESET=true).
 //
@@ -9,8 +9,7 @@
 //     one that is over budget (no PPE budget line), rejected, cancelled, and six
 //     that reached an order;
 //   * 5 orders: ordered, in transit, delivered, paid (with the approved expense
-//     it created) and cancelled;
-//   * 6 claims: one in each status, the paid one with its expense.
+//     it created) and cancelled.
 // Budgets are kept consistent with it: approved and ordered requests hold their
 // amount in `committed`, paid ones moved it into `actual`.
 //
@@ -31,7 +30,6 @@ import {
   expenses,
   procurementOrders,
   purchaseRequests,
-  reimbursements,
   type PurchaseLineItem,
 } from "../db/schema/finance.js";
 import { requirements } from "../db/schema/requirements.js";
@@ -92,27 +90,6 @@ const PLANS: PrPlan[] = [
   { id: "PR-D012", title: "Hauling of excavated soil", category: "Transport", status: "cancelled", raisedBy: "engineer", ageDays: 11, lines: lines(["Dump truck trips", 20, "trip", 2_500]) },
 ];
 
-interface ClaimPlan {
-  id: string;
-  claimant: "engineer" | "site" | "pm" | "architect" | "hr";
-  status: "pending-pm" | "pending-finance" | "approved" | "rejected" | "paid" | "cancelled";
-  purpose: string;
-  category: "Materials" | "Equipment" | "PPE" | "Transport" | "Services";
-  amount: number;
-  ageDays: number;
-  note?: string;
-  expenseId?: string;
-}
-
-const CLAIMS: ClaimPlan[] = [
-  { id: "RMB-D001", claimant: "site", status: "pending-pm", purpose: "Nails and tie wire bought on site", category: "Materials", amount: 1_240, ageDays: 1 },
-  { id: "RMB-D002", claimant: "engineer", status: "pending-finance", purpose: "Taxi to the supplier for a sample check", category: "Transport", amount: 860, ageDays: 3 },
-  { id: "RMB-D003", claimant: "architect", status: "approved", purpose: "Printing of drawing sets for the client meeting", category: "Services", amount: 3_150, ageDays: 5 },
-  { id: "RMB-D004", claimant: "hr", status: "rejected", purpose: "Team lunch", category: "Services", amount: 2_400, ageDays: 7, note: "Meals are not reimbursable." },
-  { id: "RMB-D005", claimant: "site", status: "paid", purpose: "Emergency repair of the water pump hose", category: "Equipment", amount: 1_875, ageDays: 15, expenseId: "EXP-D002" },
-  { id: "RMB-D006", claimant: "pm", status: "cancelled", purpose: "Duplicate of an earlier claim", category: "Transport", amount: 540, ageDays: 4 },
-];
-
 const key = (category: string) => `${PROJECT}|${category}`;
 
 async function person(email: string): Promise<Person> {
@@ -127,26 +104,21 @@ async function main() {
   const site = await person(EMAILS.site);
   const pm = await person(EMAILS.pm);
   const finance = await person(EMAILS.finance);
-  const architect = await person(EMAILS.architect);
-  const hr = await person(EMAILS.hr);
-  const claimants = { engineer, site, pm, architect, hr };
 
   const existing = new Set<string>([
     ...(await db.select({ id: purchaseRequests.id }).from(purchaseRequests)).map((r) => r.id),
     ...(await db.select({ id: procurementOrders.id }).from(procurementOrders)).map((r) => r.id),
-    ...(await db.select({ id: reimbursements.id }).from(reimbursements)).map((r) => r.id),
     ...(await db.select({ id: expenses.id }).from(expenses).where(inArray(expenses.id, ["EXP-D001", "EXP-D002"]))).map((r) => r.id),
   ]);
 
   const fresh = {
     requests: PLANS.filter((p) => !existing.has(p.id)),
     orders: PLANS.flatMap((p) => (p.order && !existing.has(p.order.id) ? [p] : [])),
-    claims: CLAIMS.filter((c) => !existing.has(c.id)),
   };
   console.log(
-    `Plan: ${fresh.requests.length} request(s), ${fresh.orders.length} order(s), ${fresh.claims.length} claim(s) to add; the rest already exist.`,
+    `Plan: ${fresh.requests.length} request(s), ${fresh.orders.length} order(s) to add; the rest already exist.`,
   );
-  if (DRY || (fresh.requests.length === 0 && fresh.orders.length === 0 && fresh.claims.length === 0)) {
+  if (DRY || (fresh.requests.length === 0 && fresh.orders.length === 0)) {
     console.log(DRY ? "\nDry run: nothing written." : "\nNothing to do.");
     return;
   }
@@ -265,52 +237,6 @@ async function main() {
       }
     }
 
-    for (const c of CLAIMS) {
-      if (existing.has(c.id)) continue;
-      const who = claimants[c.claimant];
-      const staffed = c.claimant === "engineer" || c.claimant === "site" || c.claimant === "architect";
-      await tx.insert(reimbursements).values({
-        id: c.id,
-        employee: who.name,
-        purpose: c.purpose,
-        amount: c.amount,
-        submittedAt: ago(c.ageDays),
-        status: c.status,
-        claimantUserId: who.id,
-        claimantRole: who.role,
-        project: PROJECT,
-        category: c.category,
-        incurredOn: isoDay(c.ageDays + 1),
-        attachments: [{ url: `/uploads/demo/${c.id}.png`, filename: `${c.id}-receipt.png`, contentType: "image/png", sizeBytes: 20_000 }],
-        endorsedBy: staffed && c.status !== "pending-pm" ? pm.name : null,
-        endorsedAt: staffed && c.status !== "pending-pm" ? ago(Math.max(0, c.ageDays - 1)) : null,
-        decidedBy: ["approved", "rejected", "paid"].includes(c.status) ? finance.name : null,
-        decidedAt: ["approved", "rejected", "paid"].includes(c.status) ? ago(Math.max(0, c.ageDays - 2)) : null,
-        decisionNote: c.note ?? null,
-        paidAt: c.status === "paid" ? ago(Math.max(0, c.ageDays - 3)) : null,
-        paidBy: c.status === "paid" ? finance.name : null,
-        paymentReference: c.status === "paid" ? "DEMO-TRF-0001" : null,
-        expenseId: c.status === "paid" ? (c.expenseId ?? null) : null,
-      });
-      if (c.status === "paid" && c.expenseId && !existing.has(c.expenseId)) {
-        await tx
-          .insert(expenses)
-          .values({
-            id: c.expenseId,
-            vendor: who.name,
-            project: PROJECT,
-            category: c.category,
-            amount: c.amount,
-            status: "approved",
-            submittedAt: ago(Math.max(0, c.ageDays - 3)),
-            sourceType: "reimbursement",
-            sourceId: c.id,
-          })
-          .onConflictDoNothing();
-        bump(actual, c.category, c.amount);
-      }
-    }
-
     // Keep each matching budget line consistent with what was just added.
     for (const [kind, map] of [["committed", committed], ["actual", actual]] as const) {
       for (const [k, delta] of map) {
@@ -334,7 +260,7 @@ async function main() {
     if (actual.size > 0) await refreshMonth(monthKey(new Date()), tx);
   });
 
-  console.log("\nDone. The Finance tabs, the PM Purchasing panel, Requirements and My claims now have data on DEMO-S4.");
+  console.log("\nDone. The Finance tabs, the PM Purchasing panel, and Requirements now have data on DEMO-S4.");
 }
 
 main()

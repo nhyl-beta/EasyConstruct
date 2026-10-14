@@ -11,7 +11,7 @@
 //     Finance sent back (revision_required), and a draft.
 //
 // Every line is computed by the real payroll engine (payroll/engine.ts) from
-// the employee's stored pay rate, so SSS / PhilHealth / Pag-IBIG / tax / EC
+// the employee's stored pay rate, so SSS / PhilHealth / Pag-IBIG / EC
 // are the engine's numbers, never typed in. An approved batch is booked the
 // way a Finance approval books it (decision row, Labor budget actual, lines
 // marked Completed, cash flow month refreshed), and lines carry real
@@ -229,7 +229,6 @@ async function insertPlan(tx: Tx, plan: Plan, finance: string): Promise<{ batchI
       sss: c.sss.toFixed(2),
       philhealth: c.philhealth.toFixed(2),
       pagibig: c.pagibig.toFixed(2),
-      withholdingTax: c.withholdingTax.toFixed(2),
       deductions: c.deductions.toFixed(2),
       net: c.net.toFixed(2),
       employerSss: c.employerSss.toFixed(2),

@@ -2,6 +2,8 @@
 // record" — the same gap gate C4 checks per-project, surfaced here across
 // every project so IT Designer can fix accounts before a PM ever hits the
 // blocked Advance for it.
+import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
+import { usePagination } from "@/hooks/use-pagination";
 import { useEffect, useState } from "react";
 import { AlertTriangle, UserX } from "lucide-react";
 import { apiClient } from "@/services/api.client";
@@ -38,6 +40,7 @@ async function unwrap<T>(promise: Promise<any>): Promise<T> {
 export function StaffingGapsCard() {
   const [gaps, setGaps] = useState<Gap[]>([]);
   const [loading, setLoading] = useState(true);
+  const pg = usePagination(gaps, 8);
 
   useEffect(() => {
     let cancelled = false;
@@ -86,7 +89,7 @@ export function StaffingGapsCard() {
           <p className="text-sm text-muted-foreground">Checking staffing…</p>
         ) : (
           <ul className="space-y-1.5">
-            {gaps.map((g) => (
+            {pg.pageItems.map((g) => (
               <li key={g.key} className="flex items-center gap-2 text-sm">
                 <UserX className="h-3.5 w-3.5 shrink-0 text-warning-strong" />
                 <span className="font-medium">{g.userName}</span>
@@ -95,6 +98,9 @@ export function StaffingGapsCard() {
                 </span>
               </li>
             ))}
+            <div className="pt-2">
+              <DataTablePagination {...pg} compact />
+            </div>
           </ul>
         )}
       </CardContent>

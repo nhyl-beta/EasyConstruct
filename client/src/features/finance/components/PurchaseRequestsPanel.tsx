@@ -1,3 +1,5 @@
+import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
+import { usePagination } from "@/hooks/use-pagination";
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle } from "lucide-react";
 
@@ -220,6 +222,7 @@ export function PurchaseRequestsPanel({ requests, orders, canDecide, onNotice }:
     () => requests.requests.filter((r) => filter === "all" || r.status === filter),
     [requests.requests, filter],
   );
+  const pg = usePagination(rows, 8, filter);
 
   // The list has no budget impact; the detail does. Loaded when a row is opened.
   const { detail: loadDetail } = requests;
@@ -300,7 +303,7 @@ export function PurchaseRequestsPanel({ requests, orders, canDecide, onNotice }:
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.map((r) => (
+              {pg.pageItems.map((r) => (
                 <TableRow key={r.id}>
                   <TableCell className="font-mono text-xs">{r.id}</TableCell>
                   <TableCell className="text-sm font-medium">
@@ -334,6 +337,9 @@ export function PurchaseRequestsPanel({ requests, orders, canDecide, onNotice }:
               ))}
             </TableBody>
           </Table>
+          <div className="pt-2">
+            <DataTablePagination {...pg} />
+          </div>
         </div>
       )}
 

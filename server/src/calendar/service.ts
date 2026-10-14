@@ -1,31 +1,31 @@
-// server/src/calendar/service.ts — NEW (A2)
+// server/src/calendar/service.ts
 //
 // Cross-project calendar events for the requesting user: milestone due
-// dates, workflow submissions, and lifecycle phase transitions ("progress").
-// Scoping mirrors lifecycle/my-actions.ts exactly (same three cases: project
-// member, project manager, or role with no per-project staffing concept)
-// rather than inventing a second "what projects can this user see" rule.
+// dates, workflow submissions, lifecycle phase transitions ("progress") and the
+// user's own task due dates. Scoping is visibleProjects() in events.ts, which
+// mirrors lifecycle/my-actions.ts; the optional date window only narrows what
+// is returned, never what a user may see.
 import * as projectsRepo from "../projects/repository.js";
 import * as projectMemberRepo from "../project-members/repository.js";
 import * as milestonesRepo from "../milestones/repository.js";
 import * as workflowsRepo from "../workflows/repository.js";
 import * as lifecycleRepo from "../lifecycle/repository.js";
+import * as tasksRepo from "../tasks/repository.js";
 import { PROJECT_MEMBER_ROLES } from "../db/schema/project-members.js";
+import { todayManila } from "../utils/dates.js";
+import {
+  inRange,
+  milestoneAttention,
+  sameName,
+  submissionAttention,
+  visibleProjects,
+  type CalendarEvent,
+  type DateRange,
+} from "./events.js";
 
-export type CalendarEventType = "milestone" | "submission" | "progress";
+export type { CalendarEvent, CalendarEventType } from "./events.js";
 
-export interface CalendarEvent {
-  id: string;
-  type: CalendarEventType;
-  date: string; // ISO date (YYYY-MM-DD)
-  title: string;
-  projectCode: string;
-  projectName: string;
-  detail?: string;
-}
-
-const isMemberRole = (role: string): boolean =>
-  (PROJECT_MEMBER_ROLES as readonly string[]).includes(role);
+const isMemberRole = (role: string): boolean => (PROJECT_MEMBER_ROLES as readonly string[]).includes(role);
 
 const toIsoDate = (value: string | Date | null | undefined): string | null => {
   if (!value) return null;
@@ -34,82 +34,109 @@ const toIsoDate = (value: string | Date | null | undefined): string | null => {
   return d.toISOString().slice(0, 10);
 };
 
-export const getCalendarEvents = async (actor: {
-  id: number;
-  role: string;
-}): Promise<CalendarEvent[]> => {
+export const getCalendarEvents = async (
+  actor: { id: number; role: string; name?: string },
+  range: DateRange | null = null,
+): Promise<CalendarEvent[]> => {
+  const me = actor.name ?? "";
+  const today = todayManila();
   const allProjects = await projectsRepo.findAll({});
-
-  let relevant = allProjects;
-  if (isMemberRole(actor.role)) {
-    const memberships = await projectMemberRepo.findAll({ userId: actor.id });
-    const codes = new Set(memberships.map((m) => m.projectCode));
-    relevant = allProjects.filter((p) => codes.has(p.code));
-  } else if (actor.role === "project-manager") {
-    relevant = allProjects.filter((p) => p.pmUserId === actor.id);
-  }
-  // admin, finance-manager, human-resources, it-designer, owner: no
-  // per-project staffing concept, every project is in scope (same rule
-  // my-actions.ts uses for gate/signal items).
+  const memberships = isMemberRole(actor.role) ? await projectMemberRepo.findAll({ userId: actor.id }) : [];
+  const relevant = visibleProjects(actor, allProjects, isMemberRole(actor.role), new Set(memberships.map((m) => m.projectCode)));
 
   const projectByCode = new Map(relevant.map((p) => [p.code, p]));
   const codes = [...projectByCode.keys()];
+  const nameOf = (code: string) => projectByCode.get(code)?.name ?? code;
   const events: CalendarEvent[] = [];
 
-  // Two grouped queries instead of one milestones query and one history query per project.
-  const [milestonesByCode, historyByCode] = await Promise.all([
+  // Grouped queries instead of one per project.
+  const [milestonesByCode, historyByCode, allWorkflows, myTasks] = await Promise.all([
     milestonesRepo.findAllForProjects(codes),
     lifecycleRepo.findPhaseHistoryForProjects(codes),
+    workflowsRepo.findWorkflowsForProjects(codes),
+    tasksRepo.findAll({ assignedToUserId: actor.id }),
   ]);
+
   for (const code of codes) {
     for (const m of milestonesByCode.get(code) ?? []) {
       const date = toIsoDate(m.estimatedCompletionDate);
-      if (!date) continue;
-      const project = projectByCode.get(m.projectCode);
+      if (!date || !inRange(date, range)) continue;
       events.push({
         id: `milestone-${m.id}`,
         type: "milestone",
         date,
         title: m.title,
         projectCode: m.projectCode,
-        projectName: project?.name ?? m.projectCode,
+        projectName: nameOf(m.projectCode),
         detail: m.description ?? undefined,
+        sourceId: m.id,
+        status: m.status,
+        involves: [m.createdBy].filter(Boolean),
+        mine: sameName(m.createdBy, me),
+        attention: milestoneAttention(m.status, date, today),
       });
     }
   }
 
-  const allWorkflows = await workflowsRepo.findWorkflowsForProjects(codes);
   for (const wf of allWorkflows) {
     if (!projectByCode.has(wf.projectCode)) continue;
     const date = toIsoDate(wf.createdAt);
-    if (!date) continue;
-    const project = projectByCode.get(wf.projectCode);
+    if (!date || !inRange(date, range)) continue;
     events.push({
       id: `submission-${wf.id}`,
       type: "submission",
       date,
       title: wf.title,
       projectCode: wf.projectCode,
-      projectName: project?.name ?? wf.projectCode,
+      projectName: nameOf(wf.projectCode),
       detail: `Submitted · ${wf.status}`,
+      sourceId: wf.id,
+      status: wf.status,
+      involves: [wf.createdBy].filter(Boolean),
+      mine: wf.createdByUserId === actor.id || sameName(wf.createdBy, me),
+      attention: submissionAttention(wf.status),
     });
   }
 
   for (const code of codes) {
     for (const h of historyByCode.get(code) ?? []) {
       const date = toIsoDate(h.createdAt);
-      if (!date) continue;
-      const project = projectByCode.get(h.projectCode);
+      if (!date || !inRange(date, range)) continue;
       events.push({
         id: `progress-${h.id}`,
         type: "progress",
         date,
         title: `${h.fromStatus} → ${h.toStatus}`,
         projectCode: h.projectCode,
-        projectName: project?.name ?? h.projectCode,
+        projectName: nameOf(h.projectCode),
         detail: `Changed by ${h.changedBy}`,
+        sourceId: h.id,
+        status: h.toStatus,
+        involves: [h.changedBy].filter(Boolean),
+        mine: sameName(h.changedBy, me),
       });
     }
+  }
+
+  // The user's own tasks only (assigned to them), and only on projects they can see.
+  for (const t of myTasks) {
+    if (!projectByCode.has(t.projectCode) || !t.dueDate) continue;
+    const date = toIsoDate(t.dueDate);
+    if (!date || !inRange(date, range)) continue;
+    events.push({
+      id: `task-${t.id}`,
+      type: "task",
+      date,
+      title: t.title,
+      projectCode: t.projectCode,
+      projectName: nameOf(t.projectCode),
+      detail: `${t.taskCode} · ${t.priority} priority`,
+      sourceId: t.id,
+      status: t.status,
+      involves: [t.assignedToName ?? me].filter(Boolean),
+      mine: true,
+      attention: t.status !== "Completed" && date < today ? "overdue" : undefined,
+    });
   }
 
   return events;

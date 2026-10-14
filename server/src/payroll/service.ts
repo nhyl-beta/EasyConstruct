@@ -13,7 +13,8 @@ import * as repo from "./repository.js";
 import { orderByFor, paginate, type PageRequest } from "../utils/pagination.js";
 import * as batchRepo from "./batch-repository.js";
 import { computeLine, getRules, periodEndDate, round2, type PayrollRules } from "./engine.js";
-import { validateBatchLines } from "./validation.js";
+import { buildTrace } from "./trace.js";
+import { periodRange, unacknowledged, validateBatchLines, type WarningContext } from "./validation.js";
 import {
   EDITABLE_BATCH_STATUSES,
   REJECTION_REASONS,
@@ -73,7 +74,6 @@ const lineFields = (
     sss: c.sss.toFixed(2),
     philhealth: c.philhealth.toFixed(2),
     pagibig: c.pagibig.toFixed(2),
-    withholdingTax: c.withholdingTax.toFixed(2),
     deductions: c.deductions.toFixed(2),
     net: c.net.toFixed(2),
     employerSss: c.employerSss.toFixed(2),
@@ -95,7 +95,6 @@ const sumLines = (lines: LineRow[]) => {
     sss: sum((l) => l.sss),
     philhealth: sum((l) => l.philhealth),
     pagibig: sum((l) => l.pagibig),
-    withholdingTax: sum((l) => l.withholdingTax),
     deductions: sum((l) => l.deductions),
     net: sum((l) => l.net),
     employerSss: sum((l) => l.employerSss),
@@ -187,8 +186,35 @@ const loadBatch = async (id: string, actor: Actor = SYSTEM_ACTOR): Promise<Batch
 const employeesFor = async (lines: LineRow[]): Promise<Map<string, EmployeeRow>> =>
   employeesRepo.findByEmployeeIds(lines.map((l) => l.empId));
 
+// Facts for the acknowledge-before-submit warnings (fix 2.4): unverified
+// attendance in the period and the pay rates of people in the same positions.
+const warningContextFor = async (batch: BatchRow): Promise<WarningContext> => {
+  const period = periodRange(batch.period);
+  const unverifiedByEmployee = new Map<string, number>();
+  if (batch.projectCode && period) {
+    const rows = await attendanceRepo.findForProject({
+      projectCode: batch.projectCode,
+      dateFrom: period.start,
+      dateTo: period.end,
+    });
+    for (const r of rows) {
+      if (r.status === "Verified" || !["Present", "Late", "Half Day"].includes(r.attendanceStatus)) continue;
+      unverifiedByEmployee.set(r.employeeId, (unverifiedByEmployee.get(r.employeeId) ?? 0) + 1);
+    }
+  }
+  const peerRates = new Map<string, number[]>();
+  for (const e of await employeesRepo.findActivePayRates()) {
+    const rate = Number(e.payRate);
+    if (!(rate > 0)) continue;
+    const key = `${e.role}|${e.rateType}`;
+    peerRates.set(key, [...(peerRates.get(key) ?? []), rate]);
+  }
+  return { period, unverifiedByEmployee, peerRates };
+};
+
 export const validateBatch = async (batch: BatchRow, lines: LineRow[]) => {
   const employees = await employeesFor(lines);
+  const warningContext = await warningContextFor(batch);
   const duplicates = batch.projectCode
     ? (await batchRepo.findSameProjectPeriod(batch.projectCode, batch.period, batch.id)).map(
         (b) => b.id,
@@ -204,10 +230,14 @@ export const validateBatch = async (batch: BatchRow, lines: LineRow[]) => {
       rateVersions: l.rateVersions,
     })),
     new Map(
-      [...employees].map(([k, e]) => [k, { status: e.status, payRate: Number(e.payRate) }]),
+      [...employees].map(([k, e]) => [
+        k,
+        { status: e.status, payRate: Number(e.payRate), position: e.role, rateType: e.rateType },
+      ]),
     ),
     getRules(periodEndDate(batch.period)),
     duplicates,
+    warningContext,
   );
 };
 
@@ -215,16 +245,90 @@ export const getBatchDetail = async (id: string, actor: Actor = SYSTEM_ACTOR) =>
   const batch = await loadBatch(id, actor);
   const [lines, decisions] = await Promise.all([repo.findByBatch(id), batchRepo.findDecisions(id)]);
   const rules = getRules(periodEndDate(batch.period));
+  // Best effort: the history of acknowledged warnings never stops a batch from loading.
+  const acknowledgements = await batchRepo.findAcknowledgements(id).catch(() => []);
   return {
     batch,
     lines,
     decisions,
+    acknowledgements,
     totals: sumLines(lines),
     rateVersions: rules.versions,
     needsVerification: rules.needsVerification,
     validation: EDITABLE_BATCH_STATUSES.includes(batch.status)
       ? await validateBatch(batch, lines)
       : ([] as ValidationIssue[]),
+  };
+};
+
+// The rules in force today and what is still unverified (fix 2.8). Read-only.
+export const getRulesSummary = () => {
+  const rules = getRules();
+  return {
+    versions: rules.versions,
+    needsVerification: rules.needsVerification,
+    overtimeMultiplier: rules.overtimeMultiplier,
+    hoursPerDay: rules.hoursPerDay,
+    workingDaysPerMonth: rules.workingDaysPerMonth,
+    notCertified:
+      "Not a certified payroll engine. It computes SSS, PhilHealth and Pag-IBIG contributions from built-in rate tables and overtime from one multiplier. It does not do 13th-month pay, de minimis benefits, withholding tax or year-end adjustments, and it does not remit anything to an agency.",
+  };
+};
+
+// How one stored line was worked out (fix 2.5): the steps, the attendance behind
+// the hours and the rate versions used. Read-only; same visibility as the line.
+export const getLineTrace = async (id: number, actor: Actor = SYSTEM_ACTOR) => {
+  const line = await getById(id, actor);
+  const batch = line.batchId ? await batchRepo.findById(line.batchId) : null;
+  const employee = await employeesRepo.findByEmployeeId(line.empId);
+  if (!employee) throw new NotFoundError("Employee", line.empId);
+
+  const period = periodRange(batch?.period ?? line.period);
+  const rows =
+    batch?.projectCode && period
+      ? (
+          await attendanceRepo.findForProject({
+            projectCode: batch.projectCode,
+            dateFrom: period.start,
+            dateTo: period.end,
+          })
+        ).filter((r) => r.employeeId === line.empId)
+      : [];
+
+  const trace = buildTrace({
+    line: {
+      hours: Number(line.hours),
+      overtime: Number(line.overtime),
+      adjustments: Number(line.adjustments),
+      gross: Number(line.gross),
+      sss: Number(line.sss),
+      philhealth: Number(line.philhealth),
+      pagibig: Number(line.pagibig),
+      deductions: Number(line.deductions),
+      net: Number(line.net),
+      employerSss: Number(line.employerSss),
+      employerEc: Number(line.employerEc),
+      employerPhilhealth: Number(line.employerPhilhealth),
+      employerPagibig: Number(line.employerPagibig),
+      employerCost: Number(line.employerCost),
+      rateVersions: line.rateVersions,
+    },
+    employee: { payRate: Number(employee.payRate), rateType: employee.rateType },
+    attendance: rows.map((r) => ({
+      id: r.id,
+      logDate: r.logDate,
+      clockIn: r.clockIn,
+      clockOut: r.clockOut,
+      hours: Number(r.hours ?? 0),
+      attendanceStatus: r.attendanceStatus,
+      verification: r.status,
+    })),
+    rules: getRules(periodEndDate(line.period)),
+  });
+  return {
+    line: { id: line.id, empId: line.empId, name: line.name, period: line.period, batchId: line.batchId },
+    notCertified: "Rule-based calculation. Not a certified payroll engine: no 13th-month, de minimis or year-end adjustments.",
+    ...trace,
   };
 };
 
@@ -387,7 +491,7 @@ export const generate = async (input: GeneratePayrollInput, actor: Actor = SYSTE
   });
 
   if (input.submit) {
-    await submitBatch(batchId, { confirmDuplicate: input.confirmDuplicate }, actor);
+    await submitBatch(batchId, { confirmDuplicate: input.confirmDuplicate, acknowledgedWarnings: input.acknowledgedWarnings }, actor);
   }
 
   const batch = await batchRepo.findById(batchId);
@@ -501,7 +605,7 @@ export const removeBatch = async (id: string) => {
 
 export const submitBatch = async (
   id: string,
-  opts: { confirmDuplicate?: boolean } = {},
+  opts: { confirmDuplicate?: boolean; acknowledgedWarnings?: string[] } = {},
   actor: Actor = SYSTEM_ACTOR,
 ) => {
   const batch = await loadBatch(id);
@@ -527,10 +631,31 @@ export const submitBatch = async (
       { issues },
     );
 
+  // Fix 2.4: unverified attendance, hours outliers and pay-rate mismatches must
+  // each be ticked by HR. What was acknowledged is stored against the round.
+  const pendingAck = unacknowledged(issues, opts.acknowledgedWarnings ?? []);
+  if (pendingAck.length)
+    throw new AppError(
+      409,
+      "WARNINGS_UNACKNOWLEDGED",
+      `Acknowledge ${pendingAck.length} warning${pendingAck.length === 1 ? "" : "s"} before submitting.`,
+      { issues },
+    );
+
   const resubmission = batch.status === "revision_required";
+  const round = resubmission ? batch.round + 1 : batch.round;
+  const acknowledged = issues.filter((i) => i.requiresAck && i.key);
+  if (acknowledged.length)
+    await batchRepo.saveAcknowledgements({
+      batchId: id,
+      round,
+      acknowledgedBy: actor.name,
+      items: acknowledged.map((i) => ({ key: i.key!, message: i.message })),
+    });
+
   const submitted = await batchRepo.transition(id, [...EDITABLE_BATCH_STATUSES], {
     status: "pending",
-    round: resubmission ? batch.round + 1 : batch.round,
+    round,
     submittedAt: new Date(),
     reviewedBy: null,
     reviewedAt: null,

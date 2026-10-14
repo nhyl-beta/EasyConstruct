@@ -1,7 +1,8 @@
-// Mirrors server/src/config/features.ts. AI validation surfaces are hidden
-// (not deleted) while this is off — see the lifecycle progress doc, group B.
+// Mirrors server/src/config/features.ts. Decision-support surfaces are ON
+// unless VITE_FEATURE_AI=false (they are hidden, not deleted, while it is off).
+// Set the server's FEATURE_AI to the same value, or the two halves disagree.
 export const FEATURES = {
-  ai: import.meta.env.VITE_FEATURE_AI === "true",
+  ai: import.meta.env.VITE_FEATURE_AI !== "false",
   // On unless VITE_FEATURE_MULTI_ROLE_TABS=false: every login is private to its browser
   // tab, so one Chrome can hold a different role in each tab. Off: one shared
   // login per browser.

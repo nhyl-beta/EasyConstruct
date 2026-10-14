@@ -1,3 +1,5 @@
+import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
+import { usePagination } from "@/hooks/use-pagination";
 import { useNavigate } from "react-router";
 import { PageHeader } from "@/components/refine-ui/views/page-header";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -13,6 +15,7 @@ import { formatDue } from "@/features/projects/lib/project-format";
 export default function ArchitectProjects() {
   const navigate = useNavigate();
   const c = useArchitectProjects();
+  const pg = usePagination(c.projects, 10);
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-8">
@@ -55,7 +58,7 @@ export default function ArchitectProjects() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {c.projects.map((p) => (
+              {pg.pageItems.map((p) => (
                 <TableRow key={p.id} className="cursor-pointer" onClick={() => navigate(`/designs?projectCode=${p.code}`)}>
                   <TableCell>
                     <div className="text-sm font-medium break-words">{p.name}</div>
@@ -72,6 +75,9 @@ export default function ArchitectProjects() {
               ))}
             </TableBody>
           </Table>
+          <div className="pt-2">
+            <DataTablePagination {...pg} />
+          </div>
         </div>
       )}
     </div>

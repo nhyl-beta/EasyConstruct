@@ -36,6 +36,9 @@ import {
 } from "@/features/hr/attendance-api";
 import { ATTENDANCE_PAGE_SIZES, useAttendancePaged } from "@/features/hr/hooks/use-attendance-paged";
 import { AttendanceVerificationDialog } from "@/components/hr/attendance-verification-dialog";
+import { SavedFiltersBar } from "@/components/shared/SavedFiltersBar";
+import { AttendanceExceptionsPanel } from "@/features/hr/components/AttendanceExceptionsPanel";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import {
   Camera,
@@ -128,6 +131,12 @@ export default function HRAttendancePage() {
         />
       </div>
 
+      <Tabs defaultValue="log" className="gap-4">
+        <TabsList>
+          <TabsTrigger value="log">Attendance log</TabsTrigger>
+          <TabsTrigger value="exceptions">Exceptions</TabsTrigger>
+        </TabsList>
+        <TabsContent value="log">
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
         <Card className="min-w-0 xl:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between space-y-0">
@@ -200,6 +209,16 @@ export default function HRAttendancePage() {
                 <X className="h-3 w-3" /> Clear
               </Button>
             )}
+            <SavedFiltersBar
+              page="hr-attendance"
+              current={{ search: a.query, verification: a.filters.verification, status: a.filters.status }}
+              hasActive={a.hasActiveFilters}
+              onApply={(f: { search: string; verification: string; status: string }) => {
+                a.setQuery(f.search);
+                a.setFilter("verification", f.verification);
+                a.setFilter("status", f.status);
+              }}
+            />
           </div>
 
           <CardContent className="overflow-hidden px-0 [&_[data-slot=table-container]]:overflow-x-hidden [&_td]:whitespace-normal [&_td]:break-words [&_td]:px-2 [&_th]:px-2">
@@ -447,6 +466,11 @@ export default function HRAttendancePage() {
           </CardContent>
         </Card>
       </div>
+        </TabsContent>
+        <TabsContent value="exceptions">
+          <AttendanceExceptionsPanel onChanged={() => void reload()} />
+        </TabsContent>
+      </Tabs>
 
       <ConfirmDialog
         open={confirmBulk}

@@ -1,15 +1,17 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { EXPENSE_CATEGORIES, expenseCategoryForRequirement } from "@/config/expense-categories";
+import { ReferencePicker } from "@/features/reference/components/ReferencePicker";
+import { expenseCategoryForRequirement } from "@/config/expense-categories";
 import { formatCurrency } from "@/lib/format-currency";
+import { useExpenseCategories } from "../hooks/use-expense-categories";
 import type { ActionResult, CreatePurchaseRequestInput, LineItem } from "../types/purchasing.types";
+import { CategorySelect } from "./CategorySelect";
 
 /** The slice of a requirement the dialog needs. */
 export interface PurchasableRequirement {
@@ -32,7 +34,8 @@ const blankLine = (description = ""): LineItem => ({ description, qty: 1, unit: 
 /** Raise a purchase request from an Approved requirement. The amount is computed on the server from the lines. */
 export function RequestPurchaseDialog({ requirement, onClose, onSubmit, routingHint }: Props) {
   const [title, setTitle] = useState("");
-  const [category, setCategory] = useState("");
+  // What the person picked; until they pick, the category suggested from the requirement (against the live list).
+  const [picked, setPicked] = useState<string | null>(null);
   const [lines, setLines] = useState<LineItem[]>([blankLine()]);
   const [neededBy, setNeededBy] = useState("");
   const [justification, setJustification] = useState("");
@@ -43,13 +46,20 @@ export function RequestPurchaseDialog({ requirement, onClose, onSubmit, routingH
   useEffect(() => {
     if (!requirement) return;
     setTitle(requirement.title);
-    setCategory(expenseCategoryForRequirement(requirement.category));
+    setPicked(null);
     setLines([blankLine(requirement.title)]);
     setNeededBy("");
     setJustification("");
     setVendor("");
     setError(null);
   }, [requirement]);
+
+  const { activeCategories } = useExpenseCategories();
+  const suggested = useMemo(
+    () => (requirement ? expenseCategoryForRequirement(requirement.category, activeCategories.map((c) => c.name)) : ""),
+    [requirement, activeCategories],
+  );
+  const category = picked ?? suggested;
 
   const total = lines.reduce((s, l) => s + l.qty * l.unitCost, 0);
   const linesOk = lines.length > 0 && lines.every((l) => l.description.trim() && l.qty > 0 && l.unitCost >= 0);
@@ -92,18 +102,7 @@ export function RequestPurchaseDialog({ requirement, onClose, onSubmit, routingH
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="pr-cat">Category</Label>
-              <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger id="pr-cat" className="w-full">
-                  <SelectValue placeholder="Select" />
-                </SelectTrigger>
-                <SelectContent>
-                  {EXPENSE_CATEGORIES.map((c) => (
-                    <SelectItem key={c} value={c}>
-                      {c}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <CategorySelect id="pr-cat" value={category} onValueChange={setPicked} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="pr-needed">Needed by</Label>
@@ -153,7 +152,7 @@ export function RequestPurchaseDialog({ requirement, onClose, onSubmit, routingH
             </div>
             <div className="space-y-1.5 sm:col-span-2">
               <Label htmlFor="pr-vendor">Preferred vendor (optional)</Label>
-              <Input id="pr-vendor" value={vendor} onChange={(e) => setVendor(e.target.value)} />
+              <ReferencePicker kind="vendors" id="pr-vendor" value={vendor} onChange={(name) => setVendor(name)} placeholder="Select a vendor (optional)" />
             </div>
           </div>
           {error && (

@@ -10,18 +10,13 @@
  *
  * Not a certified payroll engine: no 13th-month, de minimis, substituted
  * filing or year-end annualization. The system produces liabilities and
- * reports — it does not remit anything to SSS, PhilHealth, Pag-IBIG or BIR.
+ * reports — it does not remit anything to SSS, PhilHealth or Pag-IBIG.
+ * Employee deductions are the three contributions only.
  */
-
-export interface TaxBracket {
-  floor: number;
-  base: number;
-  rate: number;
-}
 
 export interface PayrollRules {
   /** Rate-version IDs per agency, stored on every computed line. */
-  versions: { sss: string; philhealth: string; pagibig: string; tax: string; overtime: string };
+  versions: { sss: string; philhealth: string; pagibig: string; overtime: string };
   /** Rule values that have not been verified against the agency circular. */
   needsVerification: string[];
   hoursPerDay: number;
@@ -47,19 +42,9 @@ export interface PayrollRules {
     employerRate: number;
     maxFundSalary: number;
   };
-  taxTable: TaxBracket[];
 }
 
 const DEFAULT_OVERTIME_MULTIPLIER = 1.5;
-
-const BUILTIN_TAX_TABLE: TaxBracket[] = [
-  { floor: 0, base: 0, rate: 0 },
-  { floor: 20_833, base: 0, rate: 0.15 },
-  { floor: 33_333, base: 1_875, rate: 0.2 },
-  { floor: 66_667, base: 8_541.8, rate: 0.25 },
-  { floor: 166_667, base: 33_541.8, rate: 0.3 },
-  { floor: 666_667, base: 183_541.8, rate: 0.35 },
-];
 
 const overtimeMultiplierSetting = (): number => {
   const raw = Number(process.env.PAYROLL_OVERTIME_MULTIPLIER);
@@ -72,7 +57,6 @@ export const getRules = (_periodEnd?: string): PayrollRules => ({
     sss: "builtin-sss-2025",
     philhealth: "builtin-philhealth-2025",
     pagibig: "builtin-pagibig-2025",
-    tax: "builtin-bir-train-2023",
     overtime: "builtin-overtime-1.5",
   },
   needsVerification: ["SSS EC (₱10 below MSC 15,000, otherwise ₱30)"],
@@ -98,7 +82,6 @@ export const getRules = (_periodEnd?: string): PayrollRules => ({
     employerRate: 0.02,
     maxFundSalary: 10_000,
   },
-  taxTable: BUILTIN_TAX_TABLE,
 });
 
 /** One rounding rule for every amount. */
@@ -124,13 +107,6 @@ export const sssMsc = (compensation: number, rules: PayrollRules): number => {
   return Math.min(Math.max(banded, r.mscFloor), r.mscCeiling);
 };
 
-export const withholdingTaxFor = (taxable: number, rules: PayrollRules): number => {
-  const table = rules.taxTable;
-  if (taxable <= table[1]!.floor) return 0;
-  const bracket = [...table].reverse().find((b) => taxable > b.floor)!;
-  return round2(bracket.base + (taxable - bracket.floor) * bracket.rate);
-};
-
 export interface LineInput {
   payRate: number;
   rateType: string;
@@ -145,8 +121,7 @@ export interface ComputedLine {
   sss: number;
   philhealth: number;
   pagibig: number;
-  withholdingTax: number;
-  /** Sum of the four employee deductions. */
+  /** Sum of the three employee contributions (SSS + PhilHealth + Pag-IBIG). */
   deductions: number;
   net: number;
   employerSss: number;
@@ -174,7 +149,6 @@ export const computeLine = (input: LineInput, rules: PayrollRules): ComputedLine
       sss: 0,
       philhealth: 0,
       pagibig: 0,
-      withholdingTax: 0,
       deductions: 0,
       net: 0,
       employerSss: 0,
@@ -202,10 +176,7 @@ export const computeLine = (input: LineInput, rules: PayrollRules): ComputedLine
   const pagibig = round2(piBase * (gross <= pi.lowBracketCeiling ? pi.lowRate : pi.highRate));
   const employerPagibig = round2(piBase * pi.employerRate);
 
-  const taxable = Math.max(0, gross - sss - philhealth - pagibig);
-  const withholdingTax = withholdingTaxFor(taxable, rules);
-
-  const deductions = round2(sss + philhealth + pagibig + withholdingTax);
+  const deductions = round2(sss + philhealth + pagibig);
   const employerContributions = round2(
     employerSss + employerEc + employerPhilhealth + employerPagibig,
   );
@@ -216,7 +187,6 @@ export const computeLine = (input: LineInput, rules: PayrollRules): ComputedLine
     sss,
     philhealth,
     pagibig,
-    withholdingTax,
     deductions,
     net: round2(gross - deductions),
     employerSss,

@@ -289,7 +289,7 @@ action row from the review's own details, and widened the action row's top margi
   ```
   generate: 201 {"lines":[{"empId":"EMP-DEMO-07","hours":40,"overtime":4,
     "gross":"6900.00","sss":"350.00","philhealth":"250.00","pagibig":"138.00",
-    "withholdingTax":"0.00","deductions":"738.00","net":"6162.00", ...}],
+    "deductions":"738.00","net":"6162.00", ...}],
     "batch":{"grossPayroll":6900,"deductions":738,"netPayroll":6162,"status":"pending"}}
   review fetch: 200 (same numbers)
   approve: 200 "Payroll batch decision recorded"

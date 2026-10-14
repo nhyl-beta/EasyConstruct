@@ -1,3 +1,5 @@
+import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
+import { usePagination } from "@/hooks/use-pagination";
 import { useCallback, useEffect, useState } from "react";
 import { Check, ClipboardList, Paperclip, X } from "lucide-react";
 
@@ -15,6 +17,7 @@ import type { Requirement } from "../types/requirements.types";
  */
 export function RequirementApprovalsPanel() {
   const [items, setItems] = useState<Requirement[]>([]);
+  const pg = usePagination(items, 8);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
@@ -71,7 +74,7 @@ export function RequirementApprovalsPanel() {
         <p className="text-sm text-muted-foreground">Nothing is waiting on you.</p>
       ) : (
         <ul className="space-y-2">
-          {items.map((r) => (
+          {pg.pageItems.map((r) => (
             <li key={r.dbId} className="space-y-1.5 rounded-xl border border-border px-4 py-3">
               <div className="font-mono text-xs text-muted-foreground">
                 {r.id} · {r.project} · {r.category}
@@ -108,6 +111,9 @@ export function RequirementApprovalsPanel() {
               </div>
             </li>
           ))}
+          <div className="pt-2">
+            <DataTablePagination {...pg} compact />
+          </div>
         </ul>
       )}
     </section>

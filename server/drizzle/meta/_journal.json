@@ -183,6 +183,48 @@
       "when": 1791000000000,
       "tag": "0025_purchasing",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1791100000000,
+      "tag": "0026_expense_categories",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1791200000000,
+      "tag": "0027_plan_suggestions",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1791300000000,
+      "tag": "0028_signal_findings",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1791400000000,
+      "tag": "0029_payroll_acknowledgements",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1791500000000,
+      "tag": "0030_reference_data",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1791600000000,
+      "tag": "0031_decision_support_events",
+      "breakpoints": true
     }
   ]
 }

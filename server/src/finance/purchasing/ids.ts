@@ -1,5 +1,5 @@
 // Collision-safe ids from Postgres sequences (created in migration 0025):
-// PR-0001, PO-0001, RMB-0001, EXP-0001. The old random "EXP-" + 4 digits could
+// PR-0001, PO-0001, EXP-0001. The old random "EXP-" + 4 digits could
 // collide; nextval cannot.
 import { sql } from "drizzle-orm";
 import type { db } from "../../db/connection.js";
@@ -9,7 +9,6 @@ type Exec = Pick<typeof db, "execute">;
 const SEQUENCES = {
   PR: "purchase_request_seq",
   PO: "procurement_order_seq",
-  RMB: "reimbursement_seq",
   EXP: "expense_seq",
 } as const;
 

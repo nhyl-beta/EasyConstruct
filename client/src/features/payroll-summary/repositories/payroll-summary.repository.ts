@@ -111,7 +111,6 @@ export const normalizePayrollSummary = (json: unknown): PayrollSummary => {
       sss: share(statutory.sss),
       philhealth: share(statutory.philhealth),
       pagibig: share(statutory.pagibig),
-      withholdingTax: num(statutory.withholdingTax),
       ec: num(statutory.ec),
     },
     byProject: arr(d.byProject).map((p) => {

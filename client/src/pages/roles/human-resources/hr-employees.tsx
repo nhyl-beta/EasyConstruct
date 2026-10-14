@@ -41,6 +41,7 @@ import type { Employee } from "@/features/hr/types";
 import { downloadCsv } from "@/lib/export-csv";
 import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
 import { useServerList } from "@/hooks/use-server-list";
+import { SavedFiltersBar } from "@/components/shared/SavedFiltersBar";
 import { qk } from "@/lib/query-keys";
 import { useWorkforceSnapshot } from "@/features/workforce/hooks/useWorkforceSnapshot";
 
@@ -238,6 +239,16 @@ export default function HREmployeesPage() {
               <Download className="h-4 w-4" /> CSV
             </Button>
           </div>
+          <SavedFiltersBar
+            page="hr-employees"
+            current={{ search: query, dept, status }}
+            hasActive={query.trim() !== "" || dept !== "all" || status !== "all"}
+            onApply={(f: { search: string; dept: string; status: string }) => {
+              setQuery(f.search);
+              setDept(f.dept);
+              setStatus(f.status);
+            }}
+          />
         </CardContent>
       </Card>
 

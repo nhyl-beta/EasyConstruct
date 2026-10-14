@@ -65,7 +65,7 @@ export function DataTablePagination({
           <label className="flex items-center gap-1.5 text-muted-foreground">
             <span className="sr-only sm:not-sr-only">Per page</span>
             <Select value={`${pageSize}`} onValueChange={(v) => setPageSize(Number(v))}>
-              <SelectTrigger aria-label="Rows per page" className="h-7 w-[56px] px-2 text-xs">
+              <SelectTrigger aria-label="Rows per page" className="h-7 w-[76px] px-2 text-xs">
                 <SelectValue placeholder={pageSize} />
               </SelectTrigger>
               <SelectContent side="top">
@@ -134,7 +134,7 @@ export function DataTablePagination({
             value={`${pageSize}`}
             onValueChange={(v) => setPageSize(Number(v))}
           >
-            <SelectTrigger className={cn("h-8", "w-[70px]")}>
+            <SelectTrigger aria-label="Rows per page" className={cn("h-8", "w-[84px]")}>
               <SelectValue placeholder={pageSize} />
             </SelectTrigger>
             <SelectContent side="top">

@@ -1,3 +1,5 @@
+import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
+import { usePagination } from "@/hooks/use-pagination";
 import { useMemo, useState } from "react";
 import { ArrowRight, ChevronDown, ChevronUp, GitCommitHorizontal, Wand2 } from "lucide-react";
 
@@ -125,6 +127,7 @@ export function ProjectRevisionsPanel({ projectCode, projectStatus }: { projectC
     }
     return [...byDesign.entries()];
   }, [filtered]);
+  const groupsPage = usePagination(groups, 5, `${designFilter}|${statusFilter}`);
   const designOptions = useMemo(() => {
     const m = new Map<number, string>();
     for (const r of revisions) m.set(r.designId, `${r.designCode} · ${r.designName}`);
@@ -224,7 +227,8 @@ export function ProjectRevisionsPanel({ projectCode, projectStatus }: { projectC
         {groups.length === 0 ? (
           <p className="text-sm text-muted-foreground">No revisions match these filters.</p>
         ) : (
-          groups.map(([designId, g]) => (
+          <>
+          {groupsPage.pageItems.map(([designId, g]) => (
             <section key={designId} aria-label={`${g.name} revisions`}>
               <h3 className="mb-2 flex flex-wrap items-baseline gap-2 text-sm font-medium">
                 {g.name}
@@ -239,7 +243,9 @@ export function ProjectRevisionsPanel({ projectCode, projectStatus }: { projectC
                 ))}
               </ol>
             </section>
-          ))
+          ))}
+          <DataTablePagination {...groupsPage} compact />
+          </>
         )}
       </div>
     );

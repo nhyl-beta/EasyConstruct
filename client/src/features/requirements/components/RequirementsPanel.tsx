@@ -1,3 +1,5 @@
+import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
+import { usePagination } from "@/hooks/use-pagination";
 import { Check, ClipboardList, Paperclip, X } from "lucide-react";
 import { openFileUrl } from "@/lib/file-url";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +28,7 @@ export function RequirementsPanel({
   canDecide: boolean;
 }) {
   const { requirements, loading, error, decidingId, decide } = useProjectRequirements(projectCode);
+  const pg = usePagination(requirements, 8);
 
   return (
     <div className="space-y-4 rounded-2xl border border-border bg-card p-6">
@@ -49,7 +52,7 @@ export function RequirementsPanel({
         <p className="text-sm text-muted-foreground">No requirements drafted yet.</p>
       ) : (
         <ul className="space-y-2">
-          {requirements.map((r) => (
+          {pg.pageItems.map((r) => (
             <li key={r.dbId} className="space-y-1.5 rounded-xl border border-border px-4 py-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
@@ -103,6 +106,9 @@ export function RequirementsPanel({
               )}
             </li>
           ))}
+          <div className="pt-2">
+            <DataTablePagination {...pg} compact />
+          </div>
         </ul>
       )}
     </div>

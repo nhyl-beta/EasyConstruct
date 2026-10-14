@@ -4,6 +4,7 @@ import { CLOSEOUT_TEMPLATE_NAME } from "../lifecycle/repository.js";
 import { filterRowsToCodes } from "../projects/visibility.js";
 import { DESIGN_TURNOVER_TEMPLATE_NAME, normalizeDeliveryType } from "../lifecycle/delivery.js";
 import { proposalRepository } from "../proposals/repository.js";
+import * as planSuggestionService from "../plan-suggestion/service.js";
 import * as notificationsService from "../notifications/service.js";
 import { validateWorkflowLineItems } from "../ai-validation/service.js";
 import * as validationRepo from "../ai-validation/repository.js";
@@ -611,6 +612,18 @@ export const decideStage = async (
     if (linked) await proposalRepository.update(linked.id, { status });
   };
 
+  // Fix 3.1: an approved proposal gets a draft plan for the PM to review. It is
+  // advice only and must never fail or roll back the approval, so any error
+  // (including a missing table before the migration is applied) is logged and dropped.
+  const draftPlanForApprovedProposal = async () => {
+    try {
+      const linked = await proposalRepository.findByWorkflowId(workflowId);
+      if (linked) await planSuggestionService.generateForProposal(linked.id);
+    } catch (err) {
+      console.error("[plan-suggestion] could not draft a plan", err);
+    }
+  };
+
   // G4: a "Budget Change Request" workflow (workflows.budgetId set) that
   // completes its final approval moves the delta into the real budget —
   // budgets.planned, plus a budget_adjustments row recording the change —
@@ -677,6 +690,7 @@ export const decideStage = async (
     } else {
       await repo.updateWorkflowStatus(workflowId, "completed");
       await syncLinkedProposal("Approved");
+      await draftPlanForApprovedProposal();
       await syncLinkedBudgetChange();
       await notifyInitiator(
         "Workflow approved",

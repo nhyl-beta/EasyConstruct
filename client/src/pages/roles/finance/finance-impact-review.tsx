@@ -12,6 +12,8 @@
 // (GET /api/workflows/budget-change-requests), not a parallel store: the
 // request IS the workflow, so Finance is reading the same record it later
 // approves from /approvals.
+import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
+import { usePagination } from "@/hooks/use-pagination";
 import { useMemo, useState } from "react";
 import { ChevronDown, ChevronRight, Wallet } from "lucide-react";
 
@@ -29,6 +31,7 @@ import {
 } from "@/components/workflows/workflow-submission-panel";
 import { WorkflowStagePipeline } from "@/components/workflows/workflow-stage-pipeline";
 import { useBudgetChangeRequests } from "@/features/workflows/hooks/useWorkflows";
+import { ImpactForecastCard } from "@/features/workflows/components/ImpactForecastCard";
 import { WorkflowRepository } from "@/features/workflows/repositories/workflow.repository";
 import { formatCurrency } from "@/lib/format-currency";
 import { formatRelativeTime } from "@/lib/format-relative-time";
@@ -158,6 +161,8 @@ function RequestCard({ request, onRevalidated }: { request: Workflow; onRevalida
               )}
             </section>
 
+            <ImpactForecastCard workflowId={request.id} />
+
             <section className="space-y-2">
               <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 Justification & supporting documents
@@ -186,6 +191,7 @@ function RequestCard({ request, onRevalidated }: { request: Workflow; onRevalida
 
 export default function ImpactReviewPage() {
   const { requests, loading, error, reload } = useBudgetChangeRequests();
+  const pg = usePagination(requests, 10);
 
   const kpis = useMemo(() => {
     const open = requests.filter((r) => r.status === "active");
@@ -235,9 +241,12 @@ export default function ImpactReviewPage() {
         )}
 
         <div className="space-y-2">
-          {requests.map((request) => (
+          {pg.pageItems.map((request) => (
             <RequestCard key={request.id} request={request} onRevalidated={() => void reload()} />
           ))}
+          <div className="pt-2">
+            <DataTablePagination {...pg} />
+          </div>
         </div>
       </PageContent>
     </PageContainer>

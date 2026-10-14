@@ -1,3 +1,5 @@
+import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
+import { usePagination } from "@/hooks/use-pagination";
 import { useState } from "react";
 import { CheckCircle2, Download, Eye, GitCompare, XCircle } from "lucide-react";
 import { toast } from "sonner";
@@ -29,6 +31,7 @@ interface Props {
 export function VersionHistory({ versions, canReview, saving, actionError, onReview, onPreview, selected = [], onToggleSelect }: Props) {
   const [reviewing, setReviewing] = useState<{ id: number; status: RevisionStatus } | null>(null);
   const [comment, setComment] = useState("");
+  const pg = usePagination(versions, 8);
 
   const submitReview = async () => {
     if (!reviewing || !onReview) return;
@@ -42,7 +45,7 @@ export function VersionHistory({ versions, canReview, saving, actionError, onRev
 
   return (
     <ol className="relative space-y-4 border-l border-border pl-5" aria-label="Version history">
-      {versions.map((v) => (
+      {pg.pageItems.map((v) => (
         <li key={v.id} className="relative">
           <span
             aria-hidden="true"
@@ -141,6 +144,9 @@ export function VersionHistory({ versions, canReview, saving, actionError, onRev
           </div>
         </li>
       ))}
+      <li className="list-none pt-2">
+        <DataTablePagination {...pg} compact />
+      </li>
     </ol>
   );
 }

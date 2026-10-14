@@ -1,7 +1,6 @@
 import { z } from "zod";
-import { EXPENSE_CATEGORIES } from "../constants/expense-categories.js";
-
-const category = z.enum(EXPENSE_CATEGORIES);
+// Bounded only; the service checks it against the managed category list.
+const category = z.string().trim().min(2).max(64);
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use a date as YYYY-MM-DD");
 const note = z.string().trim().max(2000).optional();
 
@@ -62,16 +61,3 @@ export const payOrderSchema = z
     varianceNote: z.string().trim().max(2000).optional(),
   })
   .strict();
-
-export const createClaimSchema = z
-  .object({
-    project: z.string().trim().min(1),
-    category,
-    incurredOn: isoDate,
-    purpose: z.string().trim().min(3).max(255),
-    amount: z.number().positive(),
-    attachments: z.array(attachmentSchema).min(1, "At least one receipt is required"),
-  })
-  .strict();
-
-export const payClaimSchema = z.object({ paymentReference: z.string().trim().min(1).max(128) }).strict();

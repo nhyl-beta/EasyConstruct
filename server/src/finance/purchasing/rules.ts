@@ -1,7 +1,6 @@
 // server/src/finance/purchasing/rules.ts
 //
-// Pure rules for purchase requests, procurement orders and reimbursement
-// claims (no database): status transition tables, who starts where, the
+// Pure rules for purchase requests and procurement orders (no database): status transition tables, who starts where, the
 // segregation-of-duties checks, the budget arithmetic, payment variance and
 // the "unsettled" predicate the closeout gate uses. Every state change in the
 // services goes through these so each rule is unit-tested once.
@@ -15,10 +14,7 @@ export type PrStatus = (typeof PR_STATUSES)[number];
 export const ORDER_STATUSES = ["ordered", "in-transit", "delivered", "paid", "cancelled"] as const;
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
 
-export const CLAIM_STATUSES = ["pending-pm", "pending-finance", "approved", "rejected", "paid", "cancelled"] as const;
-export type ClaimStatus = (typeof CLAIM_STATUSES)[number];
-
-export type PurchasingKind = "purchase-request" | "procurement-order" | "reimbursement";
+export type PurchasingKind = "purchase-request" | "procurement-order";
 
 /**
  * Allowed moves. `ordered -> approved` on a request is the order being
@@ -42,19 +38,9 @@ export const ORDER_TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
   cancelled: [],
 };
 
-export const CLAIM_TRANSITIONS: Record<ClaimStatus, readonly ClaimStatus[]> = {
-  "pending-pm": ["pending-finance", "rejected", "cancelled"],
-  "pending-finance": ["approved", "rejected", "cancelled"],
-  approved: ["paid"],
-  rejected: [],
-  paid: [],
-  cancelled: [],
-};
-
 const TABLES = {
   "purchase-request": PR_TRANSITIONS,
   "procurement-order": ORDER_TRANSITIONS,
-  reimbursement: CLAIM_TRANSITIONS,
 } as const;
 
 export const canTransition = (kind: PurchasingKind, from: string, to: string): boolean => {
@@ -69,27 +55,15 @@ export function assertTransition(kind: PurchasingKind, id: string, from: string,
   }
 }
 
-// ── Where a new request or claim starts ─────────────────────────────────────
+// ── Where a new request starts ─────────────────────────────────────
 
 /** An Engineer's request is endorsed by the PM first; a PM's (or Admin's) goes straight to Finance. */
 export const prStatusAfterRaise = (role: string): "pending-pm" | "pending-finance" =>
   role === "engineer" ? "pending-pm" : "pending-finance";
 
-/**
- * A claim goes to the PM first when the claimant is staffed on a project that
- * has a PM and is not that PM; otherwise (PM, HR, nobody to endorse) it goes
- * straight to Finance.
- */
-export const claimStatusAfterRaise = (c: {
-  staffedOnProject: boolean;
-  projectHasPm: boolean;
-  isProjectPm: boolean;
-}): "pending-pm" | "pending-finance" =>
-  c.staffedOnProject && c.projectHasPm && !c.isProjectPm ? "pending-pm" : "pending-finance";
-
 // ── Segregation of duties ───────────────────────────────────────────────────
 
-/** Nobody decides, endorses or pays their own request or claim. */
+/** Nobody decides, endorses or pays their own request. */
 export function assertNotSelf(actorId: number, ownerId: number | null | undefined, what: string): void {
   if (ownerId != null && actorId === ownerId) {
     throw new ForbiddenError(`You cannot ${what} your own request`);
@@ -226,19 +200,14 @@ export const isUnsettledRequest = (status: string): boolean =>
 
 export const isUnsettledOrder = (status: string): boolean => status !== "paid" && status !== "cancelled";
 
-export const isUnsettledClaim = (status: string): boolean =>
-  status === "pending-pm" || status === "pending-finance" || status === "approved";
-
 export interface UnsettledInput {
   requests: readonly { id: string; status: string }[];
   orders: readonly { id: string; status: string }[];
-  claims: readonly { id: string; status: string }[];
 }
 
 export function unsettledIds(input: UnsettledInput): string[] {
   return [
     ...input.requests.filter((r) => isUnsettledRequest(r.status)).map((r) => r.id),
     ...input.orders.filter((o) => isUnsettledOrder(o.status)).map((o) => o.id),
-    ...input.claims.filter((c) => isUnsettledClaim(c.status)).map((c) => c.id),
   ];
 }

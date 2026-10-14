@@ -21,6 +21,8 @@ import { Progress } from "@/components/ui/progress";
 import { useRoleConfig } from "@/hooks/use-role-config";
 import { useAdminDashboardController } from "@/features/dashboard/controllers/admin-dashboard.controller";
 import { WaitingOnYouCard } from "@/features/lifecycle/components/WaitingOnYouCard";
+import { UsefulnessCard } from "@/features/decision-support/UsefulnessCard";
+import { CycleTimesCard } from "@/features/dashboard/components/CycleTimesCard";
 import { AttentionCard } from "@/features/requests/components/AttentionCard";
 import { RefreshReferencesCard } from "@/features/lifecycle/components/RefreshReferencesCard";
 import { WorkforceSnapshotCard } from "@/features/workforce/components/WorkforceSnapshotCard";
@@ -105,6 +107,10 @@ export default function AdminDashboardPage() {
       <AttentionCard />
 
       <WaitingOnYouCard />
+
+      {/* Fix 1.4: how long approvals, responses, payroll sign-off and issue resolution take */}
+      <CycleTimesCard />
+      <UsefulnessCard />
 
       {/* ai-signals E6: nice-to-have manual refresh, admin only */}
       {FEATURES.ai && <RefreshReferencesCard />}

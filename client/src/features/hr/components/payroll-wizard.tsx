@@ -1,3 +1,5 @@
+import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
+import { usePagination } from "@/hooks/use-pagination";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle2, Lock, Trash2, XCircle } from "lucide-react";
 
@@ -37,6 +39,7 @@ import {
   type AttendanceReadiness,
   type BatchDetail,
   type PayrollLine,
+  visibleRateVersions,
 } from "@/features/hr/payroll-api";
 import { formatCurrency } from "@/lib/format-currency";
 import { Link } from "react-router-dom";
@@ -109,6 +112,8 @@ export function PayrollWizard({ resumeBatchId, onClose, onChanged }: PayrollWiza
   const [error, setError] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [acknowledgeDuplicate, setAcknowledgeDuplicate] = useState(false);
+  // Fix 2.4: warnings HR has ticked (by key). Only keys still raised are sent on submit.
+  const [acknowledged, setAcknowledged] = useState<Set<string>>(new Set());
 
   const editable = detail ? ["draft", "revision_required"].includes(detail.batch.status) : true;
 
@@ -203,7 +208,7 @@ export function PayrollWizard({ resumeBatchId, onClose, onChanged }: PayrollWiza
   const submit = () =>
     guard(async () => {
       if (!batchId) return;
-      await submitBatch(batchId, acknowledgeDuplicate);
+      await submitBatch(batchId, acknowledgeDuplicate, ackKeys.filter((k) => acknowledged.has(k)));
       setConfirmOpen(false);
       onChanged();
       onClose();
@@ -216,6 +221,7 @@ export function PayrollWizard({ resumeBatchId, onClose, onChanged }: PayrollWiza
       onClose();
     }, "Failed to discard the draft.");
 
+  const linesPage = usePagination(detail?.lines ?? [], 10);
   const issues = detail?.validation ?? [];
   const blocking = issues.filter((i) => i.severity === "error");
   const duplicateWarning = issues.some((i) => i.code === "duplicate_batch");
@@ -224,7 +230,16 @@ export function PayrollWizard({ resumeBatchId, onClose, onChanged }: PayrollWiza
     [activeEmployees, detail],
   );
 
-  const canSubmit = blocking.length === 0 && (!duplicateWarning || acknowledgeDuplicate);
+  const ackKeys = issues.filter((i) => i.requiresAck && i.key).map((i) => i.key as string);
+  const allAcknowledged = ackKeys.every((k) => acknowledged.has(k));
+  const canSubmit = blocking.length === 0 && (!duplicateWarning || acknowledgeDuplicate) && allAcknowledged;
+  const toggleAck = (key: string, on: boolean) =>
+    setAcknowledged((prev) => {
+      const next = new Set(prev);
+      if (on) next.add(key);
+      else next.delete(key);
+      return next;
+    });
 
   return (
     <Card>
@@ -386,7 +401,7 @@ export function PayrollWizard({ resumeBatchId, onClose, onChanged }: PayrollWiza
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {detail.lines.map((l) => (
+                {linesPage.pageItems.map((l) => (
                   <TableRow key={l.id}>
                     <TableCell>
                       <div className="text-sm font-medium">{l.name}</div>
@@ -417,6 +432,7 @@ export function PayrollWizard({ resumeBatchId, onClose, onChanged }: PayrollWiza
                 ))}
               </TableBody>
             </Table>
+            <DataTablePagination {...linesPage} compact />
             <div className="flex flex-wrap items-center gap-2">
               <Select value={addEmployeeId} onValueChange={setAddEmployeeId}>
                 <SelectTrigger className="h-9 w-64 text-xs">
@@ -453,27 +469,26 @@ export function PayrollWizard({ resumeBatchId, onClose, onChanged }: PayrollWiza
                   <TableHead className="text-right">SSS</TableHead>
                   <TableHead className="text-right">PhilHealth</TableHead>
                   <TableHead className="text-right">Pag-IBIG</TableHead>
-                  <TableHead className="text-right">Withholding tax</TableHead>
                   <TableHead className="text-right">Net</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {detail.lines.map((l) => (
+                {linesPage.pageItems.map((l) => (
                   <TableRow key={l.id}>
                     <TableCell className="text-sm">{l.name}</TableCell>
                     <TableCell className="text-right tabular-nums">{formatCurrency(l.gross)}</TableCell>
                     <TableCell className="text-right tabular-nums">{formatCurrency(l.sss)}</TableCell>
                     <TableCell className="text-right tabular-nums">{formatCurrency(l.philhealth)}</TableCell>
                     <TableCell className="text-right tabular-nums">{formatCurrency(l.pagibig)}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatCurrency(l.withholdingTax)}</TableCell>
                     <TableCell className="text-right font-medium tabular-nums">{formatCurrency(l.net)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
+            <DataTablePagination {...linesPage} compact />
             <p className="text-xs text-muted-foreground">
               Rate versions used:{" "}
-              {Object.entries(detail.rateVersions)
+              {visibleRateVersions(detail.rateVersions)
                 .map(([k, v]) => `${k} ${v}`)
                 .join(" · ")}
             </p>
@@ -502,10 +517,27 @@ export function PayrollWizard({ resumeBatchId, onClose, onChanged }: PayrollWiza
                   ) : (
                     <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning-strong" />
                   )}
-                  {i.message}
+                  <div className="space-y-1">
+                    <div>{i.message}</div>
+                    {i.requiresAck && i.key && (
+                      <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <input
+                          type="checkbox"
+                          checked={acknowledged.has(i.key)}
+                          onChange={(e) => toggleAck(i.key as string, e.target.checked)}
+                        />
+                        I have checked this and want to submit anyway.
+                      </label>
+                    )}
+                  </div>
                 </li>
               ))}
             </ul>
+            {ackKeys.length > 0 && (
+              <p className="text-xs text-muted-foreground">
+                Tick each warning above to continue. What you acknowledged is recorded with the batch ({ackKeys.filter((k) => acknowledged.has(k)).length} of {ackKeys.length} ticked).
+              </p>
+            )}
             {duplicateWarning && (
               <label className="flex items-center gap-2 text-sm">
                 <input
@@ -543,7 +575,8 @@ export function PayrollWizard({ resumeBatchId, onClose, onChanged }: PayrollWiza
             </p>
             {!canSubmit && (
               <p className="text-sm text-destructive-strong">
-                Fix the blocking checks{duplicateWarning ? " and confirm the duplicate warning" : ""} in step 5 first.
+                Fix the blocking checks{duplicateWarning ? " and confirm the duplicate warning" : ""}
+                {!allAcknowledged ? " and tick each warning" : ""} in step 5 first.
               </p>
             )}
           </div>
@@ -569,7 +602,7 @@ export function PayrollWizard({ resumeBatchId, onClose, onChanged }: PayrollWiza
             </Button>
           )}
           {step === 5 && (
-            <Button disabled={busy || blocking.length > 0} onClick={() => setStep(6)}>
+            <Button disabled={busy || blocking.length > 0 || !allAcknowledged} onClick={() => setStep(6)}>
               Next: Submit
             </Button>
           )}

@@ -5,13 +5,13 @@
 // `committed` / `actual`, segregation of duties, and a second (or concurrent)
 // payment that creates nothing. The services commit their own transactions, so
 // the fixtures are committed under a throwaway project code and removed again
-// in after(). Needs migration 0025 applied. Guarded like the demo scripts.
+// in after(). Needs migrations 0025 and 0026 applied. Guarded like the demo scripts.
 import { after, before, describe, test } from "node:test";
 import assert from "node:assert/strict";
 import { and, eq, inArray } from "drizzle-orm";
 
 import { db } from "../../db/connection.js";
-import { budgets, expenses, procurementOrders, purchaseRequests, reimbursements } from "../../db/schema/finance.js";
+import { budgets, expenseCategories, expenses, procurementOrders, purchaseRequests } from "../../db/schema/finance.js";
 import { projectMembers } from "../../db/schema/project-members.js";
 import { projects } from "../../db/schema/projects.js";
 import { requirements } from "../../db/schema/requirements.js";
@@ -22,7 +22,6 @@ import { refreshMonth } from "../cash-flow/service.js";
 import { ConflictError, ForbiddenError } from "../../utils/errors.js";
 import { purchaseRequestsService as prs } from "../purchase-requests/service.js";
 import { procurementService as orders } from "../procurement/service.js";
-import { reimbursementsService as claims } from "../reimbursements/service.js";
 import type { Actor } from "./access.js";
 
 const tag = `DBP${Date.now().toString(36)}`;
@@ -57,6 +56,8 @@ const raiseApproved = async (amountUnits: number) => {
 describe("purchasing chain", () => {
   before(async () => {
     assertDemoDatabase();
+    // Writes are validated against the managed list: make sure the category the test uses exists.
+    await db.insert(expenseCategories).values({ name: "Materials", isSystem: true }).onConflictDoNothing();
     engineer = await actorWith("engineer");
     site = await actorWith("site-personnel");
     pm = await actorWith("project-manager");
@@ -80,7 +81,6 @@ describe("purchasing chain", () => {
     if (prIds.length) await db.delete(procurementOrders).where(inArray(procurementOrders.purchaseRequestId, prIds));
     await db.delete(expenses).where(eq(expenses.project, P));
     await db.delete(purchaseRequests).where(eq(purchaseRequests.project, P));
-    await db.delete(reimbursements).where(eq(reimbursements.project, P));
     await db.delete(requirements).where(eq(requirements.project, P));
     await db.delete(projectMembers).where(eq(projectMembers.projectCode, P));
     await db.delete(budgets).where(eq(budgets.project, P));
@@ -164,24 +164,5 @@ describe("purchasing chain", () => {
     // The requirement is already covered by a live request or fully paid; either way no self-approval path exists.
     if (pr instanceof Error) return;
     await assert.rejects(prs.endorse({ ...pm, id: engineer.id }, pr.id), ForbiddenError);
-  });
-
-  test("a reimbursement claim: pm -> finance -> paid creates one expense; Finance cannot pay their own", async () => {
-    const claim = await claims.create(site, {
-      project: P,
-      category: "Materials",
-      incurredOn: "2026-09-30",
-      purpose: "Nails bought on site",
-      amount: 450,
-      attachments: [{ url: "/u/r.png", filename: "r.png", contentType: "image/png", sizeBytes: 10 }],
-    });
-    assert.equal(claim.status, "pending-pm");
-    await assert.rejects(claims.approve(finance, claim.id), ConflictError, "needs the PM first");
-    await claims.endorse(pm, claim.id);
-    await claims.approve(finance, claim.id);
-    await assert.rejects(claims.approve({ ...finance, id: site.id }, claim.id), ForbiddenError);
-    const results = await Promise.allSettled([claims.pay(finance, claim.id, "REF-1"), claims.pay(finance, claim.id, "REF-1")]);
-    assert.equal(results.filter((r) => r.status === "fulfilled").length, 1);
-    assert.equal((await expensesFor(claim.id)).length, 1);
   });
 });

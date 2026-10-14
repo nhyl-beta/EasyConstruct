@@ -1,5 +1,5 @@
 import type { StatusTone } from "@/config/status-tone";
-import type { ClaimStatus, OrderStatus, PurchaseRequestStatus } from "../types/purchasing.types";
+import type { OrderStatus, PurchaseRequestStatus } from "../types/purchasing.types";
 
 type Label = { label: string; tone: StatusTone };
 
@@ -16,15 +16,6 @@ export const ORDER_LABELS: Record<OrderStatus, Label> = {
   ordered: { label: "Ordered", tone: "info" },
   "in-transit": { label: "In transit", tone: "info" },
   delivered: { label: "Delivered", tone: "warning" },
-  paid: { label: "Paid", tone: "success" },
-  cancelled: { label: "Cancelled", tone: "neutral" },
-};
-
-export const CLAIM_LABELS: Record<ClaimStatus, Label> = {
-  "pending-pm": { label: "Awaiting PM", tone: "warning" },
-  "pending-finance": { label: "Awaiting Finance", tone: "warning" },
-  approved: { label: "Approved, to pay", tone: "info" },
-  rejected: { label: "Rejected", tone: "danger" },
   paid: { label: "Paid", tone: "success" },
   cancelled: { label: "Cancelled", tone: "neutral" },
 };

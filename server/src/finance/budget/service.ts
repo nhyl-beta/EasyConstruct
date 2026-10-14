@@ -3,6 +3,7 @@ import { projects } from "../../db/schema/projects.js";
 import { eq } from "drizzle-orm";
 import { NotFoundError, ValidationError } from "../../utils/errors.js";
 import { assertProjectWritable, refreshProjectProgress } from "../../lifecycle/service.js";
+import { resolveActiveCategory, resolveCategoryChange } from "../categories/service.js";
 import * as repo from "./repository.js";
 import type {
   BudgetFilters,
@@ -24,7 +25,9 @@ export const create = async (input: CreateBudgetInput) => {
     throw new ValidationError(`No project found with code "${input.project}"`);
   }
   await assertProjectWritable(input.project);
-  const created = await repo.create(input);
+  // Stored in the managed list's casing; unknown or retired categories are refused.
+  const category = await resolveActiveCategory(input.category);
+  const created = await repo.create({ ...input, category });
   if (!created) throw new Error("Failed to create budget");
   await refreshProjectProgress(created.project);
   return created;
@@ -33,7 +36,12 @@ export const create = async (input: CreateBudgetInput) => {
 export const update = async (id: number, input: UpdateBudgetInput) => {
   const existing = await getById(id);
   await assertProjectWritable(existing.project);
-  const updated = await repo.update(id, input);
+  // Checked only when the category changes: a line whose category was retired
+  // since stays editable for its other fields.
+  const { category: nextCategory, ...rest } = input;
+  const category = nextCategory === undefined ? null : await resolveCategoryChange(existing.category, nextCategory);
+  const patch = category === null ? rest : { ...rest, category };
+  const updated = await repo.update(id, patch);
   if (!updated) throw new NotFoundError("Budget", String(id));
   await refreshProjectProgress(updated.project);
   return updated;

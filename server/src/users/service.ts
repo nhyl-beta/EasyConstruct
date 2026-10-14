@@ -9,6 +9,7 @@ import { tasks } from "../db/schema/task.js";
 import * as roleRepo from "../roles/repository.js";
 import { ConflictError, NotFoundError, ValidationError } from "../utils/errors.js";
 import * as repo from "./repository.js";
+import { invalidateSessionCache } from "../middleware/auth.js";
 import { users as usersTable } from "../db/schema/users.js";
 import { orderByFor, paginate, type PageRequest } from "../utils/pagination.js";
 import type {
@@ -143,6 +144,8 @@ export const setActive = async (
   if (!isActive) await assertNotLastActiveOwner(id, user.role);
 
   const updated = await repo.setActive(id, isActive);
+  // This process stops honoring the account's tokens now; other instances catch up within the session cache TTL.
+  invalidateSessionCache(id);
   if (!updated) throw new NotFoundError("User", String(id));
   return updated;
 };

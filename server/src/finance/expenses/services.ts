@@ -9,6 +9,7 @@ import { FEATURES } from "../../config/features.js";
 import { db } from "../../db/connection.js";
 import { assertDecidable, budgetOutcome } from "./decision.js";
 import { applyApprovedSpend } from "../purchasing/booking.js";
+import { resolveActiveCategory } from "../categories/service.js";
 
 /** Scores one expense against every other expense (decision support; never blocks). */
 async function scoreAndStore(id: string) {
@@ -21,7 +22,7 @@ async function scoreAndStore(id: string) {
 
 /**
  * After a payment created an expense: score it and attach `extraReasons`
- * (invoice variance, duplicate claim). Runs after the payment committed, and a
+ * (invoice variance). Runs after the payment committed, and a
  * failure here must never fail or undo the payment.
  */
 export async function annotateSpendExpense(id: string, extraReasons: string[]): Promise<void> {
@@ -67,8 +68,10 @@ export const expensesService = {
     if (input.amount <= 0) {
       throw new ValidationError("Amount must be greater than zero");
     }
+    // Stored in the managed list's casing; unknown or retired categories are refused.
+    const category = await resolveActiveCategory(input.category);
     await assertProjectWritable(input.project);
-    const created = await expensesRepository.create(input);
+    const created = await expensesRepository.create({ ...input, category });
     if (!FEATURES.ai || !created) return created;
     // Rule-based anomaly check; a failure here must never fail the create.
     await scoreAndStore(created.id).catch((e) => console.error("[expenses] anomaly scoring failed", e));

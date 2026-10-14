@@ -153,10 +153,11 @@ describe("Construction projects are unchanged", () => {
     assert.deepEqual(c("Closeout"), ["X1", "X2", "X3", "X4", "X5", "X6"]);
   });
 
-  test("an unsettled purchase, order or claim blocks closing a Construction project (X6) and a Design turnover (T5)", () => {
-    const open = construction({ unsettledPurchasing: ["PR-0001", "RMB-0002"] }, "Closeout");
+  test("an unsettled purchase or order blocks closing a Construction project (X6) and a Design turnover (T5)", () => {
+    const open = construction({ unsettledPurchasing: ["PR-0001", "PO-0002"] }, "Closeout");
     const x6 = evaluateGate("Closeout", open).find((c) => c.key === "X6")!;
     assert.equal(x6.passed, false);
+    assert.equal(x6.label, "No unsettled procurement");
     assert.match(x6.detail ?? "", /PR-0001/);
     assert.deepEqual(x6.ownerRoles, ["project-manager", "admin", "finance-manager"]);
     assert.ok(!failing(evaluateGate("Closeout", construction({ unsettledPurchasing: [] }, "Closeout"))).includes("X6"));

@@ -90,3 +90,15 @@ export const remove = async (req: Request, res: Response, next: NextFunction) =>
     next(err);
   }
 };
+
+// Fix 3.4: a rule-based draft from the template packs. Read-only, project-scoped, 404 when decision support is off.
+export const generateDraft = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!FEATURES.ai) throw new NotFoundError("Requirement drafting");
+    const { projectCode, category } = req.body as { projectCode: string; category: string };
+    await assertProjectVisible((req as AuthedRequest).authUser, projectCode, "requirements");
+    res.json(formatSuccess(await service.generateDraftFor(projectCode, category), "Requirement draft generated"));
+  } catch (err) {
+    next(err);
+  }
+};

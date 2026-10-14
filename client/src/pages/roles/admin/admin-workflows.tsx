@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { PageHeader } from "@/components/refine-ui/views/page-header";
 import { useOpenOnAction } from "@/features/quick-search/useOpenOnAction";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -58,27 +59,23 @@ export default function AdminWorkflowsPage() {
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-8">
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h2 className="text-2xl font-semibold tracking-tight">Workflow oversight</h2>
-          <p className="text-sm text-muted-foreground">
-            Initiate approval, document routing, and coordination workflows,
-            then monitor them through to completion across every role.
-          </p>
-        </div>
-        {canManage && (
-          <Button
-           
-            onClick={() => {
-              clearError();
-              setDialogOpen(true);
-            }}
-          >
-            <Plus className="h-4 w-4" />
-            New workflow
-          </Button>
-        )}
-      </div>
+      <PageHeader
+        title="Workflow oversight"
+        description="Initiate approval, document routing, and coordination workflows, then monitor them through to completion across every role."
+        actions={
+          canManage && (
+            <Button
+              onClick={() => {
+                clearError();
+                setDialogOpen(true);
+              }}
+            >
+              <Plus className="h-4 w-4" />
+              New workflow
+            </Button>
+          )
+        }
+      />
 
       <Tabs defaultValue="approvals" className="space-y-5">
         <TabsList className="h-10">

@@ -36,6 +36,9 @@ const baseProjectSchema = z.object({
   risk:        z.enum(['Low', 'Medium', 'High']).optional(),
   location:    z.string().optional(),
   client:      z.string().optional(),
+  clientId:    z.number().int().positive().optional(),
+  // Not stored: confirms a new project whose name is close to an existing one.
+  confirmSimilar: z.boolean().optional(),
   // ISO 4217. Kept to a closed list rather than free text so the
   // stored code always matches one the formatters can render.
   currency:    z.enum(['PHP', 'USD', 'EUR', 'AUD', 'SGD', 'JPY', 'AED']).optional(),

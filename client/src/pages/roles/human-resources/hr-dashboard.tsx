@@ -1,4 +1,5 @@
 import { FEATURES } from "@/config/features";
+import { PageHeader } from "@/components/refine-ui/views/page-header";
 import { UtilizationTile } from "@/components/ui/utilization-tile";
 import { RingGauge } from "@/components/ui/ring-gauge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -53,7 +54,6 @@ import {
 import {
   Activity,
   AlertTriangle,
-  ArrowUpRight,
   Bell,
   CalendarCheck,
   Camera,
@@ -1258,35 +1258,39 @@ function ReportsSection() {
 
 export default function HRDashboardPage() {
   const [tab, setTab] = useState("overview");
-  const [showEmployeeModal, setShowEmployeeModal] = useState(false);
+  const [, setShowEmployeeModal] = useState(false);
   // Two numbers for the header line, counted by the server (shared with the Workforce tab).
   const workforce = useWorkforceSnapshot();
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-6">
       <Tabs value={tab} onValueChange={setTab} className="space-y-6">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div className="text-xs text-muted-foreground">
-            Current section ·{" "}
-            <span className="font-medium text-foreground">{tab}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
-              <Download className="h-4 w-4" /> Export
-            </Button>
+        <PageHeader
+          title="HR Dashboard"
+          description={
+            <>
+              Current section ·{" "}
+              <span className="font-medium text-foreground">{tab}</span>
+            </>
+          }
+          actions={
+            <>
+              <Button variant="outline" size="sm">
+                <Download className="h-4 w-4" /> Export
+              </Button>
 
-            <Button
-              size="sm"
-             
-              onClick={() => setShowEmployeeModal(true)}
-              asChild
-            >
-              <Link to="/employees/create">
-                <Plus className="h-4 w-4" /> Add employee
-              </Link>
-            </Button>
-          </div>
-        </div>
+              <Button
+                size="sm"
+                onClick={() => setShowEmployeeModal(true)}
+                asChild
+              >
+                <Link to="/employees/create">
+                  <Plus className="h-4 w-4" /> Add employee
+                </Link>
+              </Button>
+            </>
+          }
+        />
 
         <TabsList className="h-10">
           <TabsTrigger value="overview">

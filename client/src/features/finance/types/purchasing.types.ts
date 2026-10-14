@@ -1,4 +1,4 @@
-// Purchase requests, procurement orders and reimbursement claims.
+// Purchase requests and procurement orders.
 // Statuses are strict unions here; the repository normalizes whatever the
 // server sends (legacy free-text rows included) into them.
 
@@ -8,8 +8,6 @@ export type PurchaseRequestStatus = (typeof PR_STATUSES)[number];
 export const ORDER_STATUSES = ["ordered", "in-transit", "delivered", "paid", "cancelled"] as const;
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
 
-export const CLAIM_STATUSES = ["pending-pm", "pending-finance", "approved", "rejected", "paid", "cancelled"] as const;
-export type ClaimStatus = (typeof CLAIM_STATUSES)[number];
 
 export interface LineItem {
   description: string;
@@ -81,32 +79,12 @@ export interface ProcurementOrder {
   createdAt: string | null;
 }
 
-export interface ClaimAttachment {
+/** An uploaded receipt or invoice file. */
+export interface ReceiptAttachment {
   url: string;
   filename: string;
   contentType: string;
   sizeBytes: number;
-}
-
-export interface ReimbursementClaim {
-  id: string;
-  employee: string;
-  claimantUserId: number | null;
-  claimantRole: string | null;
-  project: string | null;
-  category: string | null;
-  incurredOn: string | null;
-  purpose: string;
-  amount: number;
-  submittedAt: string;
-  status: ClaimStatus;
-  attachments: ClaimAttachment[];
-  endorsedBy: string | null;
-  decidedBy: string | null;
-  decisionNote: string | null;
-  paidAt: string | null;
-  paymentReference: string | null;
-  expenseId: string | null;
 }
 
 export interface CreatePurchaseRequestInput {
@@ -131,15 +109,6 @@ export interface PayOrderInput {
   invoiceAmount: number;
   invoiceUrl?: string;
   varianceNote?: string;
-}
-
-export interface CreateClaimInput {
-  project: string;
-  category: string;
-  incurredOn: string;
-  purpose: string;
-  amount: number;
-  attachments: ClaimAttachment[];
 }
 
 /** What a mutation tells the caller. `warning` is the over-budget / no-budget-line notice. */

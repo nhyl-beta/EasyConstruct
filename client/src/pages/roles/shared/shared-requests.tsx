@@ -1,3 +1,5 @@
+import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
+import { usePagination } from "@/hooks/use-pagination";
 import { useState } from "react";
 import { useOpenOnAction } from "@/features/quick-search/useOpenOnAction";
 import { Link, useSearchParams } from "react-router";
@@ -39,6 +41,7 @@ export default function SharedRequests() {
 
   const box = scope === "mine" ? (isResponder ? "inbox" : canRaise && role !== "admin" ? "raised" : undefined) : undefined;
   const { requests, loading, error, reload } = useRequests({ kind, status, search: query, box, overdue: overdueOnly });
+  const pg = usePagination(requests, 10, `${scope}|${kind}|${status}|${query}|${overdueOnly}`);
 
   const openId = Number(params.get("open")) || null;
   const setOpen = (id: number | null) => {
@@ -158,7 +161,7 @@ export default function SharedRequests() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {requests.map((r) => (
+              {pg.pageItems.map((r) => (
                 <TableRow key={r.id} className="cursor-pointer" onClick={() => setOpen(r.id)}>
                   <TableCell className="whitespace-normal">
                     <button
@@ -190,6 +193,9 @@ export default function SharedRequests() {
               ))}
             </TableBody>
           </Table>
+          <div className="pt-2">
+            <DataTablePagination {...pg} />
+          </div>
         </div>
       )}
 

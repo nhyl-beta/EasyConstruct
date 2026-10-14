@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { PageHeader } from "@/components/refine-ui/views/page-header";
 
 import {
   decidePayrollReview,
@@ -14,6 +15,10 @@ import {
 } from "@/features/hr/payroll-api";
 import { BatchStatusPill } from "@/features/hr/components/batch-status-pill";
 import { PayslipDialog } from "@/features/hr/components/payslip-dialog";
+import { PayslipButton } from "@/features/hr/components/payslip-button";
+import { PayrollRulesNotice } from "@/features/hr/components/PayrollRulesNotice";
+import { PayrollTraceButton, PayrollTraceSheet } from "@/features/hr/components/PayrollTraceSheet";
+import { visibleRateVersions } from "@/features/hr/payroll-api";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   Select,
@@ -65,6 +70,7 @@ export default function FinancePayrollReviewPage() {
   const [comment, setComment] = useState("");
   const [confirming, setConfirming] = useState<"approved" | "rejected" | null>(null);
   const [payslipLine, setPayslipLine] = useState<PayrollLine | null>(null);
+  const [traceLineId, setTraceLineId] = useState<number | null>(null);
 
   async function loadBatches() {
     setError("");
@@ -142,21 +148,18 @@ export default function FinancePayrollReviewPage() {
   if (loading) {
     return (
       <div className="p-6">
-        <h1 className="text-2xl font-semibold">Payroll Review</h1>
-        <p className="mt-2 text-muted-foreground">Loading payroll batches...</p>
+        <PageHeader title="Payroll Review" description="Loading payroll batches..." />
       </div>
     );
   }
 
   return (
     <div className="space-y-6 p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold">Payroll Review</h1>
-          <p className="text-sm text-muted-foreground">Review payroll batches submitted by Human Resources.</p>
-        </div>
-
-        <div className="flex items-center gap-2">
+      <PageHeader
+        title="Payroll Review"
+        description="Review payroll batches submitted by Human Resources."
+        actions={
+        <>
         <button
           type="button"
           className="inline-flex h-9 items-center gap-1.5 rounded-xl border px-3 text-xs hover:bg-muted disabled:opacity-50"
@@ -166,8 +169,8 @@ export default function FinancePayrollReviewPage() {
             detail
               ? downloadCsv(
                   `payroll-${detail.batch.id}`,
-                  ["Employee ID", "Name", "Role", "Hours", "Overtime", "Adjustments", "Gross", "SSS", "PhilHealth", "Pag-IBIG", "Withholding tax", "Total deductions", "Net", "Employer cost"],
-                  detail.lines.map((l) => [l.empId, l.name, l.role, l.hours, l.overtime, l.adjustments, l.gross, l.sss, l.philhealth, l.pagibig, l.withholdingTax, l.deductions, l.net, l.employerCost]),
+                  ["Employee ID", "Name", "Role", "Hours", "Overtime", "Adjustments", "Gross", "SSS", "PhilHealth", "Pag-IBIG", "Total deductions", "Net", "Employer cost"],
+                  detail.lines.map((l) => [l.empId, l.name, l.role, l.hours, l.overtime, l.adjustments, l.gross, l.sss, l.philhealth, l.pagibig, l.deductions, l.net, l.employerCost]),
                 )
               : downloadCsv(
                   "payroll-batches",
@@ -191,8 +194,11 @@ export default function FinancePayrollReviewPage() {
             ))}
           </SelectContent>
         </Select>
-        </div>
-      </div>
+        </>
+        }
+      />
+
+      <PayrollRulesNotice />
 
       {error && (
         <div className="rounded-md border border-destructive/30 bg-destructive-soft p-3 text-sm text-destructive-strong">{error}</div>
@@ -203,7 +209,7 @@ export default function FinancePayrollReviewPage() {
           <p className="text-muted-foreground">No payroll batches are currently available for review.</p>
         </div>
       ) : (
-        <div className="grid gap-6 lg:grid-cols-[1fr_480px]">
+        <div className="grid gap-6 lg:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]">
           <div className="rounded-lg border">
             <div className="border-b p-4">
               <h2 className="font-semibold">Payroll Batches</h2>
@@ -271,6 +277,7 @@ export default function FinancePayrollReviewPage() {
                     </div>
                   </div>
 
+                  <div className="grid gap-4 xl:grid-cols-2">
                   <section className="rounded-xl border p-3">
                     <Figure label="Gross payroll" value={formatCurrency(t.gross)} strong />
                     <div className="my-1 border-t" />
@@ -278,7 +285,6 @@ export default function FinancePayrollReviewPage() {
                     <Figure label="SSS" value={formatCurrency(t.sss)} />
                     <Figure label="PhilHealth" value={formatCurrency(t.philhealth)} />
                     <Figure label="Pag-IBIG" value={formatCurrency(t.pagibig)} />
-                    <Figure label="Withholding tax" value={formatCurrency(t.withholdingTax)} />
                     <Figure label="Total deductions" value={formatCurrency(t.deductions)} strong />
                     <div className="my-1 border-t" />
                     <Figure label="Net payroll" value={formatCurrency(t.net)} strong />
@@ -298,10 +304,11 @@ export default function FinancePayrollReviewPage() {
                     <div className="my-1 border-t" />
                     <Figure label="Total employer cost" value={formatCurrency(t.employerCost)} strong />
                   </section>
+                  </div>
 
                   <p className="text-xs text-muted-foreground">
                     Rate versions:{" "}
-                    {Object.entries(detail.rateVersions)
+                    {visibleRateVersions(detail.rateVersions)
                       .filter(([k]) => k !== "overtime")
                       .map(([k, v]) => `${k} ${v}`)
                       .join(" · ")}
@@ -311,15 +318,19 @@ export default function FinancePayrollReviewPage() {
 
                   <div>
                     <p className="mb-1 text-xs text-muted-foreground">Per-employee lines</p>
-                    <div className="rounded-lg border">
+                    <div className="@container rounded-lg border">
                       <table className="w-full text-xs">
                         <thead className="bg-muted/60">
                           <tr>
                             <th className="px-2 py-1.5 text-left">Employee</th>
                             <th className="px-2 py-1.5 text-right">Hours</th>
                             <th className="px-2 py-1.5 text-right">Gross</th>
+                            <th className="hidden px-2 py-1.5 text-right @2xl:table-cell">SSS</th>
+                            <th className="hidden px-2 py-1.5 text-right @2xl:table-cell">PhilHealth</th>
+                            <th className="hidden px-2 py-1.5 text-right @2xl:table-cell">Pag-IBIG</th>
+                            <th className="hidden px-2 py-1.5 text-right @2xl:table-cell">Deductions</th>
                             <th className="px-2 py-1.5 text-right">Net</th>
-                            <th />
+                            <th className="px-2 py-1.5 text-right"><span className="sr-only">Payslip</span></th>
                           </tr>
                         </thead>
                         <tbody>
@@ -331,15 +342,16 @@ export default function FinancePayrollReviewPage() {
                                 {line.overtime ? ` + ${line.overtime} OT` : ""}
                               </td>
                               <td className="px-2 py-1.5 text-right tabular-nums">{formatCurrency(line.gross)}</td>
+                              <td className="hidden px-2 py-1.5 text-right tabular-nums @2xl:table-cell">{formatCurrency(line.sss)}</td>
+                              <td className="hidden px-2 py-1.5 text-right tabular-nums @2xl:table-cell">{formatCurrency(line.philhealth)}</td>
+                              <td className="hidden px-2 py-1.5 text-right tabular-nums @2xl:table-cell">{formatCurrency(line.pagibig)}</td>
+                              <td className="hidden px-2 py-1.5 text-right tabular-nums @2xl:table-cell">{formatCurrency(line.deductions)}</td>
                               <td className="px-2 py-1.5 text-right tabular-nums">{formatCurrency(line.net)}</td>
                               <td className="px-2 py-1.5 text-right">
-                                <button
-                                  type="button"
-                                  className="text-primary-strong underline"
-                                  onClick={() => setPayslipLine(line)}
-                                >
-                                  Payslip
-                                </button>
+                                <div className="flex items-center justify-end gap-1">
+                                  <PayslipButton line={line} onOpen={setPayslipLine} />
+                                  <PayrollTraceButton lineId={line.id} onOpen={setTraceLineId} />
+                                </div>
                               </td>
                             </tr>
                           ))}
@@ -447,6 +459,7 @@ export default function FinancePayrollReviewPage() {
       />
 
       <PayslipDialog line={payslipLine} onClose={() => setPayslipLine(null)} />
+      <PayrollTraceSheet lineId={traceLineId} onClose={() => setTraceLineId(null)} />
     </div>
   );
 }

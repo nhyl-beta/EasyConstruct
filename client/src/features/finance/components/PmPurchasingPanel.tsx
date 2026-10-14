@@ -1,5 +1,6 @@
+import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
+import { usePagination } from "@/hooks/use-pagination";
 import { useCallback, useEffect, useState } from "react";
-import { Paperclip } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,34 +8,35 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { openFileUrl } from "@/lib/file-url";
 import { formatCurrency } from "@/lib/format-currency";
 import { RequirementRepository } from "@/features/requirements/repositories/requirement.repository";
 import type { Requirement } from "@/features/requirements/types/requirements.types";
 import { usePurchaseRequests } from "../hooks/use-purchase-requests";
 import { useProcurement } from "../hooks/use-procurement";
-import { useReimbursements } from "../hooks/use-reimbursements";
-import { CLAIM_LABELS, ORDER_LABELS, PR_LABELS, shortDate } from "../lib/purchasing-labels";
+import { ORDER_LABELS, PR_LABELS, shortDate } from "../lib/purchasing-labels";
 import type { ActionResult } from "../types/purchasing.types";
 import { DecisionDialog } from "./DecisionDialog";
 import { RequirementPurchase } from "./RequirementPurchase";
 
-type Rejecting = { kind: "request" | "claim"; id: string; label: string } | null;
+type Rejecting = { id: string; label: string } | null;
 
 /**
  * Purchasing for the Project Manager, on the Approvals page: approved
  * requirements they can raise a purchase request for (no endorsement step on
- * their own), what waits for their endorsement (Engineers' requests and
- * project staff's claims), and a read-only view of requests and orders on
+ * their own), what waits for their endorsement (Engineers' requests), and a
+ * read-only view of requests and orders on
  * their projects. The server scopes every list to the PM's own projects.
  */
 export function PmPurchasingPanel() {
   const requests = usePurchaseRequests();
+  const pgToEndorse = usePagination(requests.toEndorse, 8);
+  const pgRequests = usePagination(requests.requests, 8);
   const orders = useProcurement();
-  const claims = useReimbursements("all");
+  const pgOrders = usePagination(orders.orders, 8);
   const purchasing = { requests, orders };
 
   const [approved, setApproved] = useState<Requirement[]>([]);
+  const pgApproved = usePagination(approved, 8);
   const [reqLoading, setReqLoading] = useState(true);
   const [notice, setNotice] = useState<string | null>(null);
   const [rejecting, setRejecting] = useState<Rejecting>(null);
@@ -62,7 +64,7 @@ export function PmPurchasingPanel() {
     return null;
   };
 
-  const waiting = requests.toEndorse.length + claims.toEndorse.length;
+  const waiting = requests.toEndorse.length;
 
   return (
     <Card>
@@ -86,7 +88,7 @@ export function PmPurchasingPanel() {
           </TabsList>
 
           <TabsContent value="endorse" className="mt-3 space-y-4">
-            {requests.loading || claims.loading ? (
+            {requests.loading ? (
               <Skeleton className="h-16 w-full" />
             ) : waiting === 0 ? (
               <p className="p-4 text-center text-sm text-muted-foreground">Nothing is waiting for your endorsement.</p>
@@ -104,7 +106,7 @@ export function PmPurchasingPanel() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {requests.toEndorse.map((r) => (
+                    {pgToEndorse.pageItems.map((r) => (
                       <TableRow key={r.id}>
                         <TableCell className="font-mono text-xs">{r.id}</TableCell>
                         <TableCell className="text-sm">
@@ -119,40 +121,7 @@ export function PmPurchasingPanel() {
                             <Button size="sm" className="h-7 px-2 text-xs" onClick={async () => void done(await requests.endorse(r.id), `${r.id} endorsed and sent to Finance.`)}>
                               Endorse
                             </Button>
-                            <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-destructive-strong" onClick={() => setRejecting({ kind: "request", id: r.id, label: r.title })}>
-                              Reject
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {claims.toEndorse.map((c) => (
-                      <TableRow key={c.id}>
-                        <TableCell className="font-mono text-xs">{c.id}</TableCell>
-                        <TableCell className="text-sm">
-                          Reimbursement claim: {c.purpose}
-                          <div className="mt-0.5 flex flex-wrap gap-2">
-                            {c.attachments.map((a, i) => (
-                              <button
-                                key={i}
-                                type="button"
-                                className="inline-flex items-center gap-1 text-xs text-primary-strong underline-offset-2 hover:underline"
-                                onClick={() => void openFileUrl(a.url).catch((e: Error) => setNotice(e.message))}
-                              >
-                                <Paperclip className="h-3 w-3" aria-hidden /> {a.filename}
-                              </button>
-                            ))}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">{c.project ?? "—"}</TableCell>
-                        <TableCell className="text-xs">{c.employee}</TableCell>
-                        <TableCell className="text-right tabular-nums">{formatCurrency(c.amount)}</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-1.5">
-                            <Button size="sm" className="h-7 px-2 text-xs" onClick={async () => void done(await claims.endorse(c.id), `${c.id} endorsed and sent to Finance.`)}>
-                              Endorse
-                            </Button>
-                            <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-destructive-strong" onClick={() => setRejecting({ kind: "claim", id: c.id, label: c.purpose })}>
+                            <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-destructive-strong" onClick={() => setRejecting({ id: r.id, label: r.title })}>
                               Reject
                             </Button>
                           </div>
@@ -161,6 +130,9 @@ export function PmPurchasingPanel() {
                     ))}
                   </TableBody>
                 </Table>
+                <div className="space-y-2 pt-2">
+                  <DataTablePagination {...pgToEndorse} />
+                </div>
               </div>
             )}
           </TabsContent>
@@ -172,7 +144,7 @@ export function PmPurchasingPanel() {
               <p className="p-4 text-center text-sm text-muted-foreground">No approved requirements on your projects yet.</p>
             ) : (
               <ul className="divide-y divide-border/60">
-                {approved.map((r) => (
+                {pgApproved.pageItems.map((r) => (
                   <li key={r.dbId} className="space-y-1 py-3">
                     <div className="font-mono text-xs text-muted-foreground">
                       {r.id} · {r.project} · {r.category}
@@ -187,6 +159,9 @@ export function PmPurchasingPanel() {
                     />
                   </li>
                 ))}
+                <li className="list-none pt-2">
+                  <DataTablePagination {...pgApproved} />
+                </li>
               </ul>
             )}
           </TabsContent>
@@ -209,7 +184,7 @@ export function PmPurchasingPanel() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {requests.requests.map((r) => (
+                      {pgRequests.pageItems.map((r) => (
                         <TableRow key={r.id}>
                           <TableCell className="font-mono text-xs">{r.id}</TableCell>
                           <TableCell className="text-sm">{r.title}</TableCell>
@@ -222,6 +197,9 @@ export function PmPurchasingPanel() {
                       ))}
                     </TableBody>
                   </Table>
+                  <div className="pt-2">
+                    <DataTablePagination {...pgRequests} />
+                  </div>
                 </div>
               )}
             </section>
@@ -243,7 +221,7 @@ export function PmPurchasingPanel() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {orders.orders.map((o) => (
+                      {pgOrders.pageItems.map((o) => (
                         <TableRow key={o.id}>
                           <TableCell className="font-mono text-xs">{o.id}</TableCell>
                           <TableCell className="text-sm">{o.vendor}</TableCell>
@@ -257,27 +235,12 @@ export function PmPurchasingPanel() {
                       ))}
                     </TableBody>
                   </Table>
+                  <div className="pt-2">
+                    <DataTablePagination {...pgOrders} />
+                  </div>
                 </div>
               )}
             </section>
-            {claims.claims.length > 0 && (
-              <section aria-label="Claims">
-                <h3 className="mb-2 text-sm font-semibold">Claims on your projects</h3>
-                <ul className="space-y-1 text-sm">
-                  {claims.claims.map((c) => (
-                    <li key={c.id} className="flex items-center justify-between gap-2">
-                      <span>
-                        <span className="font-mono text-xs text-muted-foreground">{c.id}</span> {c.employee}: {c.purpose}
-                      </span>
-                      <span className="flex items-center gap-2">
-                        <span className="tabular-nums">{formatCurrency(c.amount)}</span>
-                        <StatusBadge status={CLAIM_LABELS[c.status].label} tone={CLAIM_LABELS[c.status].tone} />
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
           </TabsContent>
         </Tabs>
       </CardContent>
@@ -293,7 +256,7 @@ export function PmPurchasingPanel() {
         destructive
         onSubmit={async (note) => {
           if (!rejecting) return null;
-          const r = rejecting.kind === "request" ? await requests.reject(rejecting.id, note) : await claims.reject(rejecting.id, note);
+          const r = await requests.reject(rejecting.id, note);
           return done(r, `${rejecting.id} rejected.`);
         }}
       />

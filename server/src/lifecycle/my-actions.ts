@@ -25,6 +25,8 @@ import { evaluateGate } from "./gates.js";
 import { isSequencedPhase, type SequencedPhase } from "./phases.js";
 import { PROJECT_MEMBER_ROLES } from "../db/schema/project-members.js";
 import { evaluateSignals } from "../signals/index.js";
+import * as findingsRepo from "../signals/findings-repository.js";
+import { findingKey } from "../signals/findings.js";
 import { FEATURES } from "../config/features.js";
 import { scopeRowsToAssigned } from "../projects/scope.js";
 import { visibleProjectCodes } from "../projects/service.js";
@@ -41,6 +43,10 @@ export interface MyActionItem {
   /** ai-signals E3: only present on kind "signal" — lets the card style it
    * distinctly from a gate/workflow item. */
   severity?: "warn" | "critical";
+  /** Fix 3.5: what a person could do about it (playbook), with similar resolved issues when there are any. */
+  suggestedResolution?: { action: string; precedents?: { issueCode: string; projectCode: string; title: string; resolutionNotes: string; score: number }[] };
+  /** Fix 3.5: when the scheduled scan first saw this condition (ISO). Absent until a scan has run. */
+  firstSeen?: string;
 }
 
 const TERMINAL_PHASES = new Set(["Archived", "Cancelled", "Completed"]);
@@ -67,6 +73,19 @@ export const getMyActions = async (actor: {
   // Every other role (admin, finance-manager, human-resources, it-designer,
   // owner) has no per-project staffing concept — every active project is in
   // scope, narrowed below to only the gate checks that role actually owns.
+
+  // Fix 3.5: when the scheduled scan first saw each open finding. Best effort: the
+  // queue works the same without it (for example before the table is migrated).
+  const firstSeenByKey = new Map<string, string>();
+  if (FEATURES.ai) {
+    try {
+      for (const f of await findingsRepo.findOpenForProjects(relevant.map((p) => p.code))) {
+        firstSeenByKey.set(f.key, f.firstSeen.toISOString());
+      }
+    } catch (err) {
+      console.error("[my-actions] could not read signal findings", err);
+    }
+  }
 
   const gateItems: MyActionItem[] = [];
   const signalItems: MyActionItem[] = [];
@@ -105,6 +124,19 @@ export const getMyActions = async (actor: {
           detail: signal.detail,
           link: signal.link || `/projects/${encodeURIComponent(project.code)}`,
           severity: signal.severity as "warn" | "critical",
+          suggestedResolution: signal.suggestedResolution
+            ? {
+                action: signal.suggestedResolution.action,
+                precedents: signal.suggestedResolution.precedents?.map((p) => ({
+                  issueCode: p.issueCode,
+                  projectCode: p.projectCode,
+                  title: p.title,
+                  resolutionNotes: p.resolutionNotes,
+                  score: p.score,
+                })),
+              }
+            : undefined,
+          firstSeen: firstSeenByKey.get(findingKey(project.code, signal.key)),
         });
       }
     }

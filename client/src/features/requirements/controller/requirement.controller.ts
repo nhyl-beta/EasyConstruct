@@ -4,6 +4,7 @@ import type {
   RequirementAttachment,
   RequirementFilters,
   StructureRequirementInput,
+  GenerateDraftInput,
 } from "../types/requirements.types";
 import { useMemo } from "react";
 import { useServerList } from "@/hooks/use-server-list";
@@ -61,6 +62,9 @@ export function useRequirementsController(options: { pageSize?: number } = {}) {
   /** Rule-based structuring of a rough note; saves nothing. */
   const structureRequirement = (input: StructureRequirementInput) => RequirementRepository.structure(input);
 
+  /** Rule-based draft from the template packs; saves nothing. */
+  const generateDraft = (input: GenerateDraftInput) => RequirementRepository.generateDraft(input);
+
   // Headline counts over every requirement the caller can see (all pages).
   const counts = useMemo(() => {
     const rows = list.extra?.statusCounts ?? [];
@@ -77,6 +81,7 @@ export function useRequirementsController(options: { pageSize?: number } = {}) {
     submitRequirement,
     addAttachments,
     structureRequirement,
+    generateDraft,
     reload: list.reload,
   };
 }

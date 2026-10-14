@@ -25,6 +25,7 @@ export function CreateView({ children, className }: CreateViewProps) {
 type CreateHeaderProps = PropsWithChildren<{
   resource?: string;
   title?: string;
+  breadcrumbLabel?: string;
   wrapperClassName?: string;
   headerClassName?: string;
 }>;
@@ -32,6 +33,7 @@ type CreateHeaderProps = PropsWithChildren<{
 export const CreateViewHeader = ({
   resource: resourceFromProps,
   title: titleFromProps,
+  breadcrumbLabel,
   wrapperClassName,
   headerClassName,
 }: CreateHeaderProps) => {
@@ -54,7 +56,7 @@ export const CreateViewHeader = ({
     <div className={cn("flex flex-col", "gap-4", wrapperClassName)}>
       <div className="flex items-center relative gap-2">
         <div className="bg-background z-[2] pr-4">
-          <Breadcrumb />
+          <Breadcrumb label={breadcrumbLabel} />
         </div>
         <Separator className={cn("absolute", "left-0", "right-0", "z-[1]")} />
       </div>

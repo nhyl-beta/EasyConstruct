@@ -155,13 +155,6 @@ const allResources: ResourceProps[] = [
     meta: { label: "Issues", group: "Workspace" },
   },
 
-  // Reimbursement claims: a person's own (Engineer, Site Personnel, PM, Architect, HR)
-  {
-    name: "my-claims",
-    list: "/my-claims",
-    meta: { label: "My claims", group: "Workspace" },
-  },
-
   // Site Personnel
   {
     name: "tasks",

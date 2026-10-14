@@ -6,6 +6,10 @@ import { cumulativeChangeImpactRule } from "./cumulative-change-impact.js";
 import { burnVsProgressRule } from "./burn-vs-progress.js";
 import { issueRecurrenceRule } from "./issue-recurrence.js";
 import { stalledStageRule } from "./stalled-stage.js";
+import { projectedFinishRule } from "./projected-finish.js";
+import { overdueTasksRule } from "./overdue-tasks.js";
+import { milestoneSlipRule } from "./milestone-slip.js";
+import { actionFor } from "./playbook.js";
 import { FEATURES } from "../config/features.js";
 
 const RULES: SignalRule[] = [
@@ -14,6 +18,9 @@ const RULES: SignalRule[] = [
   burnVsProgressRule,
   issueRecurrenceRule,
   stalledStageRule,
+  projectedFinishRule,
+  overdueTasksRule,
+  milestoneSlipRule,
 ];
 
 const SEVERITY_ORDER: Record<Signal["severity"], number> = { critical: 0, warn: 1, info: 2 };
@@ -32,7 +39,15 @@ export const runSignals = (
     try {
       const outcome = rule.evaluate(snapshot, ctx);
       if (!outcome) continue;
-      results.push(...(Array.isArray(outcome) ? outcome : [outcome]));
+      for (const signal of Array.isArray(outcome) ? outcome : [outcome]) {
+        // Every signal carries the playbook's recommended action unless its rule
+        // already set a more specific one (for example with similar resolved issues).
+        results.push(
+          signal.suggestedResolution
+            ? signal
+            : { ...signal, suggestedResolution: { action: actionFor(signal.rule, signal.key) } },
+        );
+      }
     } catch (error) {
       // A broken rule loses only itself — every other rule still runs, and
       // decision support never fails a request over this.

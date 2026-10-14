@@ -1,3 +1,5 @@
+import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
+import { usePagination } from "@/hooks/use-pagination";
 import { useState } from "react";
 import { useOpenOnAction } from "@/features/quick-search/useOpenOnAction";
 import { PageHeader } from "@/components/refine-ui/views/page-header";
@@ -121,6 +123,7 @@ function NewBlueprintDialog({
 
 export default function ArchitectBlueprints() {
   const c = useBlueprints();
+  const pg = usePagination(c.blueprints, 12, `${c.query}|${c.folder}`);
   const currentRevisions = useCurrentRevisions("blueprint");
 
   return (
@@ -158,7 +161,7 @@ export default function ArchitectBlueprints() {
         </div>
       ) : (
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {c.blueprints.map((b) => (
+          {pg.pageItems.map((b) => (
             <div key={b.id} className="rounded-2xl border p-4">
               <div className="flex aspect-[4/3] items-center justify-center rounded-xl border-2 border-dashed bg-muted/40 text-xs text-muted-foreground">
                 <FileText className="mr-1 h-3.5 w-3.5" /> {b.fileType}
@@ -184,6 +187,9 @@ export default function ArchitectBlueprints() {
               </div>
             </div>
           ))}
+          <div className="col-span-full">
+            <DataTablePagination {...pg} />
+          </div>
         </div>
       )}
     </div>

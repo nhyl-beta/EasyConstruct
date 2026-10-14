@@ -20,7 +20,6 @@ export const MSG = {
   expenses: createCrudMessages("Expense"),
   payrollBatches: createCrudMessages("Payroll batch"),
   purchaseRequests: createCrudMessages("Purchase request"),
-  reimbursements: createCrudMessages("Reimbursement"),
   procurementOrders: createCrudMessages("Procurement order"),
   approvalsQueue: createCrudMessages("Approval item"),
   aiInsights: createCrudMessages("AI insight"),

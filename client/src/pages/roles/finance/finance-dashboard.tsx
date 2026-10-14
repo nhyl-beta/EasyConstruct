@@ -1,3 +1,5 @@
+import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
+import { usePagination } from "@/hooks/use-pagination";
 import { Link } from "react-router";
 import { PageContainer } from "@/components/refine-ui/views/page-container";
 import { PageContent } from "@/components/refine-ui/views/page-content";
@@ -36,29 +38,13 @@ import {
   TrendingUp,
   Wallet,
 } from "lucide-react";
-import {
-  Area,
-  AreaChart,
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+import { AnimatedBarChart } from "@/components/charts/animated-bar-chart";
+import { CashFlowChart } from "@/components/charts/cash-flow-chart";
+import { DonutChart } from "@/components/charts/donut-chart";
+import { useExpenseCategories } from "@/features/finance/hooks/use-expense-categories";
+import { groupTopN } from "@/lib/group-top-n";
 import { WaitingOnYouCard } from "@/features/lifecycle/components/WaitingOnYouCard";
 
-const allocationColors = [
-  "#10b981",
-  "#0ea5e9",
-  "#8b5cf6",
-  "#f59e0b",
-  "#f43f5e",
-];
 
 /** The Finance page most of the waiting items are acted on in (used by "View all"). */
 const mostCommonHref = (rows: Array<{ href: string }>) => {
@@ -72,13 +58,17 @@ const formatWaiting = (hours: number) => (hours >= 48 ? `Waiting ${Math.floor(ho
 
 export default function FinanceDashboardPage() {
   const c = useFinanceDashboardController();
+  const pg = usePagination(c.projectProfit, 8);
 
-  const allocation = c.budgets.map((b) => ({
-    name: b.project,
-    value: b.planned,
-  }));
+  // One slice per project (a project can have several budget rows), top 6 and the rest as "Other".
+  const allocation = groupTopN(
+    c.budgets.map((b) => ({ name: b.project, value: b.planned })),
+    6,
+  );
+  // Every active category, so one with no spend shows a ₱0 bar instead of nothing.
+  const { activeCategories } = useExpenseCategories();
   const expensesByCategory = (() => {
-    const map = new Map<string, number>();
+    const map = new Map<string, number>(activeCategories.map((cat) => [cat.name, 0]));
     c.expenses.forEach((e) =>
       map.set(e.category, (map.get(e.category) ?? 0) + e.amount),
     );
@@ -187,46 +177,13 @@ export default function FinanceDashboardPage() {
                 subtitle="Planned distribution by project"
                 badge="Live"
               >
-                <div className="h-56">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={allocation}
-                        dataKey="value"
-                        nameKey="name"
-                        innerRadius={48}
-                        outerRadius={80}
-                        paddingAngle={2}
-                      >
-                        {allocation.map((_, i) => (
-                          <Cell
-                            key={i}
-                            fill={allocationColors[i % allocationColors.length]}
-                          />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        formatter={(v: number) =>
-                          formatCompactCurrency(Number(v))
-                        }
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="mt-2 grid grid-cols-2 gap-1 text-[11px]">
-                  {allocation.map((a, i) => (
-                    <div key={a.name} className="flex items-center gap-1.5">
-                      <span
-                        className="h-2 w-2 rounded-full"
-                        style={{
-                          background:
-                            allocationColors[i % allocationColors.length],
-                        }}
-                      />
-                      <span className="truncate">{a.name}</span>
-                    </div>
-                  ))}
-                </div>
+                <DonutChart
+                  data={allocation}
+                  formatValue={formatCompactCurrency}
+                  centerCaption="Total planned"
+                  ariaLabel="Budget allocation by project"
+                  emptyText="No budget allocated yet"
+                />
               </SectionCard>
 
               <SectionCard
@@ -234,35 +191,13 @@ export default function FinanceDashboardPage() {
                 subtitle="Spend by category, current cycle"
                 badge="MTD"
               >
-                <div className="h-56">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={expensesByCategory}>
-                      <CartesianGrid
-                        stroke="hsl(var(--border))"
-                        strokeOpacity={0.4}
-                        vertical={false}
-                      />
-                      <XAxis
-                        dataKey="name"
-                        tick={{ fontSize: 10 }}
-                        stroke="hsl(var(--muted-foreground))"
-                      />
-                      <YAxis
-                        tick={{ fontSize: 10 }}
-                        stroke="hsl(var(--muted-foreground))"
-                        tickFormatter={(v) => formatAxisCurrency(Number(v))}
-                      />
-                      <Tooltip
-                        formatter={(v: number) => formatCurrency(Number(v))}
-                      />
-                      <Bar
-                        dataKey="value"
-                        fill="#10b981"
-                        radius={[6, 6, 0, 0]}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
+                <AnimatedBarChart
+                  data={expensesByCategory}
+                  formatValue={formatCurrency}
+                  formatAxis={formatAxisCurrency}
+                  ariaLabel="Expense distribution by category, current cycle"
+                  emptyText="No expenses recorded this cycle yet"
+                />
               </SectionCard>
             </div>
 
@@ -276,68 +211,11 @@ export default function FinanceDashboardPage() {
                   No cash flow recorded yet. It builds up as expenses and payroll batches are approved.
                 </div>
               ) : (
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={c.cashFlow}>
-                    <defs>
-                      <linearGradient id="in" x1="0" y1="0" x2="0" y2="1">
-                        <stop
-                          offset="5%"
-                          stopColor="#10b981"
-                          stopOpacity={0.4}
-                        />
-                        <stop
-                          offset="95%"
-                          stopColor="#10b981"
-                          stopOpacity={0}
-                        />
-                      </linearGradient>
-                      <linearGradient id="out" x1="0" y1="0" x2="0" y2="1">
-                        <stop
-                          offset="5%"
-                          stopColor="#f43f5e"
-                          stopOpacity={0.35}
-                        />
-                        <stop
-                          offset="95%"
-                          stopColor="#f43f5e"
-                          stopOpacity={0}
-                        />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid
-                      stroke="hsl(var(--border))"
-                      strokeOpacity={0.4}
-                      vertical={false}
-                    />
-                    <XAxis
-                      dataKey="month"
-                      tick={{ fontSize: 10 }}
-                      stroke="hsl(var(--muted-foreground))"
-                    />
-                    <YAxis
-                      tick={{ fontSize: 10 }}
-                      stroke="hsl(var(--muted-foreground))"
-                      tickFormatter={(v) => formatMillions(Number(v))}
-                    />
-                    <Tooltip formatter={(v) => formatMillions(Number(v))} />
-                    <Area
-                      type="monotone"
-                      dataKey="inflow"
-                      stroke="#10b981"
-                      fill="url(#in)"
-                      strokeWidth={2}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="outflow"
-                      stroke="#f43f5e"
-                      fill="url(#out)"
-                      strokeWidth={2}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
+              <CashFlowChart
+                data={c.cashFlow}
+                formatValue={formatMillions}
+                ariaLabel="Cash flow, inflow versus outflow"
+              />
               )}
             </SectionCard>
 
@@ -356,7 +234,7 @@ export default function FinanceDashboardPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {c.projectProfit.map((p) => (
+                  {pg.pageItems.map((p) => (
                     <TableRow key={p.project}>
                       <TableCell className="text-sm font-medium">
                         {p.project}
@@ -388,6 +266,9 @@ export default function FinanceDashboardPage() {
                   ))}
                 </TableBody>
               </Table>
+              <div className="pt-2">
+                <DataTablePagination {...pg} />
+              </div>
             </SectionCard>
           </div>
 

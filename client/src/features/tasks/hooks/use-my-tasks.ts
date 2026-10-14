@@ -5,6 +5,7 @@ import {
   type CreateTaskInput,
   type TaskCompletionInput,
   type TaskRecord,
+  type TaskWithWarnings,
 } from "../repositories/task.repository";
 
 const NEXT_STATUS: Record<string, string | null> = {
@@ -61,7 +62,7 @@ export function useMyTasks() {
   const [creating, setCreating] = useState(false);
 
   const createTask = useCallback(
-    async (input: CreateTaskInput): Promise<TaskRecord | null> => {
+    async (input: CreateTaskInput): Promise<TaskWithWarnings | null> => {
       setCreating(true);
       setError(null);
       try {

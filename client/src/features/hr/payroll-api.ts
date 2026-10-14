@@ -20,8 +20,7 @@ export interface PayrollLine {
   sss: number;
   philhealth: number;
   pagibig: number;
-  withholdingTax: number;
-  /** Sum of the four employee deductions. */
+  /** Sum of the three employee contributions (SSS + PhilHealth + Pag-IBIG). */
   deductions: number;
   net: number;
   employerSss: number;
@@ -74,7 +73,6 @@ export interface BatchTotals {
   sss: number;
   philhealth: number;
   pagibig: number;
-  withholdingTax: number;
   deductions: number;
   net: number;
   employerSss: number;
@@ -89,6 +87,9 @@ export interface ValidationIssue {
   code: string;
   message: string;
   empId?: string;
+  /** Stable id of a warning HR must tick before submitting (objectives fix 2.4). */
+  key?: string;
+  requiresAck?: boolean;
 }
 
 export interface BatchDetail {
@@ -128,14 +129,19 @@ export const REJECTION_REASONS: Array<{ value: string; label: string }> = [
   { value: "incorrect_sss", label: "Incorrect SSS" },
   { value: "incorrect_philhealth", label: "Incorrect PhilHealth" },
   { value: "incorrect_pagibig", label: "Incorrect Pag-IBIG" },
-  { value: "incorrect_withholding_tax", label: "Incorrect withholding tax" },
   { value: "missing_employee_information", label: "Missing employee information" },
   { value: "incorrect_government_rate", label: "Incorrect government rate" },
   { value: "other", label: "Other" },
 ];
 
+// Unknown or legacy codes (a reason that has since been retired) read as "Other".
 export const reasonLabel = (code: string | null | undefined) =>
-  REJECTION_REASONS.find((r) => r.value === code)?.label ?? code ?? "";
+  code ? (REJECTION_REASONS.find((r) => r.value === code)?.label ?? "Other") : "";
+
+/** Agencies whose rate version is shown; any other stored key is ignored. */
+export const RATE_VERSION_AGENCIES = ["sss", "philhealth", "pagibig", "overtime"] as const;
+export const visibleRateVersions = (versions: RateVersions | null | undefined): Array<[string, string]> =>
+  Object.entries(versions ?? {}).filter(([k]) => (RATE_VERSION_AGENCIES as readonly string[]).includes(k));
 
 export const BATCH_STATUS_LABEL: Record<string, string> = {
   draft: "Draft",
@@ -154,7 +160,7 @@ async function unwrap<T>(promise: Promise<any>): Promise<T> {
 type RawLine = Omit<
   PayrollLine,
   | "hours" | "overtime" | "adjustments" | "gross" | "sss" | "philhealth" | "pagibig"
-  | "withholdingTax" | "deductions" | "net" | "employerSss" | "employerEc"
+  | "deductions" | "net" | "employerSss" | "employerEc"
   | "employerPhilhealth" | "employerPagibig" | "employerCost"
 > & Record<string, string | number | null | RateVersions | undefined>;
 
@@ -175,7 +181,6 @@ export function normalizeLine(raw: RawLine): PayrollLine {
     sss: num(raw.sss),
     philhealth: num(raw.philhealth),
     pagibig: num(raw.pagibig),
-    withholdingTax: num(raw.withholdingTax),
     deductions: num(raw.deductions),
     net: num(raw.net),
     employerSss: num(raw.employerSss),
@@ -317,10 +322,14 @@ export async function discardBatch(id: string): Promise<void> {
   await apiClient.del(`/payroll/batches/${encodeURIComponent(id)}`);
 }
 
-export async function submitBatch(id: string, confirmDuplicate = false): Promise<PayrollBatch> {
+export async function submitBatch(
+  id: string,
+  confirmDuplicate = false,
+  acknowledgedWarnings: string[] = [],
+): Promise<PayrollBatch> {
   return normalizeBatch(
     await unwrap<Record<string, unknown>>(
-      apiClient.post(`/payroll/batches/${encodeURIComponent(id)}/submit`, { confirmDuplicate }),
+      apiClient.post(`/payroll/batches/${encodeURIComponent(id)}/submit`, { confirmDuplicate, acknowledgedWarnings }),
     ),
   );
 }
@@ -367,4 +376,55 @@ export async function getAttendanceReadiness(
   if (dateFrom) params.set("dateFrom", dateFrom);
   if (dateTo) params.set("dateTo", dateTo);
   return unwrap<AttendanceReadiness>(apiClient.get(`/payroll/attendance-readiness?${params.toString()}`));
+}
+
+// ── Payroll rules in force (objectives fix 2.8) ──────────────────────────
+
+export interface PayrollRulesSummary {
+  versions: RateVersions;
+  needsVerification: string[];
+  overtimeMultiplier: number;
+  hoursPerDay: number;
+  workingDaysPerMonth: number;
+  notCertified: string;
+}
+
+export async function getPayrollRules(): Promise<PayrollRulesSummary> {
+  return unwrap<PayrollRulesSummary>(apiClient.get("/payroll/rules", { staleTime: 5 * 60_000 }));
+}
+
+// ── Calculation trace (objectives fix 2.5) ───────────────────────────────
+
+export interface TraceStep {
+  label: string;
+  formula: string;
+  amount: number | null;
+}
+
+export interface TraceAttendanceRow {
+  id: number;
+  logDate: string;
+  clockIn: string;
+  clockOut: string | null;
+  hours: number;
+  attendanceStatus: string;
+  verification: string;
+  counted: boolean;
+  regular: number;
+  overtime: number;
+}
+
+export interface PayrollTrace {
+  line: { id: number; empId: string; name: string; period: string; batchId: string | null };
+  notCertified: string;
+  steps: TraceStep[];
+  rateVersions: Record<string, string> | null;
+  attendance: TraceAttendanceRow[];
+  attendanceTotals: { regular: number; overtime: number; unverifiedRecords: number };
+  hoursNote: string;
+  recomputed: { matches: boolean; differences: string[] };
+}
+
+export async function getPayrollTrace(lineId: number): Promise<PayrollTrace> {
+  return unwrap<PayrollTrace>(apiClient.get(`/payroll/${lineId}/trace`));
 }

@@ -9,7 +9,8 @@ import * as employeeService from "../employees/service.js";
 import type { AttendanceFilters } from "./types.js";
 import * as sheetImport from "./import.js";
 import { ValidationError } from "../utils/errors.js";
-import { parsePageRequest, sendPaged } from "../utils/pagination.js";
+import { byString, paginateRows, parsePageRequest, sendPaged } from "../utils/pagination.js";
+import * as exceptionsService from "./exceptions-service.js";
 import { cached } from "../cache/index.js";
 import { ATTENDANCE_SORT_COLUMNS } from "./repository.js";
 
@@ -44,6 +45,49 @@ export const heatmap = async (_req: Request, res: Response, next: NextFunction) 
   try {
     // Aggregate only (14-day counts per site), same for every caller. 15 s.
     res.json(formatSuccess(await cached("attendance", "all", 15, () => service.getHeatmap()), "Attendance heatmap retrieved"));
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Fix 2.3: the exception list (HR, Admin). Read-only; paged and sortable like the other lists.
+export const exceptions = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const result = await exceptionsService.getExceptions({
+      from: typeof req.query.from === "string" ? req.query.from : undefined,
+      to: typeof req.query.to === "string" ? req.query.to : undefined,
+    });
+    const kind = typeof req.query.kind === "string" && req.query.kind !== "all" ? req.query.kind : null;
+    const items = kind ? result.items.filter((i) => i.kind === kind) : result.items;
+    const request = parsePageRequest(req.query, { sortable: ["logDate", "employeeName", "kind"] });
+    if (!request.requested) {
+      res.json(formatSuccess({ ...result, items }, "Attendance exceptions retrieved"));
+      return;
+    }
+    const sorters = {
+      logDate: byString((i: exceptionsService.ExceptionView) => i.logDate),
+      employeeName: byString((i: exceptionsService.ExceptionView) => i.employeeName),
+      kind: byString((i: exceptionsService.ExceptionView) => i.kind),
+    };
+    const { items: page, meta } = paginateRows(items, request, sorters);
+    sendPaged(res, page, "Attendance exceptions retrieved", { ...meta, summary: result.summary, from: result.from, to: result.to, rules: result.rules });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const markAbsent = async (req: AuthedRequest, res: Response, next: NextFunction) => {
+  try {
+    const data = await service.markAbsent(req.body, { name: req.authUser?.name ?? "unknown" });
+    await logAudit({
+      entityType: "attendance",
+      entityId: String(data?.id ?? ""),
+      action: "created",
+      actor: req.authUser?.name ?? "unknown",
+      summary: `Marked ${req.body.employeeId} absent on ${req.body.logDate} (${req.body.projectCode})`,
+      projectCode: req.body.projectCode,
+    });
+    res.status(HTTP.CREATED).json(formatSuccess(data, "Absence recorded"));
   } catch (err) {
     next(err);
   }

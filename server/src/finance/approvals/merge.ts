@@ -2,10 +2,10 @@
 //
 // Pure merge of everything waiting on Finance's sign-off into one list,
 // oldest first. No database, so ordering, limit and total are unit-tested.
-export type ApprovalKind = "Expense" | "Payroll" | "Budget" | "Purchase request" | "Reimbursement";
+export type ApprovalKind = "Expense" | "Payroll" | "Budget" | "Purchase request";
 
 export interface PendingItem {
-  /** Unique across sources: exp-<id>, pay-<id>, bud-<id>, pr-<id>, rmb-<id>. */
+  /** Unique across sources: exp-<id>, pay-<id>, bud-<id>, pr-<id>. */
   id: string;
   kind: ApprovalKind;
   reference: string;

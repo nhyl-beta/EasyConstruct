@@ -30,6 +30,8 @@ export interface GeneratePayrollInput {
   submit?: boolean;
   /** Acknowledge a warning that another batch exists for this project/period. */
   confirmDuplicate?: boolean;
+  /** Keys of the pre-submit warnings HR acknowledged (needed only with `submit`). */
+  acknowledgedWarnings?: string[];
 }
 
 // The only inputs a line edit accepts; everything else is recomputed.
@@ -52,7 +54,6 @@ export const REJECTION_REASONS = [
   "incorrect_sss",
   "incorrect_philhealth",
   "incorrect_pagibig",
-  "incorrect_withholding_tax",
   "missing_employee_information",
   "incorrect_government_rate",
   "other",
@@ -70,4 +71,15 @@ export interface ValidationIssue {
   code: string;
   message: string;
   empId?: string;
+  /** Stable id for a warning HR must acknowledge before submitting (code + employee). */
+  key?: string;
+  /** True for the pre-submit warnings that need an explicit acknowledgement. */
+  requiresAck?: boolean;
+}
+
+/** What was acknowledged when a batch was submitted (stored on the batch). */
+export interface AcknowledgedWarnings {
+  by: string;
+  at: string;
+  items: { key: string; message: string }[];
 }

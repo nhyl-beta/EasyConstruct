@@ -38,6 +38,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
 import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
 import { useAuth } from "@/auth/auth-context";
@@ -102,6 +105,11 @@ export function ApprovalQueuePanel({
     }
   };
   const [detailWorkflowId, setDetailWorkflowId] = useState<number | null>(null);
+  // Fix 2.7: tick several pending items and approve them in one go. Each is still
+  // decided by the normal per-stage endpoint, so every server rule applies to it.
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [bulkConfirm, setBulkConfirm] = useState(false);
+  const [bulkRunning, setBulkRunning] = useState(false);
 
   // Search, type, requester and date filters and paging run on the server
   // (GET /workflows/approvals?...); only the filter state lives here.
@@ -140,12 +148,50 @@ export function ApprovalQueuePanel({
     pagination.setCurrentPage(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab]);
+  // A selection belongs to what is on screen: a new tab, page or filter starts clean.
+  const selectionKey = `${tab}|${pagination.currentPage}|${search}|${typeFilter}|${requesterFilter}|${dateFrom}|${dateTo}`;
+  useEffect(() => {
+    setSelected(new Set());
+  }, [selectionKey]);
 
   // IT Designer's workflow scope is read-only, enforced first on the server
   // (server/src/workflows/routes.ts) — decide/attach would 403 there even if
   // shown here. Hidden client-side too, so IT Designer doesn't hit a wall of
   // silent failures on buttons that were never going to work for this role.
   const canDecide = user?.role !== "it-designer";
+
+  const pageItemsForBulk = pagination.pageItems;
+  const selectedItems = pageItemsForBulk.filter((a) => selected.has(a.stageId));
+  const toggleSelected = (stageId: number, on: boolean) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (on) next.add(stageId);
+      else next.delete(stageId);
+      return next;
+    });
+
+  const runBulkApprove = async () => {
+    setBulkRunning(true);
+    const failed: string[] = [];
+    let approved = 0;
+    for (const a of selectedItems) {
+      try {
+        await WorkflowRepository.decideStage(a.workflowId, a.stageId, {
+          decision: "approve",
+          comments: comments[a.stageId]?.trim() || undefined,
+        });
+        approved += 1;
+      } catch (err) {
+        failed.push(`${a.workflowCode}: ${err instanceof Error ? err.message : "failed"}`);
+      }
+    }
+    setBulkRunning(false);
+    setBulkConfirm(false);
+    setSelected(new Set());
+    await reload();
+    if (approved > 0) toast.success(`${approved} item${approved === 1 ? "" : "s"} approved`);
+    if (failed.length > 0) toast.error(`${failed.length} could not be approved. ${failed.slice(0, 3).join(" | ")}`);
+  };
 
   const statCards = stats
     ? [
@@ -296,6 +342,23 @@ export function ApprovalQueuePanel({
         </p>
       )}
 
+      {tab === "pending" && canDecide && pagination.pageItems.length > 1 && (
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border/60 px-3 py-2 text-sm">
+          <label className="flex items-center gap-2">
+            <Checkbox
+              checked={selectedItems.length > 0 && selectedItems.length === pagination.pageItems.length}
+              onCheckedChange={(on) => setSelected(on ? new Set(pagination.pageItems.map((a) => a.stageId)) : new Set())}
+              aria-label="Select all on this page"
+            />
+            Select all on this page
+          </label>
+          <Button size="sm" disabled={selectedItems.length === 0 || bulkRunning} onClick={() => setBulkConfirm(true)}>
+            <CheckCircle2 className="h-3.5 w-3.5" /> Approve selected{selectedItems.length > 0 ? ` (${selectedItems.length})` : ""}
+          </Button>
+          <span className="text-xs text-muted-foreground">Open View details first for anything you have not read.</span>
+        </div>
+      )}
+
       <div className="space-y-2">
         {loading && <p className="text-sm text-muted-foreground">Loading approvals…</p>}
         {!loading && items.length === 0 && !filtering && (
@@ -311,6 +374,14 @@ export function ApprovalQueuePanel({
             <CardContent className="p-4">
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div className="flex min-w-0 items-start gap-3">
+                  {tab === "pending" && canDecide && (
+                    <Checkbox
+                      className="mt-3"
+                      checked={selected.has(a.stageId)}
+                      onCheckedChange={(on) => toggleSelected(a.stageId, on === true)}
+                      aria-label={`Select ${a.title}`}
+                    />
+                  )}
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-secondary/60 text-secondary-foreground">
                     <FileCheck2 className="h-4 w-4" />
                   </div>
@@ -492,6 +563,21 @@ export function ApprovalQueuePanel({
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={bulkConfirm}
+        onOpenChange={(open) => !bulkRunning && setBulkConfirm(open)}
+        title={`Approve ${selectedItems.length} item${selectedItems.length === 1 ? "" : "s"}?`}
+        description={
+          selectedItems.slice(0, 6).map((a) => `${a.workflowCode} ${a.title} (${WorkflowFormatService.amount(a.amount)})`).join("; ") +
+          (selectedItems.length > 6 ? `; and ${selectedItems.length - 6} more` : "") +
+          ". Each is approved on its own, with the comment typed on it if there is one. An item the server will not approve is reported and left as it was."
+        }
+        confirmLabel={bulkRunning ? "Approving…" : "Approve all"}
+        destructive={false}
+        loading={bulkRunning}
+        onConfirm={() => void runBulkApprove()}
+      />
 
       <WorkflowDetailDialog
         workflowId={detailWorkflowId}

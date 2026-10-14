@@ -34,6 +34,9 @@ import {
 import { BatchStatusPill } from "@/features/hr/components/batch-status-pill";
 import { PayrollWizard } from "@/features/hr/components/payroll-wizard";
 import { PayslipDialog } from "@/features/hr/components/payslip-dialog";
+import { PayslipButton } from "@/features/hr/components/payslip-button";
+import { PayrollRulesNotice } from "@/features/hr/components/PayrollRulesNotice";
+import { PayrollTraceButton, PayrollTraceSheet } from "@/features/hr/components/PayrollTraceSheet";
 import { AlertTriangle, ArrowUpRight, Building2, CheckCircle2, Download, FileText, RefreshCw, Wallet } from "lucide-react";
 import { downloadCsv } from "@/lib/export-csv";
 import { formatCompactCurrency, formatCurrency } from "@/lib/format-currency";
@@ -59,6 +62,7 @@ export default function HRPayrollPage() {
   useOpenOnAction("generate-payroll", () => setWizardOpen(true));
   const [resumeBatchId, setResumeBatchId] = useState<string | null>(null);
   const [payslipLine, setPayslipLine] = useState<PayrollLine | null>(null);
+  const [traceLineId, setTraceLineId] = useState<number | null>(null);
   // F1: the filter drives what the tracksheet below actually displays.
   const [trackFilterPeriod, setTrackFilterPeriod] = useState<string | null>(null);
 
@@ -132,19 +136,19 @@ export default function HRPayrollPage() {
       "payroll-tracksheet",
       [
         "Employee ID", "Name", "Role", "Period", "Hours", "Overtime", "Adjustments", "Gross",
-        "SSS", "PhilHealth", "Pag-IBIG", "Withholding Tax", "Deductions", "Net",
+        "SSS", "PhilHealth", "Pag-IBIG", "Deductions", "Net",
         "Employer SSS", "Employer EC", "Employer PhilHealth", "Employer Pag-IBIG", "Employer cost", "Status",
       ],
       allRows.map((r) => [
         r.empId, r.name, r.role, r.period, r.hours, r.overtime, r.adjustments, r.gross,
-        r.sss, r.philhealth, r.pagibig, r.withholdingTax, r.deductions, r.net,
+        r.sss, r.philhealth, r.pagibig, r.deductions, r.net,
         r.employerSss, r.employerEc, r.employerPhilhealth, r.employerPagibig, r.employerCost, r.status,
       ]),
     );
   };
 
   // Liabilities per agency for one approved period. The system only reports
-  // them; it does not remit anything to SSS, PhilHealth, Pag-IBIG or BIR.
+  // them; it does not remit anything to SSS, PhilHealth or Pag-IBIG.
   const handleExportContributions = async (agency: Agency, label: string) => {
     if (!trackFilterPeriod) return;
     try {
@@ -203,6 +207,8 @@ export default function HRPayrollPage() {
           </>
         }
       />
+
+      <PayrollRulesNotice />
 
       {shownError && (
         <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive-strong">
@@ -352,7 +358,6 @@ export default function HRPayrollPage() {
                 <TableHead className="text-right">SSS</TableHead>
                 <TableHead className="text-right">PhilHealth</TableHead>
                 <TableHead className="text-right">Pag-IBIG</TableHead>
-                <TableHead className="text-right">W/Tax</TableHead>
                 <TableHead className="text-right">Deductions</TableHead>
                 <TableHead className="text-right">Net</TableHead>
                 <TableHead>Status</TableHead>
@@ -362,14 +367,14 @@ export default function HRPayrollPage() {
             <TableBody>
               {loading && (
                 <TableRow>
-                  <TableCell colSpan={13} className="py-8 text-center text-sm text-muted-foreground">
+                  <TableCell colSpan={12} className="py-8 text-center text-sm text-muted-foreground">
                     Loading payroll…
                   </TableCell>
                 </TableRow>
               )}
               {!loading && pagination.total === 0 && (
                 <TableRow>
-                  <TableCell colSpan={13} className="py-8 text-center text-sm text-muted-foreground">
+                  <TableCell colSpan={12} className="py-8 text-center text-sm text-muted-foreground">
                     No payroll generated yet for this period.
                   </TableCell>
                 </TableRow>
@@ -396,16 +401,16 @@ export default function HRPayrollPage() {
                   <TableCell className="text-right text-sm tabular-nums text-muted-foreground">{formatCurrency(p.sss)}</TableCell>
                   <TableCell className="text-right text-sm tabular-nums text-muted-foreground">{formatCurrency(p.philhealth)}</TableCell>
                   <TableCell className="text-right text-sm tabular-nums text-muted-foreground">{formatCurrency(p.pagibig)}</TableCell>
-                  <TableCell className="text-right text-sm tabular-nums text-muted-foreground">{formatCurrency(p.withholdingTax)}</TableCell>
                   <TableCell className="text-right text-sm tabular-nums text-muted-foreground">−{formatCurrency(p.deductions)}</TableCell>
                   <TableCell className="text-right text-sm font-semibold tabular-nums">{formatCurrency(p.net)}</TableCell>
                   <TableCell>
                     <StatusBadge status={p.status} />
                   </TableCell>
                   <TableCell>
-                    <Button size="sm" variant="ghost" className="text-xs" onClick={() => setPayslipLine(p)}>
-                      Payslip
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <PayslipButton line={p} onOpen={setPayslipLine} />
+                      <PayrollTraceButton lineId={p.id} onOpen={setTraceLineId} />
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -420,6 +425,7 @@ export default function HRPayrollPage() {
       </Card>
 
       <PayslipDialog line={payslipLine} onClose={() => setPayslipLine(null)} />
+      <PayrollTraceSheet lineId={traceLineId} onClose={() => setTraceLineId(null)} />
     </div>
   );
 }

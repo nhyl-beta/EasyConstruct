@@ -1,5 +1,7 @@
 // client/src/pages/finance/finance-expenses.tsx
-import { useState } from "react";
+import { ChartTooltip } from "@/components/charts/chart-tooltip";
+import { useReducedMotion } from "@/hooks/use-reduced-motion";
+import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
 import { useOpenOnAction } from "@/features/quick-search/useOpenOnAction";
 import { PageContainer } from "@/components/refine-ui/views/page-container";
@@ -9,6 +11,7 @@ import { KpiStrip } from "@/components/ui/kpi-strip";
 import { SectionCard } from "@/components/ui/section-card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { ReferencePicker } from "@/features/reference/components/ReferencePicker";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,22 +31,23 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { ProjectPicker } from "@/components/shared/project-picker";
-import { Receipt, Search, Plus, Truck, Wallet, ListChecks, Sparkles, Paperclip, Download } from "lucide-react";
+import { Receipt, Search, Plus, Truck, ListChecks, Sparkles, Paperclip, Download } from "lucide-react";
 import { formatAxisCurrency, formatCurrency } from "@/lib/format-currency";
 import { downloadCsv } from "@/lib/export-csv";
 import { FEATURES } from "@/config/features";
 import { useAuth } from "@/auth/auth-context";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
-import { usePagination } from "@/hooks/use-pagination";
 import { useExpensesController, type CreateExpenseInput } from "@/features/finance/hooks/use-expenses";
 import { usePurchaseRequests } from "@/features/finance/hooks/use-purchase-requests";
 import { useProcurement } from "@/features/finance/hooks/use-procurement";
-import { useReimbursements } from "@/features/finance/hooks/use-reimbursements";
 import { PurchaseRequestsPanel, type Notice } from "@/features/finance/components/PurchaseRequestsPanel";
 import { ProcurementPanel } from "@/features/finance/components/ProcurementPanel";
-import { ReimbursementsPanel } from "@/features/finance/components/ReimbursementsPanel";
-import { EXPENSE_CATEGORIES } from "@/config/expense-categories";
+import { CategorySelect } from "@/features/finance/components/CategorySelect";
+import { ManageCategoriesDialog } from "@/features/finance/components/ManageCategoriesDialog";
+import { useExpenseCategories } from "@/features/finance/hooks/use-expense-categories";
+import { categoryKey } from "@/features/finance/lib/category-name";
+import { expenseSource } from "@/features/finance/lib/expense-source";
 import {
   Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
@@ -95,7 +99,7 @@ function RecordExpenseDialog({
         <div className="space-y-4">
           <div className="space-y-1.5">
             <Label>Vendor</Label>
-            <Input value={vendor} onChange={(e) => setVendor(e.target.value)} placeholder="ABC Steel Supply" />
+            <ReferencePicker kind="vendors" value={vendor} onChange={(name) => setVendor(name)} placeholder="Select a vendor" />
           </div>
           <div className="space-y-1.5">
             <Label>Project</Label>
@@ -104,18 +108,7 @@ function RecordExpenseDialog({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Category</Label>
-              <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select" />
-                </SelectTrigger>
-                <SelectContent>
-                  {EXPENSE_CATEGORIES.map((c) => (
-                    <SelectItem key={c} value={c}>
-                      {c}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <CategorySelect value={category} onValueChange={setCategory} />
             </div>
             <div className="space-y-1.5">
               <Label>Amount</Label>
@@ -134,10 +127,12 @@ function RecordExpenseDialog({
   );
 }
 
-const TABS = ["tracking", "purchase-requests", "reimbursements", "procurement", "analytics"] as const;
+// An old link such as ?tab=reimbursements is not in this list, so it falls back to Tracking.
+const TABS = ["tracking", "purchase-requests", "procurement", "analytics"] as const;
 type Tab = (typeof TABS)[number];
 
 export default function FinanceExpensesPage() {
+  const reduced = useReducedMotion();
   const c = useExpensesController();
   // ?tab= lets the approvals queue and notifications open the right tab.
   const [params, setParams] = useSearchParams();
@@ -155,11 +150,22 @@ export default function FinanceExpensesPage() {
     );
   const purchaseRequests = usePurchaseRequests();
   const procurement = useProcurement();
-  const reimbursements = useReimbursements("all");
   const { user } = useAuth();
   // The server enforces this too (403); the buttons are simply not offered to other roles.
   const canDecide = user?.role === "finance-manager" || user?.role === "admin";
   const pagination = c.pagination;
+  const { categories } = useExpenseCategories();
+  // The Tracking filter lists every category (active and retired) plus any value on the rows shown,
+  // so an old record's category can always be filtered on.
+  const filterCategories = useMemo(() => {
+    const seen = new Map<string, string>();
+    const add = (name: string) => name && !seen.has(categoryKey(name)) && seen.set(categoryKey(name), name);
+    categories.forEach((cat) => add(cat.name));
+    c.breakdown.forEach((b) => add(b.category));
+    pagination.pageItems.forEach((e) => add(e.category));
+    return [...seen.values()];
+  }, [categories, c.breakdown, pagination.pageItems]);
+  const canManageCategories = user?.role === "finance-manager";
   const [pendingDecision, setPendingDecision] = useState<{ id: string; vendor: string; amount: number; decision: "approve" | "reject" } | null>(null);
   const [deciding, setDeciding] = useState(false);
   const [notice, setNotice] = useState<Notice>(null);
@@ -183,9 +189,12 @@ export default function FinanceExpensesPage() {
     <PageContainer>
       <PageHeader
         title="Expense Management"
-        description="Track operational expenses, purchase requests, vendor payments and reimbursements."
+        description="Track operational expenses, purchase requests and vendor payments."
         actions={
-          <RecordExpenseDialog creating={c.creating} error={c.createError} onCreate={c.createExpense} />
+          <>
+            {canManageCategories && <ManageCategoriesDialog />}
+            <RecordExpenseDialog creating={c.creating} error={c.createError} onCreate={c.createExpense} />
+          </>
         }
       />
 
@@ -216,12 +225,6 @@ export default function FinanceExpensesPage() {
               hint: "Purchase requests waiting on Finance",
             },
             {
-              label: "Reimbursements",
-              value: reimbursements.loading ? "\u2026" : formatCurrency(reimbursements.openAmount),
-              icon: Wallet,
-              hint: "Claims to approve or pay",
-            },
-            {
               label: "Procurement in transit",
               value: procurement.loading ? "\u2026" : `${procurement.inTransit.length}`,
               icon: Truck,
@@ -234,7 +237,6 @@ export default function FinanceExpensesPage() {
           <TabsList>
             <TabsTrigger value="tracking">Tracking</TabsTrigger>
             <TabsTrigger value="purchase-requests">Purchase Requests</TabsTrigger>
-            <TabsTrigger value="reimbursements">Reimbursements</TabsTrigger>
             <TabsTrigger value="procurement">Procurement</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
@@ -276,7 +278,7 @@ export default function FinanceExpensesPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All categories</SelectItem>
-                      {EXPENSE_CATEGORIES.map((cat) => (
+                      {filterCategories.map((cat) => (
                         <SelectItem key={cat} value={cat}>
                           {cat}
                         </SelectItem>
@@ -345,17 +347,16 @@ export default function FinanceExpensesPage() {
                           </TableCell>
                         )}
                         <TableCell className="text-xs">
-                          {e.sourceType === "purchase-order" && e.sourceId ? (
-                            <button type="button" className="font-mono text-primary-strong underline-offset-2 hover:underline" onClick={() => setActive("procurement")}>
-                              {e.sourceId}
-                            </button>
-                          ) : e.sourceType === "reimbursement" && e.sourceId ? (
-                            <button type="button" className="font-mono text-primary-strong underline-offset-2 hover:underline" onClick={() => setActive("reimbursements")}>
-                              {e.sourceId}
-                            </button>
-                          ) : (
-                            <span className="text-muted-foreground">Manual</span>
-                          )}
+                          {(() => {
+                            const src = expenseSource(e);
+                            return src.kind === "purchase-order" ? (
+                              <button type="button" className="font-mono text-primary-strong underline-offset-2 hover:underline" onClick={() => setActive("procurement")}>
+                                {src.label}
+                              </button>
+                            ) : (
+                              <span className="text-muted-foreground">{src.label}</span>
+                            );
+                          })()}
                         </TableCell>
                         <TableCell><StatusBadge status={e.status} /></TableCell>
                         {canDecide && (
@@ -390,14 +391,14 @@ export default function FinanceExpensesPage() {
                       <CartesianGrid stroke="var(--border)" strokeOpacity={0.4} vertical={false} />
                       <XAxis dataKey="category" tick={{ fontSize: 10 }} stroke="var(--muted-foreground)" />
                       <YAxis tick={{ fontSize: 10 }} stroke="var(--muted-foreground)" tickFormatter={(v) => formatAxisCurrency(Number(v))} />
-                      <Tooltip formatter={(v: number) => formatCurrency(Number(v))} />
-                      <Bar dataKey="amount" fill="var(--chart-1)" radius={[6, 6, 0, 0]} />
+                      <Tooltip cursor={{ fill: "var(--muted)", opacity: 0.4 }} content={<ChartTooltip formatValue={formatCurrency} />} />
+                      <Bar dataKey="amount" name="Spend" fill="var(--chart-1)" radius={[6, 6, 0, 0]} isAnimationActive={!reduced} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
               </SectionCard>
               {FEATURES.ai && (
-                <SectionCard title="Anomaly detection" subtitle="Rule-based: duplicate payments and amounts far above history. Advisory only.">
+                <SectionCard title="Anomaly detection" subtitle="Rule-based: duplicate payments and amounts far above history. A person decides." badge="Decision support">
                   <ul className="space-y-2">
                     {c.anomalies
                       .map((e) => (
@@ -424,12 +425,6 @@ export default function FinanceExpensesPage() {
           <TabsContent value="purchase-requests" className="mt-4">
             <SectionCard title="Purchase requests" subtitle="Raised from approved requirements. Approving commits the amount on the project budget.">
               <PurchaseRequestsPanel requests={purchaseRequests} orders={procurement} canDecide={canDecide} onNotice={setNotice} />
-            </SectionCard>
-          </TabsContent>
-
-          <TabsContent value="reimbursements" className="mt-4">
-            <SectionCard title="Reimbursement claims" subtitle="Out-of-pocket costs claimed by staff. Paying a claim books one approved expense.">
-              <ReimbursementsPanel claims={reimbursements} canAct={canDecide} onNotice={setNotice} onOpenExpense={openExpense} />
             </SectionCard>
           </TabsContent>
 

@@ -34,7 +34,6 @@ export interface OwnerBatchRow {
   employerPhilhealth: number;
   pagibig: number;
   employerPagibig: number;
-  withholdingTax: number;
   employerEc: number;
 }
 
@@ -53,7 +52,6 @@ export const findBatchAggregates = async (): Promise<OwnerBatchRow[]> => {
       employerPhilhealth: total(payroll.employerPhilhealth, "employer_philhealth"),
       pagibig: total(payroll.pagibig, "pagibig"),
       employerPagibig: total(payroll.employerPagibig, "employer_pagibig"),
-      withholdingTax: total(payroll.withholdingTax, "withholding_tax"),
       employerEc: total(payroll.employerEc, "employer_ec"),
     })
     .from(payroll)
@@ -85,7 +83,6 @@ export const findBatchAggregates = async (): Promise<OwnerBatchRow[]> => {
       employerPhilhealth: lines.employerPhilhealth,
       pagibig: lines.pagibig,
       employerPagibig: lines.employerPagibig,
-      withholdingTax: lines.withholdingTax,
       employerEc: lines.employerEc,
     })
     .from(payrollBatches)
@@ -104,7 +101,6 @@ export const findBatchAggregates = async (): Promise<OwnerBatchRow[]> => {
     employerPhilhealth: n(r.employerPhilhealth),
     pagibig: n(r.pagibig),
     employerPagibig: n(r.employerPagibig),
-    withholdingTax: n(r.withholdingTax),
     employerEc: n(r.employerEc),
   }));
 };

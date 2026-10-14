@@ -1,3 +1,5 @@
+import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
+import { usePagination } from "@/hooks/use-pagination";
 import { useMemo, useRef, useState } from "react";
 import { useOpenOnAction } from "@/features/quick-search/useOpenOnAction";
 import {
@@ -159,6 +161,7 @@ export default function AdvisoryDocsPage() {
       );
     });
   }, [documents, search]);
+  const pg = usePagination(filteredDocuments, 10, search);
 
   const resetUploadForm = () => {
     setForm({
@@ -656,7 +659,7 @@ const handleUpload = async () => {
               </div>
             ) : (
               <div className="space-y-3">
-                {filteredDocuments.map((document) => {
+                {pg.pageItems.map((document) => {
                   const hasFile = isRealFileUrl(document.fileUrl);
                   const related = relatedLabel(document.relatedType, document.relatedId);
                   return (
@@ -720,6 +723,9 @@ const handleUpload = async () => {
                   </div>
                   );
                 })}
+                <div className="pt-2">
+                  <DataTablePagination {...pg} />
+                </div>
               </div>
             )}
           </CardContent>

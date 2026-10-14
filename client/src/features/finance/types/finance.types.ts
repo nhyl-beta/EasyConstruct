@@ -21,7 +21,7 @@ export interface Expense {
   /** Plain-language reasons behind a non-zero score (rule-based). */
   anomalyReason?: string | null;
   receiptUrl: string | null;
-  /** Where the spend came from: a direct entry, a paid order or a paid claim. */
+  /** Where the spend came from: a direct entry, a paid order (or, on old rows, a retired paid claim). */
   sourceType?: "manual" | "purchase-order" | "reimbursement";
   sourceId?: string | null;
 }
@@ -31,9 +31,9 @@ export interface Expense {
 // GET /finance/approvals. There is no SLA data in the system, so only how long
 // it has been waiting is shown.
 export interface Approval {
-  /** Unique across sources: exp-<id>, pay-<id>, bud-<id>, pr-<id>, rmb-<id>. */
+  /** Unique across sources: exp-<id>, pay-<id>, bud-<id>, pr-<id>. */
   id: string;
-  kind: "Expense" | "Payroll" | "Budget" | "Purchase request" | "Reimbursement";
+  kind: "Expense" | "Payroll" | "Budget" | "Purchase request";
   reference: string;
   requestedBy: string;
   amount: number;

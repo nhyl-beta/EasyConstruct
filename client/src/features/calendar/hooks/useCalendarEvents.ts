@@ -1,29 +1,26 @@
-import { useEffect, useState } from "react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { qk } from "@/lib/query-keys";
+import { STALE } from "@/lib/query-client";
 import { CalendarRepository } from "../repositories/calendar.repository";
-import type { CalendarEvent } from "../types/calendar.types";
 
-export function useCalendarEvents() {
-  const [events, setEvents] = useState<CalendarEvent[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    CalendarRepository.listEvents()
-      .then((data) => {
-        if (!cancelled) setEvents(data);
-      })
-      .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err : new Error("Failed to load calendar events"));
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  return { events, loading, error };
+/**
+ * Events for one visible window. The key carries the range, so each month is cached
+ * on its own and the last month stays on screen while the next one loads.
+ */
+export function useCalendarEvents(range: { from: string; to: string }) {
+  const query = useQuery({
+    queryKey: qk.calendar.events(range.from, range.to),
+    queryFn: () => CalendarRepository.listEvents(range.from, range.to),
+    staleTime: STALE.list,
+    placeholderData: keepPreviousData,
+  });
+  return {
+    events: query.data ?? [],
+    /** First load only: nothing to show yet. */
+    loading: query.isPending,
+    /** A different window is loading behind data that is already on screen. */
+    refreshing: query.isFetching && !query.isPending,
+    error: (query.error as Error | null) ?? null,
+    retry: () => void query.refetch(),
+  };
 }
