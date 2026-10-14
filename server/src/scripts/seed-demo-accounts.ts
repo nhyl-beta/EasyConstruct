@@ -14,7 +14,7 @@ const PASSWORD = "Demo@12345";
 
 // The Owner's real mailbox — see the note in main() and auth/service.ts
 // initiateOwnerRecovery, which mails the IT Designer recovery link here.
-const OWNER_EMAIL = "nhylcyrusgervasio@gmail.com";
+const OWNER_EMAIL = process.env.DEMO_OWNER_EMAIL?.trim() || "nhylcyrusgervasio@gmail.com";
 
 const ACCOUNTS = [
   // NOTE: the legacy platform-admin role was renamed/merged into IT Designer
