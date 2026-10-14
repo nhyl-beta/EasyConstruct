@@ -16,6 +16,9 @@ export interface Proposal {
 
   proposalId: string;
 
+  /** The proposal's Design Proposal Approval workflow; files are attached to it. */
+  workflowId?: number | null;
+
   title: string;
 
   projectCode: string;

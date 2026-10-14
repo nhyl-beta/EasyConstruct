@@ -2,16 +2,10 @@
 //
 // The files behind a proposal, on the consultant's review screen.
 //
-// A proposal row has no file column of its own — the architect submits title,
-// amount and a description — so "the submission's attached files" are the
-// documents filed against the proposal's project in the documents repository.
-// Those are fetched here and shown with a real preview rather than a bare
-// link, which is the same treatment every other document surface in the app
-// gives them.
-//
-// If the proposal was raised through the Design Proposal Approval workflow,
-// the design document also lives on that workflow as an attachment; the
-// consultant sees that one from /approvals via WorkflowDetailDialog.
+// "Submitted with this proposal" are the files the Architect attached to the proposal's
+// approval workflow (GET /proposals/:id/files). "Other project documents" are documents filed
+// against the project. Both show a real error with a Retry button when loading fails, and
+// "no files" only when the server answered with an empty list.
 import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
 import { usePagination } from "@/hooks/use-pagination";
 import { useEffect, useState } from "react";
@@ -33,6 +27,7 @@ export function ProposalAttachments({ proposal }: { proposal: Proposal }) {
   const [documents, setDocuments] = useState<DocumentRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
   const [preview, setPreview] = useState<DocumentRecord | null>(null);
   const submitted = useProposalFiles(proposal.id);
   const pg = usePagination(documents, 8);
@@ -66,7 +61,7 @@ export function ProposalAttachments({ proposal }: { proposal: Proposal }) {
     return () => {
       cancelled = true;
     };
-  }, [proposal.projectCode]);
+  }, [proposal.projectCode, attempt]);
 
   return (
     <div className="rounded-xl border bg-card">
@@ -86,6 +81,7 @@ export function ProposalAttachments({ proposal }: { proposal: Proposal }) {
           loading={submitted.loading}
           error={submitted.error}
           emptyText="No files were submitted with this proposal."
+          onRetry={submitted.reload}
           files={submitted.files.map((f) => ({
             key: f.id,
             name: f.name,
@@ -93,6 +89,10 @@ export function ProposalAttachments({ proposal }: { proposal: Proposal }) {
             meta: [fileTypeLabel(f.name), f.size, f.uploadedBy, f.filedAt ? formatRelativeTime(f.filedAt) : null]
               .filter(Boolean)
               .join(" · "),
+            unavailableNote:
+              f.available === false
+                ? "This file is no longer stored (it was uploaded before storage was fixed). Ask the Architect to attach it again."
+                : undefined,
           }))}
         />
       </div>
@@ -106,9 +106,12 @@ export function ProposalAttachments({ proposal }: { proposal: Proposal }) {
         )}
 
         {!loading && error && (
-          <p role="alert" className="text-sm text-destructive-strong">
-            {error}
-          </p>
+          <div role="alert" className="flex flex-wrap items-center gap-2 text-sm text-destructive-strong">
+            <span>{error}</span>
+            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setAttempt((n) => n + 1)}>
+              Retry
+            </Button>
+          </div>
         )}
 
         {!loading && !error && documents.length === 0 && (

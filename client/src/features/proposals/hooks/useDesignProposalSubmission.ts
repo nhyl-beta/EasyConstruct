@@ -1,13 +1,13 @@
 // client/src/features/proposals/hooks/useDesignProposalSubmission.ts
 //
 // Submitting a design proposal and opening its approval workflow are one
-// server call now (POST /api/proposals/submit — see
-// server/src/proposals/service.ts submit()), which also links
-// proposals.workflow_id (D2). This used to compose two separate client round
-// trips (create the proposal, then separately initiate a workflow from the
-// "Design Proposal Approval" template) with no link recorded between them at
-// all, so gates P3/P4 ("a proposal was submitted"/"approved") could never
-// see it.
+// server call (POST /api/proposals/submit — see server/src/proposals/service.ts
+// submit()), which also links proposals.workflow_id (D2).
+//
+// The optional file is a SECOND request (it needs the workflow id). If it fails the
+// proposal and workflow already exist, so nothing is rolled back; instead the failure is
+// kept as `pendingUpload` (with the File still in memory) so the Architect can press
+// "Retry upload", or attach a file later from the proposals table with `attachFile`.
 import { useCallback, useState } from "react";
 
 import { WorkflowRepository } from "@/features/workflows/repositories/workflow.repository";
@@ -19,7 +19,22 @@ export interface DesignProposalSubmissionResult {
   proposal: Proposal;
   /** null when the proposal saved but the workflow could not be opened. */
   workflow: Workflow | null;
+  /** True when the proposal saved with the file attached (or no file was chosen). */
+  fileAttached: boolean;
 }
+
+/** A file that did not upload, kept so it can be retried. */
+export interface PendingUpload {
+  proposalId: string;
+  workflowId: number;
+  file: File;
+  message: string;
+}
+
+const messageOf = (err: unknown) =>
+  err instanceof Error && err.message
+    ? err.message
+    : "The file could not be uploaded.";
 
 export function useDesignProposalSubmission(
   submitProposal: (
@@ -27,7 +42,9 @@ export function useDesignProposalSubmission(
   ) => Promise<{ proposal: Proposal; workflow: Workflow } | null>,
 ) {
   const [submitting, setSubmitting] = useState(false);
-  const [warning, setWarning] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [pendingUpload, setPendingUpload] = useState<PendingUpload | null>(null);
+  const [uploadedNotice, setUploadedNotice] = useState<string | null>(null);
 
   const submit = useCallback(
     async (
@@ -35,35 +52,31 @@ export function useDesignProposalSubmission(
       file?: File | null,
     ): Promise<DesignProposalSubmissionResult | null> => {
       setSubmitting(true);
-      setWarning(null);
+      setPendingUpload(null);
+      setUploadedNotice(null);
 
       try {
         const result = await submitProposal(input);
         if (!result) return null;
 
         let workflow: Workflow | null = result.workflow;
+        let fileAttached = true;
 
-        // The file upload needs an existing workflow id, so it's a second
-        // call. A failed upload is reported rather than rolled back — the
-        // proposal and its workflow already exist, and the file can be
-        // re-attached from the workflow detail view.
         if (file) {
           try {
-            workflow = await WorkflowRepository.uploadAttachment(
-              result.workflow.id,
-              file,
-              file.name,
-            );
+            workflow = await WorkflowRepository.uploadAttachment(result.workflow.id, file, file.name);
           } catch (uploadErr) {
-            setWarning(
-              uploadErr instanceof Error
-                ? uploadErr.message
-                : "The proposal and workflow were saved, but the attached file could not be uploaded.",
-            );
+            fileAttached = false;
+            setPendingUpload({
+              proposalId: result.proposal.proposalId,
+              workflowId: result.workflow.id,
+              file,
+              message: messageOf(uploadErr),
+            });
           }
         }
 
-        return { proposal: result.proposal, workflow };
+        return { proposal: result.proposal, workflow, fileAttached };
       } finally {
         setSubmitting(false);
       }
@@ -71,10 +84,38 @@ export function useDesignProposalSubmission(
     [submitProposal],
   );
 
+  /** Uploads a file to an existing proposal's workflow. Returns true when it was stored. */
+  const attachFile = useCallback(async (proposalId: string, workflowId: number, file: File): Promise<boolean> => {
+    setUploading(true);
+    setUploadedNotice(null);
+    try {
+      await WorkflowRepository.uploadAttachment(workflowId, file, file.name);
+      setPendingUpload(null);
+      setUploadedNotice(`${file.name} was attached to ${proposalId}.`);
+      return true;
+    } catch (err) {
+      setPendingUpload({ proposalId, workflowId, file, message: messageOf(err) });
+      return false;
+    } finally {
+      setUploading(false);
+    }
+  }, []);
+
+  const retryUpload = useCallback(async () => {
+    if (!pendingUpload) return false;
+    return attachFile(pendingUpload.proposalId, pendingUpload.workflowId, pendingUpload.file);
+  }, [pendingUpload, attachFile]);
+
   return {
     submit,
     submitting,
-    /** Non-fatal: the proposal and workflow saved, only the file upload failed. */
-    warning,
+    uploading,
+    /** Set when a proposal saved but its file did not upload. Cleared by a successful retry. */
+    pendingUpload,
+    retryUpload,
+    attachFile,
+    dismissPendingUpload: () => setPendingUpload(null),
+    /** Shown after a retry or a later attach succeeds. */
+    uploadedNotice,
   } as const;
 }

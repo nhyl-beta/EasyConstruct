@@ -6,6 +6,8 @@ import { parsePageRequest } from "../utils/pagination.js";
 import { cached } from "../cache/index.js";
 import { userScope } from "../cache/scope.js";
 import { PROPOSAL_SORT_COLUMNS } from "./repository.js";
+import { canSeeProposalFiles } from "./files.js";
+import { ForbiddenError } from "../utils/errors.js";
 
 import {
   proposalService,
@@ -79,7 +81,10 @@ export const proposalController = {
     res: Response,
   ) {
     const { proposal, files } = await proposalService.getFiles(Number(req.params.id));
-    await assertAssignedToProject((req as AuthedRequest).authUser, proposal.projectCode, "proposals");
+    const auth = (req as AuthedRequest).authUser;
+    if (isAssignedScoped(auth) && !canSeeProposalFiles(auth, await assignedCodesFor(auth), proposal.projectCode)) {
+      throw new ForbiddenError("You can only access proposals for projects you are assigned to");
+    }
 
     return res.json({
       success: true,

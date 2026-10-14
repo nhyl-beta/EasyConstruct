@@ -108,7 +108,25 @@ export const uploadFile = async (
     );
   }
 
-  const contentType = input.contentType || mime;
+  return storeBuffer({
+    buffer,
+    filename: input.filename,
+    contentType: input.contentType || mime,
+  });
+};
+
+/**
+ * Stores bytes in the durable backend: Vercel Blob when configured (private
+ * store), local disk on a development machine only. Callers that already
+ * validated the file (a multer upload, a data-URL upload) use this so every
+ * file ends up behind a URL that survives the next serverless invocation.
+ */
+export const storeBuffer = async (input: {
+  buffer: Buffer;
+  filename: string;
+  contentType: string;
+}): Promise<UploadResult> => {
+  const { buffer, contentType } = input;
 
   if (env.BLOB_READ_WRITE_TOKEN) {
     try {
@@ -230,6 +248,18 @@ export const deleteStoredFile = async (storedUrl: string): Promise<void> => {
   } catch (error) {
     console.error("[uploads] could not remove stored file", storedUrl, error);
   }
+};
+
+/**
+ * Whether the bytes behind a stored url can still be read. A Blob url is assumed readable.
+ * A /uploads/ path is local disk, which on Vercel is wiped between invocations, so files
+ * stored that way earlier may be gone (their rows survive, the bytes do not).
+ */
+export const isStoredFileAvailable = (storedUrl: string): boolean => {
+  if (isBlobUrl(storedUrl) || !storedUrl.startsWith("/uploads/")) return true;
+  const relative = decodeURIComponent(storedUrl.slice("/uploads/".length).split(/[?#]/)[0] ?? "");
+  const absolute = path.resolve(uploadsRoot, relative);
+  return absolute.startsWith(uploadsRoot + path.sep) && fs.existsSync(absolute);
 };
 
 export const openStoredFile = async (storedUrl: string): Promise<StoredFile> => {
