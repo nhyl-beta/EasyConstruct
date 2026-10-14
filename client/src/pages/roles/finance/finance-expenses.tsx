@@ -2,6 +2,7 @@
 import { ChartTooltip } from "@/components/charts/chart-tooltip";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { useSearchParams } from "react-router";
 import { useOpenOnAction } from "@/features/quick-search/useOpenOnAction";
 import { PageContainer } from "@/components/refine-ui/views/page-container";
@@ -179,10 +180,13 @@ export default function FinanceExpensesPage() {
   const runDecision = async () => {
     if (!pendingDecision) return;
     setDeciding(true);
-    const r = await c.decide(pendingDecision.id, pendingDecision.decision);
+    const decided = pendingDecision;
+    const r = await c.decide(decided.id, decided.decision);
     setDeciding(false);
     setPendingDecision(null);
     setNotice(r.ok ? (r.warning ? { tone: "warn", text: r.warning } : null) : { tone: "error", text: r.error ?? "Could not update the expense" });
+    if (r.ok) toast.success(`${decided.id} ${decided.decision === "approve" ? "approved" : "rejected"}`);
+    else toast.error(r.error ?? "Could not update the expense");
   };
 
   return (
