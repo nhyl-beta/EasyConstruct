@@ -19,5 +19,6 @@ All need the same local throwaway DB + API (8123) + Vite (5173) and `playwright`
 - `expense-probe.mjs` - Finance "Record expense" end to end (adds a vendor first).
 - `mobile-layout-check.mjs` - 390x844 touch viewport, all roles: sideways scroll, menu, tap targets.
 - `attendance-scenarios.mjs` - emulated GPS inside/outside geofence, photo upload, offline queue + auto-sync.
+- `lifecycle-walk.ts` - one new project Proposal -> Archived with real role actions, gate flips checked after each, Advance/Archive clicked in the browser (run with `SMOKE_BASE_URL=http://localhost:8123/api ALLOW_DEMO_RESET=true npx tsx ...`).
 - `attendance-sync-conflict.mjs` - sync latency and the duplicate-in-queue case.
 - `smtp-sink.py` + `mail-check.mjs` - start the sink (`python3 smtp-sink.py`), start the API with `MAIL_USER=a@b.c MAIL_APP_PASSWORD=x MAIL_HOST=127.0.0.1 MAIL_PORT=2525`, then run mail-check (forgot password, reset, owner recovery, sign-out).
