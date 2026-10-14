@@ -730,7 +730,8 @@ async function main() {
       ADD COLUMN IF NOT EXISTS completed_at timestamp;
   `);
 
-  // Purchase requests, procurement orders, reimbursements and expense sources:
+  // Purchase requests, procurement orders, expense sources (and the retained, unused
+  // reimbursements table; the claims feature was removed but the table is kept):
   // migration 0025 is additive and idempotent (ADD COLUMN IF NOT EXISTS, CREATE
   // ... IF NOT EXISTS), so the demo top-up simply runs the same file.
   await pool.query(fs.readFileSync(new URL("../../drizzle/0025_purchasing.sql", import.meta.url), "utf8"));

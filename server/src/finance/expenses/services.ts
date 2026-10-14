@@ -22,7 +22,7 @@ async function scoreAndStore(id: string) {
 
 /**
  * After a payment created an expense: score it and attach `extraReasons`
- * (invoice variance, duplicate claim). Runs after the payment committed, and a
+ * (invoice variance). Runs after the payment committed, and a
  * failure here must never fail or undo the payment.
  */
 export async function annotateSpendExpense(id: string, extraReasons: string[]): Promise<void> {

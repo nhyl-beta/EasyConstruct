@@ -5,7 +5,6 @@ export interface CategoryUsage {
   budgets: number;
   expenses: number;
   purchaseRequests: number;
-  reimbursements: number;
   procurementOrders: number;
   budgetAllocations: number;
 }

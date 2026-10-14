@@ -7,19 +7,17 @@ import {
   expenses,
   procurementOrders,
   purchaseRequests,
-  reimbursements,
 } from "../../db/schema/finance.js";
 import { emptyUsage, nameKey, type CategoryUsage } from "./rules.js";
 
 export type CategoryRow = typeof expenseCategories.$inferSelect;
 type Read = Pick<typeof db, "select">;
 
-// The six tables that hold a category as free text.
+// The five tables that hold a category as free text.
 const USAGE_SOURCES = [
   ["budgets", budgets.category, budgets],
   ["expenses", expenses.category, expenses],
   ["purchaseRequests", purchaseRequests.category, purchaseRequests],
-  ["reimbursements", reimbursements.category, reimbursements],
   ["procurementOrders", procurementOrders.category, procurementOrders],
   ["budgetAllocations", budgetAllocations.category, budgetAllocations],
 ] as const;

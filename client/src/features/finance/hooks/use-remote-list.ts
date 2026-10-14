@@ -4,7 +4,7 @@ import type { ActionResult } from "../types/purchasing.types";
 /**
  * Loads a list once, and offers `run` for mutations: it runs the call, then
  * reloads the list whether it succeeded or not (a 409 means what is on screen
- * is stale). Shared by the purchase request, procurement and claims hooks.
+ * is stale). Shared by the purchase request and procurement hooks.
  */
 export function useRemoteList<T>(fetcher: () => Promise<T[]>, enabled = true) {
   const [items, setItems] = useState<T[]>([]);

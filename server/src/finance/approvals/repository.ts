@@ -6,7 +6,7 @@
 import { eq } from "drizzle-orm";
 
 import { db } from "../../db/connection.js";
-import { budgets, expenses, payrollBatches, purchaseRequests, reimbursements } from "../../db/schema/finance.js";
+import { budgets, expenses, payrollBatches, purchaseRequests } from "../../db/schema/finance.js";
 import { payrollCost } from "../cash-flow/months.js";
 import type { PendingItem } from "./merge.js";
 
@@ -70,20 +70,6 @@ export const approvalsRepository = {
       amount: r.amount,
       waitingSince: r.endorsedAt ?? r.requestedAt,
       href: "/expenses?tab=purchase-requests",
-    }));
-  },
-
-  /** Reimbursement claims waiting for Finance's decision (endorsed, or no PM to endorse). */
-  async pendingReimbursements(exec: Reader = db): Promise<PendingItem[]> {
-    const rows = await exec.select().from(reimbursements).where(eq(reimbursements.status, "pending-finance"));
-    return rows.map((r) => ({
-      id: `rmb-${r.id}`,
-      kind: "Reimbursement",
-      reference: `${r.purpose} · ${r.project ?? "no project"}`,
-      requestedBy: r.employee,
-      amount: r.amount,
-      waitingSince: r.endorsedAt ?? r.submittedAt,
-      href: "/expenses?tab=reimbursements",
     }));
   },
 };

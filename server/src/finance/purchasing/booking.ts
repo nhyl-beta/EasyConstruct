@@ -1,7 +1,7 @@
 // server/src/finance/purchasing/booking.ts
 //
 // The ONE place money moves on a budget line and on the cash flow. Expense
-// approval, order payment and claim payment all call these, so the booking
+// approval and order payment both call these, so the booking
 // logic exists once:
 //   * applyApprovedSpend  — budgets.actual += amount, then that month's cash
 //     flow outflow is recomputed;

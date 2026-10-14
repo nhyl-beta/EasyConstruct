@@ -16,7 +16,6 @@ const usage = (v: unknown): CategoryUsage | undefined => {
     budgets: num(o.budgets),
     expenses: num(o.expenses),
     purchaseRequests: num(o.purchaseRequests),
-    reimbursements: num(o.reimbursements),
     procurementOrders: num(o.procurementOrders),
     budgetAllocations: num(o.budgetAllocations),
   };

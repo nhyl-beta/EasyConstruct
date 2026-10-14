@@ -90,7 +90,7 @@ export const expenses = pgTable("expenses", {
   anomalyReason: text("anomaly_reason"),
   receiptUrl: text("receipt_url"),
   // Where the spend came from: a direct ledger entry ("manual"), a paid
-  // procurement order, or a paid reimbursement. (source_type, source_id) is
+  // procurement order, or (retired) a paid reimbursement. (source_type, source_id) is
   // unique so a payment can never create two expenses.
   sourceType: varchar("source_type", { length: 32 }).notNull().default("manual"),
   sourceId: varchar("source_id", { length: 32 }),
@@ -141,7 +141,11 @@ export interface PurchaseLineItem {
   unitCost: number;
 }
 
-// ── Reimbursements ─────────────────────────────────────────────────────────
+// ── Reimbursements (feature removed) ────────────────────────────────────────
+// The reimbursement claims feature was removed from the application. This
+// table is RETAINED, unused, so the schema still matches the database (no
+// migration drops it). Old rows are cleared by the owner with
+// scripts/remove-claims-data.ts or server/scripts/sql/remove-claims.sql.
 export const reimbursements = pgTable("reimbursements", {
   id: varchar("id", { length: 32 }).primaryKey(),
   employee: varchar("employee", { length: 255 }).notNull(),

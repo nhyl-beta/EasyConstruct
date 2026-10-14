@@ -273,20 +273,6 @@ export const ACTIONS: QuickEntry[] = [
     resource: "approvals",
   },
 
-  // — Reimbursement claims: a person's own —
-  {
-    id: "claims:new",
-    kind: "action",
-    label: "New claim",
-    description: "Claim a cost you paid out of pocket",
-    keywords: ["claim", "reimbursement", "reimburse", "receipt", "expense claim", "refund"],
-    icon: Receipt,
-    route: "/my-claims?action=new-claim",
-    roles: ["engineer", "site_personnel"],
-    resource: "my-claims",
-    changesData: true, // server: finance/reimbursements/routes.ts POST = these two roles
-  },
-
   // — Requests (RFI / RFA) —
   {
     id: "requests:raise",

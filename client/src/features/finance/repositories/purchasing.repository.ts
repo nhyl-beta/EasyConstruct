@@ -1,13 +1,9 @@
 import { apiClient } from "@/services/api.client";
 import {
-  CLAIM_STATUSES,
   ORDER_STATUSES,
   PR_STATUSES,
   type ActionResult,
   type BudgetImpact,
-  type ClaimAttachment,
-  type ClaimStatus,
-  type CreateClaimInput,
   type CreateOrderInput,
   type CreatePurchaseRequestInput,
   type LineItem,
@@ -16,7 +12,6 @@ import {
   type ProcurementOrder,
   type PurchaseRequest,
   type PurchaseRequestStatus,
-  type ReimbursementClaim,
 } from "../types/purchasing.types";
 
 type Json = Record<string, unknown>;
@@ -49,16 +44,6 @@ const budgetImpact = (v: unknown): BudgetImpact | null => {
     actual: num(o.actual),
     remaining: num(o.remaining),
     remainingAfter: num(o.remainingAfter),
-  };
-};
-
-const attachment = (v: unknown): ClaimAttachment => {
-  const o = obj(v);
-  return {
-    url: str(o.url),
-    filename: str(o.filename, "file"),
-    contentType: str(o.contentType, "application/octet-stream"),
-    sizeBytes: num(o.sizeBytes),
   };
 };
 
@@ -121,30 +106,6 @@ export const normalizeOrder = (v: unknown): ProcurementOrder => {
   };
 };
 
-export const normalizeClaim = (v: unknown): ReimbursementClaim => {
-  const o = obj(v);
-  return {
-    id: str(o.id),
-    employee: str(o.employee),
-    claimantUserId: numOrNull(o.claimantUserId),
-    claimantRole: strOrNull(o.claimantRole),
-    project: strOrNull(o.project),
-    category: strOrNull(o.category),
-    incurredOn: strOrNull(o.incurredOn),
-    purpose: str(o.purpose),
-    amount: num(o.amount),
-    submittedAt: str(o.submittedAt),
-    status: oneOf<ClaimStatus>(CLAIM_STATUSES, o.status, "cancelled"),
-    attachments: arr(o.attachments).map(attachment),
-    endorsedBy: strOrNull(o.endorsedBy),
-    decidedBy: strOrNull(o.decidedBy),
-    decisionNote: strOrNull(o.decisionNote),
-    paidAt: strOrNull(o.paidAt),
-    paymentReference: strOrNull(o.paymentReference),
-    expenseId: strOrNull(o.expenseId),
-  };
-};
-
 /** `{ success, message, data }` -> data */
 const data = (json: unknown): unknown => obj(json).data;
 
@@ -191,20 +152,4 @@ export const ProcurementRepository = {
   pay: (id: string, input: PayOrderInput) =>
     act(() => apiClient.post(`/finance/procurement/${enc(id)}/pay`, input), (d) => normalizeOrder(obj(d).order)),
   cancel: (id: string) => act(() => apiClient.post(`/finance/procurement/${enc(id)}/cancel`, {}), normalizeOrder),
-};
-
-export const ReimbursementRepository = {
-  async list(status?: string): Promise<ReimbursementClaim[]> {
-    return arr(data(await apiClient.get(withQuery("/finance/reimbursements", status)))).map(normalizeClaim);
-  },
-  async mine(): Promise<ReimbursementClaim[]> {
-    return arr(data(await apiClient.get("/finance/reimbursements/mine"))).map(normalizeClaim);
-  },
-  create: (input: CreateClaimInput) => act(() => apiClient.post("/finance/reimbursements", input), normalizeClaim),
-  endorse: (id: string) => act(() => apiClient.post(`/finance/reimbursements/${enc(id)}/endorse`, {}), normalizeClaim),
-  approve: (id: string, note?: string) => act(() => apiClient.post(`/finance/reimbursements/${enc(id)}/approve`, { note }), normalizeClaim),
-  reject: (id: string, note: string) => act(() => apiClient.post(`/finance/reimbursements/${enc(id)}/reject`, { note }), normalizeClaim),
-  pay: (id: string, paymentReference: string) =>
-    act(() => apiClient.post(`/finance/reimbursements/${enc(id)}/pay`, { paymentReference }), (d) => normalizeClaim(obj(d).claim)),
-  cancel: (id: string) => act(() => apiClient.post(`/finance/reimbursements/${enc(id)}/cancel`, {}), normalizeClaim),
 };

@@ -18,7 +18,6 @@ const USAGE_LABELS: Record<keyof CategoryUsage, [string, string]> = {
   budgets: ["budget line", "budget lines"],
   expenses: ["expense", "expenses"],
   purchaseRequests: ["purchase request", "purchase requests"],
-  reimbursements: ["reimbursement claim", "reimbursement claims"],
   procurementOrders: ["procurement order", "procurement orders"],
   budgetAllocations: ["budget allocation", "budget allocations"],
 };
@@ -134,7 +133,7 @@ export function ManageCategoriesDialog({ trigger }: { trigger?: React.ReactNode 
         <DialogHeader>
           <DialogTitle>Expense categories</DialogTitle>
           <DialogDescription>
-            One list for budgets, expenses, purchase requests and claims. A retired category stays on existing records but is hidden from new entries.
+            One list for budgets, expenses, purchase requests and orders. A retired category stays on existing records but is hidden from new entries.
           </DialogDescription>
         </DialogHeader>
 

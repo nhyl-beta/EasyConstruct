@@ -102,10 +102,9 @@ export const ROLE_RESOURCE_ACCESS: Record<string, string[]> = {
     "approvals",
     "issues",
     "projects",
-    "my-claims",
     "requests",
   ],
-  site_personnel: ["dashboard", "ai-validation-reference", "attendance", "tasks", "requirements", "documents", "issues", "my-claims"],
+  site_personnel: ["dashboard", "ai-validation-reference", "attendance", "tasks", "requirements", "documents", "issues"],
   consultant: [
     "dashboard",
     "ai-validation-reference",

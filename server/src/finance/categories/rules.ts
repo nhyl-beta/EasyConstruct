@@ -16,7 +16,6 @@ export interface CategoryUsage {
   budgets: number;
   expenses: number;
   purchaseRequests: number;
-  reimbursements: number;
   procurementOrders: number;
   budgetAllocations: number;
 }
@@ -25,7 +24,6 @@ export const USAGE_LABELS: Record<keyof CategoryUsage, [singular: string, plural
   budgets: ["budget line", "budget lines"],
   expenses: ["expense", "expenses"],
   purchaseRequests: ["purchase request", "purchase requests"],
-  reimbursements: ["reimbursement claim", "reimbursement claims"],
   procurementOrders: ["procurement order", "procurement orders"],
   budgetAllocations: ["budget allocation", "budget allocations"],
 };
@@ -34,7 +32,6 @@ export const emptyUsage = (): CategoryUsage => ({
   budgets: 0,
   expenses: 0,
   purchaseRequests: 0,
-  reimbursements: 0,
   procurementOrders: 0,
   budgetAllocations: 0,
 });
