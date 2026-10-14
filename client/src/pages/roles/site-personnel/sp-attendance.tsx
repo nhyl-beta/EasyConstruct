@@ -120,7 +120,8 @@ export default function SPAttendancePage() {
     if (staffedProjects.length > 0) cacheGeofences(staffedProjects);
   }, [staffedProjects]);
 
-  const { isOnline, pendingCount, syncing, lastSyncError, retrySync } = useOfflineAttendanceSync();
+  const { isOnline, pendingCount, pendingEntries, syncing, lastSyncError, syncNotice, dismissSyncNotice, retrySync, discardPending } = useOfflineAttendanceSync();
+  const needsAttention = pendingEntries.filter((e) => e.needsAttention);
 
   const {uploadDataUrl, uploading: uploadingPhoto} = useUploadFile();
   const [geoState, setGeoState] = useState<GeoState>("idle");
@@ -244,6 +245,30 @@ export default function SPAttendancePage() {
           )}
           {lastSyncError && <span className="text-xs text-destructive-strong">{lastSyncError}</span>}
         </div>
+
+        {syncNotice && (
+          <div role="status" className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-muted/30 p-3 text-sm">
+            <span>{syncNotice}</span>
+            <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={dismissSyncNotice}>
+              Dismiss
+            </Button>
+          </div>
+        )}
+
+        {needsAttention.length > 0 && (
+          <ul className="space-y-2" aria-label="Queued records that need attention">
+            {needsAttention.map((e) => (
+              <li key={e.clientRequestId} role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm text-warning-strong">
+                <span>
+                  <strong>Needs attention:</strong> the record for {e.logDate} ({e.site}, {e.clockIn}) was not accepted. {e.syncError ?? ""}
+                </span>
+                <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => void discardPending(e.clientRequestId)}>
+                  Discard
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
 
         {queuedMessage && (
           <div className="rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm text-warning-strong">
