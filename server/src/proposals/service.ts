@@ -8,6 +8,8 @@ import { FEATURES } from "../config/features.js";
 import { assertProjectWritable, refreshProjectProgress } from "../lifecycle/service.js";
 import { createWorkflow, decideStage } from "../workflows/service.js";
 import * as workflowsRepo from "../workflows/repository.js";
+import { isStoredFileAvailable } from "../uploads/service.js";
+import { toSubmittedFiles, type SubmittedProposalFile } from "./files.js";
 
 import {
   proposalRepository,
@@ -20,17 +22,6 @@ import { proposals as proposalsTable } from "../db/schema/proposals.js";
 import { orderByFor, paginate, type PageRequest } from "../utils/pagination.js";
 
 const DESIGN_APPROVAL_TEMPLATE = "Design Proposal Approval";
-
-export interface SubmittedProposalFile {
-  id: number;
-  name: string;
-  label: string;
-  url: string;
-  size: string | null;
-  uploadedBy: string;
-  stage: string | null;
-  filedAt: Date | null;
-}
 
 export const proposalService = {
   async getAll() {
@@ -95,18 +86,7 @@ export const proposalService = {
     const proposal = await this.getById(id);
     if (!proposal.workflowId) return { proposal, files: [] as SubmittedProposalFile[] };
     const rows = await workflowsRepo.findAttachmentsForWorkflows([proposal.workflowId]);
-    const files = rows
-      .filter(({ attachment }) => attachment.kind === "document" && !!attachment.fileUrl)
-      .map(({ attachment, stageLabel }) => ({
-        id: attachment.id,
-        name: attachment.fileName ?? attachment.label,
-        label: attachment.label,
-        url: attachment.fileUrl as string,
-        size: attachment.fileSize,
-        uploadedBy: attachment.uploadedBy,
-        stage: stageLabel ?? null,
-        filedAt: attachment.createdAt,
-      }));
+    const files = toSubmittedFiles(rows, isStoredFileAvailable);
     return { proposal, files };
   },
 
