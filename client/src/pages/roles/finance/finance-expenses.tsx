@@ -49,6 +49,7 @@ import { ManageCategoriesDialog } from "@/features/finance/components/ManageCate
 import { useExpenseCategories } from "@/features/finance/hooks/use-expense-categories";
 import { categoryKey } from "@/features/finance/lib/category-name";
 import { expenseSource } from "@/features/finance/lib/expense-source";
+import { missingForExpense, missingSentence } from "@/features/finance/lib/form-hints";
 import {
   Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
@@ -76,7 +77,8 @@ function RecordExpenseDialog({
     setAmount("");
   };
 
-  const canSubmit = vendor.trim() && project && category && Number(amount) > 0;
+  const missing = missingForExpense({ vendor, project, category, amount });
+  const canSubmit = missing.length === 0;
 
   const handleSubmit = async () => {
     const ok = await onCreate({ vendor: vendor.trim(), project, category, amount: Number(amount) });
@@ -118,6 +120,7 @@ function RecordExpenseDialog({
           </div>
         </div>
         {error && <p className="text-sm text-destructive-strong">{error}</p>}
+        {!canSubmit && <p className="text-xs text-muted-foreground">{missingSentence(missing)}</p>}
         <DialogFooter>
           <Button disabled={!canSubmit || creating} onClick={handleSubmit}>
             {creating ? "Recording…" : "Record expense"}

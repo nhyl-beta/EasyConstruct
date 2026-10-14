@@ -25,10 +25,10 @@ const editable = {
   costImpact: z.enum(IMPACTS).default("none"),
   costNote: z.string().max(255).optional(),
   timeImpact: z.enum(IMPACTS).default("none"),
-  timeDays: z.number().int().min(0).max(3650).optional(),
+  timeDays: z.number({ message: "Time impact (days) must be a number" }).int("Time impact (days) must be a whole number").min(0, "Time impact (days) cannot be negative").max(3650, "Time impact (days) can be at most 3650").optional(),
   assignedToUserId: z.number().int().positive(),
   /** Response window in days; the default is 3 for an RFI and 4 for an RFA. */
-  dueDays: z.number().int().min(1).max(60).optional(),
+  dueDays: z.number({ message: "Response window must be a number of days" }).int("Response window must be a whole number of days").min(1, "Response window must be at least 1 day").max(60, "Response window can be at most 60 days").optional(),
   designId: z.number().int().positive().optional(),
 };
 
