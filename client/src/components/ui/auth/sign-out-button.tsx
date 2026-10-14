@@ -4,6 +4,7 @@ import { useNavigate } from "react-router";
 import { useAuth } from "@/auth/auth-context";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { apiClient } from "@/services/api.client";
 import { cn } from "@/lib/utils";
 
 interface SignOutButtonProps {
@@ -23,8 +24,15 @@ export function SignOutButton({ className, iconOnly = false }: SignOutButtonProp
   const navigate = useNavigate();
   const [confirming, setConfirming] = useState(false);
 
-  const signOut = () => {
+  const signOut = async () => {
     setConfirming(false);
+    // End the session on the server first so the token cannot be used again. If that call fails
+    // (offline, server down) the person is still signed out on this device.
+    try {
+      await apiClient.post("/auth/logout", {});
+    } catch {
+      /* signing out locally is what matters here */
+    }
     logout();
     navigate("/login");
   };
@@ -61,7 +69,7 @@ export function SignOutButton({ className, iconOnly = false }: SignOutButtonProp
         title="Sign out of EasyConstruct?"
         description="Your session will end and any unsaved changes on this page will be lost. You'll need to sign in again to continue."
         confirmLabel="Sign out"
-        onConfirm={signOut}
+        onConfirm={() => void signOut()}
       />
     </>
   );

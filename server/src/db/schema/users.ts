@@ -14,6 +14,9 @@ export const users = pgTable("users", {
   // instant are rejected (middleware/auth.ts), so a reset signs out whoever
   // was using the old password.
   passwordChangedAt: timestamp("password_changed_at"),
+  // Sessions issued before this instant are rejected (middleware/auth.ts). Set by sign-out,
+  // a password change and deactivation.
+  tokensValidAfter: timestamp("tokens_valid_after"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
