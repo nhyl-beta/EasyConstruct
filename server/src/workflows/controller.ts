@@ -2,6 +2,7 @@
 import fs from "node:fs";
 import { Response, NextFunction } from "express";
 import { storeBuffer } from "../uploads/service.js";
+import { assertContentMatches } from "../uploads/sniff.js";
 import type { AuthedRequest } from "../middleware/auth.js";
 import { HTTP } from "../constants/http-status.js";
 import { MSG } from "../constants/messages.js";
@@ -14,6 +15,7 @@ import { parsePageRequest, sendPaged } from "../utils/pagination.js";
 import { ALL_DOMAIN, cached } from "../cache/index.js";
 import { userScope } from "../cache/scope.js";
 import { WORKFLOW_SORT_COLUMNS } from "./repository.js";
+import { parseIdParam } from "../utils/params.js";
 
 export const getTemplates = async (_req: AuthedRequest, res: Response, next: NextFunction) => {
   try {
@@ -47,7 +49,7 @@ export const createTemplate = async (req: AuthedRequest, res: Response, next: Ne
 export const deleteTemplate = async (req: AuthedRequest, res: Response, next: NextFunction) => {
   try {
     const actor = req.authUser?.name ?? req.authUser?.email ?? "unknown";
-    const data = await service.deleteTemplate(Number(req.params.id));
+    const data = await service.deleteTemplate(parseIdParam(req.params.id, "id"));
     await logAudit({
       entityType: "workflow_template",
       entityId: String(data.id),
@@ -89,7 +91,7 @@ export const getAll = async (req: AuthedRequest, res: Response, next: NextFuncti
 
 export const getById = async (req: AuthedRequest, res: Response, next: NextFunction) => {
   try {
-    const data = await service.getWorkflowById(Number(req.params.id));
+    const data = await service.getWorkflowById(parseIdParam(req.params.id, "id"));
     await assertProjectVisible(req.authUser, data.projectCode, "workflows");
     res.json(formatSuccess(data, MSG.workflows.single));
   } catch (err) {
@@ -100,9 +102,9 @@ export const getById = async (req: AuthedRequest, res: Response, next: NextFunct
 export const update = async (req: AuthedRequest, res: Response, next: NextFunction) => {
   try {
     const actor = req.authUser?.name ?? "unknown";
-    await assertWorkflowVisible(req, Number(req.params.id));
+    await assertWorkflowVisible(req, parseIdParam(req.params.id, "id"));
     const data = await service.updateWorkflow(
-      Number(req.params.id),
+      parseIdParam(req.params.id, "id"),
       req.body,
       req.authUser?.role ?? "",
       actor,
@@ -124,9 +126,9 @@ export const update = async (req: AuthedRequest, res: Response, next: NextFuncti
 export const remove = async (req: AuthedRequest, res: Response, next: NextFunction) => {
   try {
     const actor = req.authUser?.name ?? "unknown";
-    await assertWorkflowVisible(req, Number(req.params.id));
+    await assertWorkflowVisible(req, parseIdParam(req.params.id, "id"));
     const data = await service.deleteWorkflow(
-      Number(req.params.id),
+      parseIdParam(req.params.id, "id"),
       req.authUser?.role ?? "",
       actor,
     );
@@ -167,10 +169,10 @@ export const decideStage = async (req: AuthedRequest, res: Response, next: NextF
   try {
     const decidedBy = req.authUser?.name ?? req.authUser?.email ?? "unknown";
     const requesterRole = req.authUser?.role ?? "";
-    await assertWorkflowVisible(req, Number(req.params.id));
+    await assertWorkflowVisible(req, parseIdParam(req.params.id, "id"));
     const data = await service.decideStage(
-      Number(req.params.id),
-      Number(req.params.stageId),
+      parseIdParam(req.params.id, "id"),
+      parseIdParam(req.params.stageId, "stageId"),
       { ...req.body, decidedBy },
       requesterRole,
     );
@@ -191,10 +193,10 @@ export const decideStage = async (req: AuthedRequest, res: Response, next: NextF
 export const resubmitStage = async (req: AuthedRequest, res: Response, next: NextFunction) => {
   try {
     const actor = { role: req.authUser?.role ?? "", name: req.authUser?.name ?? "unknown" };
-    await assertWorkflowVisible(req, Number(req.params.id));
+    await assertWorkflowVisible(req, parseIdParam(req.params.id, "id"));
     const data = await service.resubmitStage(
-      Number(req.params.id),
-      Number(req.params.stageId),
+      parseIdParam(req.params.id, "id"),
+      parseIdParam(req.params.stageId, "stageId"),
       { attachment: req.body?.attachment },
       actor,
     );
@@ -257,8 +259,8 @@ export const getApprovalStats = async (req: AuthedRequest, res: Response, next: 
 export const addAttachment = async (req: AuthedRequest, res: Response, next: NextFunction) => {
   try {
     const actor = req.authUser?.name ?? req.authUser?.email ?? "unknown";
-    await assertWorkflowVisible(req, Number(req.params.id));
-    const data = await service.addAttachment(Number(req.params.id), req.body, actor);
+    await assertWorkflowVisible(req, parseIdParam(req.params.id, "id"));
+    const data = await service.addAttachment(parseIdParam(req.params.id, "id"), req.body, actor);
     await logAudit({
       entityType: "workflow",
       entityId: String(req.params.id),
@@ -285,7 +287,7 @@ export const uploadAttachment = async (req: AuthedRequest, res: Response, next: 
     }
 
     const actor = req.authUser?.name ?? req.authUser?.email ?? "unknown";
-    await assertWorkflowVisible(req, Number(req.params.id));
+    await assertWorkflowVisible(req, parseIdParam(req.params.id, "id"));
     const sizeInMb = req.file.size / (1024 * 1024);
     const fileSize =
       sizeInMb >= 1
@@ -295,14 +297,18 @@ export const uploadAttachment = async (req: AuthedRequest, res: Response, next: 
     // multer wrote the bytes to a temp file, which does not survive the next serverless
     // invocation. Move them into the durable store (Vercel Blob) and keep THAT url, so the
     // file is still there when the Consultant opens the proposal.
-    const stored = await storeBuffer({
-      buffer: await fs.promises.readFile(req.file.path),
-      filename: req.file.originalname,
-      contentType: req.file.mimetype || "application/octet-stream",
-    }).finally(() => fs.promises.rm(req.file!.path, { force: true }).catch(() => undefined));
+    const stored = await (async () => {
+      const buffer = await fs.promises.readFile(req.file!.path);
+      assertContentMatches(req.file!.originalname, req.file!.mimetype || "", buffer);
+      return storeBuffer({
+        buffer,
+        filename: req.file!.originalname,
+        contentType: req.file!.mimetype || "application/octet-stream",
+      });
+    })().finally(() => fs.promises.rm(req.file!.path, { force: true }).catch(() => undefined));
 
     const data = await service.addAttachment(
-      Number(req.params.id),
+      parseIdParam(req.params.id, "id"),
       {
         kind: "document",
         label: String(req.body.label ?? "").trim() || req.file.originalname,
@@ -335,8 +341,8 @@ export const uploadAttachment = async (req: AuthedRequest, res: Response, next: 
 // swallows those and just returns the workflow unchanged.
 export const revalidate = async (req: AuthedRequest, res: Response, next: NextFunction) => {
   try {
-    await assertWorkflowVisible(req, Number(req.params.id));
-    const data = await service.revalidateWorkflow(Number(req.params.id));
+    await assertWorkflowVisible(req, parseIdParam(req.params.id, "id"));
+    const data = await service.revalidateWorkflow(parseIdParam(req.params.id, "id"));
     res.json(formatSuccess(data, MSG.workflows.updated));
   } catch (err) {
     next(err);

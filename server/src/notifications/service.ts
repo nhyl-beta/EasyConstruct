@@ -3,6 +3,8 @@ import * as projectsRepo from "../projects/repository.js";
 import * as projectMemberRepo from "../project-members/repository.js";
 import * as usersRepo from "../users/repository.js";
 import * as stream from "./stream.js";
+import { NotFoundError } from "../utils/errors.js";
+import { ownsNotification } from "./ownership.js";
 import { PROJECT_MEMBER_ROLES } from "../db/schema/project-members.js";
 import type {
   CreateNotificationInput,
@@ -32,7 +34,15 @@ export const create = async (input: CreateNotificationInput) => {
   return created;
 };
 
-export const markRead = async (id: number) => repo.markRead(id);
+/**
+ * Marks one of the CALLER'S notifications read. Someone else's notification (or one that does
+ * not exist) is a 404 either way, so ids cannot be probed.
+ */
+export const markRead = async (id: number, scope: NotificationScope) => {
+  const row = await repo.findById(id);
+  if (!row || !ownsNotification(row, scope)) throw new NotFoundError("Notification", String(id));
+  return repo.markRead(id);
+};
 
 const isMemberRole = (role: string): boolean =>
   (PROJECT_MEMBER_ROLES as readonly string[]).includes(role);

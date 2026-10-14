@@ -12,6 +12,16 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
   }
 };
 
+export const logout = async (req: AuthedRequest, res: Response, next: NextFunction) => {
+  try {
+    const u = req.authUser!;
+    await service.logout(u.id, u.email, u.name);
+    sendSuccess(res, null, 200, "Signed out");
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const forgotPassword = async (
   req: Request,
   res: Response,

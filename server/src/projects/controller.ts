@@ -9,6 +9,7 @@ import { parsePageRequest, sendPaged } from "../utils/pagination.js";
 import { cached } from "../cache/index.js";
 import { visibilityScope } from "../cache/scope.js";
 import { PROJECT_SORT_COLUMNS } from "./repository.js";
+import { parseIdParam } from "../utils/params.js";
 
 const PROJECT_SORTABLE = Object.keys(PROJECT_SORT_COLUMNS);
 
@@ -67,7 +68,7 @@ export const getById = async (
   try {
     // Same membership scope as the list — otherwise a staff member who
     // cannot see a project in the table can still open it by guessing its id.
-    const data = await service.getById(Number(req.params.id), scopeOf(req));
+    const data = await service.getById(parseIdParam(req.params.id, "id"), scopeOf(req));
     res.json(formatSuccess(data, MSG.projects.single));
   } catch (err) {
     next(err);
@@ -104,7 +105,7 @@ export const update = async (
   next: NextFunction,
 ) => {
   try {
-    const id = Number(req.params.id);
+    const id = parseIdParam(req.params.id, "id");
     const data = await service.update(id, req.body, scopeOf(req));
     res.json(formatSuccess(data, MSG.projects.updated));
   } catch (err) {
@@ -118,7 +119,7 @@ export const remove = async (
   next: NextFunction,
 ) => {
   try {
-    const data = await service.remove(Number(req.params.id), scopeOf(req));
+    const data = await service.remove(parseIdParam(req.params.id, "id"), scopeOf(req));
     res.json(formatSuccess(data, MSG.projects.deleted));
   } catch (err) {
     next(err);

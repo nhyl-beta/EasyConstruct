@@ -23,8 +23,9 @@ export function EngineerMilestonesCard() {
 
   const confirm = async () => {
     if (!confirming) return;
-    const ok = await complete(confirming.id);
-    if (ok) toast.success(`"${confirming.title}" marked completed`);
+    const result = await complete(confirming.id);
+    if (result.ok) toast.success(`"${confirming.title}" marked completed`);
+    else toast.error(result.message);
     setConfirming(null);
   };
 

@@ -49,8 +49,13 @@ describe("toSubmittedFiles", () => {
 
 describe("who can read a proposal's files", () => {
   const assigned = new Set(["P-1"]);
-  test("the consultant gets the files of a proposal they review (not assigned-scoped)", () => {
-    assert.equal(canSeeProposalFiles({ id: 7, role: "consultant" }, new Set(), "P-1"), true);
+  test("the consultant gets the files of a proposal on a project they are staffed on, not others", () => {
+    assert.equal(canSeeProposalFiles({ id: 7, role: "consultant" }, assigned, "P-1"), true);
+    assert.equal(canSeeProposalFiles({ id: 7, role: "consultant" }, assigned, "P-2"), false);
+  });
+  test("roles that are not project-scoped (Owner, Admin) read any proposal's files", () => {
+    assert.equal(canSeeProposalFiles({ id: 1, role: "owner" }, new Set(), "P-9"), true);
+    assert.equal(canSeeProposalFiles({ id: 2, role: "admin" }, new Set(), "P-9"), true);
   });
   test("an Architect assigned to the project can, one not assigned to it cannot", () => {
     assert.equal(canSeeProposalFiles({ id: 8, role: "architect" }, assigned, "P-1"), true);

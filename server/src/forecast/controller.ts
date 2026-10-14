@@ -7,12 +7,13 @@ import { NotFoundError } from "../utils/errors.js";
 import type { AuthedRequest } from "../middleware/auth.js";
 import * as service from "./service.js";
 import { FEATURES } from "../config/features.js";
+import { parseIdParam } from "../utils/params.js";
 
 /** GET /api/workflows/:id/impact-forecast?timeImpactDays=N, project-scoped like the workflow itself. */
 export const workflowForecast = async (req: AuthedRequest, res: Response, next: NextFunction) => {
   try {
     if (!FEATURES.ai) throw new NotFoundError("Impact forecast is not enabled");
-    const id = Number(req.params.id);
+    const id = parseIdParam(req.params.id, "id");
     const workflow = await workflowsRepo.findWorkflowById(id);
     if (!workflow) throw new NotFoundError("Workflow", String(id));
     await assertProjectVisible(req.authUser, workflow.projectCode, "workflows");
@@ -31,7 +32,7 @@ export const requestForecast = async (req: AuthedRequest, res: Response, next: N
     const u = req.authUser!;
     res.json(
       formatSuccess(
-        await service.forecastForRequest(Number(req.params.id), { id: u.id, name: u.name, role: u.role }),
+        await service.forecastForRequest(parseIdParam(req.params.id, "id"), { id: u.id, name: u.name, role: u.role }),
         "Impact forecast",
       ),
     );

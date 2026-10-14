@@ -3,6 +3,7 @@ import multer from "multer";
 import { HTTP } from "../constants/http-status.js";
 import { AppError } from "../utils/errors.js";
 import { formatError } from "../utils/response.js";
+import { mapPgError } from "./pg-errors.js";
 
 export function errorMiddleware(
   err: Error,
@@ -64,20 +65,11 @@ export function errorMiddleware(
     return;
   }
 
-  // Postgres unique-violation (e.g. a duplicate project/document/requirement
-  // code) — surface as a 409 instead of falling through to a bare 500.
-  // drizzle-orm wraps the raw pg error, so the pg error code/detail live on
-  // `.cause`, not the top-level error, for query errors it throws.
-  const pgError = (err as { cause?: { code?: string; detail?: string } }).cause;
-  const pgCode = (err as { code?: string }).code ?? pgError?.code;
-  if (pgCode === "23505") {
-    const detail = (err as { detail?: string }).detail ?? pgError?.detail;
-    res.status(409).json(
-      formatError(
-        detail ?? "A record with these details already exists.",
-        "CONFLICT",
-      ),
-    );
+  // Postgres errors that mean a bad request or a conflict (unique, bad id format, missing required
+  // field, foreign key) instead of a bare 500. See middleware/pg-errors.ts.
+  const mapped = mapPgError(err);
+  if (mapped) {
+    res.status(mapped.status).json(formatError(mapped.message, mapped.code));
     return;
   }
 

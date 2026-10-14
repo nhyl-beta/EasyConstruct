@@ -8,6 +8,7 @@ import type { AuthedRequest } from "../middleware/auth.js";
 import { assertAssignedToProject, assignedCodesFor, isAssignedScoped, scopeRowsToAssigned } from "../projects/scope.js";
 import { parsePageRequest, sendPaged } from "../utils/pagination.js";
 import { DESIGN_SORT_COLUMNS } from "./repository.js";
+import { parseIdParam } from "../utils/params.js";
 
 export const getAll = async (req: Request, res: Response, next: NextFunction) => {
   const auth = (req as AuthedRequest).authUser;
@@ -33,7 +34,7 @@ export const getAll = async (req: Request, res: Response, next: NextFunction) =>
 
 export const getById = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const data = await service.getById(Number(req.params.id));
+    const data = await service.getById(parseIdParam(req.params.id, "id"));
     await assertAssignedToProject((req as AuthedRequest).authUser, data.projectCode, "designs");
     res.json(formatSuccess(data, MSG.designs.single));
   } catch (err) { next(err); }
@@ -50,19 +51,19 @@ export const create = async (req: Request, res: Response, next: NextFunction) =>
 export const update = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const auth = (req as AuthedRequest).authUser;
-    const existing = await service.getById(Number(req.params.id));
+    const existing = await service.getById(parseIdParam(req.params.id, "id"));
     await assertAssignedToProject(auth, existing.projectCode, "designs");
     if (req.body.projectCode) await assertAssignedToProject(auth, req.body.projectCode, "designs");
-    const data = await service.update(Number(req.params.id), req.body);
+    const data = await service.update(parseIdParam(req.params.id, "id"), req.body);
     res.json(formatSuccess(data, MSG.designs.updated));
   } catch (err) { next(err); }
 };
 
 export const remove = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const existing = await service.getById(Number(req.params.id));
+    const existing = await service.getById(parseIdParam(req.params.id, "id"));
     await assertAssignedToProject((req as AuthedRequest).authUser, existing.projectCode, "designs");
-    const data = await service.remove(Number(req.params.id));
+    const data = await service.remove(parseIdParam(req.params.id, "id"));
     res.json(formatSuccess(data, MSG.designs.deleted));
   } catch (err) { next(err); }
 };

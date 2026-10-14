@@ -65,3 +65,5 @@ export class GateBlockedError extends AppError {
     this.name = "GateBlockedError";
   }
 }
+/** Stable error code for a second clock-in on the same day (409). The offline queue drops entries on it. */
+export const DUPLICATE_ATTENDANCE_CODE = "ATTENDANCE_DUPLICATE";

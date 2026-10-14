@@ -89,7 +89,7 @@ export const update = async (id: number, data: UpdateUserInput) => {
 export const setPassword = async (id: number, passwordHash: string) => {
   const [updated] = await db
     .update(users)
-    .set({ password: passwordHash, passwordChangedAt: new Date(), updatedAt: new Date() })
+    .set({ password: passwordHash, passwordChangedAt: new Date(), tokensValidAfter: new Date(), updatedAt: new Date() })
     .where(eq(users.id, id))
     .returning(PUBLIC_COLUMNS);
   return updated ?? null;
@@ -98,7 +98,9 @@ export const setPassword = async (id: number, passwordHash: string) => {
 export const setActive = async (id: number, isActive: boolean) => {
   const [updated] = await db
     .update(users)
-    .set({ isActive, updatedAt: new Date() })
+    // Deactivating also ends the sessions that exist now, so reactivating the account later
+    // does not bring an old token back to life.
+    .set(isActive ? { isActive, updatedAt: new Date() } : { isActive, tokensValidAfter: new Date(), updatedAt: new Date() })
     .where(eq(users.id, id))
     .returning(PUBLIC_COLUMNS);
   return updated ?? null;

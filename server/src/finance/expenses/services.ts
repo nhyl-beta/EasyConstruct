@@ -44,7 +44,7 @@ export const expensesService = {
   },
 
   /** The same list with its total: the page window comes from the shared pagination request. */
-  async listPage(params: Pick<ListExpensesQuery, "query" | "category">, request: PageRequest, withExtras = false) {
+  async listPage(params: Pick<ListExpensesQuery, "query" | "category" | "codes">, request: PageRequest, withExtras = false) {
     const [page, extras] = await Promise.all([
       paginate(
         request,

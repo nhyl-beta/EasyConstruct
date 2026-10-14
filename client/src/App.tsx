@@ -140,6 +140,9 @@ function App() {
               options={{
                 syncWithLocation: true,
                 warnWhenUnsavedChanges: true,
+                // Refine sends project metadata to telemetry.refine.dev by default. Off: this app
+                // handles construction project data and has no need to report to a third party.
+                disableTelemetry: true,
                 // Refine and the app's own data hooks share one query client.
                 reactQuery: { clientConfig: queryClient },
                 projectId: "2gnXaG-MhFPwx-oPqcp0",

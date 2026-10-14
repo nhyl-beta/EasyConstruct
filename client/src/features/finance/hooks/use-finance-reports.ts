@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import type { ScheduledReport } from "@/features/finance/types/finance.types";
 
 interface UseFinanceReportsResult {
@@ -8,28 +7,17 @@ interface UseFinanceReportsResult {
   exportReport: (reportId: string, format: "pdf" | "excel") => void;
 }
 
+/**
+ * Finance Reports is not wired to the server: there is no /api/finance/reports route (it is
+ * commented out in server/src/routes/finance.ts) and the page is not in any role's navigation.
+ * This used to call it with a raw fetch() (no token), which could only fail. It now makes no
+ * request, so it cannot 401 or 404; wire a real route and apiClient here when reports exist.
+ */
 export function useFinanceReportsController(): UseFinanceReportsResult {
-  const [scheduledReports, setScheduledReports] = useState<ScheduledReport[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    fetch("/api/finance/reports", { signal: controller.signal })
-      .then((r) => r.json())
-      .then((json) => setScheduledReports(json.data ?? []))
-      .catch((err) => {
-        if (err.name !== "AbortError") setError(err.message);
-      })
-      .finally(() => setIsLoading(false));
-    return () => controller.abort();
-  }, []);
-
-  // Placeholder — wire to a real export endpoint (e.g. GET /api/finance/reports/:id/export?format=pdf
-  // returning a file stream) once report generation is implemented server-side.
-  const exportReport = (reportId: string, format: "pdf" | "excel") => {
-    window.open(`/api/finance/reports/${reportId}/export?format=${format}`, "_blank");
+  return {
+    scheduledReports: [],
+    isLoading: false,
+    error: null,
+    exportReport: () => {},
   };
-
-  return { scheduledReports, isLoading, error, exportReport };
 }

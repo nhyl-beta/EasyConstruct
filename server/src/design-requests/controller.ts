@@ -6,13 +6,14 @@ import { UnauthorizedError } from "../utils/errors.js";
 import type { AuthedRequest } from "../middleware/auth.js";
 import * as service from "./service.js";
 import { byDate, byString, respondList } from "../utils/pagination.js";
+import { parseIdParam } from "../utils/params.js";
 
 const actorOf = (req: AuthedRequest): service.Actor => {
   const u = req.authUser;
   if (!u) throw new UnauthorizedError("Not signed in");
   return { id: u.id, name: u.name, role: u.role };
 };
-const id = (req: AuthedRequest) => Number(req.params.id);
+const id = (req: AuthedRequest) => parseIdParam(req.params.id, "id");
 
 type Handler = (req: AuthedRequest, res: Response) => Promise<void>;
 const wrap = (fn: Handler) => async (req: AuthedRequest, res: Response, next: NextFunction) => {

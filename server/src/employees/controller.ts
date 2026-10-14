@@ -9,6 +9,7 @@ import { AuthedRequest } from "../middleware/auth.js";
 import { parsePageRequest, sendPaged } from "../utils/pagination.js";
 import { cached } from "../cache/index.js";
 import { EMPLOYEE_SORT_COLUMNS } from "./repository.js";
+import { parseIdParam } from "../utils/params.js";
 
 export const getAll = async (
   req: Request,
@@ -51,7 +52,7 @@ export const getById = async (
   next: NextFunction,
 ) => {
   try {
-    const data = await service.getById(Number(req.params.id));
+    const data = await service.getById(parseIdParam(req.params.id, "id"));
     res.json(formatSuccess(data, MSG.employees.single));
   } catch (err) {
     next(err);
@@ -93,7 +94,7 @@ export const update = async (
   next: NextFunction,
 ) => {
   try {
-    const data = await service.update(Number(req.params.id), req.body);
+    const data = await service.update(parseIdParam(req.params.id, "id"), req.body);
     await logAudit({
       entityType: "employee",
       entityId: String(req.params.id),
@@ -113,7 +114,7 @@ export const remove = async (
   next: NextFunction,
 ) => {
   try {
-    const data = await service.remove(Number(req.params.id));
+    const data = await service.remove(parseIdParam(req.params.id, "id"));
     await logAudit({
       entityType: "employee",
       entityId: String(req.params.id),
@@ -133,7 +134,7 @@ export const deactivate = async (
   next: NextFunction,
 ) => {
   try {
-    const data = await service.deactivate(Number(req.params.id));
+    const data = await service.deactivate(parseIdParam(req.params.id, "id"));
     res.json(formatSuccess(data, "Employee deactivated"));
   } catch (err) {
     next(err);

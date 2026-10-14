@@ -23,6 +23,8 @@ export interface PendingAttendanceEntry {
   photoType: string;
   createdAt: number;
   syncError?: string;
+  /** The server refused this entry for a reason a retry will not fix (not a duplicate). */
+  needsAttention?: boolean;
 }
 
 function openDb(): Promise<IDBDatabase> {

@@ -12,6 +12,7 @@ import { ForbiddenError } from "../utils/errors.js";
 import {
   proposalService,
 } from "./service.js";
+import { parseIdParam } from "../utils/params.js";
 
 export const proposalController = {
   async getAll(
@@ -64,7 +65,7 @@ export const proposalController = {
     req: Request,
     res: Response,
   ) {
-    const id = Number(req.params.id);
+    const id = parseIdParam(req.params.id, "id");
 
     const data =
       await proposalService.getById(id);
@@ -80,7 +81,7 @@ export const proposalController = {
     req: Request,
     res: Response,
   ) {
-    const { proposal, files } = await proposalService.getFiles(Number(req.params.id));
+    const { proposal, files } = await proposalService.getFiles(parseIdParam(req.params.id, "id"));
     const auth = (req as AuthedRequest).authUser;
     if (isAssignedScoped(auth) && !canSeeProposalFiles(auth, await assignedCodesFor(auth), proposal.projectCode)) {
       throw new ForbiddenError("You can only access proposals for projects you are assigned to");
@@ -96,7 +97,7 @@ export const proposalController = {
     req: Request,
     res: Response,
   ) {
-    const data = await proposalService.validate(Number(req.params.id));
+    const data = await proposalService.validate(parseIdParam(req.params.id, "id"));
 
     return res.json({
       success: true,
@@ -160,7 +161,7 @@ export const proposalController = {
     req: Request,
     res: Response,
   ) {
-    const id = Number(req.params.id);
+    const id = parseIdParam(req.params.id, "id");
     const auth = (req as AuthedRequest).authUser;
     await assertAssignedToProject(auth, (await proposalService.getById(id)).projectCode, "proposals");
     if (req.body.projectCode) await assertAssignedToProject(auth, req.body.projectCode, "proposals");
@@ -181,7 +182,7 @@ export const proposalController = {
     req: AuthedRequest,
     res: Response,
   ) {
-    const id = Number(req.params.id);
+    const id = parseIdParam(req.params.id, "id");
 
     const data =
       await proposalService.review(
@@ -209,7 +210,7 @@ export const proposalController = {
     req: Request,
     res: Response,
   ) {
-    const id = Number(req.params.id);
+    const id = parseIdParam(req.params.id, "id");
     await assertAssignedToProject(
       (req as AuthedRequest).authUser,
       (await proposalService.getById(id)).projectCode,

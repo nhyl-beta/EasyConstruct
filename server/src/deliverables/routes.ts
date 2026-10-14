@@ -8,6 +8,7 @@ import { formatSuccess } from "../utils/response.js";
 import { HTTP } from "../constants/http-status.js";
 import { UnauthorizedError } from "../utils/errors.js";
 import * as service from "./service.js";
+import { parseIdParam } from "../utils/params.js";
 
 const router = Router();
 router.use(authenticate);
@@ -55,7 +56,7 @@ router.patch(
   requireRole("project-manager", "architect", "consultant", "admin"),
   validate(updateSchema),
   wrap(async (req, res) => {
-    res.json(formatSuccess(await service.update(Number(req.params.id), req.body, actorOf(req)), "Plan set updated"));
+    res.json(formatSuccess(await service.update(parseIdParam(req.params.id, "id"), req.body, actorOf(req)), "Plan set updated"));
   }),
 );
 

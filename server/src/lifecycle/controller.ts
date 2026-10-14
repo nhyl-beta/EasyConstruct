@@ -6,6 +6,7 @@ import type { AuthedRequest } from "../middleware/auth.js";
 import * as projectsService from "../projects/service.js";
 import * as service from "./service.js";
 import type { LifecycleActor } from "./service.js";
+import { parseIdParam } from "../utils/params.js";
 
 // Every handler here is project-scoped by numeric :id (mounted under
 // projects/routes.ts with mergeParams), same as every other
@@ -13,7 +14,7 @@ import type { LifecycleActor } from "./service.js";
 // that's what the lifecycle module and every domain table key off.
 const resolveProjectCode = async (req: AuthedRequest): Promise<string> => {
   const project = await projectsService.getById(
-    Number(req.params.id),
+    parseIdParam(req.params.id, "id"),
     req.authUser ? { role: req.authUser.role, userId: req.authUser.id } : undefined,
   );
   return project.code;

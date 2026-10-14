@@ -30,7 +30,7 @@ const PASSWORD_SALT_ROUNDS = 10;
  */
 const recordLoginAttempt = (
   email: string,
-  outcome: "login" | "login-failed" | "login-throttled",
+  outcome: "login" | "login-failed" | "login-throttled" | "logout",
   summary: string,
   actorName?: string,
 ) =>
@@ -112,6 +112,17 @@ export const login = async (input: LoginInput) => {
     token,
     user: { id: user.id, email: user.email, name: user.name, role: user.role },
   };
+};
+
+/**
+ * Server-side sign-out: every token issued to this account before now stops working, on every
+ * device. The calling instance drops its own cache entry so this takes effect at once; other
+ * server instances catch up within the session cache TTL (middleware/auth.ts).
+ */
+export const logout = async (userId: number, email: string, name: string) => {
+  await repo.revokeTokens(userId);
+  invalidateSessionCache(userId);
+  await recordLoginAttempt(email, "logout", "Signed out", name);
 };
 
 // ---------------------------------------------------------------------------

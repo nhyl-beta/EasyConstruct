@@ -17,7 +17,7 @@ export const findById = async (id: number) => {
 export const updatePassword = async (id: number, password: string) => {
   const [updated] = await db
     .update(users)
-    .set({ password, passwordChangedAt: new Date(), updatedAt: new Date() })
+    .set({ password, passwordChangedAt: new Date(), tokensValidAfter: new Date(), updatedAt: new Date() })
     .where(eq(users.id, id))
     .returning();
   return updated ?? null;
@@ -68,10 +68,17 @@ export const revokeOpenResetTokens = async (userId: number) => {
  */
 export const findSessionState = async (id: number) => {
   const [row] = await db
-    .select({ passwordChangedAt: users.passwordChangedAt, isActive: users.isActive })
+    .select({ passwordChangedAt: users.passwordChangedAt, tokensValidAfter: users.tokensValidAfter, isActive: users.isActive })
     .from(users)
     .where(eq(users.id, id));
-  return row ? { changedAt: row.passwordChangedAt ?? null, isActive: row.isActive } : undefined;
+  return row
+    ? { changedAt: row.passwordChangedAt ?? null, validAfter: row.tokensValidAfter ?? null, isActive: row.isActive }
+    : undefined;
+};
+
+/** Signs the account out everywhere: every token issued before now stops working. */
+export const revokeTokens = async (id: number) => {
+  await db.update(users).set({ tokensValidAfter: new Date() }).where(eq(users.id, id));
 };
 
 export const findPasswordChangedAt = async (id: number) => {

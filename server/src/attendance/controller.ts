@@ -13,6 +13,7 @@ import { byString, paginateRows, parsePageRequest, sendPaged } from "../utils/pa
 import * as exceptionsService from "./exceptions-service.js";
 import { cached } from "../cache/index.js";
 import { ATTENDANCE_SORT_COLUMNS } from "./repository.js";
+import { parseIdParam } from "../utils/params.js";
 
 export const getAll = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -118,7 +119,7 @@ export const bulkVerify = async (req: AuthedRequest, res: Response, next: NextFu
 
 export const getById = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const data = await service.getById(Number(req.params.id));
+    const data = await service.getById(parseIdParam(req.params.id, "id"));
     res.json(formatSuccess(data, MSG.attendance.single));
   } catch (err) {
     next(err);
@@ -139,7 +140,7 @@ export const create = async (req: AuthedRequest, res: Response, next: NextFuncti
 
 export const update = async (req: AuthedRequest, res: Response, next: NextFunction) => {
   try {
-    const id = Number(req.params.id);
+    const id = parseIdParam(req.params.id, "id");
     const existing = await service.getById(id);
 
     // Site Personnel reach this route to clock out; the check confines them
@@ -174,7 +175,7 @@ export const update = async (req: AuthedRequest, res: Response, next: NextFuncti
 
 export const remove = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const data = await service.remove(Number(req.params.id));
+    const data = await service.remove(parseIdParam(req.params.id, "id"));
     res.json(formatSuccess(data, MSG.attendance.deleted));
   } catch (err) {
     next(err);

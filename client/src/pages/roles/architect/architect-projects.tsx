@@ -3,6 +3,7 @@ import { usePagination } from "@/hooks/use-pagination";
 import { useNavigate } from "react-router";
 import { PageHeader } from "@/components/refine-ui/views/page-header";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -36,6 +37,13 @@ export default function ArchitectProjects() {
 
       {c.loading ? (
         <div className="text-sm text-muted-foreground">Loading projects…</div>
+      ) : c.error ? (
+        <div role="alert" className="flex flex-wrap items-center gap-3 rounded-2xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive-strong">
+          <span>Couldn't load your projects. {c.error}</span>
+          <Button size="sm" variant="outline" onClick={c.reload}>
+            Retry
+          </Button>
+        </div>
       ) : c.projects.length === 0 ? (
         <div className="rounded-2xl border border-dashed p-10 text-center text-sm text-muted-foreground">
           No projects have linked designs yet.

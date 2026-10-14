@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, ilike, or, sql, type SQL } from "drizzle-orm";
+import { and, desc, eq, gte, ilike, inArray, or, sql, type SQL } from "drizzle-orm";
 import { countRows, selectPage } from "../../db/paged.js";
 import type { ExpenseDecision } from "./decision.js";
 import type { ExpenseLike } from "./anomaly.js";
@@ -9,8 +9,9 @@ import { nextId } from "../purchasing/ids.js";
 
 import type { CreateExpenseInput, ListExpensesQuery } from "./types.js";
 
-const expenseConditions = ({ query, category }: Pick<ListExpensesQuery, "query" | "category">) => {
+const expenseConditions = ({ query, category, codes }: Pick<ListExpensesQuery, "query" | "category" | "codes">) => {
   const conditions = [];
+  if (codes) conditions.push(codes.length ? inArray(expenses.project, codes) : sql`false`);
   if (query) {
     conditions.push(
       or(ilike(expenses.vendor, `%${query}%`), ilike(expenses.id, `%${query}%`)),
@@ -34,13 +35,13 @@ export const EXPENSE_SORT_COLUMNS = {
 export const defaultExpenseOrder = [desc(expenses.submittedAt)];
 
 export const expensesRepository = {
-  async countMany(params: Pick<ListExpensesQuery, "query" | "category">) {
+  async countMany(params: Pick<ListExpensesQuery, "query" | "category" | "codes">) {
     const conditions = expenseConditions(params);
     return countRows(expenses, conditions.length ? and(...conditions) : undefined);
   },
 
   /** Spend per category over a filter set (first appearance = newest expense first, like the list). */
-  async breakdown(params: Pick<ListExpensesQuery, "query" | "category">) {
+  async breakdown(params: Pick<ListExpensesQuery, "query" | "category" | "codes">) {
     const conditions = expenseConditions(params);
     const rows = await db
       .select({
@@ -55,7 +56,7 @@ export const expensesRepository = {
   },
 
   /** Expenses the anomaly rules flagged (score >= 0.4) within a filter set, newest first. */
-  async anomalies(params: Pick<ListExpensesQuery, "query" | "category">, limit: number) {
+  async anomalies(params: Pick<ListExpensesQuery, "query" | "category" | "codes">, limit: number) {
     const conditions = [...expenseConditions(params), gte(expenses.anomalyScore, 0.4)];
     return db
       .select()
@@ -66,7 +67,7 @@ export const expensesRepository = {
   },
 
   async findPage(
-    params: Pick<ListExpensesQuery, "query" | "category">,
+    params: Pick<ListExpensesQuery, "query" | "category" | "codes">,
     window: { limit: number; offset: number },
     orderBy: SQL[],
   ) {

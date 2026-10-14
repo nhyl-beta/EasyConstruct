@@ -7,11 +7,13 @@ import { formatSuccess } from "../utils/response.js";
 import { logAudit } from "../utils/audit.js";
 
 import * as service from "./service.js";
+import { assertDiskFileMatches } from "../uploads/sniff.js";
 import { assignedCodesFor, isAssignedScoped } from "../projects/scope.js";
 
 import type { AuthedRequest } from "../middleware/auth.js";
 import { parsePageRequest, sendPaged } from "../utils/pagination.js";
 import { DOCUMENT_SORT_COLUMNS } from "./repository.js";
+import { parseIdParam } from "../utils/params.js";
 
 export const getAll = async (
   req: AuthedRequest,
@@ -87,7 +89,7 @@ export const remove = async (
   next: NextFunction,
 ) => {
   try {
-    const data = await service.remove(Number(req.params.id));
+    const data = await service.remove(parseIdParam(req.params.id, "id"));
     await logAudit({
       entityType: "document",
       entityId: String(data?.documentId ?? req.params.id),
@@ -115,6 +117,9 @@ export const upload = async (
         code: "FILE_REQUIRED",
       });
     }
+
+    // Refuse (and delete) a file whose bytes are not the type it claims, before anything else.
+    await assertDiskFileMatches(req.file.path, req.file.originalname, req.file.mimetype || "");
 
     const project = String(
       req.body.project ?? "",

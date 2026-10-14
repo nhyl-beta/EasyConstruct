@@ -3,6 +3,7 @@ import { requirements } from "../db/schema/requirements.js";
 import { projects } from "../db/schema/projects.js";
 import { and, desc, eq, ilike, SQL } from "drizzle-orm";
 import { ForbiddenError, NotFoundError, ValidationError } from "../utils/errors.js";
+import { orNotFound } from "../utils/found.js";
 import * as repo from "./repository.js";
 import { loadDraftSources } from "./draft-repository.js";
 import { generateDraft } from "./templates.js";
@@ -136,13 +137,15 @@ export const update = async (
       });
     }
   }
-  return updated ?? null;
+  // Nothing matched: the id does not exist. Reported as 404, not a success with an empty body.
+  return orNotFound(updated, "Requirement", id);
 };
 
 export const remove = async (id: number) => {
   const [deleted] = await db.delete(requirements).where(eq(requirements.id, id)).returning();
-  if (deleted) await refreshProjectProgress(deleted.project);
-  return deleted ?? null;
+  const removed = orNotFound(deleted, "Requirement", id);
+  await refreshProjectProgress(removed.project);
+  return removed;
 };
 
 /** Rule-based draft for the Engineer to edit (fix 3.4). Read-only: nothing is saved. */

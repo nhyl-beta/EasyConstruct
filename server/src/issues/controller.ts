@@ -10,6 +10,7 @@ import type { IssueFilters } from "./types.js";
 import { assertProjectVisible, scopeRowsToVisible, scopedProjectCodes } from "../projects/service.js";
 import { parsePageRequest, sendPaged } from "../utils/pagination.js";
 import { ISSUE_SORT_COLUMNS } from "./repository.js";
+import { parseIdParam } from "../utils/params.js";
 
 export const getAll = async (req: AuthedRequest, res: Response, next: NextFunction) => {
   try {
@@ -50,7 +51,7 @@ export const getPrecedents = async (req: AuthedRequest, res: Response, next: Nex
 // B2
 export const getPrecedentsForIssue = async (req: AuthedRequest, res: Response, next: NextFunction) => {
   try {
-    const data = await service.getPrecedentsForIssue(Number(req.params.id), req.authUser);
+    const data = await service.getPrecedentsForIssue(parseIdParam(req.params.id, "id"), req.authUser);
     res.json(formatSuccess(data, "Similar resolved issues retrieved"));
   } catch (err) {
     next(err);
@@ -59,7 +60,7 @@ export const getPrecedentsForIssue = async (req: AuthedRequest, res: Response, n
 
 export const getById =async (req: AuthedRequest, res: Response, next: NextFunction) => {
   try {
-    const data = await service.getById(Number(req.params.id));
+    const data = await service.getById(parseIdParam(req.params.id, "id"));
     if (req.authUser?.role !== "site-personnel") await assertProjectVisible(req.authUser, data.projectCode, "issues");
     res.json(formatSuccess(data, MSG.issues.single));
   } catch (err) {
@@ -92,7 +93,7 @@ export const create = async (req: AuthedRequest, res: Response, next: NextFuncti
 export const updateStatus = async (req: AuthedRequest, res: Response, next: NextFunction) => {
   try {
     const data = await service.updateStatus(
-      Number(req.params.id),
+      parseIdParam(req.params.id, "id"),
       req.body.status,
       req.body.resolutionNotes,
       req.authUser!.role,

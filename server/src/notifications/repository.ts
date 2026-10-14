@@ -48,6 +48,11 @@ export const create = async (data: CreateNotificationInput) => {
   return created;
 };
 
+export const findById = async (id: number) => {
+  const [row] = await db.select().from(notifications).where(eq(notifications.id, id));
+  return row ?? null;
+};
+
 export const markRead = async (id: number) => {
   const [updated] = await db
     .update(notifications)

@@ -81,7 +81,7 @@ async function s7Rejection(projects: { id: number; code: string }[]) {
 async function roleMatrix() {
   h("5. Role x sidebar page data matrix (row counts from the endpoint each page reads)");
   const candidates: Record<string, string[]> = {
-    owner: ["owner@easyconstruct.demo"],
+    owner: [EMAILS.owner],
     admin: ["admin@easyconstruct.demo"],
     it_designer: ["itdesigner@easyconstruct.demo", "itdesigner1@easyconstruct.demo", "itdesigner2@easyconstruct.demo"],
     project_manager: ["pm@easyconstruct.demo"],

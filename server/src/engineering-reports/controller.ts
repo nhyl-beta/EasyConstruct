@@ -8,6 +8,7 @@ import type { EngineeringReportFilters } from "./types.js";
 import { assertProjectVisible, scopeRowsToVisible, scopedProjectCodes } from "../projects/service.js";
 import { parsePageRequest, sendPaged } from "../utils/pagination.js";
 import { REPORT_SORT_COLUMNS } from "./repository.js";
+import { parseIdParam } from "../utils/params.js";
 
 export const getAll = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -38,7 +39,7 @@ export const getAll = async (req: Request, res: Response, next: NextFunction) =>
 
 export const getById = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const data = await service.getById(Number(req.params.id));
+    const data = await service.getById(parseIdParam(req.params.id, "id"));
     await assertProjectVisible((req as AuthedRequest).authUser, data.project, "engineering reports");
     res.json(formatSuccess(data, MSG.engineeringReports.single));
   } catch (err) {
@@ -58,7 +59,7 @@ export const create = async (req: Request, res: Response, next: NextFunction) =>
 export const update = async (req: AuthedRequest, res: Response, next: NextFunction) => {
   try {
     const data = await service.update(
-      Number(req.params.id),
+      parseIdParam(req.params.id, "id"),
       req.body,
       req.authUser?.role ?? "",
     );
@@ -70,7 +71,7 @@ export const update = async (req: AuthedRequest, res: Response, next: NextFuncti
 
 export const remove = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const data = await service.remove(Number(req.params.id));
+    const data = await service.remove(parseIdParam(req.params.id, "id"));
     res.json(formatSuccess(data, MSG.engineeringReports.deleted));
   } catch (err) {
     next(err);
