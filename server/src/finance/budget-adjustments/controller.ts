@@ -5,6 +5,7 @@ import { formatSuccess } from "../../utils/response.js";
 import * as service from "./service.js";
 import type { BudgetAdjustmentFilters } from "./types.js";
 import { byDate, byString, respondList } from "../../utils/pagination.js";
+import { parseIdParam } from "../../utils/params.js";
 
 export const getAll = async (
   req: Request,
@@ -36,7 +37,7 @@ export const getById = async (
   try {
     res.json(
       formatSuccess(
-        await service.getById(Number(req.params.id)),
+        await service.getById(parseIdParam(req.params.id, "id")),
         MSG.budgetAdjustments.single,
       ),
     );
@@ -72,7 +73,7 @@ export const update = async (
   try {
     res.json(
       formatSuccess(
-        await service.update(Number(req.params.id), req.body),
+        await service.update(parseIdParam(req.params.id, "id"), req.body),
         MSG.budgetAdjustments.updated,
       ),
     );
@@ -89,7 +90,7 @@ export const remove = async (
   try {
     res.json(
       formatSuccess(
-        await service.remove(Number(req.params.id)),
+        await service.remove(parseIdParam(req.params.id, "id")),
         MSG.budgetAdjustments.deleted,
       ),
     );

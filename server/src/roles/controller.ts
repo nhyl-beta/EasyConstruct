@@ -4,6 +4,7 @@ import { formatSuccess } from "../utils/response.js";
 import * as service from "./service.js";
 import { byString, respondList } from "../utils/pagination.js";
 import { cached } from "../cache/index.js";
+import { parseIdParam } from "../utils/params.js";
 
 export const getAll = async (
   req: Request,
@@ -28,7 +29,7 @@ export const getById = async (
   next: NextFunction,
 ) => {
   try {
-    const data = await service.getById(Number(req.params.id));
+    const data = await service.getById(parseIdParam(req.params.id, "id"));
     res.json(formatSuccess(data, MSG.roles.single));
   } catch (err) {
     next(err);

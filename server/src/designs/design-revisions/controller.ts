@@ -9,6 +9,7 @@ import { ensureProjectRevisionDemo } from "./demo.js";
 import { env } from "../../config/env.js";
 import { ForbiddenError, ValidationError } from "../../utils/errors.js";
 import type { AuthedRequest } from "../../middleware/auth.js";
+import { parseIdParam } from "../../utils/params.js";
 
 const scopeOf = (req: Request) => {
   const u = (req as AuthedRequest).authUser;
@@ -45,7 +46,7 @@ export const getAll = async (req: Request, res: Response, next: NextFunction) =>
 
 export const getById = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const data = await service.getById(Number(req.params.id));
+    const data = await service.getById(parseIdParam(req.params.id, "id"));
     await service.assertCanSeeDesign(data.designId, scopeOf(req));
     res.json(formatSuccess(data, MSG.designRevisions.single));
   } catch (err) { next(err); }
@@ -61,18 +62,18 @@ export const create = async (req: Request, res: Response, next: NextFunction) =>
 
 export const update = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const existing = await service.getById(Number(req.params.id));
+    const existing = await service.getById(parseIdParam(req.params.id, "id"));
     await service.assertCanSeeDesign(existing.designId, scopeOf(req));
-    const data = await service.update(Number(req.params.id), req.body, actorOf(req));
+    const data = await service.update(parseIdParam(req.params.id, "id"), req.body, actorOf(req));
     res.json(formatSuccess(data, MSG.designRevisions.updated));
   } catch (err) { next(err); }
 };
 
 export const remove = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const existing = await service.getById(Number(req.params.id));
+    const existing = await service.getById(parseIdParam(req.params.id, "id"));
     await service.assertCanSeeDesign(existing.designId, scopeOf(req));
-    const data = await service.remove(Number(req.params.id), actorOf(req));
+    const data = await service.remove(parseIdParam(req.params.id, "id"), actorOf(req));
     res.json(formatSuccess(data, MSG.designRevisions.deleted));
   } catch (err) { next(err); }
 };

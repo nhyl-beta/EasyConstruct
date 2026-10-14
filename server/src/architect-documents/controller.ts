@@ -7,6 +7,7 @@ import * as service from "./service.js";
 import { byDate, byString, respondList } from "../utils/pagination.js";
 import type { AuthedRequest } from "../middleware/auth.js";
 import { assertAssignedToDesign, assertAssignedToProject, scopeRowsByDesign } from "../projects/scope.js";
+import { parseIdParam } from "../utils/params.js";
 
 export const getAll = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -27,7 +28,7 @@ export const getAll = async (req: Request, res: Response, next: NextFunction) =>
 };
 export const getById = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const doc = await service.getById(Number(req.params.id));
+    const doc = await service.getById(parseIdParam(req.params.id, "id"));
     if (doc.projectCode) await assertAssignedToProject((req as AuthedRequest).authUser, doc.projectCode, "documents");
     else await assertAssignedToDesign((req as AuthedRequest).authUser, doc.designId, "documents");
     res.json(formatSuccess(doc, MSG.architectDocuments.single));
@@ -40,10 +41,10 @@ export const create = async (req: Request, res: Response, next: NextFunction) =>
   } catch (err) { next(err); }
 };
 export const update = async (req: Request, res: Response, next: NextFunction) => {
-  try { res.json(formatSuccess(await service.update(Number(req.params.id), req.body), MSG.architectDocuments.updated)); }
+  try { res.json(formatSuccess(await service.update(parseIdParam(req.params.id, "id"), req.body), MSG.architectDocuments.updated)); }
   catch (err) { next(err); }
 };
 export const remove = async (req: Request, res: Response, next: NextFunction) => {
-  try { res.json(formatSuccess(await service.remove(Number(req.params.id)), MSG.architectDocuments.deleted)); }
+  try { res.json(formatSuccess(await service.remove(parseIdParam(req.params.id, "id")), MSG.architectDocuments.deleted)); }
   catch (err) { next(err); }
 };

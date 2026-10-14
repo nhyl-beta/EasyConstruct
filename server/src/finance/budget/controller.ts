@@ -105,7 +105,7 @@ export const update = async (
   next: NextFunction,
 ) => {
   try {
-    const data = await service.update(Number(req.params.id), req.body);
+    const data = await service.update(parseIdParam(req.params.id, "id"), req.body);
 
     await logAudit({
       entityType: "budget",
@@ -128,7 +128,7 @@ export const remove = async (
   next: NextFunction,
 ) => {
   try {
-    const data = await service.remove(Number(req.params.id));
+    const data = await service.remove(parseIdParam(req.params.id, "id"));
 
     res.json(formatSuccess(data, MSG.budgets.deleted));
   } catch (err) {

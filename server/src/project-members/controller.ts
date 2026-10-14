@@ -7,6 +7,7 @@ import * as service from "./service.js";
 import type { ProjectMemberRole } from "./types.js";
 import { parsePageRequest, sendPaged } from "../utils/pagination.js";
 import { MEMBER_SORT_COLUMNS } from "./repository.js";
+import { parseIdParam } from "../utils/params.js";
 
 export const getAll = async (req: AuthedRequest, res: Response, next: NextFunction) => {
   try {
@@ -55,7 +56,7 @@ export const create = async (req: AuthedRequest, res: Response, next: NextFuncti
 export const remove = async (req: AuthedRequest, res: Response, next: NextFunction) => {
   try {
     const data = await service.remove(
-      Number(req.params.id),
+      parseIdParam(req.params.id, "id"),
       req.authUser?.role ?? "",
       req.authUser?.name ?? "",
     );

@@ -6,6 +6,7 @@ import * as service from "./service.js";
 import { byDate, byString, respondList } from "../../utils/pagination.js";
 import type { AuthedRequest } from "../../middleware/auth.js";
 import { assertAssignedToDesign, scopeRowsByDesign } from "../../projects/scope.js";
+import { parseIdParam } from "../../utils/params.js";
 
 export const getAll = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -28,7 +29,7 @@ export const getAll = async (req: Request, res: Response, next: NextFunction) =>
 };
 export const getById = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const review = await service.getById(Number(req.params.id));
+    const review = await service.getById(parseIdParam(req.params.id, "id"));
     await assertAssignedToDesign((req as AuthedRequest).authUser, review.designId, "design reviews");
     res.json(formatSuccess(review, MSG.designReviews.single));
   } catch (err) { next(err); }
@@ -41,12 +42,12 @@ export const create = async (req: Request, res: Response, next: NextFunction) =>
 };
 export const decide = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const data = await service.decide({ id: Number(req.params.id), decision: req.body.decision });
+    const data = await service.decide({ id: parseIdParam(req.params.id, "id"), decision: req.body.decision });
     res.json(formatSuccess(data, MSG.designReviews.updated));
   } catch (err) { next(err); }
 };
 export const remove = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    res.json(formatSuccess(await service.remove(Number(req.params.id)), MSG.designReviews.deleted));
+    res.json(formatSuccess(await service.remove(parseIdParam(req.params.id, "id")), MSG.designReviews.deleted));
   } catch (err) { next(err); }
 };

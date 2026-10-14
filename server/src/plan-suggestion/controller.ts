@@ -5,6 +5,7 @@ import { logAudit } from "../utils/audit.js";
 import { assertProjectVisible } from "../projects/service.js";
 import type { AuthedRequest } from "../middleware/auth.js";
 import * as service from "./service.js";
+import { parseIdParam } from "../utils/params.js";
 
 const actorOf = (req: AuthedRequest) => ({
   id: req.authUser!.id,
@@ -24,7 +25,7 @@ export const list = async (req: AuthedRequest, res: Response, next: NextFunction
 
 // Looks the suggestion up first so the project-scope check uses its own project code.
 const loadScoped = async (req: AuthedRequest) => {
-  const suggestion = await service.getSuggestion(Number(req.params.id));
+  const suggestion = await service.getSuggestion(parseIdParam(req.params.id, "id"));
   await assertProjectVisible(req.authUser, suggestion.projectCode, "plan suggestions");
   return suggestion;
 };
@@ -32,7 +33,7 @@ const loadScoped = async (req: AuthedRequest) => {
 export const accept = async (req: AuthedRequest, res: Response, next: NextFunction) => {
   try {
     const suggestion = await loadScoped(req);
-    const item = await service.accept(suggestion.id, Number(req.params.itemId), actorOf(req), {
+    const item = await service.accept(suggestion.id, parseIdParam(req.params.itemId, "itemId"), actorOf(req), {
       assignedToUserId: req.body?.assignedToUserId,
     });
     await logAudit({
@@ -52,7 +53,7 @@ export const accept = async (req: AuthedRequest, res: Response, next: NextFuncti
 export const discard = async (req: AuthedRequest, res: Response, next: NextFunction) => {
   try {
     const suggestion = await loadScoped(req);
-    const item = await service.discard(suggestion.id, Number(req.params.itemId), actorOf(req));
+    const item = await service.discard(suggestion.id, parseIdParam(req.params.itemId, "itemId"), actorOf(req));
     res.json(formatSuccess(item, "Suggestion discarded"));
   } catch (err) {
     next(err);

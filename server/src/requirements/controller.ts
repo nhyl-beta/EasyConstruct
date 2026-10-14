@@ -11,6 +11,7 @@ import { REQUIREMENT_SORT_COLUMNS } from "./repository.js";
 import { FEATURES } from "../config/features.js";
 import { NotFoundError } from "../utils/errors.js";
 import { structureRequirement } from "./structuring.js";
+import { parseIdParam } from "../utils/params.js";
 
 export const getAll = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -51,7 +52,7 @@ export const structure = async (req: Request, res: Response, next: NextFunction)
 
 export const getById = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const data = await service.findById(Number(req.params.id));
+    const data = await service.findById(parseIdParam(req.params.id, "id"));
     if (data) await assertProjectVisible((req as AuthedRequest).authUser, data.project, "requirements");
     res.json(formatSuccess(data, MSG.requirements.single));
   } catch (err) {
@@ -71,7 +72,7 @@ export const create = async (req: AuthedRequest, res: Response, next: NextFuncti
 export const update = async (req: AuthedRequest, res: Response, next: NextFunction) => {
   try {
     const data = await service.update(
-      Number(req.params.id),
+      parseIdParam(req.params.id, "id"),
       req.body,
       req.authUser?.role ?? "",
       req.authUser,
@@ -84,7 +85,7 @@ export const update = async (req: AuthedRequest, res: Response, next: NextFuncti
 
 export const remove = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const data = await service.remove(Number(req.params.id));
+    const data = await service.remove(parseIdParam(req.params.id, "id"));
     res.json(formatSuccess(data, MSG.requirements.deleted));
   } catch (err) {
     next(err);

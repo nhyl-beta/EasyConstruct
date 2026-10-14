@@ -11,6 +11,7 @@ import type { PayrollFilters } from "./types.js";
 import { byDate, byString, parsePageRequest, respondList, sendPaged } from "../utils/pagination.js";
 import { PAYROLL_SORT_COLUMNS } from "./repository.js";
 import { cached } from "../cache/index.js";
+import { parseIdParam } from "../utils/params.js";
 
 const actorOf = (req: AuthedRequest): service.Actor => ({
   name: req.authUser?.name ?? "unknown",
@@ -53,7 +54,7 @@ export const getRulesSummary = async (_req: Request, res: Response, next: NextFu
 
 export const getById = async (req: AuthedRequest, res: Response, next: NextFunction) => {
   try {
-    const data = await service.getById(Number(req.params.id), actorOf(req));
+    const data = await service.getById(parseIdParam(req.params.id, "id"), actorOf(req));
     res.json(formatSuccess(data, MSG.payroll.single));
   } catch (err) {
     next(err);
@@ -63,7 +64,7 @@ export const getById = async (req: AuthedRequest, res: Response, next: NextFunct
 // Fix 2.5: the calculation trace for one line (HR, Finance, Admin).
 export const getLineTrace = async (req: AuthedRequest, res: Response, next: NextFunction) => {
   try {
-    res.json(formatSuccess(await service.getLineTrace(Number(req.params.id), actorOf(req)), "Calculation trace"));
+    res.json(formatSuccess(await service.getLineTrace(parseIdParam(req.params.id, "id"), actorOf(req)), "Calculation trace"));
   } catch (err) {
     next(err);
   }
@@ -71,7 +72,7 @@ export const getLineTrace = async (req: AuthedRequest, res: Response, next: Next
 
 export const update = async (req: AuthedRequest, res: Response, next: NextFunction) => {
   try {
-    const data = await service.update(Number(req.params.id), req.body);
+    const data = await service.update(parseIdParam(req.params.id, "id"), req.body);
     await logAudit({
       entityType: "payroll_batch",
       entityId: data.batchId ?? String(data.id),
@@ -87,7 +88,7 @@ export const update = async (req: AuthedRequest, res: Response, next: NextFuncti
 
 export const remove = async (req: AuthedRequest, res: Response, next: NextFunction) => {
   try {
-    const data = await service.remove(Number(req.params.id));
+    const data = await service.remove(parseIdParam(req.params.id, "id"));
     res.json(formatSuccess(data, MSG.payroll.deleted));
   } catch (err) {
     next(err);

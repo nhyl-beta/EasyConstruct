@@ -10,6 +10,7 @@ import type { TaskFilters } from "./types.js";
 import { assertProjectVisible, scopeRowsToVisible, scopedProjectCodes } from "../projects/service.js";
 import { parsePageRequest, sendPaged } from "../utils/pagination.js";
 import { TASK_SORT_COLUMNS } from "./repository.js";
+import { parseIdParam } from "../utils/params.js";
 
 export const getAll = async (req: AuthedRequest, res: Response, next: NextFunction) => {
   try {
@@ -60,7 +61,7 @@ export const getProgress = async (req: AuthedRequest, res: Response, next: NextF
 
 export const getById = async (req: AuthedRequest, res: Response, next: NextFunction) => {
   try {
-    const data = await service.getById(Number(req.params.id));
+    const data = await service.getById(parseIdParam(req.params.id, "id"));
     await assertProjectVisible(req.authUser, data.projectCode, "tasks");
     res.json(formatSuccess(data, MSG.tasks.single));
   } catch (err) {
@@ -91,7 +92,7 @@ export const create = async (req: AuthedRequest, res: Response, next: NextFuncti
 export const updateStatus = async (req: AuthedRequest, res: Response, next: NextFunction) => {
   try {
     const data = await service.updateStatus(
-      Number(req.params.id),
+      parseIdParam(req.params.id, "id"),
       req.body.status,
       req.authUser!.id,
       {
@@ -115,9 +116,9 @@ export const updateStatus = async (req: AuthedRequest, res: Response, next: Next
 
 export const update = async (req: AuthedRequest, res: Response, next: NextFunction) => {
   try {
-    const existing = await service.getById(Number(req.params.id));
+    const existing = await service.getById(parseIdParam(req.params.id, "id"));
     await assertProjectVisible(req.authUser, existing.projectCode, "tasks");
-    const data = await service.update(Number(req.params.id), req.body);
+    const data = await service.update(parseIdParam(req.params.id, "id"), req.body);
     const warnings = await service.assignmentWarnings(data.assignedToUserId, data.dueDate, data.id);
     res.json(formatSuccess({ ...data, warnings }, MSG.tasks.updated));
   } catch (err) {
@@ -127,7 +128,7 @@ export const update = async (req: AuthedRequest, res: Response, next: NextFuncti
 
 export const remove = async (req: AuthedRequest, res: Response, next: NextFunction) => {
   try {
-    const data = await service.remove(Number(req.params.id));
+    const data = await service.remove(parseIdParam(req.params.id, "id"));
     res.json(formatSuccess(data, MSG.tasks.deleted));
   } catch (err) {
     next(err);
