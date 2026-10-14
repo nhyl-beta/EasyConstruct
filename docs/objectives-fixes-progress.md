@@ -103,6 +103,21 @@ Priority P1 = claim had no working feature, P2 = partly met or strengthens a met
 - `src/db/migrations.test.ts` fails when a `.sql` file has no journal entry, or the reverse, or the entries are out of order.
 - Deploy order: **migrate first, then deploy.** The old tool is still available as `db:migrate:drizzle-kit`.
 
+## Removing claims data
+
+The reimbursement claims feature was removed from the code. The `reimbursements` table is kept in the schema, unused, and no migration touches it. Existing rows are removed by the owner, in this order:
+
+1. Deploy the code that removed the feature.
+2. Take a Neon branch or snapshot.
+3. Dry run (changes nothing; prints the database host, claim counts by status and the number of expenses with `source_type = 'reimbursement'`):
+   `npm --prefix server run db:remove-claims`
+4. Review the output.
+5. Delete the claims, in one transaction that commits only if the table ends up empty:
+   `npm --prefix server run db:remove-claims -- --apply`
+   Or paste `server/scripts/sql/remove-claims.sql` into the Neon SQL Editor (Option A).
+
+Expenses booked from paid claims are kept by default. `-- --apply --with-expenses` (or Option B in the SQL file) also deletes them; that lowers expense totals and the actual spent on budgets and cash flow, which are not recalculated. Audit log lines and notifications may still mention claim ids (harmless). Receipt files in Vercel Blob are not deleted. Never drop the `reimbursements` table.
+
 ## Not verified (the app was not run against real data)
 
 - No screen was opened in a browser and no endpoint was called with a login. Types, tests, builds and a route-mount smoke test passed; behaviour on real data is untested.
