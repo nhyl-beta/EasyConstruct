@@ -11,6 +11,7 @@ import { REVISION_ITEM_TYPES, REVISION_STATUSES, type RevisionItemType, type Rev
 import type { RevisionActor } from "./types.js";
 import { parsePageRequest, sendPaged } from "../utils/pagination.js";
 import { REVISION_SORT_COLUMNS } from "./repository.js";
+import { parseIdParam } from "../utils/params.js";
 
 const actorOf = (req: AuthedRequest): RevisionActor => {
   const u = req.authUser;
@@ -64,7 +65,7 @@ export const getSummary = async (req: AuthedRequest, res: Response, next: NextFu
 
 export const getById = async (req: AuthedRequest, res: Response, next: NextFunction) => {
   try {
-    res.json(formatSuccess(await service.getById(Number(req.params.id), actorOf(req)), "Revision retrieved"));
+    res.json(formatSuccess(await service.getById(parseIdParam(req.params.id, "id"), actorOf(req)), "Revision retrieved"));
   } catch (err) {
     next(err);
   }
@@ -74,7 +75,7 @@ export const getHistory = async (req: AuthedRequest, res: Response, next: NextFu
   try {
     res.json(
       formatSuccess(
-        await service.history(String(req.params.itemType), Number(req.params.itemId), actorOf(req)),
+        await service.history(String(req.params.itemType), parseIdParam(req.params.itemId, "itemId"), actorOf(req)),
         "Revision history retrieved",
       ),
     );
@@ -113,7 +114,7 @@ export const create = async (req: AuthedRequest, res: Response, next: NextFuncti
 
 export const setStatus = async (req: AuthedRequest, res: Response, next: NextFunction) => {
   try {
-    const updated = await service.setStatus(Number(req.params.id), req.body.status, req.body.comment, actorOf(req));
+    const updated = await service.setStatus(parseIdParam(req.params.id, "id"), req.body.status, req.body.comment, actorOf(req));
     await logAudit({
       entityType: "revision",
       entityId: String(updated.id),
@@ -130,7 +131,7 @@ export const setStatus = async (req: AuthedRequest, res: Response, next: NextFun
 
 export const download = async (req: AuthedRequest, res: Response, next: NextFunction) => {
   try {
-    const { file, revision } = await service.openFile(Number(req.params.id), actorOf(req));
+    const { file, revision } = await service.openFile(parseIdParam(req.params.id, "id"), actorOf(req));
     res.setHeader("Content-Type", file.contentType);
     if (file.sizeBytes != null) res.setHeader("Content-Length", String(file.sizeBytes));
     res.setHeader("Content-Disposition", `attachment; filename*=UTF-8''${encodeURIComponent(revision.fileName)}`);

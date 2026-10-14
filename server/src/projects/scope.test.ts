@@ -26,12 +26,26 @@ describe("project scope core", () => {
     assert.equal(canAccessCode(mine, null), false);
   });
 
-  test("only architect is scoped today; admin and others are untouched", () => {
-    assert.equal(isAssignedScoped({ id: 1, role: "architect" }), true);
-    for (const role of ["admin", "project-manager", "consultant", "engineer", "owner"]) {
-      assert.equal(isAssignedScoped({ id: 1, role }), false);
+  test("architect, consultant and project manager are scoped; oversight and company-wide roles are untouched", () => {
+    for (const role of ["architect", "consultant", "project-manager"]) {
+      assert.equal(isAssignedScoped({ id: 1, role }), true, role);
+    }
+    for (const role of ["admin", "owner", "it-designer", "finance-manager", "human-resources"]) {
+      assert.equal(isAssignedScoped({ id: 1, role }), false, role);
     }
     assert.equal(isAssignedScoped(undefined), false);
-    assert.ok(ASSIGNED_SCOPED_ROLES.has("architect"));
+    assert.ok(ASSIGNED_SCOPED_ROLES.has("consultant") && ASSIGNED_SCOPED_ROLES.has("project-manager"));
+  });
+
+  test("a PM scoped to two projects sees only their rows, designs / blueprints / proposals alike", () => {
+    // Twelve rows across seven projects, as in the system check: the PM manages S6 and S7.
+    const all = Array.from({ length: 12 }, (_, i) => ({ id: i + 1, project: `DEMO-S${(i % 7) + 1}` }));
+    const mine = filterRowsByCodes(all, new Set(["DEMO-S6", "DEMO-S7"]), (r) => r.project);
+    assert.ok(mine.length > 0 && mine.length < all.length);
+    assert.ok(mine.every((r) => r.project === "DEMO-S6" || r.project === "DEMO-S7"));
+  });
+
+  test("a consultant is refused a project they are not staffed on", () => {
+    assert.equal(canAccessCode(new Set(["P-A"]), "P-FOREIGN"), false);
   });
 });

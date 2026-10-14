@@ -25,7 +25,7 @@
     "demo:cashflow": "tsx src/scripts/demo-cashflow.ts",
     "demo:employees": "tsx src/scripts/demo-employees.ts",
     "demo:audit": "tsx src/scripts/demo-audit.ts",
-    "demo:seed": "tsx src/scripts/demo-seed-stages.ts && npm run demo:seed-roles",
+    "demo:seed": "tsx src/scripts/demo-employees.ts && tsx src/scripts/demo-seed-stages.ts && npm run demo:seed-roles",
     "demo:seed-roles": "tsx src/scripts/demo-seed-roles.ts && tsx src/scripts/demo-seed-revisions.ts && tsx src/scripts/demo-revisions.ts && tsx src/scripts/demo-seed-requests.ts && tsx src/scripts/demo-seed-design.ts && tsx src/scripts/demo-seed-owner-payroll.ts && tsx src/scripts/demo-seed-procurement.ts",
     "demo:seed-owner-payroll": "tsx src/scripts/demo-seed-owner-payroll.ts",
     "demo:seed-procurement": "tsx src/scripts/demo-seed-procurement.ts",

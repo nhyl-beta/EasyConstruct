@@ -31,6 +31,9 @@ const loginAddressLimit = (req: Request, _res: Response, next: NextFunction) => 
 const router = Router();
 router.post("/login", loginAddressLimit, validate(loginSchema), controller.login);
 
+// Server-side sign-out: every token issued to the caller before now stops working.
+router.post("/logout", authenticate, controller.logout);
+
 // Account recovery. Both stay unauthenticated by definition — the caller is
 // someone who cannot sign in.
 router.post(

@@ -51,9 +51,9 @@ export function toSubmittedFiles(rows: AttachmentRow[], isAvailable: (url: strin
 }
 
 /**
- * Who may read a proposal's files: everyone who is signed in, except an assigned-scoped
- * role (Architect), which only gets proposals of projects it is assigned to. The
- * Consultant is not assigned-scoped, so they see the files of the proposals they review.
+ * Who may read a proposal's files: everyone who is signed in, except a project-scoped role
+ * (Architect, Consultant: projects they are staffed on; Project Manager: projects they manage),
+ * which only gets proposals of its own projects.
  */
 export function canSeeProposalFiles(auth: ScopeAuth | undefined, assignedCodes: ReadonlySet<string>, projectCode: string | null | undefined): boolean {
   if (!isAssignedScoped(auth)) return true;

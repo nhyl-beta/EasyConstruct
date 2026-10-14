@@ -13,7 +13,8 @@ import { referenceSnapshots, type NewReferenceSnapshotRow } from "../db/schema/a
 import { sql } from "drizzle-orm";
 import { DAILY_REQUEST_BUDGET } from "../config/signals.js";
 
-const BASE_URL = "https://estimationpro.ai/api/v1";
+// Overridable so tests and offline runs can point at a stand-in server (ESTIMATIONPRO_BASE_URL).
+const BASE_URL = (process.env.ESTIMATIONPRO_BASE_URL ?? "https://estimationpro.ai/api/v1").replace(/\/+$/, "");
 const REQUEST_TIMEOUT_MS = 5_000;
 const SOURCE = "estimationpro";
 

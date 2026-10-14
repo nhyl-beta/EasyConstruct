@@ -10,6 +10,7 @@ import { ValidationError } from "../utils/errors.js";
 import lifecycleRoutes from "../lifecycle/routes.js";
 import * as service from "./service.js";
 import type { AuthedRequest } from "../middleware/auth.js";
+import { parseIdParam } from "../utils/params.js";
 
 const router = Router();
 
@@ -68,7 +69,7 @@ router.delete(
 const pmOwnsProject = async (req: AuthedRequest, _res: Response, next: NextFunction) => {
   try {
     if (req.authUser?.role === "project-manager") {
-      await service.getById(Number(req.params.id), {
+      await service.getById(parseIdParam(req.params.id, "id"), {
         role: req.authUser.role,
         userId: req.authUser.id,
         name: req.authUser.name,

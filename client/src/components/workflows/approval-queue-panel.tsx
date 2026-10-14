@@ -129,6 +129,16 @@ export function ApprovalQueuePanel({
     decide,
     reload,
   } = useApprovalsPaged(tab, { type: typeFilter, requestedBy: requesterFilter, dateFrom, dateTo });
+  // A refused decision (server rule, stale stage) used to show only a banner far from the button.
+  useEffect(() => {
+    if (error) toast.error(error.message);
+  }, [error]);
+
+  const DECISION_DONE = { approve: "approved", reject: "rejected", revise: "sent back for revision" } as const;
+  const decideWithToast = async (a: { workflowId: number; stageId: number; workflowCode: string }, decision: keyof typeof DECISION_DONE) => {
+    const result = await decide(a.workflowId, a.stageId, { decision, comments: comments[a.stageId]?.trim() || undefined });
+    if (result) toast.success(`${a.workflowCode} ${DECISION_DONE[decision]}`);
+  };
   const searchInput = list.searchInput;
   const setSearchInput = list.setSearchInput;
   const search = list.search;
@@ -508,12 +518,7 @@ export function ApprovalQueuePanel({
                           className="h-8"
                           disabled={deciding === a.stageId}
                           title="Send back to the submitter for revision"
-                          onClick={() =>
-                            decide(a.workflowId, a.stageId, {
-                              decision: "revise",
-                              comments: comments[a.stageId]?.trim() || undefined,
-                            })
-                          }
+                          onClick={() => void decideWithToast(a, "revise")}
                         >
                           <PenLine className="h-3.5 w-3.5" /> Request revision
                         </Button>
@@ -522,12 +527,7 @@ export function ApprovalQueuePanel({
                           variant="outline"
                           className="h-8"
                           disabled={deciding === a.stageId}
-                          onClick={() =>
-                            decide(a.workflowId, a.stageId, {
-                              decision: "reject",
-                              comments: comments[a.stageId]?.trim() || undefined,
-                            })
-                          }
+                          onClick={() => void decideWithToast(a, "reject")}
                         >
                           <XCircle className="h-3.5 w-3.5" /> Reject
                         </Button>
@@ -535,12 +535,7 @@ export function ApprovalQueuePanel({
                           size="sm"
                           className="h-8"
                           disabled={deciding === a.stageId}
-                          onClick={() =>
-                            decide(a.workflowId, a.stageId, {
-                              decision: "approve",
-                              comments: comments[a.stageId]?.trim() || undefined,
-                            })
-                          }
+                          onClick={() => void decideWithToast(a, "approve")}
                         >
                           <CheckCircle2 className="h-3.5 w-3.5" />
                           {deciding === a.stageId ? "Saving…" : "Approve"}

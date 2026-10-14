@@ -6,6 +6,7 @@ import jwt from "jsonwebtoken";
 import { env } from "../config/env.js";
 import { UnauthorizedError, ForbiddenError } from "../utils/errors.js";
 import { findSessionState } from "../auth/repository.js";
+import { allowsQueryToken, isTokenSignedOut, sessionCutoff } from "../auth/session.js";
 
 // A password change (reset link, or IT Designer's admin reset) signs out every
 // session issued before it: the token's `iat` is compared with the account's
@@ -13,7 +14,7 @@ import { findSessionState } from "../auth/repository.js";
 // query on every request; the process that performs a reset clears its own
 // entry immediately, other instances catch up within the TTL.
 const SESSION_CHECK_TTL_MS = 15_000;
-const passwordChangedCache = new Map<number, { at: number; changedAt: number | null; isActive: boolean }>();
+const passwordChangedCache = new Map<number, { at: number; changedAt: number | null; validAfter: number | null; isActive: boolean }>();
 
 export const invalidateSessionCache = (userId: number) => {
   passwordChangedCache.delete(userId);
@@ -21,12 +22,17 @@ export const invalidateSessionCache = (userId: number) => {
 
 // Also carries whether the account is still active: deactivating an account
 // ends its existing sessions (within the cache TTL), not only new sign-ins.
-const sessionState = async (userId: number): Promise<{ changedAt: number | null; isActive: boolean } | undefined> => {
+const sessionState = async (userId: number): Promise<{ changedAt: number | null; validAfter: number | null; isActive: boolean } | undefined> => {
   const cached = passwordChangedCache.get(userId);
   if (cached && Date.now() - cached.at < SESSION_CHECK_TTL_MS) return cached;
   const state = await findSessionState(userId);
   if (state === undefined) return undefined; // account no longer exists
-  const entry = { at: Date.now(), changedAt: state.changedAt ? state.changedAt.getTime() : null, isActive: state.isActive };
+  const entry = {
+    at: Date.now(),
+    changedAt: state.changedAt ? state.changedAt.getTime() : null,
+    validAfter: state.validAfter ? state.validAfter.getTime() : null,
+    isActive: state.isActive,
+  };
   passwordChangedCache.set(userId, entry);
   return entry;
 };
@@ -47,10 +53,11 @@ export async function authenticate(
 ) {
   const header = req.headers.authorization;
   // C1: EventSource (used by the SSE notification stream) cannot set custom
-  // request headers, so its one endpoint passes the token as ?token= instead
-  // — accepted here only as a fallback when no Authorization header is
-  // present, verified through the exact same jwt.verify() call below.
-  const queryToken = typeof req.query.token === "string" ? req.query.token : null;
+  // request headers, so that one endpoint passes the token as ?token= instead
+  // - accepted only on the stream route (auth/session.ts allowsQueryToken), only
+  // when no Authorization header is present, and verified by the same jwt.verify() below.
+  const queryToken =
+    typeof req.query.token === "string" && allowsQueryToken(req.method, req.originalUrl.split("?")[0] ?? "") ? req.query.token : null;
 
   if (!header?.startsWith("Bearer ") && !queryToken) {
     return next(
@@ -103,12 +110,8 @@ export async function authenticate(
     if (!state.isActive) {
       return next(new UnauthorizedError("This account has been deactivated. Contact your system administrator."));
     }
-    const changedAt = state.changedAt;
-    if (
-      changedAt !== null &&
-      typeof verified.iat === "number" &&
-      verified.iat * 1000 < Math.floor(changedAt / 1000) * 1000
-    ) {
+    // Signed out by a password change, a deactivation or an explicit sign-out.
+    if (isTokenSignedOut(typeof verified.iat === "number" ? verified.iat : undefined, sessionCutoff(state.changedAt, state.validAfter))) {
       return next(new UnauthorizedError("Session expired — please sign in again"));
     }
 

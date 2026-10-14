@@ -1,5 +1,8 @@
 import { Router } from "express";
+import { requireRole } from "../../middleware/auth.js";
 import { cashFlowController } from "./controller.js";
 
+import { FINANCE_COMPANY_READERS } from "../access.js";
+
 export const cashFlowRouter = Router();
-cashFlowRouter.get("/", cashFlowController.list);
+cashFlowRouter.get("/", requireRole(...FINANCE_COMPANY_READERS), cashFlowController.list);

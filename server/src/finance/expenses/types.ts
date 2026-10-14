@@ -24,6 +24,8 @@ export interface CreateExpenseInput {
 export interface ListExpensesQuery {
   query?: string;
   category?: string;
+  /** Restrict to these project codes (visibility scope; undefined = no restriction). */
+  codes?: string[];
   page?: number;
   pageSize?: number;
 }

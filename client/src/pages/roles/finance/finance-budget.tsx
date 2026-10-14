@@ -37,6 +37,7 @@ import { useBudgetAdjustments } from "@/features/finance/budgets/hooks/useBudget
 import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
 import { usePagination } from "@/hooks/use-pagination";
 import { useBudgets } from "@/features/finance/budgets/hooks/useBudgets";
+import { missingForBudget, missingSentence } from "@/features/finance/lib/form-hints";
 import { formatAxisCurrency, formatCompactCurrency, formatCurrency } from "@/lib/format-currency";
 import { useEffect, useMemo, useState } from "react";
 import { useOpenOnAction } from "@/features/quick-search/useOpenOnAction";
@@ -135,7 +136,8 @@ function NewBudgetDialog({
     setFiscalYear(String(new Date().getFullYear()));
   };
 
-  const canSubmit = project && category && owner && Number(planned) >= 0 && /^\d{4}$/.test(fiscalYear);
+  const missing = missingForBudget({ project, category, owner, planned, fiscalYear });
+  const canSubmit = missing.length === 0;
 
   const handleSubmit = async () => {
     const ok = await onCreate({
@@ -205,6 +207,7 @@ function NewBudgetDialog({
           </div>
         </div>
         {error && <p className="text-sm text-destructive-strong">{error}</p>}
+        {!canSubmit && <p className="text-xs text-muted-foreground">{missingSentence(missing)}</p>}
         <DialogFooter>
           <Button disabled={!canSubmit || creating} onClick={handleSubmit}>
             {creating ? "Creating…" : "Create budget"}

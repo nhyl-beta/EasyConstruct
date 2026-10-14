@@ -4,9 +4,11 @@ import { MSG } from "../../constants/messages.js";
 import { formatSuccess } from "../../utils/response.js";
 import { logAudit } from "../../utils/audit.js";
 import type { AuthedRequest } from "../../middleware/auth.js";
+import { parseIdParam } from "../../utils/params.js";
 import * as service from "./service.js";
 import type { BudgetFilters, BudgetStatus } from "./types.js";
 import { byDate, byNumber, byString, respondList } from "../../utils/pagination.js";
+import { assertProjectVisible, scopeRowsToVisible } from "../../projects/service.js";
 
 const validStatuses: readonly BudgetStatus[] = [
   "draft",
@@ -44,7 +46,8 @@ export const getAll = async (
             : undefined,
     };
 
-    const data = await service.getAll(filters);
+    // A Project Manager only gets the budget lines of the projects they manage.
+    const data = await scopeRowsToVisible((req as AuthedRequest).authUser, await service.getAll(filters), (b) => b.project);
 
     respondList(res, req.query, data, MSG.budgets.retrieved, {
       project: byString((b) => b.project),
@@ -64,7 +67,8 @@ export const getById = async (
   next: NextFunction,
 ) => {
   try {
-    const data = await service.getById(Number(req.params.id));
+    const data = await service.getById(parseIdParam(req.params.id));
+    await assertProjectVisible((req as AuthedRequest).authUser, data.project, "budgets");
 
     res.json(formatSuccess(data, MSG.budgets.single));
   } catch (err) {
@@ -101,7 +105,7 @@ export const update = async (
   next: NextFunction,
 ) => {
   try {
-    const data = await service.update(Number(req.params.id), req.body);
+    const data = await service.update(parseIdParam(req.params.id, "id"), req.body);
 
     await logAudit({
       entityType: "budget",
@@ -124,7 +128,7 @@ export const remove = async (
   next: NextFunction,
 ) => {
   try {
-    const data = await service.remove(Number(req.params.id));
+    const data = await service.remove(parseIdParam(req.params.id, "id"));
 
     res.json(formatSuccess(data, MSG.budgets.deleted));
   } catch (err) {

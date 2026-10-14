@@ -26,7 +26,8 @@ export const EMAILS = {
   finance: "finance@easyconstruct.demo",
   hr: "hr@easyconstruct.demo",
   admin: "admin@easyconstruct.demo",
-  owner: "owner@easyconstruct.demo",
+  // The seeded Owner is the real owner email, not owner@easyconstruct.demo (see seed-demo-accounts.ts).
+  owner: process.env.DEMO_OWNER_EMAIL?.trim() || "nhylcyrusgervasio@gmail.com",
   itdesigner: "itdesigner@easyconstruct.demo",
 } as const;
 export type AccountKey = keyof typeof EMAILS;

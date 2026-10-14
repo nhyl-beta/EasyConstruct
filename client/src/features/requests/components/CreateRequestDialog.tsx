@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Send } from "lucide-react";
 import { toast } from "sonner";
+import { responseWindowProblem } from "../lib/response-window";
 
 import { useAuth } from "@/auth/auth-context";
 import { ProjectPicker } from "@/components/shared/project-picker";
@@ -89,7 +90,8 @@ export function CreateRequestDialog({ open, onOpenChange, initial, onCreated }: 
   }, [open, initial?.projectCode, initial?.kind, initial?.discipline, initial?.subject]);
 
   const defaultDays = kind === "RFI" ? 3 : 4;
-  const invalid = !project || subject.trim().length < 3 || text.trim().length < 10 || !assignee;
+  const dueProblem = responseWindowProblem(dueDays);
+  const invalid = !project || subject.trim().length < 3 || text.trim().length < 10 || !assignee || dueProblem !== null;
 
   const submit = async () => {
     setTried(true);
@@ -269,7 +271,24 @@ export function CreateRequestDialog({ open, onOpenChange, initial, onCreated }: 
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="rq-due">Response window (days)</Label>
-              <Input id="rq-due" type="number" min={1} max={60} value={dueDays} onChange={(e) => setDueDays(e.target.value)} placeholder={`${defaultDays} (default)`} disabled={submitting} />
+              <Input
+                id="rq-due"
+                type="number"
+                min={1}
+                max={60}
+                step={1}
+                value={dueDays}
+                onChange={(e) => setDueDays(e.target.value)}
+                placeholder={`${defaultDays} (default)`}
+                disabled={submitting}
+                aria-invalid={dueProblem !== null}
+                aria-describedby={dueProblem ? "rq-due-error" : undefined}
+              />
+              {dueProblem && (
+                <p id="rq-due-error" className="text-xs text-destructive-strong">
+                  {dueProblem}
+                </p>
+              )}
             </div>
           </div>
 

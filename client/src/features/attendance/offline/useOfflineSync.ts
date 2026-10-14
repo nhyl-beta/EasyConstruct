@@ -1,6 +1,7 @@
 // client/src/features/attendance/offline/useOfflineSync.ts — NEW (E1)
 import { useCallback, useEffect, useRef, useState } from "react";
-import { listPendingCount, syncPendingAttendance } from "./queue";
+import { discardPendingAttendance, listPendingCount, listPendingSummaries, syncPendingAttendance, type PendingSummary } from "./queue";
+import { DUPLICATE_DROPPED_MESSAGE } from "./sync-classify";
 
 async function registerBackgroundSync(): Promise<void> {
   if (!("serviceWorker" in navigator)) return;
@@ -27,20 +28,25 @@ export function useOfflineAttendanceSync() {
   const [pendingCount, setPendingCount] = useState(0);
   const [syncing, setSyncing] = useState(false);
   const [lastSyncError, setLastSyncError] = useState<string | null>(null);
+  const [syncNotice, setSyncNotice] = useState<string | null>(null);
+  const [pendingEntries, setPendingEntries] = useState<PendingSummary[]>([]);
   const syncingRef = useRef(false);
 
   const refreshPendingCount = useCallback(() => {
     void listPendingCount().then(setPendingCount);
+    void listPendingSummaries().then(setPendingEntries);
   }, []);
 
-  const runSync = useCallback(async () => {
+  const runSync = useCallback(async (manual = false) => {
     if (syncingRef.current || !navigator.onLine) return;
     syncingRef.current = true;
     setSyncing(true);
     setLastSyncError(null);
     try {
-      const result = await syncPendingAttendance();
+      const result = await syncPendingAttendance({ includeNeedsAttention: manual });
       if (result.failed > 0) setLastSyncError(`${result.failed} entr${result.failed === 1 ? "y" : "ies"} failed to sync — will retry`);
+      if (result.dropped > 0) setSyncNotice(DUPLICATE_DROPPED_MESSAGE);
+      else if (result.synced > 0) setSyncNotice(null);
     } finally {
       setSyncing(false);
       syncingRef.current = false;
@@ -75,5 +81,25 @@ export function useOfflineAttendanceSync() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return { isOnline, pendingCount, syncing, lastSyncError, retrySync: runSync, refreshPendingCount };
+  const discard = useCallback(
+    async (clientRequestId: string) => {
+      await discardPendingAttendance(clientRequestId);
+      refreshPendingCount();
+    },
+    [refreshPendingCount],
+  );
+
+  return {
+    isOnline,
+    pendingCount,
+    pendingEntries,
+    syncing,
+    lastSyncError,
+    syncNotice,
+    dismissSyncNotice: () => setSyncNotice(null),
+    /** Manual "Retry sync": also tries the entries the server refused earlier. */
+    retrySync: () => runSync(true),
+    discardPending: discard,
+    refreshPendingCount,
+  };
 }

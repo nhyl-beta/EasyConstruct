@@ -46,10 +46,13 @@ export function useEngineerMilestones() {
     try {
       const updated = await MilestoneRepository.update(id, { status: "completed" });
       setAll((prev) => prev.map((m) => (m.id === id ? { ...m, ...updated } : m)));
-      return true;
+      return { ok: true as const };
     } catch (err) {
-      setCompleteError(err instanceof Error ? err.message : "Failed to complete milestone.");
-      return false;
+      const message = err instanceof Error ? err.message : "Failed to complete milestone.";
+      setCompleteError(message);
+      // The server's reason (for example "Finish the linked tasks first: ...") is returned so the
+      // caller can toast it, not only keep it in state.
+      return { ok: false as const, message };
     } finally {
       setCompletingId(null);
     }

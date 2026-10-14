@@ -7,6 +7,7 @@ import { Readable } from "node:stream";
 import { env } from "../config/env.js";
 import { AppError, NotFoundError, ValidationError } from "../utils/errors.js";
 
+import { assertContentMatches } from "./sniff.js";
 import type { UploadInput, UploadResult } from "./types.js";
 
 // Same read-only-fs rule as server/src/documents/upload.ts: only os.tmpdir()
@@ -107,6 +108,9 @@ export const uploadFile = async (
       "File exceeds the 8MB upload limit",
     );
   }
+
+  // The declared type and the extension are not proof: check the bytes.
+  assertContentMatches(input.filename, mime, buffer);
 
   return storeBuffer({
     buffer,

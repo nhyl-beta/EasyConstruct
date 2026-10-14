@@ -2,6 +2,7 @@
 import { ChartTooltip } from "@/components/charts/chart-tooltip";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { useSearchParams } from "react-router";
 import { useOpenOnAction } from "@/features/quick-search/useOpenOnAction";
 import { PageContainer } from "@/components/refine-ui/views/page-container";
@@ -48,6 +49,7 @@ import { ManageCategoriesDialog } from "@/features/finance/components/ManageCate
 import { useExpenseCategories } from "@/features/finance/hooks/use-expense-categories";
 import { categoryKey } from "@/features/finance/lib/category-name";
 import { expenseSource } from "@/features/finance/lib/expense-source";
+import { missingForExpense, missingSentence } from "@/features/finance/lib/form-hints";
 import {
   Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
@@ -75,7 +77,8 @@ function RecordExpenseDialog({
     setAmount("");
   };
 
-  const canSubmit = vendor.trim() && project && category && Number(amount) > 0;
+  const missing = missingForExpense({ vendor, project, category, amount });
+  const canSubmit = missing.length === 0;
 
   const handleSubmit = async () => {
     const ok = await onCreate({ vendor: vendor.trim(), project, category, amount: Number(amount) });
@@ -117,6 +120,7 @@ function RecordExpenseDialog({
           </div>
         </div>
         {error && <p className="text-sm text-destructive-strong">{error}</p>}
+        {!canSubmit && <p className="text-xs text-muted-foreground">{missingSentence(missing)}</p>}
         <DialogFooter>
           <Button disabled={!canSubmit || creating} onClick={handleSubmit}>
             {creating ? "Recording…" : "Record expense"}
@@ -179,10 +183,13 @@ export default function FinanceExpensesPage() {
   const runDecision = async () => {
     if (!pendingDecision) return;
     setDeciding(true);
-    const r = await c.decide(pendingDecision.id, pendingDecision.decision);
+    const decided = pendingDecision;
+    const r = await c.decide(decided.id, decided.decision);
     setDeciding(false);
     setPendingDecision(null);
     setNotice(r.ok ? (r.warning ? { tone: "warn", text: r.warning } : null) : { tone: "error", text: r.error ?? "Could not update the expense" });
+    if (r.ok) toast.success(`${decided.id} ${decided.decision === "approve" ? "approved" : "rejected"}`);
+    else toast.error(r.error ?? "Could not update the expense");
   };
 
   return (

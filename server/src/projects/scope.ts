@@ -1,15 +1,16 @@
 // server/src/projects/scope.ts
 //
-// Reusable "only the projects assigned to me" scoping for roles whose data
-// access is their project_members staffing. Architect is the first role on it;
-// adopting it for another role is a one-line change to ASSIGNED_SCOPED_ROLES
-// (the membership row's role is expected to equal the account role).
+// Reusable "only my projects" scoping. Architect and Consultant are limited to the projects they
+// are staffed on (project_members; the membership row's role is expected to equal the account
+// role). A Project Manager is limited to the projects they manage. Adopting it for another role
+// is a change to ASSIGNED_SCOPED_ROLES.
 //
 // The core (filterRowsByCodes / canAccessCode) is pure so it can be tested
 // without a database; the exported helpers add the membership lookup.
 import * as projectMemberRepo from "../project-members/repository.js";
 import { ForbiddenError } from "../utils/errors.js";
 import * as designsRepo from "../designs/repository.js";
+import { projectCodesForPm } from "./service.js";
 
 export interface ScopeAuth {
   id: number;
@@ -17,8 +18,8 @@ export interface ScopeAuth {
   name?: string;
 }
 
-/** Roles whose reads and writes are limited to the projects they are assigned to. */
-export const ASSIGNED_SCOPED_ROLES: ReadonlySet<string> = new Set(["architect"]);
+/** Roles whose reads and writes are limited to their own projects (staffed on, or managed). */
+export const ASSIGNED_SCOPED_ROLES: ReadonlySet<string> = new Set(["architect", "consultant", "project-manager"]);
 
 export const isAssignedScoped = (auth: ScopeAuth | undefined): auth is ScopeAuth =>
   !!auth && ASSIGNED_SCOPED_ROLES.has(auth.role);
@@ -36,8 +37,11 @@ export const filterRowsByCodes = <T>(
 export const canAccessCode = (codes: ReadonlySet<string>, code: string | null | undefined): boolean =>
   !!code && codes.has(code);
 
-/** Project codes this user is assigned to in their own role. */
+/** Project codes this user is assigned to in their own role (a PM: the projects they manage). */
 export const assignedCodesFor = async (auth: ScopeAuth): Promise<Set<string>> => {
+  if (auth.role === "project-manager") {
+    return projectCodesForPm({ role: auth.role, userId: auth.id, name: auth.name ?? "" });
+  }
   const rows = await projectMemberRepo.findAll({ userId: auth.id, role: auth.role as never });
   return new Set(rows.map((r) => r.projectCode));
 };

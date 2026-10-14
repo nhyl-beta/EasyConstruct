@@ -3,6 +3,8 @@ import { sendSuccess } from "../../utils/response.js";
 import { expensesService } from "./services.js";
 import { parsePageRequest, sendPaged } from "../../utils/pagination.js";
 import { EXPENSE_SORT_COLUMNS } from "./repository.js";
+import { scopedProjectCodes } from "../../projects/service.js";
+import type { AuthedRequest } from "../../middleware/auth.js";
 
 export const expensesController = {
   async list(req: Request, res: Response, next: NextFunction) {
@@ -16,6 +18,8 @@ export const expensesController = {
         {
           query: query as string | undefined,
           category: category as string | undefined,
+          // A Project Manager only sees the expenses of the projects they manage.
+          codes: (await scopedProjectCodes((req as AuthedRequest).authUser)) ?? undefined,
         },
         paging,
         req.query.extras === "1",

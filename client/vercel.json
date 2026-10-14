@@ -13,6 +13,10 @@
   ],
   "rewrites": [
     {
+      "source": "/api/:path*",
+      "destination": "https://easyconstruct-server.vercel.app/api/:path*"
+    },
+    {
       "source": "/((?!api/).*)",
       "destination": "/index.html"
     }

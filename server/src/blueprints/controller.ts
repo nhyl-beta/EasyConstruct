@@ -7,6 +7,7 @@ import * as service from "./service.js";
 import { byDate, byString, respondList } from "../utils/pagination.js";
 import type { AuthedRequest } from "../middleware/auth.js";
 import { assertAssignedToDesign, assertAssignedToProject, scopeRowsByDesign } from "../projects/scope.js";
+import { parseIdParam } from "../utils/params.js";
 
 export const getAll = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -32,7 +33,7 @@ export const getAll = async (req: Request, res: Response, next: NextFunction) =>
 };
 export const getById = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const bp = await service.getById(Number(req.params.id));
+    const bp = await service.getById(parseIdParam(req.params.id, "id"));
     const auth = (req as AuthedRequest).authUser;
     if (bp.projectCode) await assertAssignedToProject(auth, bp.projectCode, "blueprints");
     else await assertAssignedToDesign(auth, bp.designId, "blueprints");
@@ -46,16 +47,16 @@ export const create = async (req: Request, res: Response, next: NextFunction) =>
   } catch (err) { next(err); }
 };
 export const update = async (req: Request, res: Response, next: NextFunction) => {
-  try { res.json(formatSuccess(await service.update(Number(req.params.id), req.body), MSG.blueprints.updated)); }
+  try { res.json(formatSuccess(await service.update(parseIdParam(req.params.id, "id"), req.body), MSG.blueprints.updated)); }
   catch (err) { next(err); }
 };
 export const decide = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const data = await service.decide({ id: Number(req.params.id), approval: req.body.approval });
+    const data = await service.decide({ id: parseIdParam(req.params.id, "id"), approval: req.body.approval });
     res.json(formatSuccess(data, MSG.blueprints.updated));
   } catch (err) { next(err); }
 };
 export const remove = async (req: Request, res: Response, next: NextFunction) => {
-  try { res.json(formatSuccess(await service.remove(Number(req.params.id)), MSG.blueprints.deleted)); }
+  try { res.json(formatSuccess(await service.remove(parseIdParam(req.params.id, "id")), MSG.blueprints.deleted)); }
   catch (err) { next(err); }
 };

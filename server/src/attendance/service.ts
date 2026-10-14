@@ -10,7 +10,9 @@ import { buildHeatmap, lastDays } from "./heatmap.js";
 import { db } from "../db/connection.js";
 import { projects } from "../db/schema/projects.js";
 import {
+  AppError,
   ConflictError,
+  DUPLICATE_ATTENDANCE_CODE,
   ForbiddenError,
   NotFoundError,
   ValidationError,
@@ -198,7 +200,11 @@ export const create = async (
   });
 
   if (existingToday.length > 0) {
-    throw new ValidationError(
+    // 409 with a stable code: a queued offline entry that hits this will never succeed on retry,
+    // and the client drops it on this code (features/attendance/offline/sync-classify.ts).
+    throw new AppError(
+      409,
+      DUPLICATE_ATTENDANCE_CODE,
       "Attendance for this employee has already been recorded today",
     );
   }
