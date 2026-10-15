@@ -12,7 +12,7 @@
 // Run:  SMOKE_BASE_URL=http://localhost:8123/api npx tsx src/scripts/system-check/sweep.ts <inventory.json> <outDir>
 import "dotenv/config";
 import { readFileSync, writeFileSync } from "node:fs";
-import { assertDemoApi } from "../demo-guard.js";
+import { assertDemoApi, assertNoRealBlobStore, failIfLoginsFailed } from "../demo-guard.js";
 
 const BASE = process.env.SMOKE_BASE_URL ?? "http://localhost:8123/api";
 assertDemoApi(BASE);
@@ -66,11 +66,14 @@ async function main() {
 
   // 1. sign in every role once
   const tokens: Record<string, string> = {};
+  const failedLogins: string[] = [];
   for (const role of ROLES) {
     const r = await send("POST", "/auth/login", undefined, { email: ROLE_ACCOUNTS[role], password: PASSWORD });
-    if (r.status !== 200) { console.error(`  ✘ login ${role} (${ROLE_ACCOUNTS[role]}) -> ${r.status}`); continue; }
+    if (r.status !== 200) { console.error(`  ✘ login ${role} (${ROLE_ACCOUNTS[role]}) -> ${r.status}`); failedLogins.push(`${role} (${r.status})`); continue; }
     tokens[role] = r.json.data.token;
   }
+  failIfLoginsFailed(failedLogins);
+  await assertNoRealBlobStore(BASE, tokens.admin ?? Object.values(tokens)[0]!);
   const admin = tokens.admin ?? tokens["it-designer"];
   if (!admin) throw new Error("no admin token — cannot discover ids");
 

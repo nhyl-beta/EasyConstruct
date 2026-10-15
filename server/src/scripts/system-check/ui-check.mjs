@@ -4,6 +4,8 @@
 // usage: node ui-check.mjs <outDir> [role,role,...]
 import { chromium } from "playwright";
 import { writeFileSync, mkdirSync } from "node:fs";
+import { preflightApi, failIfBrowserLoginsFailed } from "./lib.mjs";
+await preflightApi();
 
 const WEB = process.env.WEB_BASE ?? "http://localhost:5173";
 const CHROME = process.env.CHROME_PATH ?? "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
@@ -222,3 +224,4 @@ await Promise.all([0, 1, 2].map(async () => {
 await browser.close();
 writeFileSync(`${outDir}/ui-results.json`, JSON.stringify(results, null, 1));
 console.log("wrote ui-results.json");
+failIfBrowserLoginsFailed(results);
