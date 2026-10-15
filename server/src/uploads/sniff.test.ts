@@ -46,7 +46,17 @@ describe("checkContent", () => {
     assert.equal(checkContent("a.pdf", "application/pdf", PNG).ok, false);
     assert.equal(checkContent("a.png", "", PDF).ok, false);
   });
-  test("a declared type that disagrees with the content is refused even when the extension is generic", () => {
+  test("a photo named .jpg whose bytes are PNG, WebP or HEIC is still an image and is accepted (the attendance selfie case)", () => {
+    const WEBP = Buffer.concat([Buffer.from("RIFF"), Buffer.from([0, 0, 0, 0]), Buffer.from("WEBPVP8 ")]);
+    const HEIC = Buffer.concat([Buffer.from([0, 0, 0, 24]), Buffer.from("ftypheic"), Buffer.alloc(8)]);
+    assert.ok(checkContent("attendance-1.jpg", "image/png", PNG).ok);
+    assert.ok(checkContent("attendance-1.jpg", "image/webp", WEBP).ok);
+    assert.ok(checkContent("attendance-1.jpg", "image/heic", HEIC).ok);
+    assert.equal(detectKind(HEIC), "heic");
+  });
+  test("an image name or image type on something that is not an image is refused", () => {
+    assert.equal(checkContent("a.jpg", "image/jpeg", PDF).ok, false);
+    assert.equal(checkContent("a.jpg", "image/jpeg", HTML).ok, false);
     assert.equal(checkContent("data.bin.pdf", "image/png", PDF).ok, false);
   });
   test("HTML in a text-looking CAD or text file is refused too", () => {
