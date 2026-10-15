@@ -6,6 +6,7 @@
 // now" for when someone wants fresher data without waiting for the 7-day
 // TTL to lapse.
 import { Router } from "express";
+import { mapWithConcurrency } from "../utils/concurrency.js";
 import { authenticate, requireRole } from "../middleware/auth.js";
 import { formatSuccess } from "../utils/response.js";
 import { db } from "../db/connection.js";
@@ -78,8 +79,10 @@ router.post("/refresh-references", async (_req, res, next) => {
     const trades = await fetchTrades();
     let itemCount = 0;
     let tradesRefreshed = 0;
-    for (const trade of trades) {
-      const rows = await fetchCostsForTrade(trade);
+    // Five trades at a time: 35 sequential external calls took about 12 s. fetchCostsForTrade
+    // never throws (it returns [] on any failure), so one bad trade does not stop the rest.
+    const results = await mapWithConcurrency(trades, 5, (trade) => fetchCostsForTrade(trade));
+    for (const rows of results) {
       if (rows.length > 0) {
         itemCount += rows.length;
         tradesRefreshed += 1;
