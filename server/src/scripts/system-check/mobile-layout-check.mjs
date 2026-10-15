@@ -4,7 +4,7 @@ import { chromium } from "playwright";
 import { writeFileSync, mkdirSync } from "node:fs";
 const WEB = process.env.WEB_BASE ?? "http://localhost:5173";
 const API = "http://localhost:8123";
-import { CHROME } from "./lib.mjs";
+import { CHROME, psql } from "./lib.mjs";
 const out = process.argv[2] ?? "."; mkdirSync(out, { recursive: true });
 const log = []; const rec = (name, ok, detail = "") => { log.push({ name, ok, detail }); console.log(ok ? "PASS" : "FAIL", name, detail); };
 const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
@@ -53,6 +53,9 @@ async function sitePage(ctx) {
   const page = await ctx.newPage(); await login(page, ACC.site);
   await page.goto(`${WEB}/attendance`, { waitUntil: "domcontentloaded" }).catch(() => {}); await page.waitForTimeout(2500); return page;
 }
+// Start from a day with no attendance for the site account, so the clock-in below is the first one.
+const SITE_EMP = psql("select employee_id from employees where email='site@easyconstruct.demo'");
+psql(`delete from attendance where employee_id='${SITE_EMP}' and log_date=current_date`);
 const ctx = await browser.newContext(ctxOpts);
 let page = await sitePage(ctx);
 console.log("attendance url", page.url());
@@ -65,11 +68,12 @@ await page.screenshot({ path: `${out}/mobile-attendance.png` });
 // project select
 async function pick(page) {
   await page.locator("[role=combobox]").first().click({ timeout: 3000 }).catch(() => {}); await page.waitForTimeout(300);
-  const opts = await page.$$eval("[role=option]", (o) => o.map((x) => x.innerText)); await page.locator("[role=option]").first().click().catch(() => {}); return opts;
+  const opts = await page.$$eval("[role=option]", (o) => o.map((x) => x.innerText)); // Clock in on the Construction demo project: attendance is refused on other phases, which is not geofence logic.
+  const wanted = page.locator("[role=option]", { hasText: "DEMO-S4" }); await ((await wanted.count()) ? wanted : page.locator("[role=option]")).first().click().catch(() => {}); return opts;
 }
 let opts = []; if (!already) opts = await pick(page);
 rec("Project dropdown lists staffed projects", opts.length > 0, opts.join(" | "));
-const site = opts[0]?.split(" · ")[0];
+const site = (opts.find((o) => o.includes("DEMO-S4")) ?? opts[0])?.split(" · ")[0];
 const geo = await (async () => { const r = await fetch(`${API}/api/auth/login`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: ACC.site, password: "Demo@12345" }) }); const t = (await r.json()); const tok = t.data?.token ?? t.token; const p = await (await fetch(`${API}/api/projects`, { headers: { Authorization: `Bearer ${tok}` } })).json(); const list = p.data ?? p; return { tok, proj: list.find((x) => x.code === site) }; })();
 console.log("project", site, geo.proj?.siteLatitude, geo.proj?.siteLongitude);
 const lat = Number(geo.proj?.siteLatitude), lng = Number(geo.proj?.siteLongitude);
@@ -90,11 +94,20 @@ if (!already && site) {
   // outside geofence (about 5 km away)
   await verifyAndPhoto(page, { lat: lat + 0.05, lng });
   rec("Photo preview appears after capture", await page.locator("img[alt*='verification']").count() > 0);
-  const posts = []; page.on("response", (r) => { if (r.request().method() === "POST" && r.url().includes("/api/")) posts.push(`${r.status()} ${r.url().replace(/^https?:\/\/[^/]+/, "")}`); });
+  const posts = []; const postBodies = [];
+  page.on("response", async (r) => { if (r.request().method() === "POST" && r.url().includes("/api/")) { const path = r.url().replace(/^https?:\/\/[^/]+/, ""); posts.push(`${r.status()} ${path}`); postBodies.push({ status: r.status(), path, body: await r.text().catch(() => "") }); } });
   await page.getByRole("button", { name: "Confirm attendance" }).click(); await page.waitForTimeout(3000);
   const txt = await page.locator("main, [data-slot='sidebar-inset']").first().innerText();
-  const outside = /Outside/i.test(txt);
-  rec("Clock-in 5 km outside geofence is flagged Outside (or rejected)", outside || posts.some((p) => /^4/.test(p)), posts.join(" ; ") + " | page shows: " + (txt.match(/Clocked in at[^\n]*|Outside|Inside|Unverified/g) || []).join(","));
+  // Strict: this passes only for the geofence logic itself. A rejected selfie upload (or any other
+  // unrelated 4xx) used to count as "rejected" and gave a false PASS.
+  const uploadFail = postBodies.find((p) => p.path.startsWith("/api/uploads") && p.status >= 400);
+  const saved = psql(`select geofence||'|'||status||'|'||coalesce(distance_from_site_m::text,'-') from attendance where employee_id='${SITE_EMP}' and log_date=current_date`);
+  const attendancePost = postBodies.find((p) => p.path === "/api/attendance");
+  const flaggedInDb = /^Outside\|/.test(saved);
+  const refusedForGeofence = !!attendancePost && attendancePost.status >= 400 && /geofence|outside|too far|out of range|distance|radius/i.test(attendancePost.body);
+  const detail = `${posts.join(" ; ")} | saved row: ${saved || "(none)"} | page shows: ${(txt.match(/Clocked in at[^\n]*|Outside|Inside|Unverified/g) || []).join(",")}`;
+  if (uploadFail) rec("Clock-in 5 km outside geofence is flagged Outside (the selfie upload must succeed first)", false, `the selfie upload was rejected before the geofence logic ran: ${uploadFail.status} ${uploadFail.body.slice(0, 160)}`);
+  else rec("Clock-in 5 km outside geofence is flagged Outside (saved row) or refused with a geofence message", flaggedInDb || refusedForGeofence, detail);
   writeFileSync(`${out}/geo-outside.txt`, txt.slice(0, 1500));
 }
 await ctx.close();
