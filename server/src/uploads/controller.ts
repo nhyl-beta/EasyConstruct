@@ -3,7 +3,7 @@ import { pipeline } from "node:stream/promises";
 import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
 import { env } from "../config/env.js";
 import { AppError } from "../utils/errors.js";
-import { formatLimit, hasAllowedExtension, maxUploadBytes } from "./limits.js";
+import { formatLimit, hasAllowedExtension, isBlobClientUploadBody, maxUploadBytes } from "./limits.js";
 import { ValidationError } from "../utils/errors.js";
 import { HTTP } from "../constants/http-status.js";
 import { formatSuccess } from "../utils/response.js";
@@ -68,6 +68,9 @@ export const clientToken = async (req: AuthedRequest, res: Response, next: NextF
   try {
     if (!env.BLOB_READ_WRITE_TOKEN) {
       throw new AppError(501, "BLOB_NOT_CONFIGURED", "Direct uploads are not configured on this server");
+    }
+    if (!isBlobClientUploadBody(req.body)) {
+      throw new ValidationError("Expected a Vercel Blob client-upload request (type and payload).");
     }
     const json = await handleUpload({
       token: env.BLOB_READ_WRITE_TOKEN,

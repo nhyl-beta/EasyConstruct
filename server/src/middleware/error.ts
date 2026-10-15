@@ -4,6 +4,7 @@ import { HTTP } from "../constants/http-status.js";
 import { AppError } from "../utils/errors.js";
 import { formatError } from "../utils/response.js";
 import { mapPgError } from "./pg-errors.js";
+import { mapBodyParserError } from "./body-errors.js";
 
 export function errorMiddleware(
   err: Error,
@@ -55,6 +56,13 @@ export function errorMiddleware(
         "FILE_TOO_LARGE",
       ),
     );
+    return;
+  }
+
+  // express.json() rejecting a malformed body (before any route runs) is the client's mistake: 400.
+  const body = mapBodyParserError(err);
+  if (body) {
+    res.status(body.status).json(formatError(body.message, body.code));
     return;
   }
 

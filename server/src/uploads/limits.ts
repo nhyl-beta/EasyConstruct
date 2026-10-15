@@ -24,3 +24,13 @@ export const hasAllowedExtension = (filename: string): boolean => {
 };
 
 export const formatLimit = (bytes: number): string => `${Math.round(bytes / MB)} MB`;
+
+/**
+ * The two payloads Vercel Blob's client-upload protocol sends to our token route. Anything else
+ * (an empty or junk body) is a 400 here instead of an exception from the Blob SDK.
+ */
+export const isBlobClientUploadBody = (body: unknown): boolean => {
+  if (!body || typeof body !== "object") return false;
+  const b = body as { type?: unknown; payload?: unknown };
+  return (b.type === "blob.generate-client-token" || b.type === "blob.upload-completed") && !!b.payload && typeof b.payload === "object";
+};
