@@ -66,6 +66,8 @@ export interface Project {
   pm?: string;
   assignedEngineer?: string;
   client: string;
+  /** Where RFIs/RFAs sent to the client are emailed. Optional. */
+  clientEmail?: string | null;
   /** ISO 4217 code every amount on this project is denominated in. */
   currency: string;
   location: string;

@@ -17,6 +17,7 @@ export const REQUEST_STATUSES = [
   "draft",
   "open",
   "in_review",
+  "client_replied",
   "answered",
   "approved",
   "approved_as_noted",
@@ -36,6 +37,16 @@ export const DEFAULT_DUE_DAYS: Record<RequestKind, number> = { RFI: 3, RFA: 4 };
 const FINISHED: ReadonlySet<string> = new Set(["answered", "approved", "approved_as_noted", "rejected", "closed"]);
 /** Statuses where a response is still awaited (the clock is running). */
 const AWAITING_RESPONSE: ReadonlySet<string> = new Set(["open", "in_review"]);
+
+/** Where an RFI/RFA goes: a staffed Architect/Consultant, or the project's client by email. */
+export const RECIPIENT_TYPES = ["internal", "client"] as const;
+export type RecipientType = (typeof RECIPIENT_TYPES)[number];
+export const EMAIL_STATUSES = ["not_sent", "sent", "failed"] as const;
+export type EmailStatus = (typeof EMAIL_STATUSES)[number];
+/** A request can be re-emailed at most this many times. */
+export const MAX_EMAIL_RESENDS = 3;
+/** Client RFIs a sender can still act on (mark replied / answer): the clock is running or the client has replied. */
+export const CLIENT_ACTIVE_STATUSES: ReadonlySet<string> = new Set(["open", "client_replied"]);
 
 /** Gate definition of "open": not answered, approved, approved-as-noted, rejected or closed. */
 export const isOpenRequest = (status: string): boolean => !FINISHED.has(status);
@@ -94,6 +105,7 @@ export const STATUS_LABEL: Record<RequestStatus, string> = {
   draft: "Draft",
   open: "Open",
   in_review: "In review",
+  client_replied: "Client replied",
   answered: "Answered",
   approved: "Approved",
   approved_as_noted: "Approved as noted",

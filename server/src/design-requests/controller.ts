@@ -82,6 +82,14 @@ export const close = wrap(async (req, res) => {
   res.json(formatSuccess(await service.close(id(req), actorOf(req)), "Request closed"));
 });
 
+export const resendEmail = wrap(async (req, res) => {
+  res.json(formatSuccess(await service.resendEmail(id(req), actorOf(req)), "Email resent"));
+});
+
+export const clientReplied = wrap(async (req, res) => {
+  res.json(formatSuccess(await service.markClientReplied(id(req), actorOf(req)), "Client reply recorded"));
+});
+
 export const followUp = wrap(async (req, res) => {
   res.status(HTTP.CREATED).json(formatSuccess(await service.followUp(id(req), req.body, actorOf(req)), "Follow-up created"));
 });

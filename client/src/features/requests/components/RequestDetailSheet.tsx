@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router";
-import { CheckCircle2, CornerDownRight, FileDown, FilePlus2, Printer, Send, XCircle } from "lucide-react";
+import { CheckCircle2, CornerDownRight, FileDown, FilePlus2, MailCheck, Printer, RefreshCw, Send, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
 import { useAuth } from "@/auth/auth-context";
@@ -14,10 +14,10 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { Textarea } from "@/components/ui/textarea";
 import { useWorkflowTemplates } from "@/features/workflows/hooks/useWorkflows";
 import { downloadFileUrl } from "@/lib/file-url";
-import { useRequestDetail } from "../hooks/useRequests";
+import { useMarkClientReplied, useRequestDetail, useResendRequestEmail } from "../hooks/useRequests";
 import { RequestRepository } from "../repositories/request.repository";
-import { DISCIPLINE_LABEL, STATUS_LABEL, type DesignRequestDetail, type RequestFile } from "../types/request.types";
-import { formatDate, formatDateTime, KindBadge, OverdueBadge, RequestStatusBadge } from "./RequestBadges";
+import { DISCIPLINE_LABEL, MAX_EMAIL_RESENDS, STATUS_LABEL, type DesignRequestDetail, type RequestFile } from "../types/request.types";
+import { EmailStatusBadge, formatDate, formatDateTime, KindBadge, OverdueBadge, RecipientBadge, RequestStatusBadge } from "./RequestBadges";
 import { RequestFilePicker, uploadAll } from "./RequestFilePicker";
 import { RespondDialog } from "./RespondDialog";
 
@@ -91,7 +91,18 @@ export function RequestDetailSheet({
     }
   };
 
-  const mineToAnswer = !!r && (isAdmin || r.assignedToUserId === user?.id) && (r.status === "open" || r.status === "in_review");
+  const isClient = r?.recipientType === "client";
+  // A client request has no assignee: the sender, the PM and the Admin handle it.
+  const handlesClient = !!r && isClient && (isAdmin || role === "project-manager" || r.requestedByUserId === user?.id);
+  const clientActive = !!r && (r.status === "open" || r.status === "client_replied");
+  const mineToAnswer = !!r && (isClient
+    ? handlesClient && clientActive
+    : (isAdmin || r.assignedToUserId === user?.id) && (r.status === "open" || r.status === "in_review"));
+  const canMarkReplied = handlesClient && r?.status === "open";
+  const resendsLeft = r ? MAX_EMAIL_RESENDS - r.emailResendCount : 0;
+  const canResend = handlesClient && clientActive && r?.emailStatus === "failed" && resendsLeft > 0;
+  const resend = useResendRequestEmail(() => done());
+  const replied = useMarkClientReplied(() => done());
   const canSend = !!r && r.status === "draft" && (role === "project-manager" || isAdmin);
   const canClose = !!r && r.status !== "closed" && (isAdmin || role === "project-manager" || r.requestedByUserId === user?.id);
   const canFollowUp = !!r && RAISERS.has(role) && r.status !== "draft" && r.status !== "closed";
@@ -107,6 +118,8 @@ export function RequestDetailSheet({
               {r ? r.number : "Request"}
               {r && <KindBadge kind={r.kind} />}
               {r && <RequestStatusBadge status={r.status} />}
+              {r && <RecipientBadge request={r} showEmail />}
+              {r && <EmailStatusBadge request={r} />}
               {r && <OverdueBadge request={r} />}
             </SheetTitle>
             <SheetDescription>{r ? `${r.projectCode} · ${DISCIPLINE_LABEL[r.discipline]}` : "Loading…"}</SheetDescription>
@@ -137,7 +150,11 @@ export function RequestDetailSheet({
                     {r.requestedByName} ({r.requestedByRole.replace("-", " ")})
                   </Field>
                   <Field label="Countersigned">{r.countersignedByName ? `${r.countersignedByName} · ${formatDate(r.countersignedAt)}` : "Not yet"}</Field>
-                  <Field label="Assigned to">{r.assignedToName}</Field>
+                  {isClient ? (
+                    <Field label="Sent to client">{r.recipientEmail}</Field>
+                  ) : (
+                    <Field label="Assigned to">{r.assignedToName}</Field>
+                  )}
                   <Field label="Due">
                     {r.dueDate ? formatDate(r.dueDate) : "Starts when sent"}
                   </Field>
@@ -167,7 +184,7 @@ export function RequestDetailSheet({
                     </>
                   ) : (
                     <p className="mt-1 text-sm text-muted-foreground">
-                      {r.status === "draft" ? "Not sent yet." : "Waiting for a response."}
+                      {r.status === "draft" ? "Not sent yet." : isClient ? "Waiting for the client's reply." : "Waiting for a response."}
                     </p>
                   )}
                 </section>
@@ -196,7 +213,36 @@ export function RequestDetailSheet({
                   </section>
                 )}
 
+                {isClient && r.emailStatus === "failed" && (
+                  <p role="alert" className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive-strong">
+                    The email to {r.recipientEmail} could not be sent. The request is saved
+                    {resendsLeft > 0 ? `; you can resend it (${resendsLeft} resend${resendsLeft === 1 ? "" : "s"} left).` : " and has used all its resends."}
+                  </p>
+                )}
+                {resend.error && <p role="alert" className="text-xs text-destructive-strong">{resend.error}</p>}
+                {replied.error && <p role="alert" className="text-xs text-destructive-strong">{replied.error}</p>}
+
                 <div className="flex flex-wrap gap-2 border-t pt-4">
+                  {canResend && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={busy || resend.busy}
+                      onClick={() => void resend.run(r.id).then((u) => u && toast[u.emailStatus === "sent" ? "success" : "error"](u.emailStatus === "sent" ? "Email sent to the client" : "The email failed again"))}
+                    >
+                      <RefreshCw className="h-4 w-4" /> Resend email
+                    </Button>
+                  )}
+                  {canMarkReplied && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={busy || replied.busy}
+                      onClick={() => void replied.run(r.id).then((u) => u && toast.success(`${u.number} marked as client replied`))}
+                    >
+                      <MailCheck className="h-4 w-4" /> Client replied
+                    </Button>
+                  )}
                   {canSend && (
                     <Button size="sm" disabled={busy} onClick={() => void act(() => RequestRepository.send(r.id), `${r.number} sent`)}>
                       <Send className="h-4 w-4" /> Countersign &amp; send
@@ -209,7 +255,7 @@ export function RequestDetailSheet({
                   )}
                   {mineToAnswer && (
                     <Button size="sm" disabled={busy} onClick={() => setResponding(true)}>
-                      <CheckCircle2 className="h-4 w-4" /> Respond
+                      <CheckCircle2 className="h-4 w-4" /> {isClient ? "Mark answered" : "Respond"}
                     </Button>
                   )}
                   {canFollowUp && (
@@ -233,6 +279,10 @@ export function RequestDetailSheet({
                     </Button>
                   )}
                 </div>
+
+                {handlesClient && clientActive && (
+                  <p className="text-xs text-muted-foreground">Replies go to your Gmail. Update the status here once you've handled it.</p>
+                )}
 
                 {canRecordReturned && !r.returnedByName && <ReturnedForm requestId={r.id} onDone={done} />}
               </>
@@ -337,7 +387,7 @@ function FollowUpDialog({
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Follow up on {request.number}</DialogTitle>
-          <DialogDescription>Creates a new request to {request.assignedToName}, linked to this one.</DialogDescription>
+          <DialogDescription>Creates a new request to {request.recipientType === "client" ? request.recipientEmail : request.assignedToName}, linked to this one.</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <Label htmlFor="fu-text">What still needs clarifying</Label>

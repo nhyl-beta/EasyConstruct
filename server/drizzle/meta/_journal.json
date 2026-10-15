@@ -232,6 +232,13 @@
       "when": 1791700000000,
       "tag": "0032_tokens_valid_after",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1791800000000,
+      "tag": "0033_rfi_client_email",
+      "breakpoints": true
     }
   ]
 }

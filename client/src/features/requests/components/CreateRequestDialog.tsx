@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { Send } from "lucide-react";
 import { toast } from "sonner";
+import { z } from "zod";
 import { responseWindowProblem } from "../lib/response-window";
 
 import { useAuth } from "@/auth/auth-context";
 import { ProjectPicker } from "@/components/shared/project-picker";
+import { useProjects } from "@/features/projects/hooks/useProjects";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -38,6 +40,10 @@ interface Props {
   onCreated: (request: DesignRequest) => void;
 }
 
+/** The "Send to" value that means the project's client (everything else is an assignee's user id). */
+const CLIENT_OPTION = "client";
+const emailSchema = z.string().trim().email("Enter a valid email address");
+
 const IMPACT_LABEL: Record<Impact, string> = { none: "None", increase: "Increase", decrease: "Decrease" };
 
 /**
@@ -61,6 +67,7 @@ export function CreateRequestDialog({ open, onOpenChange, initial, onCreated }: 
   const [timeImpact, setTimeImpact] = useState<Impact>("none");
   const [timeDays, setTimeDays] = useState("");
   const [dueDays, setDueDays] = useState("");
+  const [clientEmail, setClientEmail] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [tried, setTried] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -68,6 +75,14 @@ export function CreateRequestDialog({ open, onOpenChange, initial, onCreated }: 
   const [error, setError] = useState<string | null>(null);
 
   const { assignees, loading: assigneesLoading } = useAssignees(project);
+  const { projects } = useProjects();
+  const toClient = assignee === CLIENT_OPTION;
+  const projectClientEmail = projects.find((p) => p.code === project)?.clientEmail ?? "";
+
+  // Prefill the client's address from the project whenever the client option is picked (still editable).
+  useEffect(() => {
+    if (toClient) setClientEmail(projectClientEmail);
+  }, [toClient, projectClientEmail]);
 
   useEffect(() => {
     if (!open) return;
@@ -79,6 +94,7 @@ export function CreateRequestDialog({ open, onOpenChange, initial, onCreated }: 
     setSections("");
     setText("");
     setAssignee("");
+    setClientEmail("");
     setCostImpact("none");
     setCostNote("");
     setTimeImpact("none");
@@ -91,7 +107,8 @@ export function CreateRequestDialog({ open, onOpenChange, initial, onCreated }: 
 
   const defaultDays = kind === "RFI" ? 3 : 4;
   const dueProblem = responseWindowProblem(dueDays);
-  const invalid = !project || subject.trim().length < 3 || text.trim().length < 10 || !assignee || dueProblem !== null;
+  const emailProblem = toClient ? (emailSchema.safeParse(clientEmail).error?.issues[0]?.message ?? null) : null;
+  const invalid = !project || subject.trim().length < 3 || text.trim().length < 10 || !assignee || dueProblem !== null || emailProblem !== null;
 
   const submit = async () => {
     setTried(true);
@@ -112,7 +129,8 @@ export function CreateRequestDialog({ open, onOpenChange, initial, onCreated }: 
         costNote: costImpact !== "none" ? costNote.trim() || undefined : undefined,
         timeImpact,
         timeDays: timeImpact !== "none" && timeDays ? Number(timeDays) : undefined,
-        assignedToUserId: Number(assignee),
+        recipientType: toClient ? "client" : "internal",
+        ...(toClient ? { recipientEmail: clientEmail.trim() } : { assignedToUserId: Number(assignee) }),
         dueDays: dueDays ? Number(dueDays) : undefined,
         designId: initial?.designId,
         files: uploaded,
@@ -136,7 +154,9 @@ export function CreateRequestDialog({ open, onOpenChange, initial, onCreated }: 
           <DialogDescription>
             {isEngineer
               ? "Saved as a draft. The Project Manager countersigns and sends it to the designer."
-              : "Goes straight to the Architect or Consultant you choose, with a response deadline."}
+              : toClient
+                ? "Emailed to the client with a response deadline. Their reply comes to your own mailbox."
+                : "Goes straight to the Architect or Consultant you choose, with a response deadline."}
           </DialogDescription>
         </DialogHeader>
 
@@ -161,6 +181,7 @@ export function CreateRequestDialog({ open, onOpenChange, initial, onCreated }: 
                 onChange={(c) => {
                   setProject(c);
                   setAssignee("");
+                  setClientEmail("");
                 }}
                 disabled={!!initial?.projectCode || submitting}
                 className="w-full"
@@ -257,7 +278,7 @@ export function CreateRequestDialog({ open, onOpenChange, initial, onCreated }: 
               </Label>
               <Select value={assignee} onValueChange={setAssignee} disabled={!project || submitting}>
                 <SelectTrigger className="w-full" aria-label="Assignee">
-                  <SelectValue placeholder={!project ? "Choose a project first" : assigneesLoading ? "Loading…" : assignees.length === 0 ? "No Architect or Consultant staffed" : "Architect or Consultant"} />
+                  <SelectValue placeholder={!project ? "Choose a project first" : assigneesLoading ? "Loading…" : "Architect, Consultant or Client"} />
                 </SelectTrigger>
                 <SelectContent>
                   {assignees.map((a) => (
@@ -265,9 +286,34 @@ export function CreateRequestDialog({ open, onOpenChange, initial, onCreated }: 
                       {a.name} · {a.role}
                     </SelectItem>
                   ))}
+                  <SelectItem value={CLIENT_OPTION}>Client (email)</SelectItem>
                 </SelectContent>
               </Select>
               {tried && !assignee && <p className="text-xs text-destructive-strong">Choose who should respond.</p>}
+              {toClient && (
+                <div className="space-y-1.5 pt-1">
+                  <Label htmlFor="rq-client-email">
+                    Client email <span className="text-destructive-strong">*</span>
+                  </Label>
+                  <Input
+                    id="rq-client-email"
+                    type="email"
+                    value={clientEmail}
+                    onChange={(e) => setClientEmail(e.target.value)}
+                    placeholder="client@company.com"
+                    maxLength={255}
+                    disabled={submitting}
+                    aria-invalid={emailProblem !== null && (tried || clientEmail.length > 0)}
+                    aria-describedby={emailProblem ? "rq-client-email-error" : undefined}
+                  />
+                  {emailProblem && (tried || clientEmail.length > 0) && (
+                    <p id="rq-client-email-error" className="text-xs text-destructive-strong">
+                      {emailProblem}
+                    </p>
+                  )}
+                  {!projectClientEmail && !clientEmail && <p className="text-xs text-muted-foreground">This project has no client email on file yet; enter one here.</p>}
+                </div>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="rq-due">Response window (days)</Label>

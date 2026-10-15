@@ -38,6 +38,9 @@ export interface MailMessage {
   subject: string;
   text: string;
   html?: string;
+  cc?: string;
+  replyTo?: string;
+  attachments?: { filename: string; content: Buffer; contentType?: string }[];
 }
 
 export const sendMail = async (message: MailMessage): Promise<void> => {

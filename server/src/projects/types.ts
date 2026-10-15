@@ -13,6 +13,7 @@ export interface ProjectRecord {
   risk: string;
   location: string | null;
   client: string | null;
+  clientEmail: string | null;
   currency: string;
   workforce: number | null;
   description: string | null;
@@ -49,6 +50,8 @@ export interface CreateProjectInput {
   risk?: string;
   location?: string;
   client?: string;
+  /** Client contact for RFI/RFA emails. */
+  clientEmail?: string | null;
   /** Link to the shared clients table (fix 1.2). The text above is set from it. */
   clientId?: number;
   /** Create anyway although a project with a similar name exists (fix 1.2). Never stored. */

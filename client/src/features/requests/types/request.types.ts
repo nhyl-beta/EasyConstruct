@@ -22,6 +22,7 @@ export const REQUEST_STATUSES = [
   "draft",
   "open",
   "in_review",
+  "client_replied",
   "answered",
   "approved",
   "approved_as_noted",
@@ -34,12 +35,24 @@ export const STATUS_LABEL: Record<RequestStatus, string> = {
   draft: "Draft",
   open: "Open",
   in_review: "In review",
+  client_replied: "Client replied",
   answered: "Answered",
   approved: "Approved",
   approved_as_noted: "Approved as noted",
   rejected: "Rejected",
   closed: "Closed",
 };
+
+/** Where a request goes: a staffed Architect/Consultant, or the project's client by email. */
+export const RECIPIENT_TYPES = ["internal", "client"] as const;
+export type RecipientType = (typeof RECIPIENT_TYPES)[number];
+
+export const EMAIL_STATUSES = ["not_sent", "sent", "failed"] as const;
+export type EmailStatus = (typeof EMAIL_STATUSES)[number];
+export const EMAIL_STATUS_LABEL: Record<EmailStatus, string> = { not_sent: "Not sent", sent: "Sent", failed: "Failed" };
+
+/** Mirrors MAX_EMAIL_RESENDS on the server. */
+export const MAX_EMAIL_RESENDS = 3;
 
 export const RFA_OUTCOMES = ["approved", "approved_as_noted", "rejected"] as const;
 export type RfaOutcome = (typeof RFA_OUTCOMES)[number];
@@ -77,6 +90,11 @@ export interface DesignRequest {
   countersignedAt: string | null;
   assignedToUserId: number | null;
   assignedToName: string | null;
+  recipientType: RecipientType;
+  recipientEmail: string | null;
+  emailStatus: EmailStatus;
+  emailResendCount: number;
+  clientRepliedAt: string | null;
   dueDate: string | null;
   sentAt: string | null;
   status: RequestStatus;
@@ -129,7 +147,11 @@ export interface CreateRequestInput {
   costNote?: string;
   timeImpact: Impact;
   timeDays?: number;
-  assignedToUserId: number;
+  /** Required unless recipientType is "client". */
+  assignedToUserId?: number;
+  recipientType: RecipientType;
+  /** Required when recipientType is "client". */
+  recipientEmail?: string;
   dueDays?: number;
   designId?: number;
   followUpOfId?: number;

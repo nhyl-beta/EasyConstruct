@@ -2,6 +2,8 @@ import { apiClient } from "@/services/api.client";
 import {
   DISCIPLINES,
   IMPACTS,
+  EMAIL_STATUSES,
+  RECIPIENT_TYPES,
   REQUEST_KINDS,
   REQUEST_STATUSES,
   type Assignee,
@@ -10,7 +12,9 @@ import {
   type CreateTransmittalInput,
   type DesignRequest,
   type DesignRequestDetail,
+  type EmailStatus,
   type Impact,
+  type RecipientType,
   type RequestDiscipline,
   type RequestFilters,
   type RequestKind,
@@ -33,6 +37,12 @@ const normalize = (r: any): DesignRequest => ({
   status: pick<RequestStatus>(REQUEST_STATUSES, r.status, "open"),
   costImpact: pick<Impact>(IMPACTS, r.costImpact, "none"),
   timeImpact: pick<Impact>(IMPACTS, r.timeImpact, "none"),
+  // Rows from before the client path are internal requests that were never emailed.
+  recipientType: pick<RecipientType>(RECIPIENT_TYPES, r.recipientType, "internal"),
+  recipientEmail: r.recipientEmail ?? null,
+  emailStatus: pick<EmailStatus>(EMAIL_STATUSES, r.emailStatus, "not_sent"),
+  emailResendCount: Number(r.emailResendCount ?? 0),
+  clientRepliedAt: r.clientRepliedAt ?? null,
   isOpen: !!r.isOpen,
   isOverdue: !!r.isOverdue,
   suggestsChangeOrder: !!r.suggestsChangeOrder,
@@ -93,6 +103,12 @@ export const RequestRepository = {
   },
   async recordReturned(id: number, input: { returnedByName: string; returnedByPosition: string; returnedAt?: string }): Promise<DesignRequest> {
     return normalize(await unwrap<any>(apiClient.post(`/design-requests/${id}/returned`, input)));
+  },
+  async resendEmail(id: number): Promise<DesignRequest> {
+    return normalize(await unwrap<any>(apiClient.post(`/design-requests/${id}/resend-email`, {})));
+  },
+  async markClientReplied(id: number): Promise<DesignRequest> {
+    return normalize(await unwrap<any>(apiClient.patch(`/design-requests/${id}/client-replied`, {})));
   },
   async attention(): Promise<AttentionData> {
     return unwrap<AttentionData>(apiClient.get("/design-requests/attention"));
