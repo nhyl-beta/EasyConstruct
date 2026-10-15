@@ -39,6 +39,18 @@ const results: Probe[] = [];
 
 async function send(method: string, path: string, token?: string, body?: unknown): Promise<{ status: number; json: any; ms: number }> {
   const t0 = Date.now();
+  // A server-sent-events route never ends. Read only its status, then hang up: waiting for it made
+  // every role's probe take the full 30 s timeout and was reported as a "slow response".
+  if (path.split("?")[0]!.endsWith("/notifications/stream")) {
+    const ctl = new AbortController();
+    try {
+      const res = await fetch(`${BASE}${path}`, { method, headers: token ? { Authorization: `Bearer ${token}` } : {}, signal: ctl.signal });
+      ctl.abort();
+      return { status: res.status, json: null, ms: Date.now() - t0 };
+    } catch (e) {
+      return { status: 0, json: { error: String(e) }, ms: Date.now() - t0 };
+    }
+  }
   try {
     const res = await fetch(`${BASE}${path}`, {
       method,
