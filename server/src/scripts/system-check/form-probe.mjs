@@ -1,4 +1,5 @@
 import { chromium } from "playwright";
+import { CHROME } from "./lib.mjs";
 const WEB = "http://localhost:5173";
 const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
 const T = [
@@ -6,7 +7,7 @@ const T = [
   ["finance", "finance@easyconstruct.demo", "/budget", "Create budget"],
   ["finance", "finance@easyconstruct.demo", "/expenses", "Record expense"],
 ];
-const b = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium-1194/chrome-linux/chrome", args: ["--no-sandbox"] });
+const b = await chromium.launch({ executablePath: CHROME, args: ["--no-sandbox"] });
 for (const [role, email, path, opener] of T) {
   const ctx = await b.newContext({ viewport: { width: 1440, height: 1000 } });
   const p = await ctx.newPage();

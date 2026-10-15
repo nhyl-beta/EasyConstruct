@@ -4,7 +4,7 @@ import { chromium } from "playwright";
 import { writeFileSync, mkdirSync } from "node:fs";
 const WEB = process.env.WEB_BASE ?? "http://localhost:5173";
 const API = "http://localhost:8123";
-const CHROME = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
+import { CHROME } from "./lib.mjs";
 const out = process.argv[2] ?? "."; mkdirSync(out, { recursive: true });
 const log = []; const rec = (name, ok, detail = "") => { log.push({ name, ok, detail }); console.log(ok ? "PASS" : "FAIL", name, detail); };
 const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
