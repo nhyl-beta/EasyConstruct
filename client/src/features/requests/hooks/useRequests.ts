@@ -64,6 +64,43 @@ export function useAssignees(projectCode: string) {
   return { assignees: r.data, loading: r.loading, error: r.error };
 }
 
+/**
+ * A mutation for one request action. `onSuccess` is where the caller reloads the
+ * request queries (list + detail); errors are returned, not thrown.
+ */
+function useRequestAction(action: (id: number) => Promise<DesignRequest>, onSuccess: (updated: DesignRequest) => void) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const run = useCallback(
+    async (id: number) => {
+      setBusy(true);
+      setError(null);
+      try {
+        const updated = await action(id);
+        onSuccess(updated);
+        return updated;
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "That did not work");
+        return null;
+      } finally {
+        setBusy(false);
+      }
+    },
+    [action, onSuccess],
+  );
+  return { run, busy, error } as const;
+}
+
+/** POST /design-requests/:id/resend-email */
+export function useResendRequestEmail(onSuccess: (updated: DesignRequest) => void) {
+  return useRequestAction(RequestRepository.resendEmail, onSuccess);
+}
+
+/** PATCH /design-requests/:id/client-replied */
+export function useMarkClientReplied(onSuccess: (updated: DesignRequest) => void) {
+  return useRequestAction(RequestRepository.markClientReplied, onSuccess);
+}
+
 export function useAttention(enabled: boolean) {
   const r = useAsync<AttentionData | null>(() => RequestRepository.attention(), [], null, enabled);
   return { attention: r.data, loading: r.loading, error: r.error, reload: r.reload };

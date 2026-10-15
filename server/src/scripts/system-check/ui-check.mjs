@@ -4,6 +4,8 @@
 // usage: node ui-check.mjs <outDir> [role,role,...]
 import { chromium } from "playwright";
 import { writeFileSync, mkdirSync } from "node:fs";
+import { preflightApi, failIfBrowserLoginsFailed } from "./lib.mjs";
+await preflightApi();
 
 const WEB = process.env.WEB_BASE ?? "http://localhost:5173";
 const CHROME = process.env.CHROME_PATH ?? "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
@@ -41,7 +43,10 @@ async function runRole(browser, role, email) {
   await page.fill("#email", email);
   await page.fill("#password", "Demo@12345");
   await page.click("button:has-text('Sign in')");
-  await page.waitForTimeout(3500);
+  // Wait for the app to leave /login (a cold Vite compile or a slow machine took longer than a fixed 3.5 s
+  // and made healthy accounts look like failed sign-ins); give up after 25 s.
+  await page.waitForURL((u) => !/\/login/.test(u.pathname), { timeout: 25000 }).catch(() => {});
+  await page.waitForTimeout(1500);
   res.landing = page.url().replace(WEB, "");
   res.loginOk = !/\/login/.test(page.url());
   if (!res.loginOk) { res.loginError = (await page.innerText("body").catch(() => "")).slice(0, 200); await ctx.close(); return res; }
@@ -222,3 +227,4 @@ await Promise.all([0, 1, 2].map(async () => {
 await browser.close();
 writeFileSync(`${outDir}/ui-results.json`, JSON.stringify(results, null, 1));
 console.log("wrote ui-results.json");
+failIfBrowserLoginsFailed(results);

@@ -47,7 +47,7 @@ export const designRequests = pgTable(
     assignedToName: varchar("assigned_to_name", { length: 100 }),
     dueDate: timestamp("due_date"),
     sentAt: timestamp("sent_at"),
-    // draft | open | in_review | answered | approved | approved_as_noted | rejected | closed
+    // draft | open | in_review | client_replied | answered | approved | approved_as_noted | rejected | closed
     status: varchar("status", { length: 20 }).notNull().default("draft"),
     responseText: text("response_text"),
     respondedByUserId: integer("responded_by_user_id").references(() => users.id),
@@ -59,6 +59,14 @@ export const designRequests = pgTable(
     followUpOfId: integer("follow_up_of_id"),
     designId: integer("design_id"),
     overdueNotifiedAt: timestamp("overdue_notified_at"),
+    // Client path: emailed to the project's client, who has no account. The
+    // reply lands in the sender's mailbox and is never read by the system.
+    recipientType: varchar("recipient_type", { length: 10 }).notNull().default("internal"), // internal | client
+    recipientEmail: varchar("recipient_email", { length: 255 }),
+    emailStatus: varchar("email_status", { length: 10 }).notNull().default("not_sent"), // not_sent | sent | failed
+    emailResendCount: integer("email_resend_count").notNull().default(0),
+    clientRepliedAt: timestamp("client_replied_at"),
+    clientReminderNotifiedAt: timestamp("client_reminder_notified_at"),
     createdAt: timestamp("created_at").defaultNow(),
     updatedAt: timestamp("updated_at").defaultNow(),
   },

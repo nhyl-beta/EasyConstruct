@@ -170,7 +170,8 @@ const numeric = (value: number | string | null | undefined) => {
 
 const serialize = <T extends CreateProjectInput | UpdateProjectInput>(
   data: T,
-): Omit<T, "contractValue" | "siteLatitude" | "siteLongitude"> & {
+): Omit<T, "contractValue" | "siteLatitude" | "siteLongitude" | "clientEmail"> & {
+  clientEmail?: string | null;
   contractValue?: string | null;
   siteLatitude?: string | null;
   siteLongitude?: string | null;
@@ -180,6 +181,8 @@ const serialize = <T extends CreateProjectInput | UpdateProjectInput>(
     data.contractValue == null ? data.contractValue : String(data.contractValue),
   siteLatitude: numeric(data.siteLatitude),
   siteLongitude: numeric(data.siteLongitude),
+  // A cleared field is stored as NULL, not ''.
+  ...(data.clientEmail !== undefined ? { clientEmail: data.clientEmail?.trim() || null } : {}),
 });
 
 export const create = async (data: CreateProjectInput) => {

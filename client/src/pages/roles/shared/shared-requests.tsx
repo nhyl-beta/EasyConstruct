@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { CreateRequestDialog } from "@/features/requests/components/CreateRequestDialog";
-import { formatDate, KindBadge, OverdueBadge, RequestStatusBadge } from "@/features/requests/components/RequestBadges";
+import { EmailStatusBadge, formatDate, KindBadge, OverdueBadge, RecipientBadge, RequestStatusBadge } from "@/features/requests/components/RequestBadges";
 import { RequestDetailSheet } from "@/features/requests/components/RequestDetailSheet";
 import { useRequests } from "@/features/requests/hooks/useRequests";
 import { REQUEST_KINDS, REQUEST_STATUSES, STATUS_LABEL, type RequestFilters } from "@/features/requests/types/request.types";
@@ -181,11 +181,13 @@ export default function SharedRequests() {
                     </button>
                   </TableCell>
                   <TableCell className="font-mono text-xs">{r.projectCode}</TableCell>
-                  <TableCell className="hidden text-sm md:table-cell">{isResponder && scope === "mine" ? r.requestedByName : r.assignedToName}</TableCell>
+                  <TableCell className="hidden text-sm md:table-cell">{isResponder && scope === "mine" ? r.requestedByName : r.recipientType === "client" ? (r.recipientEmail ?? "Client") : r.assignedToName}</TableCell>
                   <TableCell className="hidden text-sm sm:table-cell">{formatDate(r.dueDate)}</TableCell>
                   <TableCell>
                     <div className="flex flex-wrap items-center gap-1">
                       <RequestStatusBadge status={r.status} />
+                      <RecipientBadge request={r} />
+                      <EmailStatusBadge request={r} />
                       <OverdueBadge request={r} />
                     </div>
                   </TableCell>

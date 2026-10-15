@@ -12,7 +12,7 @@
 // Run:  SMOKE_BASE_URL=http://localhost:8123/api npx tsx src/scripts/system-check/sweep.ts <inventory.json> <outDir>
 import "dotenv/config";
 import { readFileSync, writeFileSync } from "node:fs";
-import { assertDemoApi } from "../demo-guard.js";
+import { assertDemoApi, assertNoRealBlobStore, failIfLoginsFailed } from "../demo-guard.js";
 
 const BASE = process.env.SMOKE_BASE_URL ?? "http://localhost:8123/api";
 assertDemoApi(BASE);
@@ -39,6 +39,18 @@ const results: Probe[] = [];
 
 async function send(method: string, path: string, token?: string, body?: unknown): Promise<{ status: number; json: any; ms: number }> {
   const t0 = Date.now();
+  // A server-sent-events route never ends. Read only its status, then hang up: waiting for it made
+  // every role's probe take the full 30 s timeout and was reported as a "slow response".
+  if (path.split("?")[0]!.endsWith("/notifications/stream")) {
+    const ctl = new AbortController();
+    try {
+      const res = await fetch(`${BASE}${path}`, { method, headers: token ? { Authorization: `Bearer ${token}` } : {}, signal: ctl.signal });
+      ctl.abort();
+      return { status: res.status, json: null, ms: Date.now() - t0 };
+    } catch (e) {
+      return { status: 0, json: { error: String(e) }, ms: Date.now() - t0 };
+    }
+  }
   try {
     const res = await fetch(`${BASE}${path}`, {
       method,
@@ -66,11 +78,14 @@ async function main() {
 
   // 1. sign in every role once
   const tokens: Record<string, string> = {};
+  const failedLogins: string[] = [];
   for (const role of ROLES) {
     const r = await send("POST", "/auth/login", undefined, { email: ROLE_ACCOUNTS[role], password: PASSWORD });
-    if (r.status !== 200) { console.error(`  ✘ login ${role} (${ROLE_ACCOUNTS[role]}) -> ${r.status}`); continue; }
+    if (r.status !== 200) { console.error(`  ✘ login ${role} (${ROLE_ACCOUNTS[role]}) -> ${r.status}`); failedLogins.push(`${role} (${r.status})`); continue; }
     tokens[role] = r.json.data.token;
   }
+  failIfLoginsFailed(failedLogins);
+  await assertNoRealBlobStore(BASE, tokens.admin ?? Object.values(tokens)[0]!);
   const admin = tokens.admin ?? tokens["it-designer"];
   if (!admin) throw new Error("no admin token — cannot discover ids");
 
@@ -144,15 +159,20 @@ async function main() {
   const PUBLIC = [/^\/api\/auth\/(login|forgot|reset|recover|owner)/i, /\/api\/cron\//];
   const findings: string[] = [];
   const by = (k: string) => results.filter((p) => p.kind === k);
-  const fivexx = results.filter((p) => p.status >= 500 || p.status === 0);
+  // 501 is a deliberate "this server is not set up for that" (direct Blob uploads need a Blob token,
+  // which the check API intentionally does not have). It is not a crash, so it is not counted as one.
+  const fivexx = results.filter((p) => (p.status >= 500 && p.status !== 501) || p.status === 0);
+  const notConfigured = results.filter((p) => p.status === 501);
   const unauthOpen = by("unauth").filter((p) => p.status >= 200 && p.status < 300 && !PUBLIC.some((re) => re.test(p.route)));
-  const emptyAccepted = by("empty-body").filter((p) => p.status >= 200 && p.status < 300);
+  // Action routes that take no body by design: an empty body is the normal call, not a validation gap.
+  const NO_BODY_ACTIONS = [/\/api\/ai-validation\/refresh-references$/, /\/api\/attendance\/bulk-verify$/, /\/api\/design-requests\/sweep$/, /\/api\/finance\/expenses\/rescore$/];
+  const emptyAccepted = by("empty-body").filter((p) => p.status >= 200 && p.status < 300 && !NO_BODY_ACTIONS.some((re) => re.test(p.route)));
   const badIdServer = by("bad-id").filter((p) => p.status >= 500 || p.status === 200);
   const slow = results.filter((p) => p.ms > 3000);
 
   const md: string[] = [];
   md.push(`# System sweep report`, ``, `Base: ${BASE} · routes: ${inventory.length} · requests: ${results.length} · roles: ${ROLES.length}`, ``);
-  md.push(`| Check | Count |`, `|---|---|`, `| Server errors (5xx / no response) | ${fivexx.length} |`, `| Unauthenticated 2xx on non-public route | ${unauthOpen.length} |`, `| Malformed id returned 5xx or 200 | ${badIdServer.length} |`, `| Mutation accepted an EMPTY body (2xx) | ${emptyAccepted.length} |`, `| Slow responses (>3s) | ${slow.length} |`, ``);
+  md.push(`| Check | Count |`, `|---|---|`, `| Server errors (5xx except 501 / no response) | ${fivexx.length} |`, `| Not configured here (501) | ${notConfigured.length} |`, `| Unauthenticated 2xx on non-public route | ${unauthOpen.length} |`, `| Malformed id returned 5xx or 200 | ${badIdServer.length} |`, `| Mutation accepted an EMPTY body (2xx) | ${emptyAccepted.length} |`, `| Slow responses (>3s) | ${slow.length} |`, ``);
   const section = (title: string, rows: Probe[], limit = 60) => {
     md.push(`## ${title}`, ``);
     if (!rows.length) { md.push("None.", ""); return; }

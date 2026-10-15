@@ -36,6 +36,7 @@ const baseProjectSchema = z.object({
   risk:        z.enum(['Low', 'Medium', 'High']).optional(),
   location:    z.string().optional(),
   client:      z.string().optional(),
+  clientEmail: z.union([z.string().trim().email('Enter a valid client email').max(255), z.literal(''), z.null()]).optional(),
   clientId:    z.number().int().positive().optional(),
   // Not stored: confirms a new project whose name is close to an existing one.
   confirmSimilar: z.boolean().optional(),

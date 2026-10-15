@@ -2,6 +2,8 @@ import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiClient } from "@/services/api.client";
 import type { Budget, BudgetTotals } from "../types/budget.types";
+import { useAuth } from "@/auth/auth-context";
+import { canReadBudgets } from "../../lib/budget-access";
 
 export interface CreateBudgetInput {
   project: string;
@@ -12,6 +14,9 @@ export interface CreateBudgetInput {
 }
 
 export const useBudgetsController = (initialQuery = "") => {
+  const { user } = useAuth();
+  // Budgets are finance data (server: 403 for other roles). Don't ask, so the dashboard doesn't log a 403.
+  const allowed = canReadBudgets(user?.role);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -22,6 +27,11 @@ export const useBudgetsController = (initialQuery = "") => {
   const [reloadToken, setReloadToken] = useState(0);
 
   useEffect(() => {
+    if (!allowed) {
+      setBudgets([]);
+      setLoading(false);
+      return;
+    }
     const controller = new AbortController();
     setLoading(true);
 
@@ -42,7 +52,7 @@ export const useBudgetsController = (initialQuery = "") => {
       .finally(() => setLoading(false));
 
     return () => controller.abort();
-  }, [debouncedQuery, fy, reloadToken]);
+  }, [debouncedQuery, fy, reloadToken, allowed]);
 
   const reload = useCallback(() => setReloadToken((t) => t + 1), []);
 

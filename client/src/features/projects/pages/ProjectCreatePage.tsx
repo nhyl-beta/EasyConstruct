@@ -25,6 +25,7 @@ import { useUsersByRole } from "@/features/users/hooks/use-users-by-role";
 import { Flag, Info, MapPin, Trash2, UserCheck } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router";
+import { z } from "zod";
 import {
   DESIGN_DISCIPLINES,
   PROJECT_CURRENCIES,
@@ -85,6 +86,7 @@ interface ProjectFormData {
   name: string;
   code: string;
   client: string;
+  clientEmail: string;
   location: string;
   risk: "low" | "medium" | "high";
   description: string;
@@ -111,6 +113,7 @@ const initialForm: ProjectFormData = {
   name: "",
   code: "",
   client: "",
+  clientEmail: "",
   location: "",
   risk: "low",
   description: "",
@@ -155,6 +158,9 @@ function validateStep(step: number, data: ProjectFormData, isSelfAssigned: boole
     required("name", data.name, "Project name");
     required("code", data.code, "Project code");
     required("client", data.client, "Client / Owner");
+    if (data.clientEmail.trim() && !z.string().email().safeParse(data.clientEmail.trim()).success) {
+      errors.clientEmail = "Enter a valid email address";
+    }
     required("projectType", data.projectType, "Project type");
     required("location", data.location, "Location");
     if (data.deliveryType === "Design" && data.designDisciplines.length === 0) {
@@ -267,6 +273,7 @@ export default function ProjectCreatePage() {
         name: data.name.trim(),
         code: data.code.trim(),
         client: data.client,
+        clientEmail: data.clientEmail.trim() || undefined,
         clientId,
         confirmSimilar: confirmSimilar || undefined,
         currency: data.currency,
@@ -547,6 +554,21 @@ function StepProjectInfo({
             placeholder="Select a client"
           />
           <FieldError message={errors.client} />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="project-client-email">Client email</Label>
+          <Input
+            id="project-client-email"
+            type="email"
+            placeholder="client@company.com"
+            value={data.clientEmail}
+            onChange={(e) => set("clientEmail", e.target.value)}
+            className={cn("rounded-xl", invalidClass(errors.clientEmail))}
+            aria-invalid={!!errors.clientEmail}
+          />
+          <p className="text-xs text-muted-foreground">Optional. RFIs and RFAs sent to the client go here.</p>
+          <FieldError message={errors.clientEmail} />
         </div>
 
         <div className="space-y-1.5">

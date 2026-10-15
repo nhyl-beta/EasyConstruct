@@ -8,7 +8,7 @@
 import "dotenv/config";
 import { createHash } from "node:crypto";
 import { writeFileSync } from "node:fs";
-import { assertDemoApi } from "../demo-guard.js";
+import { assertDemoApi, assertNoRealBlobStore, failIfLoginsFailed } from "../demo-guard.js";
 
 const BASE = process.env.SMOKE_BASE_URL ?? "http://localhost:8123/api";
 assertDemoApi(BASE);
@@ -42,11 +42,15 @@ async function call(method: string, path: string, token?: string, body?: unknown
 
 async function main() {
   const tokens: Record<string, string> = {};
+  const failedLogins: string[] = [];
   for (const [role, email] of Object.entries(ACCOUNTS)) {
     const r = await call("POST", "/auth/login", undefined, { email, password: PASSWORD });
     const j: any = await r.json();
     if (r.status === 200) tokens[role] = j.data.token;
+    else failedLogins.push(`${role} (${r.status})`);
   }
+  failIfLoginsFailed(failedLogins);
+  await assertNoRealBlobStore(BASE, tokens["admin"] ?? Object.values(tokens)[0]!);
 
   // 1. round trip per role
   for (const role of Object.keys(tokens)) {

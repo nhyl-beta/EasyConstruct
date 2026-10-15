@@ -141,3 +141,7 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+# Local check API settings template (the real .env.check stays ignored) and check outputs
+!.env.check.example
+system-check-out/
+mob2/

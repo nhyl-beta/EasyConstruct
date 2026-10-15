@@ -13,6 +13,7 @@ export type DetectedKind =
   | "gif"
   | "webp"
   | "tiff"
+  | "heic"
   | "pdf"
   | "zip" // docx, xlsx, pptx
   | "ole2" // doc, xls, ppt, rvt
@@ -45,6 +46,7 @@ export function detectKind(head: Buffer): DetectedKind {
   if (ascii(head, 0, 6) === "GIF87a" || ascii(head, 0, 6) === "GIF89a") return "gif";
   if (ascii(head, 0, 4) === "RIFF" && ascii(head, 8, 12) === "WEBP") return "webp";
   if (startsWith(head, [0x49, 0x49, 0x2a, 0x00]) || startsWith(head, [0x4d, 0x4d, 0x00, 0x2a])) return "tiff";
+  if (ascii(head, 4, 8) === "ftyp" && /^(heic|heix|hevc|heim|heis|mif1|msf1)/.test(ascii(head, 8, 12))) return "heic";
   if (ascii(head, 0, 5) === "%PDF-") return "pdf";
   if (startsWith(head, [0x50, 0x4b, 0x03, 0x04]) || startsWith(head, [0x50, 0x4b, 0x05, 0x06])) return "zip";
   if (startsWith(head, [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1])) return "ole2";
@@ -59,15 +61,22 @@ export function detectKind(head: Buffer): DetectedKind {
   return "unknown";
 }
 
+/**
+ * Any real image format. A photo is often named .jpg by the app or the phone while the bytes are
+ * PNG, WebP or HEIC; that is still an image and is accepted. What the check refuses is an image
+ * extension on something that is not an image at all (HTML, a PDF, an executable).
+ */
+const IMAGE_KINDS: DetectedKind[] = ["png", "jpeg", "gif", "webp", "tiff", "heic"];
+
 /** Which detected kinds are acceptable for an extension. An extension that is not listed is not checked here. */
 const EXPECTED: Record<string, DetectedKind[]> = {
-  ".png": ["png"],
-  ".jpg": ["jpeg"],
-  ".jpeg": ["jpeg"],
-  ".gif": ["gif"],
-  ".webp": ["webp"],
-  ".tif": ["tiff"],
-  ".tiff": ["tiff"],
+  ".png": IMAGE_KINDS,
+  ".jpg": IMAGE_KINDS,
+  ".jpeg": IMAGE_KINDS,
+  ".gif": IMAGE_KINDS,
+  ".webp": IMAGE_KINDS,
+  ".tif": IMAGE_KINDS,
+  ".tiff": IMAGE_KINDS,
   ".pdf": ["pdf"],
   ".docx": ["zip"],
   ".xlsx": ["zip"],
@@ -89,11 +98,7 @@ const EXPECTED: Record<string, DetectedKind[]> = {
 /** The detected kinds a declared MIME type allows; null = the MIME type says nothing specific. */
 function kindsForMime(mime: string): DetectedKind[] | null {
   const m = mime.toLowerCase().split(";")[0]!.trim();
-  if (m === "image/png") return ["png"];
-  if (m === "image/jpeg" || m === "image/jpg") return ["jpeg"];
-  if (m === "image/gif") return ["gif"];
-  if (m === "image/webp") return ["webp"];
-  if (m === "image/tiff") return ["tiff"];
+  if (m.startsWith("image/")) return IMAGE_KINDS;
   if (m === "application/pdf") return ["pdf"];
   if (m.startsWith("application/vnd.openxmlformats-officedocument")) return ["zip"];
   if (m === "application/msword" || m === "application/vnd.ms-excel" || m === "application/vnd.ms-powerpoint") return ["ole2"];

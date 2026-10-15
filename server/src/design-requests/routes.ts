@@ -34,10 +34,14 @@ router.post("/:id/send", requireRole("project-manager", "admin"), validate(sendD
 router.post("/:id/follow-up", raisers, validate(followUpSchema), controller.followUp);
 router.post("/:id/returned", raisers, validate(returnedBlockSchema), controller.returned);
 router.post("/:id/close", raisers, controller.close);
+router.post("/:id/resend-email", raisers, controller.resendEmail);
+router.patch("/:id/client-replied", raisers, controller.clientReplied);
 
 // Answering: the assigned Architect or Consultant (Admin as break-glass) — enforced again in the service.
 const responders = requireRole("architect", "consultant", "admin");
 router.post("/:id/acknowledge", responders, controller.acknowledge);
-router.post("/:id/respond", responders, validate(respondDesignRequestSchema), controller.respond);
+// Also open to the raisers: they record the answer to a request sent to the client (the service
+// refuses them on an internal request).
+router.post("/:id/respond", requireRole("architect", "consultant", "project-manager", "engineer", "admin"), validate(respondDesignRequestSchema), controller.respond);
 
 export default router;

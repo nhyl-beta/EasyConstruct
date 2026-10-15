@@ -1,6 +1,7 @@
 import { chromium } from "playwright";
+import { CHROME } from "./lib.mjs";
 const WEB = "http://localhost:5173";
-const b = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium-1194/chrome-linux/chrome", args: ["--no-sandbox"] });
+const b = await chromium.launch({ executablePath: CHROME, args: ["--no-sandbox"] });
 const p = await b.newPage({ viewport: { width: 1440, height: 1000 } });
 const writes = [];
 p.on("response", async (r) => { const u = r.url(); if (u.includes("/api/") && r.request().method() !== "GET") writes.push(`${r.request().method()} ${u.replace(/^https?:\/\/[^/]+/, "")} ${r.status()} ${r.status()>=400 ? (await r.text().catch(()=>"")).slice(0,160) : ""}`); });

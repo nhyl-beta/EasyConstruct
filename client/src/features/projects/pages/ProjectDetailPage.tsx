@@ -36,6 +36,7 @@ import { useUsersByRole } from "@/features/users/hooks/use-users-by-role";
 import { ArrowLeft, FileText, HardHat, Loader2, PencilRuler, Trash2, Upload, UserPlus, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
+import { z } from "zod";
 import { useAuth } from "@/auth/auth-context";
 
 /**
@@ -136,6 +137,10 @@ export default function ProjectDetailPage() {
       setError("Name, code, and due date are required.");
       return;
     }
+    if (project.clientEmail?.trim() && !z.string().email().safeParse(project.clientEmail.trim()).success) {
+      setError("Enter a valid client email address.");
+      return;
+    }
     if (project.due !== loadedDue && project.due < todayIso()) {
       setError("Due date cannot be in the past.");
       return;
@@ -152,6 +157,8 @@ export default function ProjectDetailPage() {
         name: project.name.trim(),
         code: project.code.trim(),
         client: project.client,
+        // "" clears it; the API stores NULL.
+        clientEmail: project.clientEmail ?? "",
         currency: project.currency,
         location: project.location,
         // status/progress are lifecycle-owned now (server/src/lifecycle) —
@@ -290,6 +297,11 @@ export default function ProjectDetailPage() {
           {canEdit
             ? <Input value={project.client} onChange={(e) => update("client", e.target.value)} />
             : <ReadOnlyValue value={project.client} />}
+        </Field>
+        <Field label="Client email">
+          {canEdit
+            ? <Input type="email" placeholder="client@company.com" value={project.clientEmail ?? ""} onChange={(e) => update("clientEmail", e.target.value)} />
+            : <ReadOnlyValue value={project.clientEmail ?? ""} />}
         </Field>
         <Field label="Location">
           {canEdit

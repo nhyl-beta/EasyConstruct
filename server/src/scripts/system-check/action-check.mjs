@@ -4,6 +4,8 @@
 // usage: node action-check.mjs <outDir> [role,role,...]
 import { chromium } from "playwright";
 import { writeFileSync, mkdirSync } from "node:fs";
+import { preflightApi, failIfBrowserLoginsFailed } from "./lib.mjs";
+await preflightApi();
 
 const WEB = process.env.WEB_BASE ?? "http://localhost:5173";
 const CHROME = process.env.CHROME_PATH ?? "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
@@ -57,8 +59,13 @@ async function runRole(browser, role, email) {
 
   await page.goto(`${WEB}/login`, { waitUntil: "domcontentloaded" });
   await page.fill("#email", email); await page.fill("#password", "Demo@12345");
-  await page.click("button:has-text('Sign in')"); await page.waitForTimeout(3500);
+  await page.click("button:has-text('Sign in')"); // Wait for the app to leave /login (a cold Vite compile or a slow machine took longer than a fixed 3.5 s
+  // and made healthy accounts look like failed sign-ins); give up after 25 s.
+  await page.waitForURL((u) => !/\/login/.test(u.pathname), { timeout: 25000 }).catch(() => {});
+  await page.waitForTimeout(1500);
   const landing = page.url().replace(WEB, "");
+  // Still on the sign-in page: nothing below would mean anything for this role.
+  if (/\/login/.test(page.url())) { await ctx.close(); return { role, email, loginFailed: true, pages: [] }; }
   // discover sidebar pages by clicking each entry
   const seen = new Map();
   for (let round = 0; round < 3; round++) {
@@ -143,3 +150,4 @@ while (queue.length) {
 }
 await browser.close();
 console.log("wrote action-results.json");
+failIfBrowserLoginsFailed(results);

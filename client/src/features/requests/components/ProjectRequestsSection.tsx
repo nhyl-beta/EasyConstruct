@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { SectionCard } from "@/components/ui/section-card";
 import { useRequests } from "../hooks/useRequests";
 import { CreateRequestDialog } from "./CreateRequestDialog";
-import { formatDate, KindBadge, OverdueBadge, RequestStatusBadge } from "./RequestBadges";
+import { EmailStatusBadge, formatDate, KindBadge, OverdueBadge, RequestStatusBadge } from "./RequestBadges";
 import { RequestDetailSheet } from "./RequestDetailSheet";
 
 const RAISERS = new Set(["project-manager", "engineer", "admin"]);
@@ -62,13 +62,14 @@ export function ProjectRequestsSection({ projectCode }: { projectCode: string })
                     <span className="min-w-0">
                       <span className="block truncate text-sm">{r.subject}</span>
                       <span className="block font-mono text-overline text-muted-foreground">
-                        {r.number} · {r.assignedToName ?? "unassigned"}
+                        {r.number} · {r.recipientType === "client" ? "Client" : (r.assignedToName ?? "unassigned")}
                         {r.dueDate ? ` · due ${formatDate(r.dueDate)}` : ""}
                       </span>
                     </span>
                   </span>
                   <span className="flex items-center gap-1">
                     <RequestStatusBadge status={r.status} />
+                    <EmailStatusBadge request={r} />
                     <OverdueBadge request={r} />
                   </span>
                 </button>

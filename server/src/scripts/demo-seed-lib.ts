@@ -75,8 +75,29 @@ export async function login(email: string): Promise<string> {
     body: JSON.stringify({ email, password: PASSWORD }),
   });
   const json = (await res.json()) as { data?: { token?: string }; message?: string };
+  if (res.status === 429 || /too many sign-in attempts/i.test(json.message ?? "")) throw new SignInLimiterError(email, json.message);
   if (!res.ok) throw new Error(`Login failed for ${email}: ${json.message}`);
   return json.data!.token!;
+}
+
+/**
+ * The API limits sign-ins (40 per 15 minutes per address) and the seeds sign in as many accounts. When
+ * that trips, carrying on only produces confusing 401s later, so stop with what to do. Every seed script
+ * is idempotent, so after restarting the API the one that stopped (and any after it in the demo:seed chain:
+ * demo-seed-stages, then demo-seed-roles, demo-seed-revisions, demo-revisions, demo-seed-requests,
+ * demo-seed-design, demo-seed-owner-payroll, demo-seed-procurement) can simply be run again.
+ */
+export class SignInLimiterError extends Error {
+  constructor(email: string, detail?: string) {
+    super(
+      [
+        `Sign-in limiter reached while signing in as ${email}${detail ? ` (${detail})` : ""}.`,
+        "  Restart the API (it clears the limiter), then run this script again. Scripts that already finished are safe to skip or rerun.",
+        "  Remaining chain, in order: npm run demo:seed (runs demo-employees, demo-seed-stages, then demo:seed-roles).",
+      ].join("\n"),
+    );
+    this.name = "SignInLimiterError";
+  }
 }
 
 export async function api<T = any>(
@@ -125,6 +146,7 @@ export async function openSession(): Promise<Session> {
       try {
         return [key, await login(EMAILS[key])] as const;
       } catch (e) {
+        if (e instanceof SignInLimiterError) throw e;
         console.warn(`  (skipping ${EMAILS[key]}: ${(e as Error).message})`);
         return [key, ""] as const;
       }

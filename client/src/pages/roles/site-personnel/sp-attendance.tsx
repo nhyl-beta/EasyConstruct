@@ -14,6 +14,7 @@ import { useUploadFile} from "@/features/uploads/hooks/use-upload-file";
 import { useMyEmployee } from "@/features/employees/hooks/use-my-employee";
 import { useProjects } from "@/features/projects/hooks/useProjects";
 import { ProjectMemberRepository } from "@/features/project-members/repositories/project-member.repository";
+import { imageExtension } from "@/features/uploads/lib/image-extension";
 import { useOfflineAttendanceSync } from "@/features/attendance/offline/useOfflineSync";
 import { enqueueAttendance } from "@/features/attendance/offline/queue";
 import { AttendanceSheetImport } from "@/features/attendance/components/AttendanceSheetImport";
@@ -200,7 +201,7 @@ export default function SPAttendancePage() {
 
     try {
       const [, mimeMatch] = /^data:([^;]+);base64,/.exec(photoDataUrl) ?? [];
-      const photoUrl = await uploadDataUrl(`attendance-${Date.now()}.jpg`, mimeMatch ?? "image/jpeg", photoDataUrl);
+      const photoUrl = await uploadDataUrl(`attendance-${Date.now()}.${imageExtension(mimeMatch)}`, mimeMatch ?? "image/jpeg", photoDataUrl);
       await clockIn({
         site: "Assigned Site",
         projectCode,

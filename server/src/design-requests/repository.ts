@@ -144,10 +144,51 @@ export const findOverdueUnnotified = async (now: Date): Promise<DesignRequest[]>
     .where(
       and(
         inArray(designRequests.status, ["open", "in_review"]),
+        // Client requests have no assignee to notify; they get their own reminder below.
+        eq(designRequests.recipientType, "internal"),
         lt(designRequests.dueDate, now),
         isNull(designRequests.overdueNotifiedAt),
       ),
     );
+
+/**
+ * Client requests whose response window has passed with no reply marked: still
+ * "open", the email actually went out, and the sender has not been reminded.
+ */
+export const findClientReminderDue = async (now: Date, requestedByUserId?: number): Promise<DesignRequest[]> =>
+  db
+    .select()
+    .from(designRequests)
+    .where(
+      and(
+        eq(designRequests.recipientType, "client"),
+        eq(designRequests.status, "open"),
+        eq(designRequests.emailStatus, "sent"),
+        lt(designRequests.dueDate, now),
+        isNull(designRequests.clientReminderNotifiedAt),
+        requestedByUserId ? eq(designRequests.requestedByUserId, requestedByUserId) : undefined,
+      ),
+    );
+
+/** First caller wins, like claimOverdueNotification. */
+export const claimClientReminder = async (id: number, at: Date): Promise<boolean> => {
+  const rows = await db
+    .update(designRequests)
+    .set({ clientReminderNotifiedAt: at })
+    .where(and(eq(designRequests.id, id), isNull(designRequests.clientReminderNotifiedAt)))
+    .returning({ id: designRequests.id });
+  return rows.length > 0;
+};
+
+/** Claims one more email attempt only while the request is under its resend limit. */
+export const claimResend = async (id: number, max: number): Promise<boolean> => {
+  const rows = await db
+    .update(designRequests)
+    .set({ emailResendCount: sql`${designRequests.emailResendCount} + 1`, updatedAt: new Date() })
+    .where(and(eq(designRequests.id, id), sql`${designRequests.emailResendCount} < ${max}`))
+    .returning({ id: designRequests.id });
+  return rows.length > 0;
+};
 
 /** First caller wins: marks the request as notified only if nobody has yet. */
 export const claimOverdueNotification = async (id: number, at: Date): Promise<boolean> => {

@@ -25,6 +25,8 @@ export const projects = pgTable('projects', {
   // Objectives fix 1.2: link to the shared clients table. Nullable; the text above
   // stays authoritative for older rows and is kept in step when a link is set.
   clientId:    integer('client_id').references(() => clients.id),
+  // Where RFIs/RFAs addressed to the client are emailed. Nullable; editable per project.
+  clientEmail: varchar('client_email', { length: 255 }),
   // ISO 4217 code the project's amounts (contractValue, budgets, expenses)
   // are denominated in. Defaults to PHP because that is what every existing
   // row was implicitly stored in before this column existed.

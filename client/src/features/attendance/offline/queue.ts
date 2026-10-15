@@ -1,6 +1,7 @@
 // client/src/features/attendance/offline/queue.ts — NEW (E1)
 import { uploadsRepository } from "@/features/uploads/repositories/uploads.repository";
 import { attendanceRepository } from "../repositories/attendance.repository";
+import { imageExtension } from "@/features/uploads/lib/image-extension";
 import { classifySyncFailure, failureMessage } from "./sync-classify";
 import {
   deletePending,
@@ -51,7 +52,7 @@ export async function listPendingCount(): Promise<number> {
 async function syncOne(entry: PendingAttendanceEntry): Promise<void> {
   const dataUrl = await blobToDataUrl(entry.photo);
   const uploadRes = await uploadsRepository.upload(
-    `attendance-${entry.clientRequestId}.jpg`,
+    `attendance-${entry.clientRequestId}.${imageExtension(entry.photoType)}`,
     entry.photoType || "image/jpeg",
     dataUrl,
   );

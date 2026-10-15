@@ -16,6 +16,7 @@ export interface BackendProject {
   risk: string;
   location?: string | null;
   client?: string | null;
+  clientEmail?: string | null;
   currency?: string | null;
   workforce?: number | null;
   description?: string | null;
@@ -50,6 +51,7 @@ export function normalizeProject(raw: BackendProject): Project {
     pm: raw.pm ?? "Unassigned",
     assignedEngineer: raw.assignedEngineer ?? undefined,
     client: raw.client ?? "Unknown",
+    clientEmail: raw.clientEmail ?? null,
     // Pre-currency-column rows come back null; they were all peso projects.
     currency: raw.currency ?? "PHP",
     location: raw.location ?? "Unknown",

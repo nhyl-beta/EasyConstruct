@@ -1,16 +1,15 @@
 // Geofence / photo / offline-queue scenarios for site personnel on an emulated phone. DB rows reset between scenarios (throwaway DB only).
 import { chromium } from "playwright";
-import { execSync } from "node:child_process";
 import { writeFileSync } from "node:fs";
-const WEB = "http://localhost:5173";
-const PSQL = (q) => execSync(`PGHOST=/tmp PGPORT=5544 psql -U postgres easyconstruct_check -At -c "${q}"`).toString().trim();
+import { CHROME, WEB, ensureDir, psql as PSQL } from "./lib.mjs";
+ensureDir("mob2");
 const EMP = PSQL("select employee_id from employees where email='site@easyconstruct.demo'");
 const reset = () => PSQL(`delete from attendance where employee_id='${EMP}' and log_date=current_date`);
 const rows = () => PSQL(`select project_code||'|'||geofence||'|'||status||'|'||coalesce(distance_from_site_m::text,'-')||'m|in '||clock_in||'|offline='||validated_offline||'|photo='||coalesce(photo_url is not null,false) from attendance where employee_id='${EMP}' and log_date=current_date`);
 const S4 = { lat: 14.5764, lng: 121.0851 }; // DEMO-S4, radius 300
 const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
 const out = []; const rec = (n, ok, d = "") => { out.push({ n, ok, d }); console.log(ok ? "PASS" : "FAIL", n, "|", d); };
-const browser = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium-1194/chrome-linux/chrome", args: ["--no-sandbox"] });
+const browser = await chromium.launch({ executablePath: CHROME, args: ["--no-sandbox"] });
 async function fresh() {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, permissions: ["geolocation"], serviceWorkers: "allow" });
   const page = await ctx.newPage();
@@ -42,8 +41,8 @@ reset(); ({ ctx, page } = await fresh());
 await fill(ctx, page, { lat: S4.lat + 0.0005, lng: S4.lng }); await page.getByRole("button", { name: "Confirm attendance" }).click(); await page.waitForTimeout(3000);
 rec("Online, inside geofence (~55 m) -> Verified", /\|Inside\|Verified\|/.test(rows()), rows());
 const r1 = await fetch("http://localhost:8123/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: "site@easyconstruct.demo", password: "Demo@12345" }) }).then((r) => r.json()); const tok = r1.data?.token ?? r1.token;
-const dup = await fetch("http://localhost:8123/api/attendance/clock-in", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok}` }, body: JSON.stringify({ site: "x", projectCode: "DEMO-S4", latitude: S4.lat, longitude: S4.lng, photoUrl: "x" }) });
-rec("Second clock-in same day blocked by server", dup.status === 409, String(dup.status) + " " + (await dup.text()).slice(0, 120));
+const dup = await fetch("http://localhost:8123/api/attendance", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok}` }, body: JSON.stringify({ employeeId: EMP, site: "x", projectCode: "DEMO-S4", clockIn: "08:00", logDate: new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Manila" }), latitude: S4.lat, longitude: S4.lng, photoUrl: "x" }) });
+const dupBody = await dup.text(); rec("Second clock-in same day blocked by server (409 ATTENDANCE_DUPLICATE)", dup.status === 409 && dupBody.includes("ATTENDANCE_DUPLICATE"), `${dup.status} ${dupBody.slice(0, 120)}`);
 await ctx.close();
 
 // 3 offline, inside geofence
@@ -65,7 +64,9 @@ rec("Nothing reached server while offline", rows() === "", rows());
 const idb = await page.evaluate(async () => { const dbs = await indexedDB.databases(); return dbs.map((d) => d.name).join(","); });
 rec("Queue persisted in IndexedDB", idb.length > 0, idb);
 await page.reload({ waitUntil: "domcontentloaded" }).catch(() => {}); await page.waitForTimeout(1500);
-t = await body(page).catch(() => ""); rec("Queued item survives a page reload while offline", /queued|1 attendance/i.test(t) || t === "", t.slice(0, 80) || "(page did not render offline - no app shell cached)");
+t = await body(page).catch(() => "");
+if (t === "") console.log("KNOWN-LIMITATION Queued item after an offline reload: the page does not render offline (no app shell is cached), so this cannot be checked");
+else rec("Queued item survives a page reload while offline", /queued|1 attendance/i.test(t), t.slice(0, 80));
 await ctx.setOffline(false); await page.waitForTimeout(6000);
 rec("Auto-sync on reconnect", rows() !== "", rows());
 rec("Synced as Inside + flagged offline-validated", /\|Inside\|/.test(rows()) && /offline=true/.test(rows()), rows());

@@ -1,4 +1,5 @@
 import { chromium } from "playwright"; import { readFileSync, existsSync } from "node:fs";
+import { CHROME } from "./lib.mjs";
 const API = "http://localhost:8123/api", WEB = "http://localhost:5173";
 const J = (p, body, tok) => fetch(API + p, { method: "POST", headers: { "Content-Type": "application/json", ...(tok ? { Authorization: "Bearer " + tok } : {}) }, body: JSON.stringify(body) });
 const rec = (n, ok, d = "") => console.log(ok ? "PASS" : "FAIL", n, "|", d);
@@ -16,7 +17,7 @@ const link = linkOf(m); rec("Reset link points at the app", /^http:\/\/localhost
 const before = box().length; r = await J("/auth/forgot-password", { email: "nobody@nowhere.test" }); rec("Unknown address answers identically and sends nothing", r.status === 200 && box().length === before, r.status);
 // 2 UI: open link, set a new password
 const token = new URL(link).searchParams.get("token");
-const b = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium-1194/chrome-linux/chrome", args: ["--no-sandbox"] });
+const b = await chromium.launch({ executablePath: CHROME, args: ["--no-sandbox"] });
 const p = await (await b.newContext()).newPage(); await p.goto(link, { waitUntil: "domcontentloaded" }); await p.waitForTimeout(2000);
 const inputs = await p.$$("input[type=password]"); rec("Reset page shows password fields", inputs.length >= 1, inputs.length + " fields");
 for (const i of inputs) await i.fill("NewPass@12345"); await p.getByRole("button", { name: /reset|set|save|update/i }).first().click().catch(() => {}); await p.waitForTimeout(2500);

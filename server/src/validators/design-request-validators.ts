@@ -1,6 +1,6 @@
 // server/src/validators/design-request-validators.ts
 import { z } from "zod";
-import { DISCIPLINES, IMPACTS, REQUEST_KINDS, RFA_OUTCOMES } from "../design-requests/rules.js";
+import { DISCIPLINES, IMPACTS, RECIPIENT_TYPES, REQUEST_KINDS, RFA_OUTCOMES } from "../design-requests/rules.js";
 
 // A file already stored through POST /api/uploads (same rule as requirements).
 export const requestFileSchema = z.object({
@@ -32,14 +32,30 @@ const editable = {
   designId: z.number().int().positive().optional(),
 };
 
-export const createDesignRequestSchema = z.object({
-  kind: z.enum(REQUEST_KINDS),
-  projectCode: z.string().min(1).max(50),
-  discipline: z.enum(DISCIPLINES),
-  followUpOfId: z.number().int().positive().optional(),
-  files: z.array(requestFileSchema).max(10).optional(),
-  ...editable,
-});
+export const clientEmailSchema = z.string().trim().email("Enter a valid client email address").max(255);
+
+export const createDesignRequestSchema = z
+  .object({
+    kind: z.enum(REQUEST_KINDS),
+    projectCode: z.string().min(1).max(50),
+    discipline: z.enum(DISCIPLINES),
+    followUpOfId: z.number().int().positive().optional(),
+    files: z.array(requestFileSchema).max(10).optional(),
+    ...editable,
+    // Required for an internal request; a client request has no assignee.
+    assignedToUserId: editable.assignedToUserId.optional(),
+    recipientType: z.enum(RECIPIENT_TYPES).default("internal"),
+    recipientEmail: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.recipientType === "client") {
+      if (!clientEmailSchema.safeParse(data.recipientEmail).success) {
+        ctx.addIssue({ code: "custom", path: ["recipientEmail"], message: "A valid client email address is required" });
+      }
+    } else if (!data.assignedToUserId) {
+      ctx.addIssue({ code: "custom", path: ["assignedToUserId"], message: "Choose who this request is sent to" });
+    }
+  });
 
 export const updateDesignRequestSchema = z
   .object({
@@ -54,6 +70,7 @@ export const updateDesignRequestSchema = z
     assignedToUserId: editable.assignedToUserId.optional(),
     dueDays: editable.dueDays,
     discipline: z.enum(DISCIPLINES).optional(),
+    recipientEmail: clientEmailSchema.optional(),
     files: z.array(requestFileSchema).max(10).optional(),
   })
   .strict();

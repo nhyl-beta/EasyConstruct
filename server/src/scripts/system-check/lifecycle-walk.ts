@@ -98,6 +98,8 @@ async function main() {
     const shown = await openProject(page);
     rec(phase, "Project page shows the lifecycle panel", shown, page.url().replace(WEB, ""));
     const btn = advanceButton(page);
+    // The panel heading can render before its button; on a slow machine that gap made this check fail once.
+    await btn.waitFor({ timeout: 10_000 }).catch(() => {});
     const present = (await btn.count()) > 0;
     const enabled = present && (await btn.isEnabled());
     rec(phase, `Advance button enabled once every gate passes`, enabled, present ? `button "${(await btn.innerText()).trim()}"` : "button not found");
