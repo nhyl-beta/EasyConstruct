@@ -46,7 +46,7 @@ npm run dev
 $env:DATABASE_URL = "postgresql://postgres@localhost:5544/easyconstruct_check"; $env:ALLOW_DEMO_RESET = "true"
 $env:SMOKE_BASE_URL = "http://localhost:8123/api"
 $env:CHROME_PATH = "C:\Program Files\Google\Chrome\Application\chrome.exe"
-npx tsx src/scripts/system-check/inventory.ts system-check-out
+npx tsx src/scripts/system-check/inventory.ts system-check-out/inventory.json
 npx tsx src/scripts/system-check/sweep.ts system-check-out/inventory.json system-check-out
 npx tsx src/scripts/system-check/files.ts system-check-out
 node src/scripts/system-check/ui-check.mjs system-check-out/ui
