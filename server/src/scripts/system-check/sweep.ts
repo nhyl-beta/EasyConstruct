@@ -159,15 +159,20 @@ async function main() {
   const PUBLIC = [/^\/api\/auth\/(login|forgot|reset|recover|owner)/i, /\/api\/cron\//];
   const findings: string[] = [];
   const by = (k: string) => results.filter((p) => p.kind === k);
-  const fivexx = results.filter((p) => p.status >= 500 || p.status === 0);
+  // 501 is a deliberate "this server is not set up for that" (direct Blob uploads need a Blob token,
+  // which the check API intentionally does not have). It is not a crash, so it is not counted as one.
+  const fivexx = results.filter((p) => (p.status >= 500 && p.status !== 501) || p.status === 0);
+  const notConfigured = results.filter((p) => p.status === 501);
   const unauthOpen = by("unauth").filter((p) => p.status >= 200 && p.status < 300 && !PUBLIC.some((re) => re.test(p.route)));
-  const emptyAccepted = by("empty-body").filter((p) => p.status >= 200 && p.status < 300);
+  // Action routes that take no body by design: an empty body is the normal call, not a validation gap.
+  const NO_BODY_ACTIONS = [/\/api\/ai-validation\/refresh-references$/, /\/api\/attendance\/bulk-verify$/, /\/api\/design-requests\/sweep$/, /\/api\/finance\/expenses\/rescore$/];
+  const emptyAccepted = by("empty-body").filter((p) => p.status >= 200 && p.status < 300 && !NO_BODY_ACTIONS.some((re) => re.test(p.route)));
   const badIdServer = by("bad-id").filter((p) => p.status >= 500 || p.status === 200);
   const slow = results.filter((p) => p.ms > 3000);
 
   const md: string[] = [];
   md.push(`# System sweep report`, ``, `Base: ${BASE} · routes: ${inventory.length} · requests: ${results.length} · roles: ${ROLES.length}`, ``);
-  md.push(`| Check | Count |`, `|---|---|`, `| Server errors (5xx / no response) | ${fivexx.length} |`, `| Unauthenticated 2xx on non-public route | ${unauthOpen.length} |`, `| Malformed id returned 5xx or 200 | ${badIdServer.length} |`, `| Mutation accepted an EMPTY body (2xx) | ${emptyAccepted.length} |`, `| Slow responses (>3s) | ${slow.length} |`, ``);
+  md.push(`| Check | Count |`, `|---|---|`, `| Server errors (5xx except 501 / no response) | ${fivexx.length} |`, `| Not configured here (501) | ${notConfigured.length} |`, `| Unauthenticated 2xx on non-public route | ${unauthOpen.length} |`, `| Malformed id returned 5xx or 200 | ${badIdServer.length} |`, `| Mutation accepted an EMPTY body (2xx) | ${emptyAccepted.length} |`, `| Slow responses (>3s) | ${slow.length} |`, ``);
   const section = (title: string, rows: Probe[], limit = 60) => {
     md.push(`## ${title}`, ``);
     if (!rows.length) { md.push("None.", ""); return; }
