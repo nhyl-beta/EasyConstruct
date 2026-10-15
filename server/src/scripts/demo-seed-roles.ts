@@ -367,7 +367,10 @@ async function finance() {
 async function workflows() {
   section("Workflows");
   const templates = await api<{ id: number; name: string }[]>("/workflows/templates", s.admin.token);
-  const tpl = (n: string) => templates.find((t) => t.name === n)!.id;
+  // A template this seed names may not exist in a given database (templates are editable data).
+  // That used to surface as "Cannot read properties of undefined (reading 'id')"; it is now skipped
+  // with the template name, so the other workflows are still created and the cause is obvious.
+  const tpl = (n: string) => templates.find((t) => t.name === n)?.id;
   const specs: { title: string; code: string; template: string; by: Account; advance?: ("human-resources" | "engineer" | "consultant")[]; stallHours?: number }[] = [
     { title: "Document compliance review - structural drawings", code: "DEMO-S2", template: "Document Compliance Review", by: team("DEMO-S2").consultant },
     { title: "Subcontractor onboarding - formwork contractor", code: "DEMO-S4", template: "Subcontractor onboarding", by: s.hr, advance: ["human-resources"] },
@@ -379,11 +382,16 @@ async function workflows() {
   ];
   for (const w of specs) {
     if (await have("SELECT 1 FROM workflows WHERE title = $1 AND project_code = $2", [w.title, w.code])) continue;
+    const templateId = tpl(w.template);
+    if (templateId === undefined) {
+      console.log(`  skipped workflow "${w.title}": no workflow template named "${w.template}" in this database (create it in the Workflow Configuration page to include it)`);
+      continue;
+    }
     await attempt(`workflow ${w.title}`, async () => {
       const f = await pdf(w.by, `wf-${w.code}-${bump("wf_files")}.pdf`, w.title, lines(w.code, w.title));
       const wf = await api<{ id: number; stages: { id: number; role: string; status: string }[] }>("/workflows", w.by.token, {
         method: "POST",
-        body: { title: w.title, projectCode: w.code, templateId: tpl(w.template), attachments: [{ kind: "document", label: w.title, fileUrl: f.url, fileName: f.filename, fileSize: `${Math.round(f.sizeBytes / 1024)} KB` }] },
+        body: { title: w.title, projectCode: w.code, templateId, attachments: [{ kind: "document", label: w.title, fileUrl: f.url, fileName: f.filename, fileSize: `${Math.round(f.sizeBytes / 1024)} KB` }] },
       });
       let current = wf.stages.find((x) => x.status === "current");
       for (const role of w.advance ?? []) {
