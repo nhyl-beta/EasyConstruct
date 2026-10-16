@@ -61,6 +61,7 @@ export const PAGINATION_EXEMPT: PaginationExemption[] = [
   { file: "pages/roles/shared/print-pages.tsx", reason: "Print pages print everything by design." },
   { file: "pages/roles/admin/admin-approval-hierarchy.tsx", reason: "The few workflow templates and their stages; fixed by configuration." },
   { file: "pages/roles/admin/admin-workflow-configuration.tsx", reason: "The few workflow templates and their stages; fixed by configuration." },
+  { file: "features/roles/components/RoleHierarchyCanvas.tsx", reason: "The fixed ten roles of the org chart; the narrow-screen list shows the same ten." },
   { file: "features/roles/components/RoleMatrix.tsx", reason: "Fixed roles-by-pages grid; one column per role, rows come from the static resource map." },
   { file: "features/proposals/ProposalDetailPanel.tsx", reason: "Related tab lists only the other proposals on the same project from the page already loaded; the register itself is paginated." },
   { file: "pages/roles/owner/owner-account-recovery.tsx", reason: "The fixed set of IT Designer recovery targets." },

@@ -21,6 +21,7 @@ interface RoleSidePanelProps {
   inSheet?: boolean;
   /** Everyone is view-only today: see the note on the Permissions tab. */
   readOnly: boolean;
+  defaultTab?: string;
 }
 
 function Card({ title, children }: { title: string; children: ReactNode }) {
@@ -52,7 +53,7 @@ function RoleUsersList({ users }: { users: RoleAccountSummary["users"] }) {
   );
 }
 
-export function RoleSidePanel({ roleKey, role, label, accounts, parentLabel, group, onClose, inSheet, readOnly }: RoleSidePanelProps) {
+export function RoleSidePanel({ roleKey, role, label, accounts, parentLabel, group, onClose, inSheet, readOnly, defaultTab }: RoleSidePanelProps) {
   const children = ROLE_HIERARCHY.filter((n) => n.parent === roleKey).map((n) => n.role);
   const modules = modulesFor(roleKey).map((name) => ({ name, ...moduleInfo(name) }));
   const byGroup = new Map<string, typeof modules>();
@@ -66,6 +67,7 @@ export function RoleSidePanel({ roleKey, role, label, accounts, parentLabel, gro
       badge={readOnly ? <Badge variant="outline">View only</Badge> : undefined}
       onClose={onClose}
       hideCloseButton={inSheet}
+      defaultTab={defaultTab}
       tabs={[
         {
           value: "overview",

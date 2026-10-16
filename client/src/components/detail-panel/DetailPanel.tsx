@@ -25,6 +25,8 @@ export interface DetailPanelProps {
   onClose: () => void;
   /** Hides the header X (the Sheet draws its own). */
   hideCloseButton?: boolean;
+  /** Tab to open first; defaults to the first tab. */
+  defaultTab?: string;
   className?: string;
 }
 
@@ -33,7 +35,7 @@ export interface DetailPanelProps {
  * that scroll on their own, and a sticky footer for actions. Shared by the
  * proposal pages and the Roles & Permissions page.
  */
-export function DetailPanel({ title, subtitle, badge, tabs, footer, onClose, hideCloseButton, className }: DetailPanelProps) {
+export function DetailPanel({ title, subtitle, badge, tabs, footer, onClose, hideCloseButton, defaultTab, className }: DetailPanelProps) {
   return (
     <div className={cn("flex h-full min-h-0 flex-col bg-card", className)}>
       <header className={cn("flex items-start justify-between gap-3 border-b border-border p-4", hideCloseButton && "pr-12")}>
@@ -51,7 +53,7 @@ export function DetailPanel({ title, subtitle, badge, tabs, footer, onClose, hid
         </div>
       </header>
 
-      <Tabs defaultValue={tabs[0]?.value} className="flex min-h-0 flex-1 flex-col gap-0">
+      <Tabs defaultValue={defaultTab ?? tabs[0]?.value} className="flex min-h-0 flex-1 flex-col gap-0">
         <TabsList className="mx-4 mt-3 h-9 w-auto justify-start overflow-x-auto">
           {tabs.map((t) => (
             <TabsTrigger key={t.value} value={t.value}>
