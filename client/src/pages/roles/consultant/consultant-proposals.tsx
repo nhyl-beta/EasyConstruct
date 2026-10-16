@@ -1,9 +1,7 @@
-import { DecisionSupportLabel } from "@/components/shared/decision-support-label";
 import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import {
-  ArrowLeft,
   FileText,
 } from "lucide-react";
 
@@ -13,6 +11,9 @@ import { PageContent } from "@/components/refine-ui/views/page-content";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { SplitDetailLayout, selectedRowClass } from "@/components/detail-panel/DetailPanel";
+import { useSelectedParam } from "@/hooks/use-selected-param";
+import { ProposalDetailPanel } from "@/features/proposals/ProposalDetailPanel";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -27,7 +28,6 @@ import { ProposalAttachments } from "@/pages/roles/consultant/proposal-attachmen
 import { WorkflowRepository } from "@/features/workflows/repositories/workflow.repository";
 import type { Proposal } from "@/features/proposals/types/proposal.types";
 import { FEATURES } from "@/config/features";
-import { ProposalValidationPanel } from "@/features/proposals/components/ProposalValidationPanel";
 import { isStaleValidation } from "@/features/proposals/lib/validation-format";
 
 /*
@@ -79,8 +79,11 @@ export default function ConsultantProposalsPage() {
   const [validationTried, setValidationTried] = useState<Set<number>>(new Set());
   const [validationFailed, setValidationFailed] = useState(false);
 
-  const [selectedProposal, setSelectedProposal] =
-    useState<Proposal | null>(null);
+  // The open proposal lives in the URL (?selected=<id>) so it can be deep-linked; deriving it from
+  // the loaded list keeps the panel in step with a refresh after a decision.
+  const [selectedId, selectParam] = useSelectedParam();
+  const selectedProposal: Proposal | null = proposals.find((p) => String(p.id) === selectedId) ?? null;
+  const [order, setOrder] = useState<number[]>([]);
 
   const [comment, setComment] =
     useState("");
@@ -133,16 +136,22 @@ export default function ConsultantProposalsPage() {
       .catch(() => setValidationFailed(true));
   }, [selectedProposal, validationTried, validateProposal, loadProposals]);
 
-  /*
-   * Keep the open review screen in step with a refreshed list, so the
-   * decision that was just submitted is reflected without closing and
-   * reopening the proposal.
-   */
+  // A different proposal opened: start from its saved comment, with no stale error.
   useEffect(() => {
-    if (!selectedProposal) return;
-    const fresh = proposals.find((p) => p.id === selectedProposal.id);
-    if (fresh && fresh !== selectedProposal) setSelectedProposal(fresh);
-  }, [proposals, selectedProposal]);
+    setComment(selectedProposal?.reviewComment ?? "");
+    setActionError(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedProposal?.id]);
+
+  const stepSelection = useCallback(
+    (delta: 1 | -1) => {
+      if (order.length === 0) return;
+      const at = order.findIndex((id) => String(id) === selectedId);
+      const next = order[Math.min(order.length - 1, Math.max(0, at + delta))];
+      if (next !== undefined) selectParam(next);
+    },
+    [order, selectedId, selectParam],
+  );
 
   /*
    * ----------------------------------------------------------
@@ -164,6 +173,9 @@ export default function ConsultantProposalsPage() {
   // The review queue (Pending, assigned to the consultant or to nobody yet) is
   // selected on the server: see proposals/repository.ts reviewQueue.
   const pendingProposals = proposals;
+  useEffect(() => {
+    setOrder(pendingProposals.map((p) => p.id));
+  }, [pendingProposals]);
 
   useEffect(() => {
     if (autoTabPicked || loading || approvalsPending === null) return;
@@ -189,18 +201,8 @@ export default function ConsultantProposalsPage() {
      * the review screen.
      */
 
-    setSelectedProposal(proposal);
-
-    setActionError(null);
+    selectParam(proposal.id);
     setActionNotice(null);
-
-    /*
-     * Load an existing comment if there is one.
-     */
-
-    setComment(
-      proposal.reviewComment ?? "",
-    );
   };
 
   /*
@@ -209,13 +211,11 @@ export default function ConsultantProposalsPage() {
    * ----------------------------------------------------------
    */
 
-  const closeProposal = () => {
-    setSelectedProposal(null);
-
+  const closeProposal = useCallback(() => {
+    selectParam(null);
     setComment("");
-
     setActionError(null);
-  };
+  }, [selectParam]);
 
   /*
    * ----------------------------------------------------------
@@ -266,7 +266,7 @@ export default function ConsultantProposalsPage() {
     }
 
     setComment("");
-    setSelectedProposal(null);
+    selectParam(null);
     setActionNotice(
       `${updated.proposalId} — ${status.toLowerCase()}.`,
     );
@@ -322,347 +322,48 @@ export default function ConsultantProposalsPage() {
     />
   );
 
-  /*
-   * ==========================================================
-   * REVIEW SCREEN
-   * ==========================================================
-   *
-   * If selectedProposal exists, the proposal list disappears
-   * and the Consultant Review interface appears.
-   */
-
-  if (selectedProposal) {
-    return (
-      <PageContainer>
-
-        <PageHeader
-          title="Proposal Review"
-          description="Review the proposal and submit your professional assessment."
-        />
-
-        <PageContent className="p-6 md:p-8">
-
-          <div className="mx-auto max-w-4xl space-y-6">
-
-            {/* ------------------------------------------------
-                BACK BUTTON
-                ------------------------------------------------ */}
-
+  // Sticky footer of the detail panel: the required comment and the three decisions.
+  const reviewActions = selectedProposal && (
+    <div className="w-full space-y-2">
+      <label htmlFor="consultant-review-comment" className="block text-sm font-medium">
+        Review comment <span className="text-destructive-strong">*</span>
+      </label>
+      <Textarea
+        id="consultant-review-comment"
+        value={comment}
+        onChange={(event) => setComment(event.target.value)}
+        placeholder="Please revise the structural details before final approval."
+        className="min-h-20"
+      />
+      <p className="text-xs text-muted-foreground">Required. The decision buttons unlock once this is filled in.</p>
+      {actionError && (
+        <p role="alert" className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive-strong">
+          {actionError}
+        </p>
+      )}
+      <div className="flex flex-wrap gap-2">
+        {PROPOSAL_DECISIONS.map((decision) => {
+          const Icon = decision.icon;
+          return (
             <Button
+              key={decision.status}
               type="button"
-              variant="ghost"
-              onClick={closeProposal}
+              size="sm"
+              variant={decision.variant}
+              disabled={reviewing || !comment.trim()}
+              title={!comment.trim() ? "Enter a review comment first" : undefined}
+              onClick={() => setPendingDecision(decision.status)}
               className="gap-2"
             >
-              <ArrowLeft className="h-4 w-4" />
-
-              Back to Proposals
+              <Icon className="h-4 w-4" />
+              {decision.label}
             </Button>
-
-            {/* ------------------------------------------------
-                PROPOSAL INFORMATION
-                ------------------------------------------------ */}
-
-            <div className="rounded-xl border bg-card">
-
-              <div className="border-b p-6">
-
-                <div className="flex flex-wrap items-start justify-between gap-4">
-
-                  <div>
-
-                    <p className="font-mono text-xs text-muted-foreground">
-                      {
-                        selectedProposal.proposalId
-                      }
-                    </p>
-
-                    <h1 className="mt-2 text-2xl font-bold">
-                      {
-                        selectedProposal.title
-                      }
-                    </h1>
-
-                  </div>
-
-                  <StatusBadge
-                    status={
-                      selectedProposal.status
-                    }
-                  />
-
-                </div>
-
-              </div>
-
-              <div className="grid gap-6 p-6 sm:grid-cols-2">
-
-                {/* Project */}
-
-                <div>
-
-                  <p className="text-xs font-medium uppercase text-muted-foreground">
-                    Project
-                  </p>
-
-                  <p className="mt-1 font-medium">
-                    {
-                      selectedProposal.projectCode
-                    }
-                  </p>
-
-                </div>
-
-                {/* Submitted By */}
-
-                <div>
-
-                  <p className="text-xs font-medium uppercase text-muted-foreground">
-                    Submitted By
-                  </p>
-
-                  <p className="mt-1 font-medium">
-                    {
-                      selectedProposal.submittedBy
-                    }
-                  </p>
-
-                </div>
-
-                {/* Amount */}
-
-                <div>
-
-                  <p className="text-xs font-medium uppercase text-muted-foreground">
-                    Estimated Amount
-                  </p>
-
-                  <p className="mt-1 font-medium">
-                    {
-                      selectedProposal.amount ??
-                      "Not provided"
-                    }
-                  </p>
-
-                </div>
-
-                {/* Reviewer */}
-
-                <div>
-
-                  <p className="text-xs font-medium uppercase text-muted-foreground">
-                    Assigned Reviewer
-                  </p>
-
-                  <p className="mt-1 font-medium">
-                    {
-                      selectedProposal.assignedReviewer ??
-                      "Consultant"
-                    }
-                  </p>
-
-                </div>
-
-              </div>
-
-            </div>
-
-            {/* ------------------------------------------------
-                PROPOSAL DESCRIPTION
-                ------------------------------------------------ */}
-
-            <div className="rounded-xl border bg-card">
-
-              <div className="border-b p-6">
-
-                <h2 className="font-semibold">
-                  Proposal Details
-                </h2>
-
-              </div>
-
-              <div className="p-6">
-
-                {selectedProposal.content ? (
-                  <p className="whitespace-pre-wrap text-sm leading-7">
-                    {
-                      selectedProposal.content
-                    }
-                  </p>
-                ) : (
-                  <p className="text-sm text-muted-foreground">
-                    No proposal description was
-                    provided.
-                  </p>
-                )}
-
-              </div>
-
-            </div>
-
-            {/* ------------------------------------------------
-                ATTACHED FILES
-                ------------------------------------------------
-                The submission's files were not shown anywhere on this
-                screen, so "review the proposal" meant reviewing its title
-                and a paragraph of text. Proposals have no file column of
-                their own, so the files are the documents filed against the
-                proposal's project — see ProposalAttachments. */}
-
-            <ProposalAttachments proposal={selectedProposal} />
-
-            {/* ------------------------------------------------
-                RULE-BASED VALIDATION
-                ------------------------------------------------ */}
-
-            {FEATURES.ai && (
-              <div className="rounded-xl border bg-card">
-
-                <div className="border-b p-6">
-
-                  <h2 className="flex flex-wrap items-center gap-2 font-semibold">
-                    Rule-based validation summary
-                    <DecisionSupportLabel />
-                  </h2>
-
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Completeness checks — decision support only.
-                  </p>
-
-                </div>
-
-                <div className="p-6">
-                  <ProposalValidationPanel
-                    raw={selectedProposal.aiValidation}
-                    emptyText={
-                      validationFailed
-                        ? "The validation summary could not be generated right now."
-                        : "Preparing the validation summary…"
-                    }
-                    onRerun={() => {
-                      setValidationTried((prev) => {
-                        const next = new Set(prev);
-                        next.delete(selectedProposal.id);
-                        return next;
-                      });
-                    }}
-                  />
-                </div>
-
-              </div>
-            )}
-
-            {/* ------------------------------------------------
-                CONSULTANT REVIEW
-                ------------------------------------------------ */}
-
-            <div className="rounded-xl border bg-card">
-
-              <div className="border-b p-6">
-
-                <h2 className="font-semibold">
-                  Consultant Review
-                </h2>
-
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Provide your professional assessment
-                  before making a decision.
-                </p>
-
-              </div>
-
-              <div className="space-y-6 p-6">
-
-                {/* Comment */}
-
-                <div>
-
-                  <label
-                    htmlFor="consultant-review-comment"
-                    className="mb-2 block text-sm font-medium"
-                  >
-                    Review Comment <span className="text-destructive-strong">*</span>
-                  </label>
-
-                  <Textarea
-                    id="consultant-review-comment"
-                    value={comment}
-                    onChange={(event) =>
-                      setComment(
-                        event.target.value,
-                      )
-                    }
-                    placeholder="Please revise the structural details before final approval."
-                    className="min-h-40"
-                  />
-
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    Required — explain what should be approved,
-                    revised, or rejected. The decision buttons below
-                    unlock once this is filled in.
-                  </p>
-
-                </div>
-
-                {/* Decision Buttons */}
-
-                {/* Q2: these used to stay clickable with an empty comment,
-                    so a Consultant could click Approve, confirm in the
-                    dialog, and only then see an error telling them a
-                    comment was required all along — reading as "nothing
-                    happens when I click approve". Disabling them up front,
-                    with the label above explaining why, catches this
-                    before the confirm round-trip instead of after. */}
-                {actionError && (
-                  <p
-                    role="alert"
-                    className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive-strong"
-                  >
-                    {actionError}
-                  </p>
-                )}
-
-                <div className="flex flex-wrap gap-3">
-                  {PROPOSAL_DECISIONS.map((decision) => {
-                    const Icon = decision.icon;
-                    return (
-                      <Button
-                        key={decision.status}
-                        type="button"
-                        variant={decision.variant}
-                        disabled={reviewing || !comment.trim()}
-                        title={!comment.trim() ? "Enter a review comment first" : undefined}
-                        onClick={() => setPendingDecision(decision.status)}
-                        className="gap-2"
-                      >
-                        <Icon className="h-4 w-4" />
-                        {decision.label}
-                      </Button>
-                    );
-                  })}
-                </div>
-
-                {/* Loading */}
-
-                {reviewing && (
-                  <p className="text-sm text-muted-foreground">
-                    Submitting consultant review...
-                  </p>
-                )}
-
-              </div>
-
-            </div>
-
-          </div>
-
-        </PageContent>
-
-        {decisionConfirmDialog}
-
-      </PageContainer>
-    );
-  }
+          );
+        })}
+      </div>
+      {reviewing && <p className="text-sm text-muted-foreground">Submitting consultant review...</p>}
+    </div>
+  );
 
   /*
    * ==========================================================
@@ -712,6 +413,33 @@ export default function ConsultantProposalsPage() {
           </TabsContent>
 
           <TabsContent value="proposals" className="space-y-0 pt-4">
+        <SplitDetailLayout
+          open={!!selectedProposal}
+          onClose={closeProposal}
+          onStep={stepSelection}
+          sheetLabel="Proposal review"
+          panel={({ inSheet }) =>
+            selectedProposal && (
+              <ProposalDetailPanel
+                proposal={selectedProposal}
+                siblings={pendingProposals}
+                onSelectRelated={openProposal}
+                onClose={closeProposal}
+                inSheet={inSheet}
+                actions={reviewActions}
+                contentExtra={<ProposalAttachments proposal={selectedProposal} />}
+                validationEmptyText={validationFailed ? "The validation summary could not be generated right now." : "Preparing the validation summary…"}
+                onRerunValidation={() =>
+                  setValidationTried((prev) => {
+                    const next = new Set(prev);
+                    next.delete(selectedProposal.id);
+                    return next;
+                  })
+                }
+              />
+            )
+          }
+        >
 
         {/* ----------------------------------------------------
             PAGE INFORMATION
@@ -829,7 +557,9 @@ export default function ConsultantProposalsPage() {
                     (proposal) => (
                       <tr
                         key={proposal.id}
-                        className="border-b last:border-b-0 hover:bg-muted/20"
+                        aria-selected={selectedProposal?.id === proposal.id}
+                        onClick={() => openProposal(proposal)}
+                        className={`cursor-pointer border-b last:border-b-0 hover:bg-muted/20 ${selectedProposal?.id === proposal.id ? selectedRowClass : ""}`}
                       >
 
                         {/* ID */}
@@ -928,6 +658,7 @@ export default function ConsultantProposalsPage() {
 
           </div>
         )}
+        </SplitDetailLayout>
 
           </TabsContent>
         </Tabs>

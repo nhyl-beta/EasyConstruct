@@ -1,6 +1,7 @@
 import { db }    from "../db/connection.js";
 import { roles } from "../db/schema/roles.js";
-import { eq }    from "drizzle-orm";
+import { users }    from "../db/schema/users.js";
+import { asc, eq }    from "drizzle-orm";
 
 export const findAll = async () => {
   return await db.select().from(roles);
@@ -22,4 +23,12 @@ export const findByName = async (name: string) => {
     .from(roles)
     .where(eq(roles.name, name));
   return role ?? null;
+};
+
+// Who holds each role. Read-only; never selects the password hash.
+export const findAccountsByRole = async () => {
+  return await db
+    .select({ id: users.id, name: users.name, email: users.email, role: users.role, isActive: users.isActive })
+    .from(users)
+    .orderBy(asc(users.name));
 };

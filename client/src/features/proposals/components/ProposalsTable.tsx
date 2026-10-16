@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowDown, ArrowUp, ChevronsUpDown } from "lucide-react";
 
+import { selectedRowClass } from "@/components/detail-panel/DetailPanel";
 import { StatusBadge } from "@/components/ui/status-badge";
 import {
   Table,
@@ -20,6 +21,8 @@ interface ProposalsTableProps {
   /** Highlights the row and makes it clickable, for review screens. */
   selectedId?: number | null;
   onSelect?: (proposal: Proposal) => void;
+  /** Reports the on-screen row order, so arrow keys can step through it. */
+  onOrderChange?: (ids: number[]) => void;
 }
 
 const COLUMNS: ReadonlyArray<{
@@ -54,6 +57,7 @@ export function ProposalsTable({
   proposals,
   selectedId,
   onSelect,
+  onOrderChange,
 }: ProposalsTableProps) {
   const [sortKey, setSortKey] = useState<SortKey>("proposalId");
   const [direction, setDirection] = useState<SortDirection>("asc");
@@ -71,6 +75,10 @@ export function ProposalsTable({
       return compared !== 0 ? compared * factor : (a.id - b.id) * factor;
     });
   }, [proposals, sortKey, direction]);
+
+  useEffect(() => {
+    onOrderChange?.(sorted.map((p) => p.id));
+  }, [sorted, onOrderChange]);
 
   const toggle = (key: SortKey) => {
     if (key === sortKey) {
@@ -111,10 +119,11 @@ export function ProposalsTable({
           {sorted.map((p) => (
             <TableRow
               key={p.id}
+              aria-selected={selectedId === p.id}
               onClick={onSelect ? () => onSelect(p) : undefined}
               className={[
                 onSelect ? "cursor-pointer" : "",
-                selectedId === p.id ? "bg-muted/60" : "",
+                selectedId === p.id ? selectedRowClass : "",
               ]
                 .filter(Boolean)
                 .join(" ")}

@@ -13,3 +13,15 @@ export const RoleRepository = {
     return unwrap<Role[]>(apiClient.get("/roles"));
   },
 };
+
+export interface RoleAccountSummary {
+  role: string;
+  activeUsers: number;
+  users: { id: number; name: string; email: string; isActive: boolean }[];
+}
+
+export const RoleAccountRepository = {
+  async summary(): Promise<RoleAccountSummary[]> {
+    return unwrap<RoleAccountSummary[]>(apiClient.get("/roles/summary"));
+  },
+};

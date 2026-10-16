@@ -35,3 +35,15 @@ export const getById = async (
     next(err);
   }
 };
+
+export const getAccountSummary = async (
+  _req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    res.json(formatSuccess(await service.getAccountSummary(), "Role account summary retrieved"));
+  } catch (err) {
+    next(err);
+  }
+};
