@@ -15,6 +15,8 @@ import type { AuthedRequest } from "../middleware/auth.js";
 import { parsePageRequest, sendPaged } from "../utils/pagination.js";
 import { DOCUMENT_SORT_COLUMNS } from "./repository.js";
 import { parseIdParam } from "../utils/params.js";
+import * as reportsService from "../reports/service.js";
+import { ValidationError } from "../utils/errors.js";
 
 export const getAll = async (
   req: AuthedRequest,
@@ -172,6 +174,8 @@ export const upload = async (
         stage,
         relatedType: String(req.body.relatedType ?? "").trim() || undefined,
         relatedId: String(req.body.relatedId ?? "").trim() || undefined,
+        reportPeriod: String(req.body.reportPeriod ?? "").trim() || undefined,
+        periodDate: String(req.body.periodDate ?? "").trim() || undefined,
       });
     } catch (err) {
       // The file is already on disk; do not leave it orphaned when the
@@ -200,5 +204,14 @@ export const upload = async (
       );
   } catch (err) {
     return next(err);
+  }
+};
+export const reportStatus = async (req: AuthedRequest, res: Response, next: NextFunction) => {
+  try {
+    const project = typeof req.query.project === "string" ? req.query.project.trim() : "";
+    if (!project) throw new ValidationError("project is required");
+    res.json(formatSuccess(await reportsService.getStatus(project, req.authUser!), "Report status retrieved"));
+  } catch (err) {
+    next(err);
   }
 };

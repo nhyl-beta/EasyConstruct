@@ -36,6 +36,9 @@ export interface UploadDocumentInput {
   stage?: string;
   relatedType?: "proposal" | "design";
   relatedId?: number;
+  /** Daily / Weekly / Monthly Report: the period and a date inside it (client demo change #10). */
+  reportPeriod?: "daily" | "weekly" | "monthly";
+  periodDate?: string;
 }
 
 export const documentsRepository = {
@@ -64,6 +67,10 @@ export const documentsRepository = {
     }
     if (input.stage) {
       formData.append("stage", input.stage);
+    }
+    if (input.reportPeriod) {
+      formData.append("reportPeriod", input.reportPeriod);
+      if (input.periodDate) formData.append("periodDate", input.periodDate);
     }
     if (input.relatedType && input.relatedId) {
       formData.append("relatedType", input.relatedType);

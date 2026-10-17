@@ -18,11 +18,13 @@ import { sendMail } from "../mail/mailer.js";
 import { AppError } from "../utils/errors.js";
 import { buildOverdueEmail, manilaDay, planEmails, stageAgeHours, stageOverdueHours, uniquePeople, type OverdueItem, type Person } from "./overdue.js";
 import * as repo from "./overdue-repository.js";
+import { collectMissingReports, sendInAppReminders } from "./reports-check.js";
 
 export interface OverdueRunResult {
   day: string;
   requests: { overdue: number; inApp: number; emailed: number };
   stages: { overdue: number; inApp: number; emailed: number };
+  reports: { missing: number; inApp: number; emailed: number };
   emails: { sent: number; failed: number; skippedOptOut: number; skippedNoEmail: number; skippedAlreadySent: number; mailConfigured: boolean };
 }
 
@@ -123,10 +125,26 @@ const runStages = async (now: Date, day: string, totals: OverdueRunResult["email
   return { overdue: stalled.length, inApp, emailed };
 };
 
+/** (c) Missing PM reports (client demo change #10): once per missing period, to the project's PM only. */
+const runReports = async (day: string, totals: OverdueRunResult["emails"]): Promise<OverdueRunResult["reports"]> => {
+  const missing = await collectMissingReports(day);
+  const inApp = await sendInAppReminders(missing);
+  // The email is "once per period", so the period's start date plays the part of the day.
+  const byStart = new Map<string, { item: OverdueItem; recipients: Person[] }[]>();
+  for (const m of missing) {
+    if (!m.pm) continue;
+    byStart.set(m.start, [...(byStart.get(m.start) ?? []), { item: m.item, recipients: [m.pm] }]);
+  }
+  let emailed = 0;
+  for (const [start, candidates] of byStart) emailed += await deliver(candidates, start, totals);
+  return { missing: missing.length, inApp, emailed };
+};
+
 export const runOverdueJob = async (now: Date = new Date()): Promise<OverdueRunResult> => {
   const day = manilaDay(now);
   const totals: OverdueRunResult["emails"] = { sent: 0, failed: 0, skippedOptOut: 0, skippedNoEmail: 0, skippedAlreadySent: 0, mailConfigured: true };
   const requests = await runRequests(now, day, totals);
   const stages = await runStages(now, day, totals);
-  return { day, requests, stages, emails: totals };
+  const reports = await runReports(day, totals);
+  return { day, requests, stages, reports, emails: totals };
 };

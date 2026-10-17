@@ -15,4 +15,7 @@ export const createDocumentSchema = z.object({
   // I: optional link to the proposal/design this document concerns.
   relatedType: z.enum(["proposal", "design"]).optional(),
   relatedId: z.number().int().positive().optional(),
+  // PM reports (client demo change #10).
+  reportPeriod: z.enum(["daily", "weekly", "monthly"]).optional(),
+  periodDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use a YYYY-MM-DD date").optional(),
 });

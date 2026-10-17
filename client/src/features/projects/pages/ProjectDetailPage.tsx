@@ -35,10 +35,12 @@ import type { ProjectMemberRole } from "@/features/project-members/repositories/
 import { useUsersByRole } from "@/features/users/hooks/use-users-by-role";
 import { ArrowLeft, FileText, HardHat, Loader2, PencilRuler, Trash2, Upload, UserPlus, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import { z } from "zod";
 import { useAuth } from "@/auth/auth-context";
 import { FileIntegrityBadge } from "@/features/uploads/components/FileIntegrityBadge";
+import { ReportsTab } from "@/features/reports/components/ReportsTab";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StakeholdersPanel } from "@/features/stakeholders/components/StakeholdersPanel";
 
 /**
@@ -79,6 +81,8 @@ const LIST_ROUTE_BY_ROLE: Record<string, string> = {
 
 export default function ProjectDetailPage() {
   const { projectId } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab = searchParams.get("tab") === "reports" ? "reports" : "overview";
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -261,6 +265,12 @@ export default function ProjectDetailPage() {
         loading={deleting}
         onConfirm={remove}
       />
+      <Tabs value={tab} onValueChange={(v) => setSearchParams(v === "reports" ? { tab: "reports" } : {}, { replace: true })}>
+        <TabsList>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="reports">Reports</TabsTrigger>
+        </TabsList>
+        <TabsContent value="overview" className="space-y-6">
       {error && <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive-strong">{error}</div>}
       {/* Was border-green-500/bg-green-500/text-green-700 — same dark-mode
           contrast bug as RISK_CLASS (see project-status.ts): a raw Tailwind
@@ -572,6 +582,11 @@ export default function ProjectDetailPage() {
           </Button>
         </div>
       )}
+        </TabsContent>
+        <TabsContent value="reports" className="max-w-4xl">
+          <ReportsTab projectCode={project.code} canUpload={role === "project-manager" || role === "admin"} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

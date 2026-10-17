@@ -47,6 +47,10 @@ export const DOCUMENT_TYPE_SEEDS: readonly DocumentTypeSeed[] = [
   { name: "Clearance", category: LEGAL_CATEGORY, isSystem: false },
   { name: "Bond", category: LEGAL_CATEGORY, isSystem: false },
   { name: "Insurance", category: LEGAL_CATEGORY, isSystem: false },
+  // PM reports (change #10). System types: the missing-report check reads them by name.
+  { name: "Daily Report", category: REPORTS_CATEGORY, isSystem: true },
+  { name: "Weekly Report", category: REPORTS_CATEGORY, isSystem: true },
+  { name: "Monthly Report", category: REPORTS_CATEGORY, isSystem: true },
 ];
 
 export const SYSTEM_TYPE_NAMES: readonly string[] = DOCUMENT_TYPE_SEEDS.filter((s) => s.isSystem).map((s) => s.name);

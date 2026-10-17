@@ -68,10 +68,10 @@ describe("system types", () => {
     const permit = row(2, "Permit");
     assert.doesNotThrow(() => assertEditAllowed(permit, { name: "Building Permit", active: false }));
   });
-  test("the gate types are exactly the system seeds", () => {
+  test("the system types are the gate types plus the report types", () => {
     assert.deepEqual(
       [...SYSTEM_TYPE_NAMES].sort(),
-      ["As-Built Drawing", "Certificate of Completion", "Client Acceptance", "Contract", "Notice of Award", "Notice to Proceed", "Turnover Document"],
+      ["As-Built Drawing", "Certificate of Completion", "Client Acceptance", "Contract", "Daily Report", "Monthly Report", "Notice of Award", "Notice to Proceed", "Turnover Document", "Weekly Report"],
     );
   });
 });
@@ -94,16 +94,17 @@ describe("checking a submitted type", () => {
 });
 
 describe("seeds", () => {
-  test("the original 11 types plus the Legal category are seeded, with unique keys", () => {
-    assert.equal(DOCUMENT_TYPE_SEEDS.length, 16);
+  test("the original 11 types, the Legal category and the three report types are seeded, with unique keys", () => {
+    assert.equal(DOCUMENT_TYPE_SEEDS.length, 19);
     assert.equal(new Set(DOCUMENT_TYPE_SEEDS.map((s) => normalizeTypeName(s.name))).size, DOCUMENT_TYPE_SEEDS.length);
     assert.deepEqual(
       DOCUMENT_TYPE_SEEDS.filter((s) => s.category === "Legal").map((s) => s.name),
       ["Permit", "NDA", "Clearance", "Bond", "Insurance"],
     );
   });
-  test("the migration seeds every type in the list", () => {
-    const sql = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "drizzle", "0034_document_types.sql"), "utf8");
-    for (const s of DOCUMENT_TYPE_SEEDS) assert.ok(sql.includes(`'${s.name}'`), `0034 does not seed ${s.name}`);
+  test("the migrations seed every type in the list", () => {
+    const dir = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "drizzle");
+    const sql = readFileSync(join(dir, "0034_document_types.sql"), "utf8") + readFileSync(join(dir, "0040_pm_reports.sql"), "utf8");
+    for (const s of DOCUMENT_TYPE_SEEDS) assert.ok(sql.includes(`'${s.name}'`), `the migrations do not seed ${s.name}`);
   });
 });

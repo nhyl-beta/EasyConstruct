@@ -12,6 +12,8 @@ export interface DocumentRecord {
   stage: string | null;
   relatedType: string | null;
   relatedId: number | null;
+  reportPeriod: string | null;
+  periodDate: string | null;
   createdAt: Date | null;
   updatedAt: Date | null;
 }
@@ -28,6 +30,9 @@ export interface CreateDocumentInput {
   stage?: string;
   relatedType?: string;
   relatedId?: number;
+  /** daily | weekly | monthly, with periodDate: set for a Daily / Weekly / Monthly Report. */
+  reportPeriod?: string;
+  periodDate?: string;
 }
 
 export interface UploadDocumentInput {
@@ -40,6 +45,8 @@ export interface UploadDocumentInput {
   stage?: string;
   relatedType?: string;
   relatedId?: number | string;
+  reportPeriod?: string;
+  periodDate?: string;
 }
 
 export interface DocumentFilters {

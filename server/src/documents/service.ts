@@ -5,6 +5,7 @@ import { assertProjectWritable, refreshProjectProgress } from "../lifecycle/serv
 import { deleteStoredFile } from "../uploads/service.js";
 import { NotFoundError } from "../utils/errors.js";
 import { resolveForNewDocument } from "../reference/document-types/service.js";
+import { resolveReportFields } from "../reports/filing.js";
 import { assertAdvisoryHasFile, resolveRelatedItem, type RelatedInput } from "./advisory.js";
 
 import type {
@@ -39,7 +40,8 @@ export const create = async (
   await assertProjectWritable(input.project);
   const type = await resolveForNewDocument(input.type);
   const related = await resolveRelatedItem(input.project, input, repo.findRelatedItem);
-  const created = await repo.create({ ...input, type, ...related });
+  const report = resolveReportFields(type, input.reportPeriod, input.periodDate);
+  const created = await repo.create({ ...input, type, ...related, ...report });
   // Several gate checks read document type (P5's Notice of Award/Contract,
   // C5's Notice to Proceed, X2's Certificate of Completion).
   if (created) await refreshProjectProgress(created.project);
@@ -73,6 +75,8 @@ export const upload = async ({
   stage,
   relatedType,
   relatedId,
+  reportPeriod,
+  periodDate,
 }: {
   file: Express.Multer.File;
   title: string;
@@ -81,6 +85,8 @@ export const upload = async ({
   version?: string;
   uploadedBy: string;
   stage?: string;
+  reportPeriod?: string;
+  periodDate?: string;
 } & RelatedInput) => {
   await assertProjectWritable(project);
   type = await resolveForNewDocument(type);
@@ -114,6 +120,7 @@ export const upload = async ({
     fileUrl,
     stage,
     ...related,
+    ...resolveReportFields(type, reportPeriod, periodDate),
   });
   await refreshProjectProgress(project);
   return created;

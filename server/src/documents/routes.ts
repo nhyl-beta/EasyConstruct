@@ -26,6 +26,9 @@ router.get(
   controller.getAll,
 );
 
+// Which Daily / Weekly / Monthly Reports a project has and is missing (client demo change #10). Before any "/:id" route.
+router.get("/report-status", controller.reportStatus);
+
 router.post(
   "/",
   validate(createDocumentSchema),

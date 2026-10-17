@@ -1,4 +1,4 @@
-import { integer, pgTable, serial, timestamp, varchar } from "drizzle-orm/pg-core";
+import { date, integer, pgTable, serial, timestamp, varchar } from "drizzle-orm/pg-core";
 
 export const documents = pgTable("documents", {
   id: serial("id").primaryKey(),
@@ -20,6 +20,10 @@ export const documents = pgTable("documents", {
   // must belong to the same project — enforced in documents/service.ts.
   relatedType: varchar("related_type", { length: 20 }),
   relatedId: integer("related_id"),
+  // PM reports (client demo change #10): which period a Daily / Weekly / Monthly Report covers, and the day it
+  // starts (the day itself, that week's Monday, or the month's first day). Null on every other document.
+  reportPeriod: varchar("report_period", { length: 10 }),
+  periodDate: date("period_date", { mode: "string" }),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   Dialog,
@@ -20,11 +20,21 @@ import type { UploadDocumentInput } from "@/features/documents/repositories/docu
 
 
 
+/** Fills the dialog in: used by the project Reports tab, where the type and period are already known. */
+export interface UploadPreset {
+  project?: string;
+  type?: string;
+  title?: string;
+  reportPeriod?: "daily" | "weekly" | "monthly";
+  periodDate?: string;
+}
+
 interface UploadDocumentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   uploading: boolean;
   onSubmit: (input: UploadDocumentInput) => Promise<unknown>;
+  preset?: UploadPreset;
 }
 
 export function UploadDocumentDialog({
@@ -32,12 +42,21 @@ export function UploadDocumentDialog({
   onOpenChange,
   uploading,
   onSubmit,
+  preset,
 }: UploadDocumentDialogProps) {
   const [title, setTitle] = useState("");
   const [project, setProject] = useState("");
   const [type, setType] = useState("Field Report");
 
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // A preset (the Reports tab) fills in the project, type, title and period each time the dialog opens.
+  useEffect(() => {
+    if (!open || !preset) return;
+    setTitle(preset.title ?? "");
+    setProject(preset.project ?? "");
+    setType(preset.type ?? "Field Report");
+  }, [open, preset]);
 
   const reset = () => {
     setTitle("");
@@ -66,6 +85,7 @@ export function UploadDocumentDialog({
         title: title.trim(),
         project: project.trim(),
         type,
+        ...(preset?.reportPeriod ? { reportPeriod: preset.reportPeriod, periodDate: preset.periodDate } : {}),
       });
 
       reset();
@@ -121,7 +141,11 @@ export function UploadDocumentDialog({
             <Label>Document type</Label>
 
             {/* Loaded from the API (Admin / IT Designer edit the list), grouped by category. */}
-            <DocumentTypeSelect value={type} onChange={setType} />
+            {preset?.type ? (
+              <p className="rounded-md border border-border bg-muted/40 px-3 py-2 text-sm">{preset.type}{preset.periodDate ? ` · period starting ${preset.periodDate}` : ""}</p>
+            ) : (
+              <DocumentTypeSelect value={type} onChange={setType} />
+            )}
           </div>
 
           <div className="grid gap-1.5">
