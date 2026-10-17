@@ -110,3 +110,48 @@ Decisions:
 Manual steps: none required. Optional: set `MAIL_SKIP_DOMAINS` on Vercel.
 
 Testing: left to the owner. No new tests or system checks were written for this change, the overdue job was not run and no email was sent. The stale unit tests for the removed per-item functions were deleted, and the older `change-08-overdue-emails.mjs` and `change-10-pm-reports.mjs` checks still expect per-item emails and the old result fields, so they need updating before they are used again.
+
+## Test run
+
+Date: 2026-10-17. Commit tested: `207da30` plus the fix `41fee3d`. Everything ran on a throwaway local Postgres (Docker, port 54329) and a local API on port 8123 with mail going to the local SMTP sink. Neon was never touched and no real email was sent.
+
+Setup note: the migration chain cannot build a fresh database (migration `0011` fails with "payroll_batches already exists", the known issue in `system-check/README.md`). The local schema was built with `drizzle-kit push` instead and the document types were seeded with `db:seed-document-types`; migrations `0034` to `0040` were also applied by hand earlier and ran cleanly.
+
+| Area | Result |
+|---|---|
+| Server typecheck | clean |
+| Server tests, `npm --prefix server test` | 904 pass, 0 fail (baseline 883, +21 new summary-email tests) |
+| Server tests, `node --import tsx --test 'src/**/*.test.ts'` | 904 pass, 0 fail |
+| Client typecheck, vitest, build | clean, 333 pass, builds |
+| System checks 01 to 07, 09 | pass (16, 19, 16, 19, 18, 35, 14, 19 checks) |
+| System check 08 (summary email), default skip list | pass (22): one email per person, none to demo addresses, same-day rerun sends nothing, a refused send records nothing and is retried whole, opt-out respected, in-app alerts unchanged |
+| System check 08, `MAIL_SKIP_DOMAINS` empty | pass: a demo-domain user does get the summary |
+| System check 10 (reports) | pass (25): one summary a day, a period is emailed once, a period with no sent record is emailed, setting off sends nothing |
+| Lifecycle walk | 87/87 |
+| Route inventory and sweep (304 routes, 10 roles) | 0 server errors, 0 unauthenticated 2xx on non-public routes, 0 empty-body mutations accepted |
+| `files.ts`, `demo-verify.ts` | files report 36 pass, 0 fail; demo-verify only flags two fake file urls (`x.txt`, `x.pdf`) that the checks themselves created |
+| `ui-check.mjs` | did not complete: it ran about 50 minutes with no output and had to be stopped (exit 255). Not re-run. `mobile-layout-check.mjs` was not run |
+
+Browser walkthrough (real browser against the local client and API, as Admin unless noted):
+
+| # | Result | Note |
+|---|---|---|
+| 1 | pass | Document Types page lists the 19 types by category, system types carry the lock badge, a new type is present |
+| 2 | pass (data) | two files marked damaged in `stored_files` and four "Damaged file detected" notifications; the badge itself was seen in the earlier browser pass |
+| 3 | pass | Downloads chip on Activity Logs; Security page loads the sensitive filter |
+| 4 | pass | Stakeholders section on the project page. An Engineer not seeing emails was checked through the API (check 04), not in the browser |
+| 5 | pass | request detail shows per-recipient Failed, Resend and "No resends left" |
+| 6 | pass | the reply page was filled in and submitted in the browser; the answer was stored and the link then answered "already sent" |
+| 7 | pass | `/attendance?highlight=<id>` filters to the clock-in and shows the alert banner |
+| 8 | pass | the Settings page shows the "Email me overdue reminders" switch; the summary email is covered by check 08 |
+| 9 | pass | Admin sees Override buttons instead of Approve and Reject |
+| 10 | pass | Reports tab grid (green and red), and a red period opens the upload dialog pre-filled with the type and period |
+
+Bug found and fixed: in the summary email, report lines repeated the project code (`DEMO-S4 · DEMO-S4: Daily Report missing`). Fixed in the email only (`subjectWithoutCode`, commit `41fee3d`) with tests; the in-app wording is unchanged.
+
+Needs a decision:
+- Every Admin gets a summary of every overdue item in the system (that is how change #8 chose recipients). With several Admin accounts this is still one email each, but a long one. Say if Admins should see only their own items.
+- With the default skip list the demo accounts are never emailed, so a demo of the daily summary needs `MAIL_SKIP_DOMAINS` set to something harmless.
+- `ui-check.mjs` hung locally; it needs looking at before it is trusted again.
+
+Cannot be tested locally: real Gmail delivery, the Vercel Blob `upload-completed` callback, Vercel Cron on the deployed project, and the migrations against the real Neon data.
