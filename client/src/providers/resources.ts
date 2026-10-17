@@ -268,6 +268,11 @@ const allResources: ResourceProps[] = [
     meta: { label: "Documents", group: "Operations" },
   },
   {
+    name: "admin-document-types",
+    list: "/admin/document-types",
+    meta: { label: "Document Types", group: "Operations" },
+  },
+  {
     name: "admin-activity-logs",
     list: "/admin/activity-logs",
     meta: { label: "Activity Logs", group: "Monitoring" },

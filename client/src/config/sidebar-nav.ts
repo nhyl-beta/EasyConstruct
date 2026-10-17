@@ -69,6 +69,7 @@ export const SIDEBAR_NAV: Record<string, SidebarNavConfigEntry[]> = {
       "requests",
       "archive-search",
       "legacy-import",
+      "admin-document-types",
     ]),
     item("admin-support"),
     item("ai-validation-reference"),
@@ -84,6 +85,7 @@ export const SIDEBAR_NAV: Record<string, SidebarNavConfigEntry[]> = {
     group("operations-oversight", "Operations Oversight", Binoculars, [
       "admin-projects",
       "admin-documents",
+      "admin-document-types",
       "it-designer-proposals",
     ]),
     // Tags E and F

@@ -4,6 +4,7 @@ import { orderByFor, paginate, type PageRequest } from "../utils/pagination.js";
 import { assertProjectWritable, refreshProjectProgress } from "../lifecycle/service.js";
 import { deleteStoredFile } from "../uploads/service.js";
 import { NotFoundError } from "../utils/errors.js";
+import { resolveForNewDocument } from "../reference/document-types/service.js";
 import { assertAdvisoryHasFile, resolveRelatedItem, type RelatedInput } from "./advisory.js";
 
 import type {
@@ -36,8 +37,9 @@ export const create = async (
 ) => {
   assertAdvisoryHasFile(actorRole, !!input.fileUrl?.trim());
   await assertProjectWritable(input.project);
+  const type = await resolveForNewDocument(input.type);
   const related = await resolveRelatedItem(input.project, input, repo.findRelatedItem);
-  const created = await repo.create({ ...input, ...related });
+  const created = await repo.create({ ...input, type, ...related });
   // Several gate checks read document type (P5's Notice of Award/Contract,
   // C5's Notice to Proceed, X2's Certificate of Completion).
   if (created) await refreshProjectProgress(created.project);
@@ -81,6 +83,7 @@ export const upload = async ({
   stage?: string;
 } & RelatedInput) => {
   await assertProjectWritable(project);
+  type = await resolveForNewDocument(type);
   const related = await resolveRelatedItem(project, { relatedType, relatedId }, repo.findRelatedItem);
 
   const documentId =

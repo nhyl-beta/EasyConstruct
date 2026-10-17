@@ -91,6 +91,7 @@ import AdminRolesPermissions from "./pages/roles/admin/admin-roles-permissions";
 import AdminWorkflowConfiguration from "./pages/roles/admin/admin-workflow-configuration";
 import AdminApprovalHierarchy from "./pages/roles/admin/admin-approval-hierarchy";
 import AdminSupport from "./pages/roles/admin/admin-support";
+import AdminDocumentTypes from "./pages/roles/admin/admin-document-types";
 
 // ── Owner Pages ──
 import OwnerPortfolio from "./pages/roles/owner/owner-portfolio";
@@ -387,6 +388,14 @@ function App() {
                     element={
                       <RequireRole allow={["admin", "it_designer"]}>
                         <AdminDocuments />
+                      </RequireRole>
+                    }
+                  />
+                  <Route
+                    path="/admin/document-types"
+                    element={
+                      <RequireRole allow={["admin", "it_designer"]}>
+                        <AdminDocumentTypes />
                       </RequireRole>
                     }
                   />

@@ -14,34 +14,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ProjectPicker } from "@/components/shared/project-picker";
 
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { DocumentTypeSelect } from "@/features/document-types/components/DocumentTypeSelect";
 
 import type { UploadDocumentInput } from "@/features/documents/repositories/documents.repository";
 
-export const DOC_TYPES = [
-  "Field Report",
-  "Site Photo",
-  "Progress Evidence",
-  "Supporting Document",
-  // Lifecycle gate documents (D5) — each one is what a specific gate check
-  // reads: P5 (Notice of Award + Contract), C5 (Notice to Proceed), X2
-  // (Certificate of Completion). Turnover Document and As-Built Drawing
-  // aren't gate-checked but round out project closeout paperwork.
-  "Notice of Award",
-  "Contract",
-  "Notice to Proceed",
-  "Certificate of Completion",
-  "Turnover Document",
-  "As-Built Drawing",
-  // Design-delivery projects: the client signs off the turnover (gate T2).
-  "Client Acceptance",
-] as const;
+
 
 interface UploadDocumentDialogProps {
   open: boolean;
@@ -58,8 +35,7 @@ export function UploadDocumentDialog({
 }: UploadDocumentDialogProps) {
   const [title, setTitle] = useState("");
   const [project, setProject] = useState("");
-  const [type, setType] =
-    useState<(typeof DOC_TYPES)[number]>("Field Report");
+  const [type, setType] = useState("Field Report");
 
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -144,24 +120,8 @@ export function UploadDocumentDialog({
           <div className="grid gap-1.5">
             <Label>Document type</Label>
 
-            <Select
-              value={type}
-              onValueChange={(value) =>
-                setType(value as (typeof DOC_TYPES)[number])
-              }
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-
-              <SelectContent>
-                {DOC_TYPES.map((documentType) => (
-                  <SelectItem key={documentType} value={documentType}>
-                    {documentType}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {/* Loaded from the API (Admin / IT Designer edit the list), grouped by category. */}
+            <DocumentTypeSelect value={type} onChange={setType} />
           </div>
 
           <div className="grid gap-1.5">

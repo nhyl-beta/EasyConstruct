@@ -14,7 +14,7 @@ import { PageContent } from "@/components/refine-ui/views/page-content";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SectionCard } from "@/components/ui/section-card";
-import { DOC_TYPES } from "@/components/documents/upload-document-dialog";
+import { useDocumentTypes } from "@/features/document-types/hooks/use-document-types";
 import { documentsRepository } from "@/features/documents/repositories/documents.repository";
 import { ProjectRepository } from "@/features/projects/repositories/project.repository";
 import { parseCsv } from "@/lib/parse-csv";
@@ -35,6 +35,8 @@ interface ImportRow {
 }
 
 export default function SharedLegacyImportPage() {
+  const { types: documentTypes } = useDocumentTypes();
+  const typeNames = documentTypes.map((t) => t.name);
   const manifestRef = useRef<HTMLInputElement>(null);
   const filesRef = useRef<HTMLInputElement>(null);
   const [rows, setRows] = useState<ImportRow[]>([]);
@@ -80,7 +82,7 @@ export default function SharedLegacyImportPage() {
         const fail = (message: string): ImportRow => ({ ...row, file, state: "invalid", message });
         if (!row.project || !row.title || !row.type || !row.filename) return fail("Every column is required.");
         if (!projects.has(row.project)) return fail(`No project "${row.project}" that you can see.`);
-        if (!(DOC_TYPES as readonly string[]).includes(row.type)) return fail(`Unknown type "${row.type}".`);
+        if (!typeNames.some((n) => n.toLowerCase() === row.type.toLowerCase())) return fail(`Unknown type "${row.type}".`);
         if (!file) return fail(`File "${row.filename}" was not selected.`);
         const key = `${row.project}|${row.filename.toLowerCase()}`;
         if (seen.has(key)) return fail("Listed twice for the same project.");
@@ -143,7 +145,7 @@ export default function SharedLegacyImportPage() {
             </Button>
           </div>
           <p className="mt-3 text-xs text-muted-foreground">
-            Allowed types: {DOC_TYPES.join(", ")}. Documents can only be added to projects that are still open to changes; a closed or archived project will report a failure for its rows.
+            Allowed types: {typeNames.join(", ")}. Documents can only be added to projects that are still open to changes; a closed or archived project will report a failure for its rows.
           </p>
           {problem && <p role="alert" className="mt-3 text-sm text-destructive-strong">{problem}</p>}
         </SectionCard>

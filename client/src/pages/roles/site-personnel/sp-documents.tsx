@@ -13,14 +13,11 @@ import { Label } from "@/components/ui/label";
 
 import { Upload, FileText } from "lucide-react";
 
+import { DocumentTypeSelect } from "@/features/document-types/components/DocumentTypeSelect";
 import { useFieldDocuments } from "@/features/documents/hooks/use-field-documents";
 
-const DOC_TYPES = [
-  "Field Report",
-  "Site Photo",
-  "Progress Evidence",
-  "Supporting Document",
-] as const;
+// Site Personnel file field documents only; the list comes from the API (category "Field").
+const FIELD_CATEGORIES = ["Field"];
 
 export default function SPDocumentsPage() {
   const {
@@ -35,8 +32,7 @@ export default function SPDocumentsPage() {
   const [title, setTitle] = useState("");
   const [project, setProject] = useState("");
 
-  const [type, setType] =
-    useState<(typeof DOC_TYPES)[number]>("Field Report");
+  const [type, setType] = useState("Field Report");
 
   const [file, setFile] = useState<File | null>(null);
 
@@ -109,25 +105,7 @@ export default function SPDocumentsPage() {
                 Document type
               </Label>
 
-              <select
-                id="sp-type"
-                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-                value={type}
-                onChange={(event) =>
-                  setType(
-                    event.target.value as (typeof DOC_TYPES)[number],
-                  )
-                }
-              >
-                {DOC_TYPES.map((documentType) => (
-                  <option
-                    key={documentType}
-                    value={documentType}
-                  >
-                    {documentType}
-                  </option>
-                ))}
-              </select>
+              <DocumentTypeSelect id="sp-type" value={type} onChange={setType} categories={FIELD_CATEGORIES} />
             </div>
 
             <div className="space-y-1.5">

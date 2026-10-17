@@ -114,11 +114,11 @@ describe("buildSidebarNav", () => {
     expect(shape("admin")).toEqual({
       "Workflow Management": ["admin-workflows", "admin-workflow-configuration", "admin-approval-hierarchy"],
       "Security & Administration": ["admin-activity-logs", "admin-security", "admin-roles-permissions"],
-      Records: ["requests", "archive-search", "legacy-import"],
+      Records: ["requests", "archive-search", "legacy-import", "admin-document-types"],
     });
     expect(shape("it_designer")).toEqual({
       "User & Access": ["it-designer-users", "it-designer-roles-permissions"],
-      "Operations Oversight": ["admin-projects", "admin-documents", "it-designer-proposals"],
+      "Operations Oversight": ["admin-projects", "admin-documents", "admin-document-types", "it-designer-proposals"],
       "Workflow Management": ["admin-workflows", "admin-workflow-configuration", "admin-approval-hierarchy"],
       "Security & Audit": ["it-designer-activity-logs", "it-designer-security"],
     });
