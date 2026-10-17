@@ -27,10 +27,12 @@ import {
   StatusBadge,
 } from "@/pages/roles/shared/shared-hr";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import {
   bulkVerifyAttendance,
+  getAttendanceRecord,
   setAttendanceVerification,
   type AttendanceEntry,
 } from "@/features/hr/attendance-api";
@@ -57,7 +59,31 @@ const VERIFICATION_OPTIONS = ["Pending", "Verified", "Flagged"];
 const DAY_STATUS_OPTIONS = ["Present", "Late", "Absent", "On Leave", "Half Day"];
 
 export default function HRAttendancePage() {
-  const a = useAttendancePaged();
+  // An "outside the site radius" alert links here with ?highlight=<record id>: show just that person's
+  // clock-in for that day, highlighted, with a way back to the whole log.
+  const [params, setParams] = useSearchParams();
+  const highlightId = Number(params.get("highlight")) || null;
+  const [focus, setFocus] = useState<{ employeeId: string; logDate: string } | null>(null);
+  const [focusError, setFocusError] = useState<string | null>(null);
+  useEffect(() => {
+    if (!highlightId) {
+      setFocus(null);
+      setFocusError(null);
+      return;
+    }
+    let active = true;
+    getAttendanceRecord(highlightId)
+      .then((r) => active && setFocus({ employeeId: r.employeeId, logDate: r.logDate }))
+      .catch(() => active && setFocusError("That clock-in could not be found, or you may not have access to it."));
+    return () => {
+      active = false;
+    };
+  }, [highlightId]);
+  const a = useAttendancePaged(focus ? { search: focus.employeeId, dateFrom: focus.logDate, dateTo: focus.logDate } : undefined);
+  useEffect(() => {
+    if (!highlightId || a.loading) return;
+    document.getElementById(`attendance-row-${highlightId}`)?.scrollIntoView({ block: "center", behavior: "smooth" });
+  }, [highlightId, a.loading, a.rows]);
   // The clock-in HR is currently confirming — photo and coordinates side by
   // side in AttendanceVerificationDialog.
   const [reviewing, setReviewing] = useState<AttendanceEntry | null>(null);
@@ -167,6 +193,17 @@ export default function HRAttendancePage() {
             </div>
           </CardHeader>
 
+          {highlightId && (
+            <div role="status" className="mx-6 mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-xs">
+              <span className="flex-1">
+                {focusError ?? (focus ? `Showing the clock-in you were alerted about (${focus.employeeId}, ${focus.logDate}).` : "Finding the clock-in you were alerted about…")}
+              </span>
+              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setParams({}, { replace: true })}>
+                Show the whole log
+              </Button>
+            </div>
+          )}
+
           <div className="flex flex-wrap items-center gap-2 px-6 pb-3">
             <div className="relative w-56">
               <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -261,7 +298,12 @@ export default function HRAttendancePage() {
                   </TableRow>
                 )}
                 {a.rows.map((l) => (
-                  <TableRow key={l.id} className="hover:bg-muted/40">
+                  <TableRow
+                    key={l.id}
+                    id={`attendance-row-${l.id}`}
+                    aria-current={l.id === highlightId ? "true" : undefined}
+                    className={l.id === highlightId ? "bg-warning/10 ring-2 ring-inset ring-warning/60 hover:bg-warning/15" : "hover:bg-muted/40"}
+                  >
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Avatar className="h-7 w-7">
