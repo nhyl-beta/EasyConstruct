@@ -92,8 +92,9 @@ export const RequestRepository = {
   async create(input: CreateRequestInput): Promise<DesignRequest> {
     return normalize(await unwrap<any>(apiClient.post("/design-requests", input)));
   },
-  async send(id: number, dueDays?: number): Promise<DesignRequest> {
-    return normalize(await unwrap<any>(apiClient.post(`/design-requests/${id}/send`, dueDays ? { dueDays } : {})));
+  /** `overrideReason` is how an Admin sends in the PM's place (client demo change #9). */
+  async send(id: number, dueDays?: number, overrideReason?: string): Promise<DesignRequest> {
+    return normalize(await unwrap<any>(apiClient.post(`/design-requests/${id}/send`, { ...(dueDays ? { dueDays } : {}), ...(overrideReason ? { overrideReason } : {}) })));
   },
   async acknowledge(id: number): Promise<DesignRequest> {
     return normalize(await unwrap<any>(apiClient.post(`/design-requests/${id}/acknowledge`, {})));

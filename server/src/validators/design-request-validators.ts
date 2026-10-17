@@ -48,6 +48,8 @@ export const createDesignRequestSchema = z
     // The project's stakeholders this request goes to (one email each); the older single address still works.
     recipientStakeholderIds: z.array(z.number().int().positive()).max(20).optional(),
     recipientEmail: z.string().optional(),
+    // An Admin sending in the PM's place says why (client demo change #9).
+    overrideReason: z.string().trim().max(500).optional(),
   })
   .superRefine((data, ctx) => {
     if (data.recipientType === "client") {
@@ -79,7 +81,7 @@ export const updateDesignRequestSchema = z
   })
   .strict();
 
-export const sendDesignRequestSchema = z.object({ dueDays: editable.dueDays }).strict();
+export const sendDesignRequestSchema = z.object({ dueDays: editable.dueDays, overrideReason: z.string().trim().max(500).optional() }).strict();
 
 export const respondDesignRequestSchema = z.object({
   responseText: z.string().min(3, "A response is required"),

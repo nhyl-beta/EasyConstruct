@@ -28,11 +28,11 @@ export function useProjectRequirements(projectCode: string) {
     void reload();
   }, [reload]);
 
-  const decide = async (dbId: number, status: "Approved" | "Rejected") => {
+  const decide = async (dbId: number, status: "Approved" | "Rejected", overrideReason?: string) => {
     setDecidingId(dbId);
     setError(null);
     try {
-      const updated = await RequirementRepository.setStatus(dbId, status);
+      const updated = await RequirementRepository.setStatus(dbId, status, overrideReason);
       setRequirements((prev) => prev.map((r) => (r.dbId === dbId ? updated : r)));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update requirement.");

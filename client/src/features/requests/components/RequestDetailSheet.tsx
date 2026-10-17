@@ -22,6 +22,7 @@ import { RequestFilePicker, uploadAll } from "./RequestFilePicker";
 import { RespondDialog } from "./RespondDialog";
 import { FileIntegrityBadge } from "@/features/uploads/components/FileIntegrityBadge";
 import { RecipientsList } from "./RecipientsList";
+import { OverrideReasonDialog } from "@/components/shared/override-reason-dialog";
 
 const RAISERS = new Set(["project-manager", "engineer", "admin"]);
 
@@ -107,7 +108,11 @@ export function RequestDetailSheet({
   const canResend = handlesClient && clientActive && (r?.recipients.length ?? 0) === 0 && r?.emailStatus === "failed" && resendsLeft > 0;
   const resend = useResendRequestEmail(() => done());
   const replied = useMarkClientReplied(() => done());
-  const canSend = !!r && r.status === "draft" && (role === "project-manager" || isAdmin);
+  // Sending belongs to the project's PM. An Admin gets an Override that needs a written reason (change #9).
+  const canSend = !!r && r.status === "draft" && role === "project-manager";
+  const canOverrideSend = !!r && r.status === "draft" && isAdmin;
+  const [overrideOpen, setOverrideOpen] = useState(false);
+  const [overrideError, setOverrideError] = useState<string | null>(null);
   const canClose = !!r && r.status !== "closed" && (isAdmin || role === "project-manager" || r.requestedByUserId === user?.id);
   const canFollowUp = !!r && RAISERS.has(role) && r.status !== "draft" && r.status !== "closed";
   const canRecordReturned = !!r && RAISERS.has(role) && r.kind === "RFA" && ["approved", "approved_as_noted", "rejected"].includes(r.status);
@@ -115,6 +120,26 @@ export function RequestDetailSheet({
 
   return (
     <>
+      <OverrideReasonDialog
+        open={overrideOpen}
+        onOpenChange={setOverrideOpen}
+        title="Override: send this request"
+        description="Sending an RFI or RFA is the Project Manager's call. Give the reason you are sending it in their place; it is kept in the audit trail."
+        confirmLabel="Send as Admin"
+        busy={busy}
+        error={overrideError}
+        onConfirm={(reason) => {
+          if (!r) return;
+          setOverrideError(null);
+          void RequestRepository.send(r.id, undefined, reason)
+            .then(() => {
+              toast.success(`${r.number} sent`);
+              setOverrideOpen(false);
+              done();
+            })
+            .catch((e: unknown) => setOverrideError(e instanceof Error ? e.message : "Could not send the request"));
+        }}
+      />
       <Sheet open={id !== null} onOpenChange={onOpenChange}>
         <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-xl">
           <SheetHeader>
@@ -248,6 +273,11 @@ export function RequestDetailSheet({
                       onClick={() => void replied.run(r.id).then((u) => u && toast.success(`${u.number} marked as client replied`))}
                     >
                       <MailCheck className="h-4 w-4" /> Client replied
+                    </Button>
+                  )}
+                  {canOverrideSend && (
+                    <Button size="sm" variant="outline" disabled={busy} onClick={() => setOverrideOpen(true)}>
+                      <Send className="h-4 w-4" /> Override: send
                     </Button>
                   )}
                   {canSend && (

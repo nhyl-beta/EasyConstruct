@@ -67,7 +67,7 @@ export const update = wrap(async (req, res) => {
 });
 
 export const send = wrap(async (req, res) => {
-  res.json(formatSuccess(await service.send(id(req), actorOf(req), req.body?.dueDays), "Request sent"));
+  res.json(formatSuccess(await service.send(id(req), actorOf(req), req.body?.dueDays, req.body?.overrideReason), "Request sent"));
 });
 
 export const acknowledge = wrap(async (req, res) => {

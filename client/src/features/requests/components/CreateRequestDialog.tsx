@@ -146,7 +146,7 @@ export function CreateRequestDialog({ open, onOpenChange, initial, onCreated }: 
         designId: initial?.designId,
         files: uploaded,
       });
-      toast.success(isEngineer ? `${created.number} saved as a draft for the PM to send` : `${created.number} sent`);
+      toast.success(created.status === "draft" ? `${created.number} saved as a draft for the PM to send` : `${created.number} sent`);
       onCreated(created);
       onOpenChange(false);
     } catch (e) {

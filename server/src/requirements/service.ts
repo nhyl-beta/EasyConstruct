@@ -12,6 +12,10 @@ import * as projectMemberRepo from "../project-members/repository.js";
 import { assertSitePersonnelMayCreate, assertSitePersonnelMayUpdate } from "./permissions.js";
 import { assertProjectWritable, refreshProjectProgress } from "../lifecycle/service.js";
 import * as notificationsService from "../notifications/service.js";
+import * as projectsRepo from "../projects/repository.js";
+import { isOwnProject } from "../projects/service.js";
+import { decideAuthority, overrideSummary } from "../lifecycle/approval-authority.js";
+import { logAudit } from "../utils/audit.js";
 import type {
   CreateRequirementInput,
   UpdateRequirementInput,
@@ -29,12 +33,22 @@ export interface Actor {
 
 const DECISION_STATUSES =new Set(["Approved", "Rejected"]);
 
-const assertCanSetStatus = (status: string | undefined, actorRole: string) => {
-  if (!status || !DECISION_STATUSES.has(status)) return;
-  if (actorRole === "admin" || actorRole === "project-manager") return;
-  throw new ForbiddenError(
-    `Role '${actorRole}' cannot set a requirement to '${status}'; only the Project Manager or Admin can decide it`,
-  );
+/**
+ * Approving or rejecting a requirement is the project's own PM's call. An Admin can do it only as an override
+ * with a written reason (at least 10 characters), recorded in the audit trail (client demo change #9).
+ */
+const assertCanSetStatus = async (
+  status: string | undefined,
+  actor: { id?: number; name?: string; role: string } | undefined,
+  actorRole: string,
+  projectCode: string | undefined,
+  overrideReason: string | undefined,
+) => {
+  if (!status || !DECISION_STATUSES.has(status)) return null;
+  const project = projectCode ? await projectsRepo.findByCode(projectCode) : null;
+  const isProjectPm = !!project && !!actor?.id && isOwnProject(project, { role: actorRole, userId: actor.id, name: actor.name });
+  const authority = decideAuthority({ role: actorRole, isProjectPm, overrideReason, action: `set a requirement to ${status}` });
+  return authority.override ? authority : null;
 };
 
 // The filter logic lives in repository.ts (one copy, shared with the paged read).
@@ -87,8 +101,10 @@ export const update = async (
   actorRole: string,
   actor?: Actor,
 ) => {
-  assertCanSetStatus(data.status, actorRole);
+  const { overrideReason, ...fields } = data as UpdateRequirementInput & { overrideReason?: string };
+  data = fields;
   const existing = await findById(id);
+  const override = await assertCanSetStatus(data.status, actor, actorRole, existing?.project, overrideReason);
   if (actorRole === "site-personnel") {
     // G: site personnel may only change/submit their own drafts.
     if (!existing) throw new NotFoundError("Requirement", String(id));
@@ -117,6 +133,16 @@ export const update = async (
     .where(eq(requirements.id, id))
     .returning();
   if (updated) {
+    if (override && actor) {
+      await logAudit({
+        entityType: "requirement",
+        entityId: String(updated.id),
+        action: "override",
+        actor: actor.name,
+        summary: overrideSummary(`set requirement "${updated.title}" to ${updated.status}`, override.reason),
+        projectCode: updated.project,
+      });
+    }
     await refreshProjectProgress(updated.project);
     // J2: requirements has no author userId (createdBy is a display name),
     // so this reaches whoever is actually staffed as engineer on the

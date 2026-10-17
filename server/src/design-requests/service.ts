@@ -23,6 +23,8 @@ import * as repo from "./repository.js";
 import { collectAttachments, sendClientEmail } from "./client-email.js";
 import * as stakeholderRepo from "../project-stakeholders/repository.js";
 import { mintReplyLink } from "./public-reply.js";
+import { decideAuthority, overrideSummary } from "../lifecycle/approval-authority.js";
+import { isOwnProject } from "../projects/service.js";
 import { awaitingReply, canResendTo, legacyColumnsFromFirst, resolveRecipients } from "./recipients.js";
 import {
   canRaise,
@@ -82,6 +84,18 @@ export const getAssignees = async (projectCode: string, actor: Actor) => {
 };
 
 const isPmOrAdmin = (a: Actor) => a.role === "project-manager" || a.role === "admin";
+
+/**
+ * Sending an RFI/RFA is the project's own PM's call (client demo change #9). An Admin can send only as an
+ * override with a written reason (at least 10 characters), which the caller writes to the audit trail.
+ */
+const authorityToSend = (project: { pmUserId: number | null; pm: string }, actor: Actor, overrideReason: string | undefined) =>
+  decideAuthority({
+    role: actor.role,
+    isProjectPm: isOwnProject(project, { role: actor.role, userId: actor.id, name: actor.name }),
+    overrideReason,
+    action: "send an RFI or RFA",
+  });
 
 const isClientRequest = (r: Pick<DesignRequest, "recipientType">) => r.recipientType === "client";
 /** Architects / Consultants work internal requests only; client requests are not theirs to see. */
@@ -258,7 +272,18 @@ export const create = async (input: CreateDesignRequestInput, actor: Actor) => {
   }
 
   const now = new Date();
-  const sendNow = !needsCountersign(actor.role); // PM / Admin: auto-countersigned and sent
+  // The project's PM sends straight away. An Engineer's request, and an Admin's without an override reason,
+  // is a draft the PM sends (the countersign).
+  let override: { reason: string } | null = null;
+  let sendNow = false;
+  if (!needsCountersign(actor.role)) {
+    if (actor.role === "admin" && !input.overrideReason?.trim()) sendNow = false;
+    else {
+      const authority = authorityToSend(project, actor, input.overrideReason);
+      sendNow = true;
+      if (authority.override) override = authority;
+    }
+  }
   let created = await repo.insertNumbered(
     { kind: input.kind as RequestKind, projectCode: project.code, discipline: input.discipline, now },
     {
@@ -289,6 +314,9 @@ export const create = async (input: CreateDesignRequestInput, actor: Actor) => {
     fileRows(input.files, "request", actor.name),
   );
   if (isClient) await repo.insertRecipients(created.id, recipients);
+  if (override) {
+    await logAudit({ entityType: "design-request", entityId: String(created.id), action: "override", actor: actor.name, summary: overrideSummary(`sent ${created.number} in the PM's place`, override.reason), projectCode: created.projectCode });
+  }
   await logAudit({
     entityType: "design-request",
     entityId: String(created.id),
@@ -342,10 +370,12 @@ export const update = async (id: number, input: UpdateDesignRequestInput, actor:
 };
 
 /** The PM's "send": countersigns an Engineer's draft and starts the clock. */
-export const send = async (id: number, actor: Actor, dueDays?: number) => {
-  if (!isPmOrAdmin(actor)) throw new ForbiddenError("Only the Project Manager can send a drafted request");
+export const send = async (id: number, actor: Actor, dueDays?: number, overrideReason?: string) => {
   const row = await requireRequest(id);
   await assertProjectVisible(visibility(actor), row.projectCode, "requests");
+  const project = await projectsRepo.findByCode(row.projectCode);
+  if (!project) throw new NotFoundError("Project", row.projectCode);
+  const authority = authorityToSend(project, actor, overrideReason);
   await assertProjectWritable(row.projectCode);
   if (row.status !== "draft") throw new ConflictError(`Request is ${row.status}, not a draft`);
   const now = new Date();
@@ -358,6 +388,9 @@ export const send = async (id: number, actor: Actor, dueDays?: number) => {
     dueDate: computeDueDate(row.kind as RequestKind, now, dueDays),
   }))!;
   await logAudit({ entityType: "design-request", entityId: String(id), action: "sent", actor: actor.name, summary: `${row.number} countersigned and sent to ${row.assignedToName ?? row.recipientEmail}`, projectCode: row.projectCode });
+  if (authority.override) {
+    await logAudit({ entityType: "design-request", entityId: String(id), action: "override", actor: actor.name, summary: overrideSummary(`sent ${row.number} in the PM's place`, authority.reason), projectCode: row.projectCode });
+  }
   if (isClientRequest(updated)) return toView(await dispatchClientEmail(updated, actor));
   await notifyAssignee(updated, `${updated.kind} ${updated.number} needs your response`, `${row.requestedByName} (countersigned by ${actor.name}): ${updated.subject}`);
   return toView(updated);
