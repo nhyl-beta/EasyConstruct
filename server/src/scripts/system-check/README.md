@@ -25,12 +25,13 @@ All need the same local throwaway DB + API (8123) + Vite (5173) and `playwright`
 
 ## Windows / PowerShell (what works now)
 
-One-time setup (throwaway Postgres in Docker, built with `drizzle-kit push`, NOT `db:migrate`: migrations 0006 and 0011 both create tables on a fresh database):
+One-time setup (throwaway Postgres in Docker, built with `db:bootstrap`, NOT `db:migrate`: migrations 0006 and 0011 both create tables on a fresh database, so the chain cannot build an empty one; `db:bootstrap` builds the schema from the Drizzle schema, inserts the reference data and records every migration, so `db:migrate` afterwards says "Nothing to apply"):
 ```powershell
 docker run -d --name ec-check -p 5544:5432 -e POSTGRES_HOST_AUTH_METHOD=trust -e POSTGRES_DB=easyconstruct_check postgres:16
 cd server
 $env:DATABASE_URL = "postgresql://postgres@localhost:5544/easyconstruct_check"; $env:ALLOW_DEMO_RESET = "true"
-npx drizzle-kit push --force
+npm run db:bootstrap -- --yes
+npm run db:verify-schema      # optional: proves the database matches the Drizzle schema
 npm run db:seed
 Copy-Item .env.check.example .env.check
 ```

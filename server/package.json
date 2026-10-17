@@ -13,6 +13,8 @@
     "db:reset": "tsx src/scripts/migrate.ts && tsx src/scripts/db-reset.ts && npm run db:seed",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/scripts/migrate.ts",
+    "db:bootstrap": "tsx src/scripts/bootstrap-db.ts",
+    "db:verify-schema": "tsx src/scripts/verify-schema.ts",
     "db:migrate:drizzle-kit": "drizzle-kit migrate",
     "db:crud": "tsx src/crud-example.ts",
     "db:backfill-employee-links": "tsx src/scripts/backfill-employee-user-links.ts",

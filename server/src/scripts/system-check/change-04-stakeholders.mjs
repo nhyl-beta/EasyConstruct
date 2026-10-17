@@ -60,7 +60,7 @@ const create = await call("pm", "POST", "/projects", {
   code: `SK${stamp}`.slice(0, 20).toUpperCase(),
   pm: "PM",
   due: "2031-12-31",
-  plannedStartDate: new Date().toISOString().slice(0, 10),
+  plannedStartDate: new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Manila" }),
   client: `Wizard Client ${stamp}`,
   clientEmail: `wiz.${stamp}@example.com`,
   stakeholders: [{ name: `Cora Contractor ${stamp}`, role: "Contractor", email: `cora.${stamp}@example.com` }],
