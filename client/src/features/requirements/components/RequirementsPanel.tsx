@@ -5,6 +5,7 @@ import { openFileUrl } from "@/lib/file-url";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useProjectRequirements } from "../hooks/useProjectRequirements";
+import { FileIntegrityBadge } from "@/features/uploads/components/FileIntegrityBadge";
 
 const STATUS_TONE: Record<string, string> = {
   Draft: "bg-muted text-muted-foreground border-border",
@@ -69,7 +70,7 @@ export function RequirementsPanel({
               {r.attachments.length > 0 && (
                 <ul className="flex flex-wrap gap-2">
                   {r.attachments.map((a) => (
-                    <li key={a.url}>
+                    <li key={a.url} className="flex items-center gap-1">
                       <button
                         type="button"
                         className="flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-xs text-primary-strong hover:bg-muted/40"
@@ -77,6 +78,7 @@ export function RequirementsPanel({
                       >
                         <Paperclip className="h-3 w-3" /> {a.filename}
                       </button>
+                      <FileIntegrityBadge url={a.url} />
                     </li>
                   ))}
                 </ul>

@@ -38,6 +38,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { z } from "zod";
 import { useAuth } from "@/auth/auth-context";
+import { FileIntegrityBadge } from "@/features/uploads/components/FileIntegrityBadge";
 
 /**
  * Who may change the record itself. This mirrors the route guards on
@@ -786,6 +787,7 @@ function DesignStageSection({
                         <span className="flex min-w-0 items-center gap-2">
                           <FileText className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                           <span className="truncate">{f.name}</span>
+                          <FileIntegrityBadge url={f.url} />
                         </span>
                         <button
                           type="button"
@@ -864,6 +866,7 @@ function DesignStageSection({
                   <span className="truncate">{d.title}</span>
                 </span>
                 <span className="flex shrink-0 items-center gap-3">
+                  {d.fileUrl && <FileIntegrityBadge url={d.fileUrl} />}
                   {d.fileUrl && (
                     // A bare <a href> to the stored URL opened the login page
                     // in a new tab — files are private, so the click fetches

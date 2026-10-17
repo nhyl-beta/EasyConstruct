@@ -14,3 +14,4 @@ export * from "./task.js";
 export * from "./issues.js";export * from "./password-reset-tokens.js";
 
 export * from "./document-types.js";
+export * from "./stored-files.js";

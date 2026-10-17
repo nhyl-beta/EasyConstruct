@@ -8,6 +8,7 @@ import { env } from "../config/env.js";
 import { AppError, NotFoundError, ValidationError } from "../utils/errors.js";
 
 import { assertContentMatches } from "./sniff.js";
+import { recordBuffer } from "./integrity/record.js";
 import type { UploadInput, UploadResult } from "./types.js";
 
 // Same read-only-fs rule as server/src/documents/upload.ts: only os.tmpdir()
@@ -92,6 +93,7 @@ function decodeDataUrl(
 
 export const uploadFile = async (
   input: UploadInput,
+  uploadedByUserId?: number,
 ): Promise<UploadResult> => {
   const { buffer, mime } = decodeDataUrl(
     input.dataUrl,
@@ -116,6 +118,7 @@ export const uploadFile = async (
     buffer,
     filename: input.filename,
     contentType: input.contentType || mime,
+    uploadedByUserId,
   });
 };
 
@@ -126,6 +129,19 @@ export const uploadFile = async (
  * file ends up behind a URL that survives the next serverless invocation.
  */
 export const storeBuffer = async (input: {
+  buffer: Buffer;
+  filename: string;
+  contentType: string;
+  uploadedByUserId?: number;
+}): Promise<UploadResult> => {
+  const stored = await putBuffer(input);
+  // The fingerprint of the bytes as they arrived (client demo change #2); a later download or "Check file"
+  // compares against it. Bookkeeping only: it never fails the upload.
+  await recordBuffer({ url: stored.url, buffer: input.buffer, contentType: stored.contentType, uploadedByUserId: input.uploadedByUserId });
+  return stored;
+};
+
+const putBuffer = async (input: {
   buffer: Buffer;
   filename: string;
   contentType: string;

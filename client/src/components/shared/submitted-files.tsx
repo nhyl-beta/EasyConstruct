@@ -10,6 +10,7 @@ import { FileText, Paperclip } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FilePreviewDialog } from "@/components/shared/file-preview-dialog";
 import { isRealFileUrl } from "@/lib/file-url";
+import { FileIntegrityBadge } from "@/features/uploads/components/FileIntegrityBadge";
 
 export interface SubmittedFile {
   key: string | number;
@@ -68,6 +69,7 @@ export function SubmittedFiles({
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium">{file.name}</p>
               {file.meta && <p className="mt-0.5 text-xs text-muted-foreground">{file.meta}</p>}
+              {file.url && <FileIntegrityBadge url={file.url} className="mt-1" />}
               {file.unavailableNote && <p className="mt-0.5 text-xs text-warning-strong">{file.unavailableNote}</p>}
             </div>
             <Button

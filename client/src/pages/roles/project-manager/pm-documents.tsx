@@ -22,6 +22,7 @@ import { useDocumentsPaged } from "@/features/documents/hooks/useDocumentsPaged"
 import type { DocumentRecord } from "@/features/documents/repositories/documents.repository";
 import { formatRelativeTime } from "@/lib/format-relative-time";
 import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
+import { FileIntegrityBadge } from "@/features/uploads/components/FileIntegrityBadge";
 
 // Icon resolver — mapped from real `type` values (the schema's enum), not
 // a separate iconKey field that doesn't exist on this table.
@@ -131,6 +132,7 @@ export default function DocumentsPage() {
                             <div>
                               <div className="font-medium">{d.title}</div>
                               <div className="text-xs text-muted-foreground">{d.documentId} · by {d.uploadedBy}</div>
+                              {d.fileUrl && <FileIntegrityBadge url={d.fileUrl} className="mt-1" />}
                             </div>
                           </div>
                         </td>

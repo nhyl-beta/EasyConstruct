@@ -8,6 +8,7 @@ import { logAudit } from "../utils/audit.js";
 
 import * as service from "./service.js";
 import { assertDiskFileMatches } from "../uploads/sniff.js";
+import { recordFromDisk } from "../uploads/integrity/record.js";
 import { assignedCodesFor, isAssignedScoped } from "../projects/scope.js";
 
 import type { AuthedRequest } from "../middleware/auth.js";
@@ -177,6 +178,16 @@ export const upload = async (
       // request is refused (archived project, bad related item, ...).
       await unlink(req.file.path).catch(() => undefined);
       throw err;
+    }
+
+    // Fingerprint the stored file (read from disk in chunks) so a later change or corruption is noticed.
+    if (data?.fileUrl) {
+      await recordFromDisk({
+        url: data.fileUrl,
+        absolutePath: req.file.path,
+        contentType: req.file.mimetype || "application/octet-stream",
+        uploadedByUserId: req.authUser?.id,
+      });
     }
 
     return res

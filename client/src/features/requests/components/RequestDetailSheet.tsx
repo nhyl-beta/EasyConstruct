@@ -20,6 +20,7 @@ import { DISCIPLINE_LABEL, MAX_EMAIL_RESENDS, STATUS_LABEL, type DesignRequestDe
 import { EmailStatusBadge, formatDate, formatDateTime, KindBadge, OverdueBadge, RecipientBadge, RequestStatusBadge } from "./RequestBadges";
 import { RequestFilePicker, uploadAll } from "./RequestFilePicker";
 import { RespondDialog } from "./RespondDialog";
+import { FileIntegrityBadge } from "@/features/uploads/components/FileIntegrityBadge";
 
 const RAISERS = new Set(["project-manager", "engineer", "admin"]);
 
@@ -40,6 +41,7 @@ function Files({ files, stage }: { files: RequestFile[]; stage: "request" | "res
       {rows.map((f) => (
         <li key={f.id} className="flex items-center justify-between gap-2 rounded-lg bg-muted/40 px-2.5 py-1.5 text-xs">
           <span className="min-w-0 truncate">{f.filename}</span>
+          <FileIntegrityBadge url={f.url} />
           <button
             type="button"
             className="inline-flex shrink-0 items-center gap-1 text-primary-strong hover:underline"

@@ -11,6 +11,7 @@
 // client fetches the file with the token and hands the browser an object URL.
 import { useEffect, useState } from "react";
 import { apiClient } from "@/services/api.client";
+import { getIntegrity, refreshIntegrity } from "@/features/uploads/lib/integrity-store";
 
 const isBlobHost = (url: string) => {
   try {
@@ -45,13 +46,32 @@ export async function fetchFileBlob(url: string): Promise<Blob> {
   return res.blob();
 }
 
+export const DAMAGED_WARNING = [
+  "This file failed its integrity check: it no longer matches the version that was uploaded, so it may have been changed or corrupted.",
+  "Open it anyway?",
+].join("\n\n");
+
+/**
+ * Before a stored file is opened or downloaded: a file already known to be damaged asks first. The status
+ * is read fresh from the server, so a file that was damaged after the badge loaded is still caught.
+ * Resolves false when the person chooses not to go on.
+ */
+export async function confirmIfDamaged(url: string): Promise<boolean> {
+  if (!needsAuthFetch(url)) return true;
+  const status = (await refreshIntegrity(url)) ?? getIntegrity(url);
+  return status !== "damaged" || window.confirm(DAMAGED_WARNING);
+}
+
 /** Open a stored file in a new tab. */
 export async function openFileUrl(url: string | null | undefined): Promise<void> {
   if (!isRealFileUrl(url)) return;
+  if (!(await confirmIfDamaged(url as string))) return;
   // Fetch first, then open the finished object URL. (Opening an empty tab up
   // front and navigating it later left some browsers on about:blank.) If the
   // browser blocks the popup, save the file instead of doing nothing.
   const blob = await fetchFileBlob(url as string);
+  // The server compares the bytes it just sent with the original and may have flagged the file.
+  void refreshIntegrity(url as string);
   const objectUrl = URL.createObjectURL(blob);
   const tab = window.open(objectUrl, "_blank");
   if (!tab) {
@@ -68,7 +88,9 @@ export async function downloadFileUrl(
   filename?: string,
 ): Promise<void> {
   if (!isRealFileUrl(url)) return;
+  if (!(await confirmIfDamaged(url as string))) return;
   const blob = await fetchFileBlob(url as string);
+  void refreshIntegrity(url as string);
   const objectUrl = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = objectUrl;

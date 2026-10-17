@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { openFileUrl } from "@/lib/file-url";
 import { RequirementRepository } from "../repositories/requirement.repository";
 import type { Requirement } from "../types/requirements.types";
+import { FileIntegrityBadge } from "@/features/uploads/components/FileIntegrityBadge";
 
 /**
  * Requirements an Engineer has submitted (status "Under Review") and that are
@@ -84,7 +85,7 @@ export function RequirementApprovalsPanel() {
               {r.attachments.length > 0 && (
                 <ul className="flex flex-wrap gap-2">
                   {r.attachments.map((a) => (
-                    <li key={a.url}>
+                    <li key={a.url} className="flex items-center gap-1">
                       <button
                         type="button"
                         className="flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-xs text-primary-strong hover:bg-muted/40"
@@ -92,6 +93,7 @@ export function RequirementApprovalsPanel() {
                       >
                         <Paperclip className="h-3 w-3" /> {a.filename}
                       </button>
+                      <FileIntegrityBadge url={a.url} />
                     </li>
                   ))}
                 </ul>
