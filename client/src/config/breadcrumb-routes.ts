@@ -22,6 +22,7 @@ export const BREADCRUMB_ROUTES: BreadcrumbRoute[] = [
   { pattern: "/projects/:projectId", label: "Project", parent: "/projects" },
   { pattern: "/employees/new", label: "Add employee", parent: "/employees" },
   { pattern: "/employees/:id/edit", label: "Edit employee", parent: "/employees" },
+  { pattern: "/settings", label: "Settings" },
   { pattern: "/blueprint-reviews", label: "Blueprint reviews" },
   { pattern: "/transmittals", label: "Transmittals" },
   { pattern: "/consultant/design-reviews", label: "Design reviews" },

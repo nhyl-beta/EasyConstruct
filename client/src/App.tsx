@@ -28,6 +28,7 @@ import LoginPage from "@/pages/auth/login";
 import ForgotPasswordPage from "@/pages/auth/forgot-password";
 import ResetPasswordPage from "@/pages/auth/reset-password";
 import RfiReplyPage from "@/pages/public/rfi-reply";
+import SettingsPage from "@/pages/settings";
 
 
 // ── Project Manager Pages ──
@@ -208,6 +209,7 @@ function App() {
                       }
                     />
                   )}
+                  <Route path="/settings" element={<SettingsPage />} />
                   <Route path="/reports" element={<SharedReports />} />
                   {/* Part B item 8: real decide action for gate D3, role-gated
                       server-side (consultant/project-manager/admin); every

@@ -40,7 +40,7 @@ import { SignOutButton } from "@/components/ui/auth/sign-out-button";
 import { useMenu, useParsed, type TreeMenuItem } from "@refinedev/core";
 import { ChevronRight, ListIcon, type LucideIcon } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { useApprovalsPendingCount } from "@/features/workflows/hooks/useWorkflows";
 import { isNavRouteActive } from "@/lib/nav-active";
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -349,9 +349,9 @@ export function Sidebar() {
               "group-data-[collapsible=icon]:hidden",
             )}
           >
-            <span className="truncate text-sm font-medium text-foreground">
+            <Link to="/settings" title="Your settings" className="truncate text-sm font-medium text-foreground hover:underline">
               {identity.name}
-            </span>
+            </Link>
             {/* FLAG: identity has no email field. Showing user?.email from
                 useAuth() as a fallback so the real signed-in email appears
                 when available, but this is two identity sources side by

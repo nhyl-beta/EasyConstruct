@@ -223,6 +223,7 @@ export const findStalledStages = async (before: Date) =>
       stageId: workflowStages.id,
       role: workflowStages.role,
       roleLabel: workflowStages.roleLabel,
+      assignedTo: workflowStages.assignedTo,
       updatedAt: workflowStages.updatedAt,
       workflowId: workflows.id,
       workflowCode: workflows.code,
