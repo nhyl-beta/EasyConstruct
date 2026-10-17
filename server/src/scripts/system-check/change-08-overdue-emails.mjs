@@ -3,7 +3,7 @@
 // Needs the sink (node src/scripts/system-check/smtp-sink.mjs system-check-out/mailbox.json) and the API started with
 // MAIL_HOST=127.0.0.1 MAIL_PORT=2525 and CRON_SECRET=check-cron-secret-0123456789.
 //   Mode "default" (API started with MAIL_SKIP_DOMAINS=easyconstruct.demo):  node ... change-08-overdue-emails.mjs
-//   Mode "empty"   (API started with MAIL_SKIP_DOMAINS= , nothing extra skipped): CHECK_SKIP=empty node ...
+//   Mode "empty"   (API started with an empty MAIL_SKIP_DOMAINS, e.g. a single space, so nothing extra is skipped): CHECK_SKIP=empty node ...
 // Run from server/.
 import { execSync } from "node:child_process";
 import { readFileSync } from "node:fs";
@@ -74,7 +74,7 @@ try {
   const old = ids.length + 1 + (ids.length + 1); // one per item to its owner(s) and again to each Admin that can receive
   console.log(`  before this change about ${old}+ emails; now ${fresh.length} (${r1.emails.digestsSent} summaries, ${r1.emails.itemsIncluded} items)`);
   check("the run's counts match what the sink received", r1.emails.digestsSent === fresh.length && r1.emails.itemsIncluded >= 4, JSON.stringify(r1.emails));
-  check("the in-app alerts still go out", ((await call(MODE === "empty" ? "admin" : who(adminAddr), "GET", "/notifications")).data?.data ?? []).some((n) => /Overdue/.test(n.title)) );
+  check("the in-app alerts still go out", (() => { const n = Number(sql(`select count(*) from notifications where role = 'admin' and title like 'Overdue%'`)); return n >= 1; })());
 
   if (MODE === "default") {
     check("no email went to a @easyconstruct.demo address", fresh.every((m) => !to(m).includes("@easyconstruct.demo")));

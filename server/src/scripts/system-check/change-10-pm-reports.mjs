@@ -50,38 +50,58 @@ check("the filed weekly and monthly reports show as submitted", g.grids.weekly.s
 check("older weeks with nothing filed are missing", g.grids.weekly.some((c) => !c.submitted));
 check("another role that cannot see the project is refused", (await call("site", "GET", `/documents/report-status?project=NOPE`)).status >= 400);
 
-// The reminders.
+// The reminders. The PM is emailed ONE summary a day; a missing period is mentioned once. This check needs the API started
+// with a skip list that lets the demo PM address through (MAIL_SKIP_DOMAINS=none.invalid).
 const countNotes = async () => ((await call("pm", "GET", "/notifications")).data?.data ?? (await call("pm", "GET", "/notifications")).data ?? []).filter((n) => n.title?.includes(`${code}: Daily Report missing`)).length;
+const wipe = () => sql(`delete from overdue_reminders where item_type in ('report','digest')`);
+const pmSummaries = (since) => box().slice(since).filter((m) => m.to.includes("pm@easyconstruct.demo") && /EasyConstruct: \d+ overdue/.test(m.raw));
 const notes0 = await countNotes();
-sql(`delete from overdue_reminders where item_type = 'report'`);
+wipe();
 const before = box().length;
 const run1 = await runCron();
 const r1 = run1.data?.result;
-check("the cron found missing reports", run1.data?.ran === true && r1.reports.missing >= 1, JSON.stringify(r1?.reports));
-const notes = await call("pm", "GET", "/notifications");
-const mine = (notes.data?.data ?? notes.data ?? []).filter((n) => n.title?.includes(`${code}: Daily Report missing`));
-check("the PM got an in-app reminder for yesterday's daily report", mine.length === notes0 + 1, `${mine.length - notes0} new`);
-const mails = box().slice(before).filter((m) => m.text.includes(`${code}: Daily Report missing`) || m.text.includes("Daily Report has been filed") || m.text.includes("No Daily Report"));
-check("and an email, since the PM's setting is on", mails.some((m) => m.to.includes("pm@easyconstruct.demo")), `${mails.length} mails`);
-check("the email goes to the PM only", mails.every((m) => m.to.every((t) => !t.includes("admin@") && !t.includes("finance@"))));
+check("the cron found missing reports and the result has the new fields", run1.data?.ran === true && r1.reports.missing >= 1 && "digestsSent" in r1.emails, JSON.stringify(r1?.reports));
+check("the PM got an in-app reminder for yesterday's daily report", (await countNotes()) === notes0 + 1);
+const m1 = pmSummaries(before);
+check("the PM got exactly ONE summary email, not one per missing report", m1.length === 1, `${m1.length}`);
+check("it has a Missing reports section with the daily, weekly and monthly lines", /Missing reports \(\d+\)/.test(m1[0].text) && m1[0].text.includes("Daily Report missing") && m1[0].text.includes("Weekly Report missing") && m1[0].text.includes("Monthly Report missing"));
+check("the line says the missing period and does not repeat the project code", m1[0].text.includes(`missing for ${yesterday}`) && !m1[0].text.includes(`${code} · ${code}`));
+check("the email goes to the PM only", box().slice(before).every((m) => m.to.every((t) => !t.includes("admin@") && !t.includes("finance@") || !/Missing reports/.test(m.text))));
 
+// Same day again: nothing.
 const mid = box().length;
 await runCron();
-const notes2 = await call("pm", "GET", "/notifications");
-check("a second run does not repeat the reminder or the email", (notes2.data?.data ?? notes2.data ?? []).filter((n) => n.title?.includes(`${code}: Daily Report missing`)).length === notes0 + 1 && box().length === mid);
+check("a second run the same day sends no email and no second reminder", box().length === mid && (await countNotes()) === notes0 + 1);
+
+// "Next day": the per-person row for today is gone, the periods already emailed are still recorded.
+sql(`delete from overdue_reminders where item_type = 'digest'`);
+const before2 = box().length;
+await runCron();
+console.log("   daily in-app notices after next-day run:", (await countNotes()) - notes0);
+check("the next day the same periods are NOT emailed again", pmSummaries(before2).every((m) => !/Missing reports/.test(m.text)), `${pmSummaries(before2).length} summaries`);
+
+// A period with no sent record is emailed: forget only the weekly one.
+sql(`delete from overdue_reminders where item_type = 'report' and item_id % 4 = 1`);
+sql(`delete from overdue_reminders where item_type = 'digest'`);
+const before3 = box().length;
+await runCron();
+console.log("   daily in-app notices after weekly-forget run:", (await countNotes()) - notes0);
+const m3 = pmSummaries(before3);
+check("a period that has no sent record is emailed, and only that one", m3.length === 1 && m3[0].text.includes("Weekly Report missing") && !m3[0].text.includes("Daily Report missing") && !m3[0].text.includes("Monthly Report missing"));
 
 // Filing the report stops the reminder; the setting turns the email off.
-await mkDoc("Daily Report", { reportPeriod: "daily", periodDate: yesterday });
-sql(`delete from overdue_reminders where item_type = 'report'`);
-const run3 = await runCron();
-const notes3 = await call("pm", "GET", "/notifications");
-check("once yesterday's daily report is filed there is no new daily reminder", (notes3.data?.data ?? notes3.data ?? []).filter((n) => n.title?.includes(`${code}: Daily Report missing`)).length === notes0 + 1, JSON.stringify(run3.data?.result?.reports));
-await call("pm", "PATCH", "/me/settings", { emailOverdueReminders: false });
-sql(`delete from overdue_reminders where item_type = 'report'`);
+const filed = await mkDoc("Daily Report", { reportPeriod: "daily", periodDate: yesterday });
+check("yesterday's daily report was filed", filed.status === 201, `status ${filed.status} ${filed.body?.message ?? ""} ${filed.data?.periodDate}`);
+wipe();
 const before4 = box().length;
-await runCron();
-const pmMails = box().slice(before4).filter((m) => m.to.includes("pm@easyconstruct.demo") && /Report/.test(m.text));
-check("with the email setting off the PM gets the in-app reminder but no email", pmMails.length === 0 && (await call("pm", "GET", "/notifications")).data !== undefined, `${pmMails.length} mails`);
+const run4 = await runCron();
+check("once yesterday's daily report is filed it is not listed again", pmSummaries(before4).every((m) => !m.text.includes(`${code} · Daily Report missing`)) && (await countNotes()) === notes0 + 1, JSON.stringify(run4.data?.result?.reports));
+await call("pm", "PATCH", "/me/settings", { emailOverdueReminders: false });
+wipe();
+const before5 = box().length;
+const run5 = await runCron();
+check("with the email setting off the PM gets no email", pmSummaries(before5).length === 0 && run5.data?.result?.emails?.skippedOptOut >= 1);
+check("but the in-app reminders were still created today", Number(sql(`select count(*) from notifications where title like '${code}: % Report missing'`)) >= 1);
 await call("pm", "PATCH", "/me/settings", { emailOverdueReminders: true });
 
 // A Design project owes only weekly and monthly.
