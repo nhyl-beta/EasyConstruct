@@ -56,7 +56,7 @@ export default function SettingsPage() {
               <div className="space-y-1">
                 <Label htmlFor="email-overdue">Email me overdue reminders</Label>
                 <p className="text-xs text-muted-foreground">
-                  When an RFI/RFA, an approval or a report assigned to you is overdue, also send an email, at most once a day for each item. You always get the in-app alert.
+                  When an RFI/RFA, an approval or a report assigned to you is overdue, also send one summary email a day that lists everything overdue for you. You always get the in-app alerts.
                 </p>
               </div>
               <Switch id="email-overdue" checked={value} disabled={saving} onCheckedChange={(v) => void change(v)} />

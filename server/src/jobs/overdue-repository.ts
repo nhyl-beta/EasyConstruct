@@ -18,13 +18,31 @@ export const findPersonByName = async (name: string): Promise<Person | null> => 
   return row ?? null;
 };
 
-/** Keys of the emails already sent on `day`, so a repeat run the same day sends nothing twice. */
-export const emailKeysSentOn = async (day: string): Promise<Set<string>> => {
+/**
+ * Keys of the emails already sent under any of `days` (today for requests and approvals, a period's start for
+ * a missing report, and today's per-person "summary sent" rows), so a repeat run never sends twice.
+ */
+export const emailKeysSentOn = async (days: string[]): Promise<Set<string>> => {
+  if (days.length === 0) return new Set();
   const rows = await db
-    .select({ type: overdueReminders.itemType, itemId: overdueReminders.itemId, userId: overdueReminders.recipientUserId })
+    .select({ type: overdueReminders.itemType, itemId: overdueReminders.itemId, userId: overdueReminders.recipientUserId, day: overdueReminders.sentOn })
     .from(overdueReminders)
-    .where(and(eq(overdueReminders.channel, "email"), eq(overdueReminders.sentOn, day)));
-  return new Set(rows.map((r) => sentKey(r.type as OverdueItemType, r.itemId, r.userId, day)));
+    .where(and(eq(overdueReminders.channel, "email"), inArray(overdueReminders.sentOn, days)));
+  return new Set(rows.map((r) => sentKey(r.type as OverdueItemType, r.itemId, r.userId, r.day)));
+};
+
+/**
+ * Records one sent summary: a row for every item in it (under its own dedupe day) and the per-person per-day
+ * "summary sent" row, all in one transaction. Called only after the mail went out.
+ */
+export const recordDigestSent = async (userId: number, items: { type: OverdueItemType; id: number; day: string }[], today: string): Promise<void> => {
+  await db.transaction(async (tx) => {
+    const rows = [
+      ...items.map((i) => ({ itemType: i.type, itemId: i.id, recipientUserId: userId, channel: "email", sentOn: i.day })),
+      { itemType: "digest", itemId: 0, recipientUserId: userId, channel: "email", sentOn: today },
+    ];
+    await tx.insert(overdueReminders).values(rows).onConflictDoNothing();
+  });
 };
 
 /** Records a sent alert. False when it was already recorded (another run got there first). */

@@ -90,3 +90,23 @@ Supporting files for the checks: `change-lib.mjs` (sign-in and call helpers; ref
 Verified against a local throwaway Postgres (Docker) and a local API, never Neon: every change's system check passes; the lifecycle walk passes 87/87 (gates C1, X5, D4, T4 included); the Document Types page, the integrity badge, the reply page at phone width, the attendance highlight and the Reports tab were checked in a browser.
 
 Not verified: real Gmail delivery, the Vercel Blob `upload-completed` callback, the Vercel Cron schedule on the deployed project, behaviour against the real data on Neon (migrations were applied to an empty-ish local database, not to production), and the whole UI-check suite (`ui-check.mjs`, `mobile-layout-check.mjs`) which needs Playwright.
+
+## Daily summary email
+
+Change to change #8. Overdue emails used to be one per item per person per day. Now each person gets **at most one summary email a day** listing everything overdue for them.
+
+What changed:
+- `server/src/jobs/overdue.ts` (pure): `planDigests` drops already-sent items, opted-out people, people without an address and demo/test addresses, then groups what is left by person; `buildDigestEmail` writes the text and HTML (sections RFI/RFA overdue, Approvals waiting, Missing reports; 25 lines per section; footer pointing to Settings); `isUndeliverableEmail` and `skipDomainsFromEnv`. The old `planEmails` and `buildOverdueEmail` are gone.
+- `server/src/jobs/overdue-service.ts`: each section only collects candidates (in-app alerts are unchanged); one send per digest. `OverdueRunResult.emails` is now `digestsSent`, `digestsFailed`, `itemsIncluded` plus the skip counters (`skippedUndeliverable` is new) and `mailConfigured`; each section's `emailed` is the number of its items in sent summaries.
+- `server/src/jobs/overdue-repository.ts`: `recordDigestSent` writes a row per item and a per-person `digest` row for today in one transaction, only after the mail went out. `emailKeysSentOn` reads several days.
+- `server/src/jobs/reports-check.ts`, `server/src/design-requests/service.ts`: item fields for the summary lines; a demo/test recipient of an RFI/RFA is marked failed ("address is a demo/test domain") instead of being sent.
+- `client/src/pages/settings.tsx`: the toggle text says reminders now come as one daily email. `server/.env.example`: `MAIL_SKIP_DOMAINS`.
+
+Decisions:
+- No migration: the per-person per-day guard reuses `overdue_reminders` (`item_type = 'digest'`, `item_id = 0`). Items that become overdue after today's summary went out wait for tomorrow.
+- A failed send records nothing, so the whole summary is retried on the next run. A missing-report period is still emailed once (its record is kept under the period start).
+- The demo address default means the demo accounts (`*@easyconstruct.demo`) are never emailed; set `MAIL_SKIP_DOMAINS` to change that.
+
+Manual steps: none required. Optional: set `MAIL_SKIP_DOMAINS` on Vercel.
+
+Testing: left to the owner. No new tests or system checks were written for this change, the overdue job was not run and no email was sent. The stale unit tests for the removed per-item functions were deleted, and the older `change-08-overdue-emails.mjs` and `change-10-pm-reports.mjs` checks still expect per-item emails and the old result fields, so they need updating before they are used again.

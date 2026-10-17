@@ -41,6 +41,8 @@ export const collectMissingReports = async (today: string): Promise<MissingRepor
           type: "report",
           id: reportItemId(p.id, d.period),
           subject: `${p.code}: ${REPORT_TYPE_BY_PERIOD[d.period]} missing`,
+          projectCode: p.code,
+          late: `missing for ${covers}`,
           detail: `No ${REPORT_TYPE_BY_PERIOD[d.period]} has been filed for ${p.name} (${p.code}) for ${WHEN[d.period]} (${covers}). Upload it from the project's Reports tab.`,
           path: `/projects/${p.id}?tab=reports`,
         },

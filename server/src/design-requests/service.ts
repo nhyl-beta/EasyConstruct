@@ -23,6 +23,7 @@ import * as repo from "./repository.js";
 import { collectAttachments, sendClientEmail } from "./client-email.js";
 import * as stakeholderRepo from "../project-stakeholders/repository.js";
 import { mintReplyLink } from "./public-reply.js";
+import { isUndeliverableEmail } from "../jobs/overdue.js";
 import { decideAuthority, overrideSummary } from "../lifecycle/approval-authority.js";
 import { isOwnProject } from "../projects/service.js";
 import { awaitingReply, canResendTo, legacyColumnsFromFirst, resolveRecipients } from "./recipients.js";
@@ -123,6 +124,8 @@ const dispatchClientEmail = async (row: DesignRequest, actor: Actor, opts: { rec
   for (const r of targets) {
     let ok = false;
     try {
+      // A demo or test address can never receive mail: mark it failed with the reason instead of sending.
+      if (isUndeliverableEmail(r.email)) throw new Error("address is a demo/test domain");
       if (!context) throw loadError ?? new Error("could not prepare the email");
       // Each person gets their own single-use reply link.
       const replyUrl = await mintReplyLink(r.id);

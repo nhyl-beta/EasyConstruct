@@ -1,14 +1,16 @@
-// server/src/jobs/overdue-service.ts (client demo change #8)
+// server/src/jobs/overdue-service.ts (client demo change #8, daily summary email)
 //
 // The daily overdue job. Runs from Vercel Cron through /api/cron/overdue (jobs/routes.ts) and from the local-only
-// timer in jobs/scheduler.ts. It does three things for everything that is overdue:
-//   (a) RFI/RFA requests: the existing in-app sweep, then an email to the assignee (the sender for a client
-//       request) and to every Admin.
+// timer in jobs/scheduler.ts. It looks at three things:
+//   (a) RFI/RFA requests: the existing in-app sweep, then the person it is waiting on (the sender for a client
+//       request) and every Admin are candidates for the email.
 //   (b) Workflow approval stages that have been waiting 48 hours or more (WORKFLOW_STAGE_OVERDUE_HOURS): an
-//       in-app alert, once, and the same emails.
+//       in-app alert, once, and the same email candidates.
 //   (c) Missing PM reports (client demo change #10, jobs/reports-check.ts).
-// An email goes to a person at most once per item per day (overdue_reminders), never to someone who switched
-// "Email me overdue reminders" off, and never when mail is not configured (the run reports that instead).
+// The in-app alerts are unchanged. Email is ONE summary per person per day listing everything overdue for them
+// (planDigests / buildDigestEmail in overdue.ts), never to someone who switched "Email me overdue reminders" off,
+// never to a demo/test address, and never when mail is not configured (the run reports that instead). A summary is
+// recorded only after the mail really went out, so a failed one is retried whole on the next run.
 import { env } from "../config/env.js";
 import * as notifications from "../notifications/service.js";
 import * as projectsRepo from "../projects/repository.js";
@@ -16,69 +18,86 @@ import * as requestsRepo from "../design-requests/repository.js";
 import { sweepOverdue } from "../design-requests/service.js";
 import { sendMail } from "../mail/mailer.js";
 import { AppError } from "../utils/errors.js";
-import { buildOverdueEmail, manilaDay, planEmails, stageAgeHours, stageOverdueHours, uniquePeople, type OverdueItem, type Person } from "./overdue.js";
+import { buildDigestEmail, manilaDay, planDigests, stageAgeHours, stageOverdueHours, uniquePeople, type DigestCandidate, type OverdueItem, type OverdueItemType, type Person } from "./overdue.js";
 import * as repo from "./overdue-repository.js";
 import { collectMissingReports, sendInAppReminders } from "./reports-check.js";
 
 export interface OverdueRunResult {
   day: string;
+  /** `emailed` is the number of the section's items included in summaries that were sent. */
   requests: { overdue: number; inApp: number; emailed: number };
   stages: { overdue: number; inApp: number; emailed: number };
   reports: { missing: number; inApp: number; emailed: number };
-  emails: { sent: number; failed: number; skippedOptOut: number; skippedNoEmail: number; skippedAlreadySent: number; mailConfigured: boolean };
+  emails: {
+    digestsSent: number;
+    digestsFailed: number;
+    itemsIncluded: number;
+    skippedOptOut: number;
+    skippedNoEmail: number;
+    skippedUndeliverable: number;
+    skippedAlreadySent: number;
+    mailConfigured: boolean;
+  };
 }
 
 const shortDate = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : "no date");
 
-/** Sends the planned emails, recording each success. Stops at the first "mail is not configured". */
-const deliver = async (candidates: { item: OverdueItem; recipients: Person[] }[], day: string, totals: OverdueRunResult["emails"]): Promise<number> => {
-  const plan = planEmails(candidates, await repo.emailKeysSentOn(day), day);
+/**
+ * Plans one summary per person from everything overdue, sends each, and records it only when it went out.
+ * Returns how many items of each kind were in a summary that was sent.
+ */
+const deliverDigests = async (candidates: DigestCandidate[], today: string, totals: OverdueRunResult["emails"]): Promise<Record<OverdueItemType, number>> => {
+  const included: Record<OverdueItemType, number> = { rfi: 0, stage: 0, report: 0 };
+  const sent = await repo.emailKeysSentOn([...new Set([today, ...candidates.map((c) => c.day)])]);
+  const plan = planDigests(candidates, sent, today);
   totals.skippedOptOut += plan.skippedOptOut;
   totals.skippedNoEmail += plan.skippedNoEmail;
+  totals.skippedUndeliverable += plan.skippedUndeliverable;
   totals.skippedAlreadySent += plan.skippedAlreadySent;
-  let sent = 0;
-  for (const { item, to } of plan.send) {
+  for (const digest of plan.digests) {
     if (!totals.mailConfigured) break;
     try {
-      const mail = buildOverdueEmail(item, env.APP_URL);
-      await sendMail({ to: to.email!, ...mail });
-      // Recorded only after the mail really went out, so a failure is retried on the next run.
-      await repo.recordSent({ type: item.type, itemId: item.id, userId: to.id, channel: "email", day });
-      sent++;
-      totals.sent++;
+      await sendMail({ to: digest.person.email!, ...buildDigestEmail(digest, env.APP_URL, today) });
     } catch (err) {
-      totals.failed++;
+      totals.digestsFailed++;
       if (err instanceof AppError && err.code === "MAIL_NOT_CONFIGURED") totals.mailConfigured = false;
-      else console.warn(`[overdue] email to ${to.email} failed:`, err instanceof Error ? err.message : err);
+      else console.warn(`[overdue] summary to ${digest.person.email} failed:`, err instanceof Error ? err.message : err);
+      continue; // nothing is recorded, so every item in it is tried again next run
     }
+    await repo.recordDigestSent(digest.person.id, digest.items.map((i) => ({ type: i.item.type, id: i.item.id, day: i.day })), today);
+    totals.digestsSent++;
+    totals.itemsIncluded += digest.items.length;
+    for (const i of digest.items) included[i.item.type]++;
   }
-  return sent;
+  return included;
 };
 
 const adminsOf = () => repo.findPeopleByRole("admin");
 
-/** (a) RFI/RFA: in-app sweep as before, then the emails. */
-const runRequests = async (now: Date, day: string, totals: OverdueRunResult["emails"]): Promise<OverdueRunResult["requests"]> => {
+const daysLate = (due: Date | null, now: Date) => (due ? Math.max(1, Math.floor((now.getTime() - due.getTime()) / 86_400_000)) : 0);
+
+/** (a) RFI/RFA: in-app sweep as before; returns the email candidates. */
+const collectRequests = async (now: Date, day: string): Promise<{ candidates: DigestCandidate[]; overdue: number; inApp: number }> => {
   const swept = await sweepOverdue(now);
   const overdue = await requestsRepo.findOverdue(now);
   const admins = await adminsOf();
-  const candidates: { item: OverdueItem; recipients: Person[] }[] = [];
+  const candidates: DigestCandidate[] = [];
   for (const r of overdue) {
     const ids = [r.assignedToUserId, r.assignedToUserId == null ? r.requestedByUserId : null].filter((x): x is number => x != null);
     const owners = await repo.findPeopleByIds(ids);
-    candidates.push({
-      item: {
-        type: "rfi",
-        id: r.id,
-        subject: `${r.number}: ${r.subject}`,
-        detail: `${r.number} (${r.subject}) was due ${shortDate(r.dueDate)} and has no response yet. ${r.assignedToName ? `Assigned to ${r.assignedToName}.` : "It was sent to the client."}`,
-        path: `/requests?open=${r.id}`,
-      },
-      recipients: uniquePeople([...owners, ...admins]),
-    });
+    const days = daysLate(r.dueDate, now);
+    const item: OverdueItem = {
+      type: "rfi",
+      id: r.id,
+      subject: `${r.number}: ${r.subject}`,
+      projectCode: r.projectCode,
+      late: `${days} day${days === 1 ? "" : "s"} overdue`,
+      detail: `${r.number} (${r.subject}) was due ${shortDate(r.dueDate)} and has no response yet. ${r.assignedToName ? `Assigned to ${r.assignedToName}.` : "It was sent to the client."}`,
+      path: `/requests?open=${r.id}`,
+    };
+    candidates.push({ item, recipients: uniquePeople([...owners, ...admins]), day });
   }
-  const emailed = await deliver(candidates, day, totals);
-  return { overdue: overdue.length, inApp: swept.notified, emailed };
+  return { candidates, overdue: overdue.length, inApp: swept.notified };
 };
 
 /** Who a stalled stage is waiting on: the named assignee, else the project's PM or the holders of the stage role. */
@@ -94,19 +113,23 @@ const stageOwners = async (stage: { assignedTo: string | null; role: string; pro
   return repo.findPeopleByRole(stage.role);
 };
 
-/** (b) Workflow stages waiting too long: one in-app alert each, then the emails. */
-const runStages = async (now: Date, day: string, totals: OverdueRunResult["emails"]): Promise<OverdueRunResult["stages"]> => {
+/** (b) Workflow stages waiting too long: one in-app alert each; returns the email candidates. */
+const collectStages = async (now: Date, day: string): Promise<{ candidates: DigestCandidate[]; overdue: number; inApp: number }> => {
   const hours = stageOverdueHours();
   const stalled = await requestsRepo.findStalledStages(new Date(now.getTime() - hours * 3_600_000));
   const admins = await adminsOf();
-  const candidates: { item: OverdueItem; recipients: Person[] }[] = [];
+  const candidates: DigestCandidate[] = [];
   let inApp = 0;
   for (const s of stalled) {
     if (!s.updatedAt) continue;
     const owners = await stageOwners(s);
     const age = stageAgeHours(s.updatedAt, now);
     const detail = `The "${s.roleLabel}" stage of "${s.title}" (${s.workflowCode}, project ${s.projectCode}) has been waiting for a decision for ${age} hours (the limit is ${hours}).`;
-    candidates.push({ item: { type: "stage", id: s.stageId, subject: `${s.workflowCode}: ${s.roleLabel} approval waiting ${age} h`, detail, path: "/approvals" }, recipients: uniquePeople([...owners, ...admins]) });
+    candidates.push({
+      item: { type: "stage", id: s.stageId, subject: `${s.workflowCode}: ${s.roleLabel} approval`, projectCode: s.projectCode, late: `waiting ${age} h`, detail, path: "/approvals" },
+      recipients: uniquePeople([...owners, ...admins]),
+      day,
+    });
 
     // The in-app alert goes once per stage to the people it is waiting on and to every Admin.
     const title = `Overdue approval: ${s.workflowCode}`;
@@ -121,30 +144,30 @@ const runStages = async (now: Date, day: string, totals: OverdueRunResult["email
       inApp++;
     }
   }
-  const emailed = await deliver(candidates, day, totals);
-  return { overdue: stalled.length, inApp, emailed };
+  return { candidates, overdue: stalled.length, inApp };
 };
 
 /** (c) Missing PM reports (client demo change #10): once per missing period, to the project's PM only. */
-const runReports = async (day: string, totals: OverdueRunResult["emails"]): Promise<OverdueRunResult["reports"]> => {
+const collectReports = async (day: string): Promise<{ candidates: DigestCandidate[]; missing: number; inApp: number }> => {
   const missing = await collectMissingReports(day);
   const inApp = await sendInAppReminders(missing);
-  // The email is "once per period", so the period's start date plays the part of the day.
-  const byStart = new Map<string, { item: OverdueItem; recipients: Person[] }[]>();
-  for (const m of missing) {
-    if (!m.pm) continue;
-    byStart.set(m.start, [...(byStart.get(m.start) ?? []), { item: m.item, recipients: [m.pm] }]);
-  }
-  let emailed = 0;
-  for (const [start, candidates] of byStart) emailed += await deliver(candidates, start, totals);
-  return { missing: missing.length, inApp, emailed };
+  // The email is once per period, so the period's start date is the day its "already sent" record is kept under.
+  const candidates: DigestCandidate[] = missing.filter((m) => m.pm).map((m) => ({ item: m.item, recipients: [m.pm!], day: m.start }));
+  return { candidates, missing: missing.length, inApp };
 };
 
 export const runOverdueJob = async (now: Date = new Date()): Promise<OverdueRunResult> => {
   const day = manilaDay(now);
-  const totals: OverdueRunResult["emails"] = { sent: 0, failed: 0, skippedOptOut: 0, skippedNoEmail: 0, skippedAlreadySent: 0, mailConfigured: true };
-  const requests = await runRequests(now, day, totals);
-  const stages = await runStages(now, day, totals);
-  const reports = await runReports(day, totals);
-  return { day, requests, stages, reports, emails: totals };
+  const totals: OverdueRunResult["emails"] = { digestsSent: 0, digestsFailed: 0, itemsIncluded: 0, skippedOptOut: 0, skippedNoEmail: 0, skippedUndeliverable: 0, skippedAlreadySent: 0, mailConfigured: true };
+  const requests = await collectRequests(now, day);
+  const stages = await collectStages(now, day);
+  const reports = await collectReports(day);
+  const included = await deliverDigests([...requests.candidates, ...stages.candidates, ...reports.candidates], day, totals);
+  return {
+    day,
+    requests: { overdue: requests.overdue, inApp: requests.inApp, emailed: included.rfi },
+    stages: { overdue: stages.overdue, inApp: stages.inApp, emailed: included.stage },
+    reports: { missing: reports.missing, inApp: reports.inApp, emailed: included.report },
+    emails: totals,
+  };
 };

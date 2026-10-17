@@ -1,7 +1,7 @@
-// server/src/jobs/overdue.ts: pure, no I/O (client demo change #8)
+// server/src/jobs/overdue.ts: pure, no I/O (client demo change #8, daily summary email)
 //
 // What the daily overdue job decides before it touches the database or the mailer: when a workflow stage
-// counts as overdue, who would get an email, and which of those were already sent today. Unit-tested in
+// counts as overdue, who gets a summary email, what is in it, and which items were already sent. Unit-tested in
 // overdue.test.ts.
 
 export const DEFAULT_STAGE_OVERDUE_HOURS = 48;
@@ -27,9 +27,13 @@ export interface OverdueItem {
   type: OverdueItemType;
   id: number;
   subject: string;
-  /** One line saying what is overdue and for how long, for the email body. */
+  /** Project code shown at the start of the item's line in the summary. */
+  projectCode: string;
+  /** How late it is, for the summary line: "3 days overdue", "waiting 72 h", "missing for Oct 12 to 18". */
+  late: string;
+  /** One line saying what is overdue and for how long (used by the in-app alert). */
   detail: string;
-  /** Path inside the app the email links to. */
+  /** Path inside the app the summary links to. */
   path: string;
 }
 
@@ -41,54 +45,97 @@ export interface Person {
   emailOverdueReminders: boolean;
 }
 
-export interface EmailToSend {
+export const sentKey = (type: OverdueItemType | "digest", itemId: number, userId: number, day: string): string => `${type}:${itemId}:${userId}:${day}`;
+
+/** The per-person, per-day record that today's summary already went out. */
+export const digestKey = (userId: number, today: string): string => sentKey("digest", 0, userId, today);
+
+// ── Addresses that can never receive mail ──────────────────────────────────
+
+export const DEFAULT_SKIP_DOMAINS = ["easyconstruct.demo", "example.com", "example.org", "example.net"] as const;
+const RESERVED_TLDS = ["test", "example", "invalid", "localhost"] as const;
+
+/** MAIL_SKIP_DOMAINS: comma separated, case-insensitive. Unset means the defaults; set to nothing means only the reserved TLDs. */
+export const skipDomainsFromEnv = (raw: string | undefined = process.env.MAIL_SKIP_DOMAINS): string[] =>
+  raw === undefined
+    ? [...DEFAULT_SKIP_DOMAINS]
+    : raw
+        .split(",")
+        .map((d) => d.trim().toLowerCase().replace(/^@/, ""))
+        .filter(Boolean);
+
+/** Demo and test addresses: a skipped domain or any subdomain of it, or a reserved top-level domain. */
+export const isUndeliverableEmail = (email: string, skipDomains: readonly string[] = skipDomainsFromEnv()): boolean => {
+  const clean = email.trim().toLowerCase();
+  const at = clean.lastIndexOf("@");
+  if (at < 0) return true;
+  const domain = clean.slice(at + 1);
+  if (!domain) return true;
+  const tld = domain.slice(domain.lastIndexOf(".") + 1);
+  if ((RESERVED_TLDS as readonly string[]).includes(tld)) return true;
+  return skipDomains.some((d) => domain === d || domain.endsWith(`.${d}`));
+};
+
+// ── Planning ───────────────────────────────────────────────────────────────
+
+/** An item with its recipients and the day its "already sent" record is kept under (today, or a period's start). */
+export interface DigestCandidate {
   item: OverdueItem;
-  to: Person;
+  recipients: readonly Person[];
+  day: string;
 }
 
-export const sentKey = (type: OverdueItemType, itemId: number, userId: number, day: string): string => `${type}:${itemId}:${userId}:${day}`;
+export interface DigestItem {
+  item: OverdueItem;
+  day: string;
+}
 
-export interface Plan {
-  send: EmailToSend[];
-  /** People left out because they switched the reminders off or have no email address. */
+export interface Digest {
+  person: Person;
+  items: DigestItem[];
+}
+
+export interface DigestPlan {
+  digests: Digest[];
+  /** Items left out because the person switched the reminders off, has no email, or has a demo/test address. */
   skippedOptOut: number;
   skippedNoEmail: number;
-  /** Already emailed today. */
+  skippedUndeliverable: number;
+  /** Items already emailed, or belonging to a person whose summary for today already went out. */
   skippedAlreadySent: number;
 }
 
 /**
- * Which emails to send for each item and its recipients. A person gets at most one email per item per day,
- * however many ways they are a recipient (an Admin who is also the assignee), and none if they switched the
- * setting off or have no address.
+ * Groups what is overdue into one summary per person. A person is left out if they switched the setting off,
+ * have no address or a demo/test one, or already had today's summary; an item they were already emailed about
+ * is dropped. The same person listed twice for an item counts once.
  */
-export const planEmails = (
-  candidates: readonly { item: OverdueItem; recipients: readonly Person[] }[],
+export const planDigests = (
+  candidates: readonly DigestCandidate[],
   alreadySent: ReadonlySet<string>,
-  day: string,
-): Plan => {
-  const plan: Plan = { send: [], skippedOptOut: 0, skippedNoEmail: 0, skippedAlreadySent: 0 };
-  const planned = new Set<string>();
-  for (const { item, recipients } of candidates) {
+  today: string,
+  skipDomains: readonly string[] = skipDomainsFromEnv(),
+): DigestPlan => {
+  const plan: DigestPlan = { digests: [], skippedOptOut: 0, skippedNoEmail: 0, skippedUndeliverable: 0, skippedAlreadySent: 0 };
+  const byPerson = new Map<number, Digest>();
+  const seen = new Set<string>();
+  for (const { item, recipients, day } of candidates) {
     for (const person of recipients) {
       const key = sentKey(item.type, item.id, person.id, day);
-      if (planned.has(key)) continue;
-      planned.add(key);
-      if (!person.emailOverdueReminders) {
-        plan.skippedOptOut++;
-        continue;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      if (!person.emailOverdueReminders) plan.skippedOptOut++;
+      else if (!person.email?.trim()) plan.skippedNoEmail++;
+      else if (isUndeliverableEmail(person.email, skipDomains)) plan.skippedUndeliverable++;
+      else if (alreadySent.has(digestKey(person.id, today)) || alreadySent.has(key)) plan.skippedAlreadySent++;
+      else {
+        const digest = byPerson.get(person.id) ?? { person, items: [] };
+        digest.items.push({ item, day });
+        byPerson.set(person.id, digest);
       }
-      if (!person.email?.trim()) {
-        plan.skippedNoEmail++;
-        continue;
-      }
-      if (alreadySent.has(key)) {
-        plan.skippedAlreadySent++;
-        continue;
-      }
-      plan.send.push({ item, to: person });
     }
   }
+  plan.digests = [...byPerson.values()];
   return plan;
 };
 
@@ -98,16 +145,49 @@ export const uniquePeople = (people: readonly Person[]): Person[] => {
   return people.filter((p) => (seen.has(p.id) ? false : (seen.add(p.id), true)));
 };
 
-export const buildOverdueEmail = (item: OverdueItem, appUrl: string): { subject: string; text: string; html: string } => {
-  const url = `${appUrl.replace(/\/+$/, "")}${item.path}`;
-  const subject = `Overdue: ${item.subject}`.replace(/\s+/g, " ").trim().slice(0, 200);
-  const text = [item.subject, "", item.detail, "", `Open it in EasyConstruct: ${url}`, "", "You can turn these emails off under Settings > Email me overdue reminders."].join("\n");
-  const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-  const html = `<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1f2937;max-width:560px">
-<h2 style="margin:0 0 8px">${esc(item.subject)}</h2>
-<p>${esc(item.detail)}</p>
-<p style="margin:16px 0"><a href="${esc(url)}" style="background:#15803d;color:#ffffff;padding:10px 18px;border-radius:6px;text-decoration:none;font-weight:bold">Open in EasyConstruct</a></p>
-<p style="color:#6b7280;font-size:12px">You can turn these emails off under Settings, "Email me overdue reminders".</p>
-</div>`;
-  return { subject, text, html };
+// ── The summary email ──────────────────────────────────────────────────────
+
+export const MAX_LINES_PER_SECTION = 25;
+
+const SECTIONS: { type: OverdueItemType; title: string }[] = [
+  { type: "rfi", title: "RFI/RFA overdue" },
+  { type: "stage", title: "Approvals waiting" },
+  { type: "report", title: "Missing reports" },
+];
+
+const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+const oneLine = (s: string) => s.replace(/\s+/g, " ").trim();
+
+export const digestSubject = (count: number): string => `EasyConstruct: ${count} overdue ${count === 1 ? "item needs" : "items need"} your attention`;
+
+export const buildDigestEmail = (digest: Digest, appUrl: string, today: string): { subject: string; text: string; html: string } => {
+  const base = appUrl.replace(/\/+$/, "");
+  const sections = SECTIONS.map((s) => ({ ...s, items: digest.items.filter((i) => i.item.type === s.type).map((i) => i.item) })).filter((s) => s.items.length > 0);
+
+  const text: string[] = [`Hello ${oneLine(digest.person.name)},`, "", `Here is what is overdue for you on ${today}.`];
+  const html: string[] = [`<p>Hello ${esc(oneLine(digest.person.name))},</p>`, `<p>Here is what is overdue for you on ${esc(today)}.</p>`];
+  for (const s of sections) {
+    const shown = s.items.slice(0, MAX_LINES_PER_SECTION);
+    const more = s.items.length - shown.length;
+    text.push("", `${s.title} (${s.items.length})`);
+    html.push(`<h3 style="margin:18px 0 6px">${esc(s.title)} (${s.items.length})</h3><ul style="padding-left:18px;margin:0">`);
+    for (const it of shown) {
+      const url = `${base}${it.path}`;
+      text.push(`- ${it.projectCode} · ${oneLine(it.subject)} · ${oneLine(it.late)}`, `  ${url}`);
+      html.push(`<li style="margin:4px 0"><a href="${esc(url)}">${esc(it.projectCode)} · ${esc(oneLine(it.subject))}</a> · ${esc(oneLine(it.late))}</li>`);
+    }
+    html.push("</ul>");
+    if (more > 0) {
+      text.push(`  ...and ${more} more. Open EasyConstruct to see all.`);
+      html.push(`<p style="margin:4px 0;color:#6b7280">and ${more} more. <a href="${esc(base)}">Open EasyConstruct</a> to see all.</p>`);
+    }
+  }
+  const footer = 'You get at most one summary a day, and only when something is overdue. To turn these emails off, open Settings and switch off "Email me overdue reminders". You still get the alerts inside EasyConstruct.';
+  text.push("", footer);
+  html.push(`<p style="color:#6b7280;font-size:12px;margin-top:20px">${esc(footer)}</p>`);
+  return {
+    subject: digestSubject(digest.items.length),
+    text: text.join("\n"),
+    html: `<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1f2937;max-width:600px">${html.join("\n")}</div>`,
+  };
 };
