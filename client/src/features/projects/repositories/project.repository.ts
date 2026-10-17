@@ -202,7 +202,14 @@ export const ProjectRepository = {
    * `clientId` links the shared client record and `confirmSimilar` accepts a project whose name is
    * close to an existing one (objectives fix 1.2). Neither is part of the Project view model.
    */
-  async create(payload: Partial<Project> & { clientId?: number; confirmSimilar?: boolean }): Promise<Project> {
+  async create(
+    payload: Partial<Project> & {
+      clientId?: number;
+      confirmSimilar?: boolean;
+      /** Owner, contractor and other outside contacts from the wizard (project_stakeholders). */
+      stakeholders?: { name: string; company?: string; role: "Owner" | "Contractor" | "Other"; email?: string; phone?: string }[];
+    },
+  ): Promise<Project> {
     const raw = await unwrap<BackendProject>(apiClient.post("/projects", serializeProject(payload)));
     return normalizeProject(raw);
   },

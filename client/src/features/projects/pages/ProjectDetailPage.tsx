@@ -39,6 +39,7 @@ import { Link, useNavigate, useParams } from "react-router";
 import { z } from "zod";
 import { useAuth } from "@/auth/auth-context";
 import { FileIntegrityBadge } from "@/features/uploads/components/FileIntegrityBadge";
+import { StakeholdersPanel } from "@/features/stakeholders/components/StakeholdersPanel";
 
 /**
  * Who may change the record itself. This mirrors the route guards on
@@ -519,6 +520,11 @@ export default function ProjectDetailPage() {
       {/* Design change history (design_revisions): version-to-version log per design. Read-only; the panel handles its own loading, errors and empty states. */}
       <div className="max-w-4xl">
         <ProjectRevisionsPanel projectCode={project.code} projectStatus={project.status} />
+      </div>
+
+      {/* Owner, contractor and others outside the company: RFIs and RFAs are sent to them. */}
+      <div className="max-w-4xl">
+        <StakeholdersPanel projectCode={project.code} canManage={role === "project-manager" || role === "admin"} />
       </div>
 
       {/* RFI / RFA requests on this project (an open one blocks closing it). */}

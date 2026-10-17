@@ -39,6 +39,7 @@ import engineeringReportRoutes from "./engineering-reports/routes.js";
 import roleRoutes from "./roles/routes.js";
 import userRoutes from "./users/routes.js";
 import projectMemberRoutes from "./project-members/routes.js";
+import stakeholderRoutes from "./project-stakeholders/routes.js";
 
 // ── workflows/approvals ──
 import workflowRoutes from "./workflows/routes.js";
@@ -124,6 +125,7 @@ app.use("/api/engineering-reports", engineeringReportRoutes);
 app.use("/api/roles", roleRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/project-members", projectMemberRoutes);
+app.use("/api/stakeholders", stakeholderRoutes);
 app.use("/api/workflows", workflowRoutes);
 app.use("/api/milestones", milestoneRoutes);
 app.use("/api/plan-suggestions", planSuggestionRoutes);

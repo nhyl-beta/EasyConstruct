@@ -272,7 +272,8 @@ const resolveClient = async (input: { client?: string; clientId?: number }) => {
 };
 
 export const create = async (input: CreateProjectInput, pmUserId?: number) => {
-  const { confirmSimilar, ...fields } = input;
+  const { confirmSimilar, stakeholders: _stakeholders, ...fields } = input;
+  void _stakeholders; // stored by the stakeholders module, not on the project row
   await assertNotDuplicateName(fields.name, confirmSimilar);
   input = { ...fields, ...(await resolveClient(fields)) };
   pmUserId ??= await findPmUserId(input.pm);

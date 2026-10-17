@@ -56,6 +56,8 @@ export interface CreateProjectInput {
   clientId?: number;
   /** Create anyway although a project with a similar name exists (fix 1.2). Never stored. */
   confirmSimilar?: boolean;
+  /** Stakeholders from the wizard; stored in project_stakeholders (change #4), never on the project row. */
+  stakeholders?: { name: string; company?: string | null; role: "Owner" | "Contractor" | "Other"; email?: string | null; phone?: string | null }[];
   currency?: string;
   workforce?: number;
   description?: string;

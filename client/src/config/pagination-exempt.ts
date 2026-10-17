@@ -60,6 +60,8 @@ export const PAGINATION_EXEMPT: PaginationExemption[] = [
   { file: "pages/roles/shared/shared-resources.tsx", reason: "Static templates and links." },
   { file: "pages/roles/shared/print-pages.tsx", reason: "Print pages print everything by design." },
   { file: "features/document-types/components/DocumentTypeSelect.tsx", reason: "A dropdown of the document types (a few dozen at most), not a record list." },
+  { file: "features/stakeholders/components/StakeholdersPanel.tsx", reason: "A project's handful of outside contacts (owner, contractor, a few others)." },
+  { file: "features/stakeholders/components/StakeholderDraftEditor.tsx", reason: "The few stakeholders typed into the New Project form." },
   { file: "pages/roles/admin/admin-document-types.tsx", reason: "The short, admin-curated list of document types (a few dozen at most), shown grouped by category." },
   { file: "pages/roles/admin/admin-approval-hierarchy.tsx", reason: "The few workflow templates and their stages; fixed by configuration." },
   { file: "pages/roles/admin/admin-workflow-configuration.tsx", reason: "The few workflow templates and their stages; fixed by configuration." },

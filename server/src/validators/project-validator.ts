@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { DELIVERABLE_DISCIPLINES, DELIVERY_TYPES } from '../lifecycle/delivery.js';
+import { stakeholderInputSchema } from './stakeholder-validators.js';
 
 // Project types offered by the New Project wizard. Closed list so the
 // Projects table's type filter only ever sees values it can group on.
@@ -69,6 +70,8 @@ export const createProjectSchema = baseProjectSchema
     // What the engagement delivers; fixed at creation (not editable later).
     deliveryType: z.enum(DELIVERY_TYPES).optional(),
     designDisciplines: z.array(z.enum(DELIVERABLE_DISCIPLINES)).max(DELIVERABLE_DISCIPLINES.length).optional(),
+    // Stakeholders typed into the wizard's "Team & stakeholders" step; stored in project_stakeholders (change #4).
+    stakeholders: z.array(stakeholderInputSchema).max(20).optional(),
   })
   .superRefine((data, ctx) => {
     if (data.deliveryType === 'Design' && (data.designDisciplines?.length ?? 0) === 0) {

@@ -12,6 +12,7 @@ import { PROJECT_SORT_COLUMNS } from "./repository.js";
 import { parseIdParam } from "../utils/params.js";
 import { logAudit } from "../utils/audit.js";
 import { diffFields, formatChanges } from "../utils/diff-fields.js";
+import * as stakeholders from "../project-stakeholders/service.js";
 
 const PROJECT_SORTABLE = Object.keys(PROJECT_SORT_COLUMNS);
 
@@ -96,6 +97,12 @@ export const create = async (
       req.authUser?.role === "project-manager" ? req.authUser.id : undefined,
     );
     if (data) {
+      // The wizard's stakeholders, plus an Owner made from the client name / email when none was given.
+      if (req.authUser) {
+        await stakeholders
+          .createInitial(data.code, (req.body as { stakeholders?: Parameters<typeof stakeholders.createInitial>[1] }).stakeholders, req.authUser)
+          .catch((err) => console.error("[projects] could not add stakeholders", err));
+      }
       await logAudit({
         entityType: "project",
         entityId: String(data.id),
@@ -121,6 +128,10 @@ export const update = async (
     const { before, after: data } = await service.updateTracked(id, req.body, scopeOf(req));
     // Only the fields the request touched and that really changed, as old -> new.
     const changes = diffFields(before as Record<string, unknown>, req.body as Record<string, unknown>, { ignore: ["confirmSimilar"] });
+    // Editing the client name / email on the project carries onto the first Owner stakeholder.
+    if (req.authUser && ("client" in req.body || "clientEmail" in req.body)) {
+      await stakeholders.syncFromProject(data, req.authUser).catch((err) => console.error("[projects] could not sync stakeholder", err));
+    }
     if (changes.length > 0) {
       await logAudit({
         entityType: "project",
