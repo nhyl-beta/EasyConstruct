@@ -289,7 +289,8 @@ export const create = async (input: CreateProjectInput, pmUserId?: number) => {
   });
 };
 
-export const update = async (id: number, input: UpdateProjectInput, scope?: ProjectScope) => {
+/** Same as `update`, but also returns the row as it was before, so the caller can log what changed. */
+export const updateTracked = async (id: number, input: UpdateProjectInput, scope?: ProjectScope) => {
   // Defense in depth: project-validator.ts's updateProjectSchema already
   // omits these, so a well-formed request never reaches here carrying them —
   // this only fires if something bypasses that schema.
@@ -312,8 +313,10 @@ export const update = async (id: number, input: UpdateProjectInput, scope?: Proj
     input.pm && input.pm !== existing.pm ? (reassignedPmUserId ?? null) : undefined,
   );
   if (!updated) throw new NotFoundError('Project', String(id));
-  return updated;
+  return { before: existing, after: updated };
 };
+
+export const update = async (id: number, input: UpdateProjectInput, scope?: ProjectScope) => (await updateTracked(id, input, scope)).after;
 
 export const remove = async (id: number, scope?: ProjectScope) => {
   await getById(id, scope);

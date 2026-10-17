@@ -25,7 +25,14 @@ const ACTION_TONE: Record<string, string> = {
   rejected: "bg-destructive/10 text-destructive-strong border-destructive/20",
   deleted: "bg-destructive/10 text-destructive-strong border-destructive/20",
   updated: "bg-warning/15 text-warning-strong border-warning/30",
+  downloaded: "bg-primary/10 text-primary-strong border-primary/20",
+  sensitive_download: "bg-warning/15 text-warning-strong border-warning/30",
+  download_blocked: "bg-destructive/10 text-destructive-strong border-destructive/20",
+  integrity_failed: "bg-destructive/10 text-destructive-strong border-destructive/20",
 };
+
+// The audit entity every file download is recorded under (server/src/uploads/download-audit.ts).
+const DOWNLOAD_ENTITY = "file";
 
 const PAGE_SIZE = 10;
 const ALL = "all";
@@ -70,7 +77,7 @@ export default function AdminActivityLogsPage() {
 
   const activeFilters: { key: string; label: string; clear: () => void }[] = [];
   if (search) activeFilters.push({ key: "search", label: `Search: "${search}"`, clear: () => setSearchInput("") });
-  if (entityType) activeFilters.push({ key: "entityType", label: `Module: ${entityType}`, clear: () => setEntityType(null) });
+  if (entityType) activeFilters.push({ key: "entityType", label: `Module: ${entityType === DOWNLOAD_ENTITY ? "Downloads" : entityType}`, clear: () => setEntityType(null) });
   if (actor) activeFilters.push({ key: "actor", label: `User: ${actor}`, clear: () => setActor(null) });
   if (dateFrom) activeFilters.push({ key: "dateFrom", label: `From: ${dateFrom}`, clear: () => setDateFrom("") });
   if (dateTo) activeFilters.push({ key: "dateTo", label: `To: ${dateTo}`, clear: () => setDateTo("") });
@@ -87,7 +94,7 @@ export default function AdminActivityLogsPage() {
     <PageContainer>
       <PageHeader
         title="Activity logs"
-        description="System-wide audit trail of create, approve, reject, and delete actions across every module."
+        description="System-wide audit trail of create, edit, approve, reject, delete and file download actions across every module."
       />
       <PageContent className="p-6 md:p-8">
         <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -99,7 +106,14 @@ export default function AdminActivityLogsPage() {
             >
               All modules
             </Badge>
-            {facets.entityTypes.map((type) => (
+            <Badge
+              variant="outline"
+              className={`cursor-pointer rounded-full text-overline ${entityType === DOWNLOAD_ENTITY ? "border-primary text-primary-strong" : ""}`}
+              onClick={() => setEntityType(entityType === DOWNLOAD_ENTITY ? null : DOWNLOAD_ENTITY)}
+            >
+              Downloads
+            </Badge>
+            {facets.entityTypes.filter((type) => type !== DOWNLOAD_ENTITY).map((type) => (
               <Badge
                 key={type}
                 variant="outline"
@@ -206,7 +220,7 @@ export default function AdminActivityLogsPage() {
                     <td className="px-5 py-3.5 font-medium">{log.actor}</td>
                     <td className="px-3 py-3.5">
                       <Badge variant="outline" className={`rounded-full text-overline capitalize ${ACTION_TONE[log.action] ?? ""}`}>
-                        {log.action}
+                        {log.action.replace(/_/g, " ")}
                       </Badge>
                     </td>
                     <td className="px-3 py-3.5 font-mono text-xs text-muted-foreground">

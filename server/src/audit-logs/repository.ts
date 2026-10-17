@@ -1,4 +1,4 @@
-import { and, count, desc, eq, gte, ilike, lte, or, SQL } from "drizzle-orm";
+import { and, count, desc, eq, gte, ilike, inArray, lte, or, SQL } from "drizzle-orm";
 import { db } from "../db/connection.js";
 import { auditLogs } from "../db/schema/audit-logs.js";
 import type { AuditLogFilters, CreateAuditLogInput } from "./types.js";
@@ -12,6 +12,7 @@ const buildConditions = (filters: AuditLogFilters): SQL[] => {
   if (filters.entityType) conditions.push(eq(auditLogs.entityType, filters.entityType));
   if (filters.entityId) conditions.push(eq(auditLogs.entityId, filters.entityId));
   if (filters.projectCode) conditions.push(eq(auditLogs.projectCode, filters.projectCode));
+  if (filters.actions?.length) conditions.push(inArray(auditLogs.action, filters.actions));
   if (filters.actor) conditions.push(eq(auditLogs.actor, filters.actor));
   if (filters.dateFrom) conditions.push(gte(auditLogs.createdAt, new Date(filters.dateFrom)));
   if (filters.dateTo) conditions.push(lte(auditLogs.createdAt, new Date(filters.dateTo)));

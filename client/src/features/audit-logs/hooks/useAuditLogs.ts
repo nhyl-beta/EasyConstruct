@@ -7,6 +7,7 @@ export function useAuditLogs(query: AuditLogsQuery = {}) {
     entityType,
     entityId,
     projectCode,
+    actions,
     search,
     actor,
     dateFrom,
@@ -14,6 +15,7 @@ export function useAuditLogs(query: AuditLogsQuery = {}) {
     page,
     perPage,
   } = query;
+  const actionsKey = actions?.join(",");
 
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [total, setTotal] = useState(0);
@@ -29,6 +31,7 @@ export function useAuditLogs(query: AuditLogsQuery = {}) {
         entityType,
         entityId,
         projectCode,
+        actions: actionsKey ? actionsKey.split(",") : undefined,
         search,
         actor,
         dateFrom,
@@ -46,7 +49,7 @@ export function useAuditLogs(query: AuditLogsQuery = {}) {
       setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entityType, entityId, projectCode, search, actor, dateFrom, dateTo, page, perPage]);
+  }, [entityType, entityId, projectCode, actionsKey, search, actor, dateFrom, dateTo, page, perPage]);
 
   useEffect(() => {
     void reload();

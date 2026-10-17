@@ -8,6 +8,8 @@ import {
   cleanCategory,
   duplicateError,
   findDuplicate,
+  LEGAL_CATEGORY,
+  normalizeTypeName,
   prepareTypeName,
 } from "./rules.js";
 
@@ -72,4 +74,10 @@ export const resolveForNewDocument = async (submitted: string): Promise<string> 
   if (!check.ok && check.reason === "unknown") check = checkSubmittedType(submitted, await allTypes(true));
   if (!check.ok) throw new ValidationError(check.message);
   return check.name;
+};
+
+/** Is documents of this type in the Legal category? (Downloads of those are logged as sensitive.) */
+export const isLegalType = async (typeName: string): Promise<boolean> => {
+  const row = (await allTypes()).find((t) => t.nameKey === normalizeTypeName(typeName));
+  return row?.category === LEGAL_CATEGORY;
 };
