@@ -155,3 +155,67 @@ Needs a decision:
 - `ui-check.mjs` hung locally; it needs looking at before it is trusted again.
 
 Cannot be tested locally: real Gmail delivery, the Vercel Blob `upload-completed` callback, Vercel Cron on the deployed project, and the migrations against the real Neon data.
+
+## Admin overview email
+
+Date: 2026-10-18. The daily summary used to list every overdue item in the system to every Admin (95 items across 17 summaries in the test run). Now an Admin gets two parts; everyone else is unchanged.
+
+What an Admin's email contains:
+1. **Your items.** Items where the Admin is a real owner (assignee, raiser, the stage's approver, the PM), listed in full with the same sections, line format and 25-line cap as before.
+2. **Across all projects.** Every other overdue item, not listed one by one: one line per project with counts per kind, for example `DEMO-S4 · 12 RFI/RFA overdue · 2 approvals waiting · 1 missing report`, most items first (then project code), at most 15 lines plus "and N more projects". Each line links to `/dashboard` (the Admin dashboard already has the "needs attention" card; it has no project filter, so no filter is added and no new page was built). Omitted when nothing else is overdue; with no own items the email is only this part.
+
+Subject for an Admin: `EasyConstruct: 3 items need your attention, 95 overdue across 6 projects` (singular forms: `1 item needs your attention, 1 overdue across 1 project`; overview only: `EasyConstruct: 95 items overdue across 6 projects`). Non-Admin subjects are unchanged.
+
+How it works:
+- Ownership comes from the candidate data: each candidate carries `recipients` (the real owners) and `admins` (Admins who are there only because they are Admin). `planDigests` lists an item in full for an owner and counts it in the overview for an Admin who is not an owner; an Admin who is an owner sees it under Your items only, never counted twice. The role is read with the person, nothing is looked up again.
+- Missing reports: the PM (real owner) keeps the once-per-period email; for Admins a missing report only counts in the overview. A project with no PM now also counts for Admins (it was dropped before).
+- Dedupe: the per-person per-day `digest` key still allows one email a day. Own items are recorded per item as before; overview items are not recorded, so the overview is recomputed every day while things stay overdue.
+- The "Email me overdue reminders" switch, the undeliverable-address guard and `MAIL_SKIP_DOMAINS` apply to Admins as before; an opted-out Admin gets neither part.
+- `OverdueRunResult.emails` gains `adminOverviewProjects` (project lines rendered in the summaries that were sent; capped at 15 per email).
+- The Settings page has one extra sentence for Admins.
+- In-app alerts are unchanged. No migration.
+
+Known limit (not changed here): when a stage belongs to a role (for example Finance), or a project has no `pmUserId`, `stageOwners()` gives the item to every user with that role, so each of them gets it under their own items.
+
+Tests: 12 new unit tests in `jobs/overdue.test.ts` (2 own + 30 others over 4 projects gives 2 full lines and 4 overview lines; overview only; an Admin who is also the assignee; ordering; the 15-project cap; subject wording; same-day rerun; opted-out Admin; non-Admin text unchanged against a fixed snapshot). `change-08-overdue-emails.mjs` has an Admin scenario against the sink: one email, the Admin's own RFI listed in full, the architect's RFIs not listed one by one, overview lines linking to the dashboard, far fewer lines than overdue items (4 lines for 25 overdue items in the run), the subject counting both parts.
+
+Manual steps for the owner: none. With the default `MAIL_SKIP_DOMAINS` the demo accounts are still never emailed.
+
+## Fresh database setup
+
+Problem: the migration chain cannot build an empty database (`0011` fails with "payroll_batches already exists" because `0006` created it), and it also stops short of the Drizzle schema: a database built by replaying every migration statement lacks tables the app uses (for example `milestones`, `password_reset_tokens`, `reference_snapshots`, `design_engineers`) and many columns. Neon works because it was built before the chain was baselined. A client's own server needs another way.
+
+What was added (nothing in `server/drizzle/` changed):
+- `npm --prefix server run db:bootstrap` (`src/scripts/bootstrap-db.ts`, pure parts in `src/db/bootstrap.ts`). It refuses unless the database is empty (`public.projects` must not exist and `drizzle.__drizzle_migrations` must be missing or empty), prints the target host, and needs `--yes`; `--dry-run` shows the plan. It then (1) builds the schema from the Drizzle schema with drizzle-kit's own diff (`drizzle-kit/api` `pushSchema`, non-interactive), (2) creates what only the migrations define, (3) inserts the reference data, (4) records every migration in `drizzle.__drizzle_migrations` with the same hash and timestamp `migrate.ts` writes.
+- `npm --prefix server run db:verify-schema` (read-only, exits 1 on a real difference): drizzle-kit's diff minus what it always reports (ROW LEVEL SECURITY, numeric `DEFAULT 0` rewrites, foreign keys whose names Postgres cut to 63 characters), plus a check that the migration-only sequences and indexes exist.
+- `docs/setting-up-a-new-server.md`, and `system-check/README.md` now uses `db:bootstrap` instead of the manual `drizzle-kit push` steps.
+
+**`db:bootstrap` must never be pointed at an existing database such as Neon.** It would refuse (Neon has `public.projects` and journal rows), but do not try.
+
+Objects the migrations create that the Drizzle schema does not describe (found by diffing a `drizzle-kit push` database against a replayed-migrations database; `EXTRA_SEQUENCES`, `EXTRA_INDEXES`): 4 sequences (`purchase_request_seq`, `procurement_order_seq`, `reimbursement_seq`, `expense_seq`; used by `finance/purchasing/ids.ts`) and 9 indexes (`design_requests_assignee_idx`, `design_requests_project_idx`, `design_revisions_design_version_uq`, `documents_report_idx`, `plan_suggestion_items_suggestion_idx`, `plan_suggestions_project_idx`, `projects_client_id_idx`, `stored_files_status_idx`, `transmittals_project_seq_uq`). Plain `drizzle-kit push` would drop these indexes and sequences, which is one more reason not to use it on a bootstrapped database. The legacy table `project_engineers` (replaced by `project_members` in the Drizzle schema) is not created.
+
+Reference-data audit: every migration 0000 to 0040 was searched for INSERT, UPDATE and DELETE statements.
+
+| Migration | Statement | Bootstrap |
+|---|---|---|
+| `0022_design_delivery` | INSERT workflow template "Design Turnover" | run (insert-if-missing) |
+| `0026_expense_categories` | INSERT the 10 starting expense categories | run (`ON CONFLICT DO NOTHING`) |
+| `0034_document_types` | INSERT the 16 starting document types | run (`ON CONFLICT DO NOTHING`) |
+| `0040_pm_reports` | INSERT Daily, Weekly and Monthly Report types | run (`ON CONFLICT DO NOTHING`) |
+| `0015_payroll_lifecycle` | UPDATE payroll_batches status 'rejected' | not run: changes existing rows only |
+| `0019_fix_report_project_case` | UPDATE engineering_reports project case | not run: changes existing rows only |
+| `0024_cash_flow_month_unique` | DELETE duplicate cash flow months | not run: changes existing rows only |
+
+The INSERT statements are taken from the migration files themselves, so there is one copy. No other migration changes rows (no statutory rate versions or other seeds live in migrations). A unit test fails if a future migration adds an INSERT, UPDATE or DELETE that `DATA_MIGRATIONS` does not classify, so new reference data cannot be forgotten. Other data a new server may want is not in migrations: `reference_snapshots` (the price catalog, filled by `npm run ai:seed-references`, which calls the live EstimationPro.ai API; the demo seed `demo-seed-stages` needs it) and the demo data (`db:seed`, `demo:seed`).
+
+Tests: 15 unit tests in `src/db/bootstrap.test.ts` (empty-database guard, data-step list, bookkeeping rows, extra objects, schema-noise filter). On a new empty local database: `db:bootstrap --dry-run` and `--yes` worked (10 expense categories, 19 document types, 1 workflow template, 41 migrations recorded); a second `db:bootstrap` refused; `db:migrate -- --dry-run` said "Nothing to apply. 41 of 41 migrations are already recorded."; `db:verify-schema` passed, and it fails when a column is dropped or an index is missing; `db:seed` and the full `demo:seed` chain worked; the lifecycle walk passed 87/87; checks `change-01` to `change-10` passed (08 in both skip-list modes).
+
+Migration files unchanged: `git diff 5e6fe18 -- server/drizzle` is empty; all 41 migration files and all 41 journal entries are identical to `5e6fe18`, so every hash `migrate.ts` computes (and Neon has recorded) is the same.
+
+Test fixes found on the way: `change-04` built "today" in UTC while the server uses the Manila day, so it failed between 00:00 and 08:00 Manila time; it now uses the Manila date. My own negative test (dropping a column) had damaged the first bootstrapped test database, so it was rebuilt from empty before the final runs.
+
+Manual steps for the owner: none for Neon. For a new server follow `docs/setting-up-a-new-server.md`.
+
+Needs a decision:
+- An Admin's overview links to `/dashboard` because the dashboard has no project filter. Say if a per-project link is wanted.
+- `db:bootstrap` needs `drizzle-kit` (a dev dependency) installed on the new server; `npm ci` without `--omit=dev` is enough.
