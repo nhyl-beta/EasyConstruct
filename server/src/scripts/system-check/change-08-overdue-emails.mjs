@@ -18,7 +18,7 @@ const runCron = (secret = SECRET, method = "POST") =>
   fetch(`${API}/cron/overdue`, { method, headers: secret ? { Authorization: `Bearer ${secret}` } : {} }).then(async (r) => ({ status: r.status, body: await r.json().catch(() => null) }));
 const to = (m) => m.to.join(",");
 const wipeSent = () => sql(`delete from overdue_reminders where channel = 'email'`);
-const summariesFor = (address, since) => box().slice(since).filter((m) => to(m).includes(address) && /EasyConstruct: \d+ overdue/.test(m.raw));
+const summariesFor = (address, since) => box().slice(since).filter((m) => to(m).includes(address) && /Subject: EasyConstruct: \d+ /.test(m.raw));
 
 console.log(`mode: ${MODE}`);
 const vercel = JSON.parse(readFileSync("vercel.json", "utf8"));
@@ -55,6 +55,11 @@ try {
     sql(`update design_requests set due_date = now() - interval '2 days' where id = ${created.data.id}`);
   }
   check("three overdue RFIs for one person", ids.length === 3 && ids.every(Boolean));
+  // A fourth RFI that belongs to the Admin: it is listed in full in the Admin's email, not counted in the overview.
+  const adminSubject = `Digest check ${stamp} admin-own`;
+  const adminOwn = await call("pm", "POST", "/design-requests", { kind: "RFI", projectCode: construction.code, discipline: "AR", subject: adminSubject, requestText: "Which finish applies to the lobby?", assignedToUserId: architect.userId });
+  const adminOwnId = adminOwn.data?.id;
+  sql(`update design_requests set due_date = now() - interval '2 days', assigned_to_user_id = (select id from users where email = '${adminAddr}') where id = ${adminOwnId}`);
   const stage = sql(`select s.id from workflow_stages s join workflows w on w.id = s.workflow_id where w.status = 'active' and s.status = 'current' and s.role = 'finance-manager' limit 1`);
   sql(`update workflow_stages set updated_at = now() - interval '3 days' where id = ${stage}`);
   wipeSent();
@@ -69,11 +74,22 @@ try {
   check("it lists all three with a link each", subjects.every((s) => arch1[0].text.includes(s)) && ids.every((id) => arch1[0].text.includes(`/requests?open=${id}`)));
   check("the subject counts the items", /Subject: EasyConstruct: \d+ overdue items need your attention/.test(arch1[0].raw));
   const admin1 = summariesFor(adminAddr, before);
-  check("the Admin gets exactly ONE email with the RFIs and the stalled approval", admin1.length === 1 && subjects.every((s) => admin1[0].text.includes(s)) && admin1[0].text.includes("Approvals waiting"), `${admin1.length}`);
+  check("the Admin gets exactly ONE email", admin1.length === 1, `${admin1.length}`);
+  const adminText = admin1[0]?.text ?? "";
+  const lines = adminText.split("\n").filter((l) => l.startsWith("- ")).length;
+  const everything = r1.requests.overdue + r1.stages.overdue + r1.reports.missing;
+  check("the Admin's own RFI is listed in full under Your items, with its link", adminText.includes("Your items") && adminText.includes(adminSubject) && adminText.includes(`/requests?open=${adminOwnId}`));
+  check("the architect's RFIs are NOT listed one by one for the Admin", subjects.every((s) => !adminText.includes(s)));
+  check("the Admin email has the overview, linking to the dashboard", adminText.includes("Across all projects") && adminText.includes("/dashboard") && adminText.includes(construction.code) && adminText.includes("RFI/RFA overdue"));
+  check("and far fewer lines than there are overdue items", everything > lines + 2 && lines <= 10 + 15, `${lines} lines for ${everything} overdue items`);
+  const unfolded = admin1[0].raw.replace(/\r?\n[ \t]+/g, " ");
+  check("the Admin subject counts both parts", /Subject: EasyConstruct: \d+ items? needs? your attention, \d+ overdue across \d+ projects?/.test(unfolded), unfolded.match(/Subject: .*/)?.[0]);
+  check("the run reports the overview lines", r1.emails.adminOverviewProjects >= 1, JSON.stringify(r1.emails));
   const fresh = box().slice(before);
   const old = ids.length + 1 + (ids.length + 1); // one per item to its owner(s) and again to each Admin that can receive
   console.log(`  before this change about ${old}+ emails; now ${fresh.length} (${r1.emails.digestsSent} summaries, ${r1.emails.itemsIncluded} items)`);
   check("the run's counts match what the sink received", r1.emails.digestsSent === fresh.length && r1.emails.itemsIncluded >= 4, JSON.stringify(r1.emails));
+  console.log("\n----- Admin summary as it arrived in the sink -----\n" + adminText + "\n----- Architect summary -----\n" + (arch1[0]?.text ?? "") + "\n-----");
   check("the in-app alerts still go out", (() => { const n = Number(sql(`select count(*) from notifications where role = 'admin' and title like 'Overdue%'`)); return n >= 1; })());
 
   if (MODE === "default") {

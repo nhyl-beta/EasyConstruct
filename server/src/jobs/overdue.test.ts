@@ -4,6 +4,7 @@ import {
   MAX_LINES_PER_SECTION,
   buildDigestEmail,
   digestKey,
+  adminDigestSubject,
   digestSubject,
   isStageOverdue,
   isUndeliverableEmail,
@@ -229,5 +230,144 @@ describe("buildDigestEmail", () => {
     assert.ok(!mail.html.includes("<i>x</i>") && !mail.html.includes("<b>"));
     assert.doesNotMatch(mail.subject, /[\r\n]/);
     assert.ok(!mail.text.includes("\nBcc:"));
+  });
+});
+
+// ── Admin overview ─────────────────────────────────────────────────────────
+
+describe("Admin overview in planDigests", () => {
+  const admin = (id = 100, over: Partial<Person> = {}) => person(id, { name: "Ada Admin", role: "admin", ...over });
+  const owner = person(1, { role: "architect" });
+  /** `n` items spread over the given projects, owned by `owner`, with the Admin only as Admin. */
+  const others = (n: number, projects: string[], a: Person, startId = 1000): DigestCandidate[] =>
+    Array.from({ length: n }, (_, i) => ({ item: item(startId + i, "rfi", { projectCode: projects[i % projects.length] }), recipients: [owner], admins: [a], day: TODAY }));
+  const digestFor = (p: ReturnType<typeof plan>, id: number) => p.digests.find((x) => x.person.id === id)!;
+
+  test("2 own items and 30 others over 4 projects: 2 full lines plus 4 overview lines", () => {
+    const a = admin();
+    const own = [item(1), item(2)].map((it) => ({ item: it, recipients: [a], admins: [a], day: TODAY }));
+    const d = digestFor(plan([...own, ...others(30, ["P1", "P2", "P3", "P4"], a)]), a.id);
+    assert.equal(d.items.length, 2);
+    assert.equal(d.overview!.length, 4);
+    assert.equal(d.overview!.reduce((n, o) => n + o.rfi, 0), 30);
+    const mail = buildDigestEmail(d, "https://a.b", TODAY);
+    assert.equal(mail.text.split("\n").filter((l) => l.startsWith("- ")).length, 6);
+    assert.equal(mail.subject, "EasyConstruct: 2 items need your attention, 30 overdue across 4 projects");
+  });
+
+  test("an Admin with no own items gets the overview only", () => {
+    const a = admin();
+    const d = digestFor(plan(others(5, ["P1", "P2"], a)), a.id);
+    assert.equal(d.items.length, 0);
+    const mail = buildDigestEmail(d, "https://a.b", TODAY);
+    assert.ok(!mail.text.includes("Your items"));
+    assert.ok(mail.text.includes("Across all projects (5 items in 2 projects)"));
+    assert.equal(mail.subject, "EasyConstruct: 5 items overdue across 2 projects");
+  });
+
+  test("an Admin who is also the assignee sees the item under Your items and it is not counted in the overview", () => {
+    const a = admin();
+    const c: DigestCandidate = { item: item(7), recipients: [a], admins: [a], day: TODAY };
+    const d = digestFor(plan([c, ...others(2, ["P2"], a)]), a.id);
+    assert.deepEqual(d.items.map((i) => i.item.id), [7]);
+    assert.equal(d.overview!.reduce((n, o) => n + o.rfi, 0), 2);
+  });
+
+  test("a non-Admin owner never gets an overview, and the Admin has no per-item entries for it", () => {
+    const a = admin();
+    const p = plan(others(3, ["P1"], a));
+    assert.equal(digestFor(p, owner.id).overview, undefined);
+    assert.equal(digestFor(p, owner.id).items.length, 3);
+    assert.equal(digestFor(p, a.id).items.length, 0);
+  });
+
+  test("overview lines are ordered by total, then project code, and counted per kind", () => {
+    const a = admin();
+    const mk = (id: number, type: OverdueItem["type"], projectCode: string): DigestCandidate => ({ item: item(id, type, { projectCode }), recipients: [owner], admins: [a], day: TODAY });
+    const d = digestFor(plan([mk(1, "rfi", "B"), mk(2, "rfi", "A"), mk(3, "stage", "C"), mk(4, "report", "C"), mk(5, "rfi", "C"), mk(6, "rfi", "C")]), a.id);
+    assert.deepEqual(d.overview!.map((o) => o.projectCode), ["C", "A", "B"]);
+    assert.deepEqual(d.overview![0], { projectCode: "C", rfi: 2, stage: 1, report: 1 });
+  });
+
+  test("more than 15 projects: 15 lines and 'and N more projects'", () => {
+    const a = admin();
+    const codes = Array.from({ length: 18 }, (_, i) => `P${String(i).padStart(2, "0")}`);
+    const d = digestFor(plan(others(18, codes, a)), a.id);
+    const mail = buildDigestEmail(d, "https://a.b", TODAY);
+    assert.equal(mail.text.split("\n").filter((l) => l.startsWith("- ")).length, 15);
+    assert.ok(mail.text.includes("...and 3 more projects."));
+    assert.ok(mail.html.includes("and 3 more projects"));
+    assert.ok(buildDigestEmail({ ...d, overview: d.overview!.slice(0, 16) }, "https://a.b", TODAY).text.includes("...and 1 more project."));
+    assert.ok(!buildDigestEmail({ ...d, overview: d.overview!.slice(0, 15) }, "https://a.b", TODAY).text.includes("more project"));
+  });
+
+  test("overview line wording: singular and plural, zero kinds left out, link to the dashboard", () => {
+    const a = admin();
+    const mail = buildDigestEmail(
+      { person: a, items: [], overview: [{ projectCode: "DEMO-S4", rfi: 12, stage: 2, report: 1 }, { projectCode: "X", rfi: 0, stage: 1, report: 0 }] },
+      "https://app.example.com/",
+      TODAY,
+    );
+    assert.ok(mail.text.includes("- DEMO-S4 · 12 RFI/RFA overdue · 2 approvals waiting · 1 missing report"));
+    assert.ok(mail.text.includes("- X · 1 approval waiting"));
+    assert.ok(mail.text.includes("  https://app.example.com/dashboard"));
+    assert.ok(mail.html.includes('href="https://app.example.com/dashboard"'));
+  });
+
+  test("Admin subject: singular and plural, with and without own items", () => {
+    assert.equal(adminDigestSubject(3, 95, 6), "EasyConstruct: 3 items need your attention, 95 overdue across 6 projects");
+    assert.equal(adminDigestSubject(1, 1, 1), "EasyConstruct: 1 item needs your attention, 1 overdue across 1 project");
+    assert.equal(adminDigestSubject(0, 1, 1), "EasyConstruct: 1 item overdue across 1 project");
+    assert.equal(adminDigestSubject(0, 7, 2), "EasyConstruct: 7 items overdue across 2 projects");
+    assert.equal(adminDigestSubject(4, 0, 0), digestSubject(4));
+  });
+
+  test("a same-day rerun sends nothing: today's digest key skips the Admin, overview included", () => {
+    const a = admin();
+    const p = plan(others(4, ["P1"], a), new Set([digestKey(a.id, TODAY)]));
+    assert.equal(p.digests.some((x) => x.person.id === a.id), false);
+    assert.equal(p.skippedAlreadySent >= 4, true);
+  });
+
+  test("an opted-out Admin gets neither part; no email and a demo address are skipped too", () => {
+    const off = admin(100, { emailOverdueReminders: false });
+    const own: DigestCandidate = { item: item(1), recipients: [off], admins: [off], day: TODAY };
+    const p = plan([own, ...others(3, ["P1"], off)]);
+    assert.equal(p.digests.some((x) => x.person.id === off.id), false);
+    assert.equal(p.skippedOptOut, 4);
+    assert.equal(plan(others(2, ["P1"], admin(101, { email: null }))).skippedNoEmail, 2);
+    assert.equal(plan(others(2, ["P1"], admin(102, { email: "a@easyconstruct.demo" }))).skippedUndeliverable, 2);
+  });
+
+  test("the overview is not blocked by per-item keys and is recomputed the next day", () => {
+    const a = admin();
+    const keys = new Set([sentKey("rfi", 1000, a.id, TODAY), digestKey(a.id, "2026-10-09")]);
+    assert.equal(digestFor(plan(others(2, ["P1"], a), keys), a.id).overview!.length, 1);
+  });
+});
+
+describe("a non-Admin's summary is unchanged", () => {
+  test("plain text of a fixed case", () => {
+    const d = { person: person(1, { name: "Ana Cruz", role: "architect" }), items: [{ item: item(1), day: TODAY }, { item: item(2, "stage", { late: "waiting 72 h", path: "/approvals" }), day: TODAY }] };
+    const mail = buildDigestEmail(d, "https://app.example.com", TODAY);
+    assert.equal(mail.subject, "EasyConstruct: 2 overdue items need your attention");
+    assert.equal(
+      mail.text,
+      [
+        "Hello Ana Cruz,",
+        "",
+        "Here is what is overdue for you on 2026-10-10.",
+        "",
+        "RFI/RFA overdue (1)",
+        "- P1 · Item 1 · 3 days overdue",
+        "  https://app.example.com/requests?open=1",
+        "",
+        "Approvals waiting (1)",
+        "- P1 · Item 2 · waiting 72 h",
+        "  https://app.example.com/approvals",
+        "",
+        'You get at most one summary a day, and only when something is overdue. To turn these emails off, open Settings and switch off "Email me overdue reminders". You still get the alerts inside EasyConstruct.',
+      ].join("\n"),
+    );
   });
 });

@@ -11,6 +11,7 @@
 // (planDigests / buildDigestEmail in overdue.ts), never to someone who switched "Email me overdue reminders" off,
 // never to a demo/test address, and never when mail is not configured (the run reports that instead). A summary is
 // recorded only after the mail really went out, so a failed one is retried whole on the next run.
+// Admins get their own items in full plus a per-project overview of everything else (not recorded per item).
 import { env } from "../config/env.js";
 import * as notifications from "../notifications/service.js";
 import * as projectsRepo from "../projects/repository.js";
@@ -18,7 +19,7 @@ import * as requestsRepo from "../design-requests/repository.js";
 import { sweepOverdue } from "../design-requests/service.js";
 import { sendMail } from "../mail/mailer.js";
 import { AppError } from "../utils/errors.js";
-import { buildDigestEmail, manilaDay, planDigests, stageAgeHours, stageOverdueHours, uniquePeople, type DigestCandidate, type OverdueItem, type OverdueItemType, type Person } from "./overdue.js";
+import { MAX_OVERVIEW_PROJECTS, buildDigestEmail, manilaDay, planDigests, stageAgeHours, stageOverdueHours, uniquePeople, type DigestCandidate, type OverdueItem, type OverdueItemType, type Person } from "./overdue.js";
 import * as repo from "./overdue-repository.js";
 import { collectMissingReports, sendInAppReminders } from "./reports-check.js";
 
@@ -36,6 +37,8 @@ export interface OverdueRunResult {
     skippedNoEmail: number;
     skippedUndeliverable: number;
     skippedAlreadySent: number;
+    /** Project lines rendered in the Admin overviews of the summaries that were sent. */
+    adminOverviewProjects: number;
     mailConfigured: boolean;
   };
 }
@@ -67,6 +70,7 @@ const deliverDigests = async (candidates: DigestCandidate[], today: string, tota
     await repo.recordDigestSent(digest.person.id, digest.items.map((i) => ({ type: i.item.type, id: i.item.id, day: i.day })), today);
     totals.digestsSent++;
     totals.itemsIncluded += digest.items.length;
+    totals.adminOverviewProjects += Math.min(digest.overview?.length ?? 0, MAX_OVERVIEW_PROJECTS);
     for (const i of digest.items) included[i.item.type]++;
   }
   return included;
@@ -95,7 +99,7 @@ const collectRequests = async (now: Date, day: string): Promise<{ candidates: Di
       detail: `${r.number} (${r.subject}) was due ${shortDate(r.dueDate)} and has no response yet. ${r.assignedToName ? `Assigned to ${r.assignedToName}.` : "It was sent to the client."}`,
       path: `/requests?open=${r.id}`,
     };
-    candidates.push({ item, recipients: uniquePeople([...owners, ...admins]), day });
+    candidates.push({ item, recipients: owners, admins, day });
   }
   return { candidates, overdue: overdue.length, inApp: swept.notified };
 };
@@ -127,7 +131,8 @@ const collectStages = async (now: Date, day: string): Promise<{ candidates: Dige
     const detail = `The "${s.roleLabel}" stage of "${s.title}" (${s.workflowCode}, project ${s.projectCode}) has been waiting for a decision for ${age} hours (the limit is ${hours}).`;
     candidates.push({
       item: { type: "stage", id: s.stageId, subject: `${s.workflowCode}: ${s.roleLabel} approval`, projectCode: s.projectCode, late: `waiting ${age} h`, detail, path: "/approvals" },
-      recipients: uniquePeople([...owners, ...admins]),
+      recipients: owners,
+      admins,
       day,
     });
 
@@ -149,16 +154,18 @@ const collectStages = async (now: Date, day: string): Promise<{ candidates: Dige
 
 /** (c) Missing PM reports (client demo change #10): once per missing period, to the project's PM only. */
 const collectReports = async (day: string): Promise<{ candidates: DigestCandidate[]; missing: number; inApp: number }> => {
+  const admins = await adminsOf();
   const missing = await collectMissingReports(day);
   const inApp = await sendInAppReminders(missing);
   // The email is once per period, so the period's start date is the day its "already sent" record is kept under.
-  const candidates: DigestCandidate[] = missing.filter((m) => m.pm).map((m) => ({ item: m.item, recipients: [m.pm!], day: m.start }));
+  // Admins only count a missing report in their overview; the PM (the real owner) is emailed once per period.
+  const candidates: DigestCandidate[] = missing.map((m) => ({ item: m.item, recipients: m.pm ? [m.pm] : [], admins, day: m.start }));
   return { candidates, missing: missing.length, inApp };
 };
 
 export const runOverdueJob = async (now: Date = new Date()): Promise<OverdueRunResult> => {
   const day = manilaDay(now);
-  const totals: OverdueRunResult["emails"] = { digestsSent: 0, digestsFailed: 0, itemsIncluded: 0, skippedOptOut: 0, skippedNoEmail: 0, skippedUndeliverable: 0, skippedAlreadySent: 0, mailConfigured: true };
+  const totals: OverdueRunResult["emails"] = { digestsSent: 0, digestsFailed: 0, itemsIncluded: 0, skippedOptOut: 0, skippedNoEmail: 0, skippedUndeliverable: 0, skippedAlreadySent: 0, adminOverviewProjects: 0, mailConfigured: true };
   const requests = await collectRequests(now, day);
   const stages = await collectStages(now, day);
   const reports = await collectReports(day);

@@ -10,6 +10,7 @@ import { SectionCard } from "@/components/ui/section-card";
 import { PageContainer } from "@/components/refine-ui/views/page-container";
 import { PageContent } from "@/components/refine-ui/views/page-content";
 import { PageHeader } from "@/components/refine-ui/views/page-header";
+import { useAuth } from "@/auth/auth-context";
 import { apiClient } from "@/services/api.client";
 
 async function unwrap<T>(p: Promise<unknown>): Promise<T> {
@@ -18,6 +19,7 @@ async function unwrap<T>(p: Promise<unknown>): Promise<T> {
 }
 
 export default function SettingsPage() {
+  const { user } = useAuth();
   const [value, setValue] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -56,7 +58,7 @@ export default function SettingsPage() {
               <div className="space-y-1">
                 <Label htmlFor="email-overdue">Email me overdue reminders</Label>
                 <p className="text-xs text-muted-foreground">
-                  When an RFI/RFA, an approval or a report assigned to you is overdue, also send one summary email a day that lists everything overdue for you. You always get the in-app alerts.
+                  When an RFI/RFA, an approval or a report assigned to you is overdue, also send one summary email a day that lists everything overdue for you. You always get the in-app alerts.{user?.role === "admin" && " As an Admin you receive your own items plus a daily overview of all projects."}
                 </p>
               </div>
               <Switch id="email-overdue" checked={value} disabled={saving} onCheckedChange={(v) => void change(v)} />

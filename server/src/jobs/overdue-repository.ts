@@ -5,7 +5,7 @@ import { overdueReminders } from "../db/schema/overdue-reminders.js";
 import { users } from "../db/schema/users.js";
 import { sentKey, type OverdueItemType, type Person } from "./overdue.js";
 
-const personColumns = { id: users.id, name: users.name, email: users.email, emailOverdueReminders: users.emailOverdueReminders };
+const personColumns = { id: users.id, name: users.name, email: users.email, emailOverdueReminders: users.emailOverdueReminders, role: users.role };
 
 export const findPeopleByIds = async (ids: number[]): Promise<Person[]> =>
   ids.length === 0 ? [] : db.select(personColumns).from(users).where(and(inArray(users.id, ids), eq(users.isActive, true)));
