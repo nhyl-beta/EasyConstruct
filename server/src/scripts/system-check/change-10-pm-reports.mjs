@@ -23,6 +23,9 @@ check("found a project under construction", !!code, code);
 sql(`delete from project_phase_history where project_code = '${code}' and to_status = 'Construction'`);
 sql(`insert into project_phase_history (project_code, from_status, to_status, changed_by, created_at) values ('${code}', 'Pre-Construction', 'Construction', 'check', now() - interval '120 days')`);
 
+// Start clean so the check can be run again: no reports filed for this project yet.
+sql(`delete from documents where project = '${code}' and report_period is not null`);
+
 // Document types and filing.
 const types = await call("pm", "GET", "/reference/document-types");
 check("Daily, Weekly and Monthly Report types exist in the Reports category", ["Daily Report", "Weekly Report", "Monthly Report"].every((n) => types.data.some((t) => t.name === n && t.category === "Reports" && t.isSystem)));
@@ -48,6 +51,8 @@ check("older weeks with nothing filed are missing", g.grids.weekly.some((c) => !
 check("another role that cannot see the project is refused", (await call("site", "GET", `/documents/report-status?project=NOPE`)).status >= 400);
 
 // The reminders.
+const countNotes = async () => ((await call("pm", "GET", "/notifications")).data?.data ?? (await call("pm", "GET", "/notifications")).data ?? []).filter((n) => n.title?.includes(`${code}: Daily Report missing`)).length;
+const notes0 = await countNotes();
 sql(`delete from overdue_reminders where item_type = 'report'`);
 const before = box().length;
 const run1 = await runCron();
@@ -55,7 +60,7 @@ const r1 = run1.data?.result;
 check("the cron found missing reports", run1.data?.ran === true && r1.reports.missing >= 1, JSON.stringify(r1?.reports));
 const notes = await call("pm", "GET", "/notifications");
 const mine = (notes.data?.data ?? notes.data ?? []).filter((n) => n.title?.includes(`${code}: Daily Report missing`));
-check("the PM got an in-app reminder for yesterday's daily report", mine.length === 1, `${mine.length}`);
+check("the PM got an in-app reminder for yesterday's daily report", mine.length === notes0 + 1, `${mine.length - notes0} new`);
 const mails = box().slice(before).filter((m) => m.text.includes(`${code}: Daily Report missing`) || m.text.includes("Daily Report has been filed") || m.text.includes("No Daily Report"));
 check("and an email, since the PM's setting is on", mails.some((m) => m.to.includes("pm@easyconstruct.demo")), `${mails.length} mails`);
 check("the email goes to the PM only", mails.every((m) => m.to.every((t) => !t.includes("admin@") && !t.includes("finance@"))));
@@ -63,14 +68,14 @@ check("the email goes to the PM only", mails.every((m) => m.to.every((t) => !t.i
 const mid = box().length;
 await runCron();
 const notes2 = await call("pm", "GET", "/notifications");
-check("a second run does not repeat the reminder or the email", (notes2.data?.data ?? notes2.data ?? []).filter((n) => n.title?.includes(`${code}: Daily Report missing`)).length === 1 && box().length === mid);
+check("a second run does not repeat the reminder or the email", (notes2.data?.data ?? notes2.data ?? []).filter((n) => n.title?.includes(`${code}: Daily Report missing`)).length === notes0 + 1 && box().length === mid);
 
 // Filing the report stops the reminder; the setting turns the email off.
 await mkDoc("Daily Report", { reportPeriod: "daily", periodDate: yesterday });
 sql(`delete from overdue_reminders where item_type = 'report'`);
 const run3 = await runCron();
 const notes3 = await call("pm", "GET", "/notifications");
-check("once yesterday's daily report is filed there is no new daily reminder", (notes3.data?.data ?? notes3.data ?? []).filter((n) => n.title?.includes(`${code}: Daily Report missing`)).length === 1, JSON.stringify(run3.data?.result?.reports));
+check("once yesterday's daily report is filed there is no new daily reminder", (notes3.data?.data ?? notes3.data ?? []).filter((n) => n.title?.includes(`${code}: Daily Report missing`)).length === notes0 + 1, JSON.stringify(run3.data?.result?.reports));
 await call("pm", "PATCH", "/me/settings", { emailOverdueReminders: false });
 sql(`delete from overdue_reminders where item_type = 'report'`);
 const before4 = box().length;
