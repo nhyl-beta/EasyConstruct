@@ -83,7 +83,9 @@ export const close = wrap(async (req, res) => {
 });
 
 export const resendEmail = wrap(async (req, res) => {
-  res.json(formatSuccess(await service.resendEmail(id(req), actorOf(req)), "Email resent"));
+  // Optional { recipientId }: resend to one person; without it, to everyone who has not replied.
+  const recipientId = Number(req.body?.recipientId);
+  res.json(formatSuccess(await service.resendEmail(id(req), actorOf(req), Number.isInteger(recipientId) && recipientId > 0 ? recipientId : undefined), "Email resent"));
 });
 
 export const clientReplied = wrap(async (req, res) => {

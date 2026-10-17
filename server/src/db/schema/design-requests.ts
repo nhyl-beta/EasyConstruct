@@ -9,6 +9,7 @@
 // "Overdue" is derived from due_date + status and never stored; only the fact
 // that the overdue notification went out is (overdue_notified_at).
 import {
+  index,
   integer,
   jsonb,
   pgTable,
@@ -86,6 +87,30 @@ export const designRequestFiles = pgTable("design_request_files", {
   uploadedByName: varchar("uploaded_by_name", { length: 100 }).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
+
+// One row per person a client RFI/RFA is emailed to (client demo change #5). `design_requests.recipient_email`
+// and `email_status` stay and are kept filled from the first recipient, so older screens keep working.
+// `stakeholder_id` points at project_stakeholders when the person came from the project's list.
+export const designRequestRecipients = pgTable(
+  "design_request_recipients",
+  {
+    id: serial("id").primaryKey(),
+    requestId: integer("request_id")
+      .notNull()
+      .references(() => designRequests.id, { onDelete: "cascade" }),
+    stakeholderId: integer("stakeholder_id"),
+    name: varchar("name", { length: 255 }).notNull(),
+    email: varchar("email", { length: 255 }).notNull(),
+    emailStatus: varchar("email_status", { length: 10 }).notNull().default("not_sent"), // not_sent | sent | failed
+    sentAt: timestamp("sent_at"),
+    resendCount: integer("resend_count").notNull().default(0),
+    repliedAt: timestamp("replied_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => [index("design_request_recipients_request_idx").on(t.requestId)],
+);
+
+export type DesignRequestRecipient = typeof designRequestRecipients.$inferSelect;
 
 export const transmittals = pgTable("transmittals", {
   id: serial("id").primaryKey(),

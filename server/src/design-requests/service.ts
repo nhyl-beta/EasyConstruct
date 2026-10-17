@@ -20,7 +20,9 @@ import type {
 import { logAudit } from "../utils/audit.js";
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "../utils/errors.js";
 import * as repo from "./repository.js";
-import { sendClientEmail } from "./client-email.js";
+import { collectAttachments, sendClientEmail } from "./client-email.js";
+import * as stakeholderRepo from "../project-stakeholders/repository.js";
+import { awaitingReply, canResendTo, legacyColumnsFromFirst, resolveRecipients } from "./recipients.js";
 import {
   canRaise,
   CLIENT_ACTIVE_STATUSES,
@@ -92,28 +94,65 @@ const canHandleClientRequest = (r: DesignRequest, a: Actor) => a.role === "admin
  * saved with email_status = 'failed' so it can be resent. Cc / Reply-To come
  * from the signed-in user's own record, never from the request body.
  */
-const dispatchClientEmail = async (row: DesignRequest, actor: Actor): Promise<DesignRequest> => {
-  let ok = false;
+const dispatchClientEmail = async (row: DesignRequest, actor: Actor, opts: { recipientIds?: number[] } = {}): Promise<DesignRequest> => {
+  const recipients = await ensureRecipients(row);
+  const targets = opts.recipientIds ? recipients.filter((r) => opts.recipientIds!.includes(r.id)) : recipients.filter((r) => !r.repliedAt);
+  let anySent = false;
+  let context: Awaited<ReturnType<typeof loadSendContext>> | null = null;
+  let loadError: unknown = null;
   try {
-    const [sender, project, files] = await Promise.all([
-      usersRepo.findById(actor.id),
-      projectsRepo.findByCode(row.projectCode),
-      repo.findFiles([row.id]),
-    ]);
-    if (!sender?.email) throw new Error("the sending user has no email address");
-    await sendClientEmail({
-      request: row,
-      projectName: project?.name ?? row.projectCode,
-      senderName: sender.name || actor.name,
-      senderEmail: sender.email,
-      files: files.filter((f) => f.stage === "request"),
-    });
-    ok = true;
+    context = await loadSendContext(row, actor);
   } catch (err) {
-    console.warn(`[design-requests] client email for ${row.number} failed:`, err instanceof Error ? err.message : err);
+    loadError = err;
   }
-  const updated = await repo.update(row.id, { emailStatus: ok ? "sent" : "failed", ...(ok && !row.sentAt ? { sentAt: new Date() } : {}) });
+  for (const r of targets) {
+    let ok = false;
+    try {
+      if (!context) throw loadError ?? new Error("could not prepare the email");
+      await sendClientEmail({ request: row, ...context.base, to: r.email }, context.prepared);
+      ok = true;
+    } catch (err) {
+      console.warn(`[design-requests] client email for ${row.number} to ${r.email} failed:`, err instanceof Error ? err.message : err);
+    }
+    anySent ||= ok;
+    // One recipient failing never stops the others; each result is kept on its own row.
+    await repo.updateRecipient(r.id, { emailStatus: ok ? "sent" : "failed", ...(ok ? { sentAt: new Date() } : {}) });
+  }
+  // Older screens read the single-recipient columns: keep them filled from the first recipient.
+  const legacy = legacyColumnsFromFirst(await repo.findRecipients(row.id));
+  const updated = await repo.update(row.id, { ...legacy, ...(anySent && !row.sentAt ? { sentAt: new Date() } : {}) });
   return updated ?? row;
+};
+
+/** Sender, project and the request's files, read once however many people the email goes to. */
+const loadSendContext = async (row: DesignRequest, actor: Actor) => {
+  const [sender, project, files] = await Promise.all([usersRepo.findById(actor.id), projectsRepo.findByCode(row.projectCode), repo.findFiles([row.id])]);
+  if (!sender?.email) throw new Error("the sending user has no email address");
+  const requestFiles = files.filter((f) => f.stage === "request");
+  return {
+    base: { projectName: project?.name ?? row.projectCode, senderName: sender.name || actor.name, senderEmail: sender.email, files: requestFiles },
+    prepared: await collectAttachments(requestFiles),
+  };
+};
+
+/**
+ * The recipient rows of a client request. A request sent before recipients existed has only the old
+ * recipient_email / email_status columns; its one recipient row is made from them the first time it is
+ * needed (idempotent: it only happens when there are no rows).
+ */
+const ensureRecipients = async (row: DesignRequest) => {
+  const existing = await repo.findRecipients(row.id);
+  if (existing.length > 0 || !isClientRequest(row) || !row.recipientEmail) return existing;
+  return repo.insertRecipients(row.id, [
+    {
+      stakeholderId: null,
+      name: row.recipientEmail,
+      email: row.recipientEmail,
+      emailStatus: row.emailStatus,
+      sentAt: row.emailStatus === "sent" ? row.sentAt : null,
+      resendCount: row.emailResendCount,
+    },
+  ]);
 };
 
 const fileRows = (files: { url: string; filename: string; contentType: string; sizeBytes: number }[] | undefined, stage: "request" | "response", by: string) =>
@@ -162,8 +201,24 @@ export const getById = async (id: number, actor: Actor) => {
   if (isClientRequest(row) && isResponderRole(actor.role)) throw new NotFoundError("Request", String(id));
   const [files, followUps] = await Promise.all([repo.findFiles([id]), repo.findFollowUps(id)]);
   const origin = row.followUpOfId ? await repo.findById(row.followUpOfId) : null;
+  // Who a client request went to, and how each copy fared. Addresses only for people who handle the request.
+  const seeContacts = canHandleClientRequest(row, actor);
+  const recipients = isClientRequest(row)
+    ? (await ensureRecipients(row)).map((r) => ({
+        id: r.id,
+        stakeholderId: r.stakeholderId,
+        name: r.name,
+        email: seeContacts ? r.email : null,
+        emailStatus: r.emailStatus,
+        sentAt: r.sentAt,
+        resendCount: r.resendCount,
+        repliedAt: r.repliedAt,
+        canResend: canResendTo(r).ok,
+      }))
+    : [];
   return {
     ...toView(row),
+    recipients,
     files,
     followUps: followUps.map((f) => toView(f)),
     followUpOf: origin ? { id: origin.id, number: origin.number } : null,
@@ -180,6 +235,15 @@ export const create = async (input: CreateDesignRequestInput, actor: Actor) => {
   await assertProjectWritable(project.code);
   const isClient = input.recipientType === "client";
   const assignee = isClient ? null : await assertEligibleAssignee(project.code, input.assignedToUserId!);
+  // Client request: the chosen stakeholders (one email each), or the older single address.
+  const recipients = isClient
+    ? resolveRecipients({
+        projectCode: project.code,
+        stakeholderIds: input.recipientStakeholderIds,
+        stakeholders: await stakeholderRepo.findByProject(project.code),
+        legacyEmail: input.recipientEmail,
+      })
+    : [];
 
   if (input.followUpOfId) {
     const origin = await requireRequest(input.followUpOfId);
@@ -206,7 +270,7 @@ export const create = async (input: CreateDesignRequestInput, actor: Actor) => {
       assignedToUserId: assignee?.userId ?? null,
       assignedToName: assignee?.userName ?? null,
       recipientType: isClient ? "client" : "internal",
-      recipientEmail: isClient ? input.recipientEmail!.trim() : null,
+      recipientEmail: isClient ? recipients[0]!.email : null,
       designId: input.designId,
       followUpOfId: input.followUpOfId,
       status: sendNow ? "open" : "draft",
@@ -218,12 +282,13 @@ export const create = async (input: CreateDesignRequestInput, actor: Actor) => {
     },
     fileRows(input.files, "request", actor.name),
   );
+  if (isClient) await repo.insertRecipients(created.id, recipients);
   await logAudit({
     entityType: "design-request",
     entityId: String(created.id),
     action: "created",
     actor: actor.name,
-    summary: `${created.number} ${sendNow ? "sent to" : "drafted for"} ${assignee?.userName ?? created.recipientEmail}: ${created.subject}`,
+    summary: `${created.number} ${sendNow ? "sent to" : "drafted for"} ${assignee?.userName ?? recipients.map((r) => r.email).join(", ")}: ${created.subject}`,
     projectCode: created.projectCode,
   });
   if (sendNow) {
@@ -247,13 +312,23 @@ export const update = async (id: number, input: UpdateDesignRequestInput, actor:
   if (row.requestedByUserId !== actor.id && !isPmOrAdmin(actor)) throw new ForbiddenError("Only the person who drafted it, or the PM, can edit a draft");
   let assignee: { userId: number; userName: string } | undefined;
   if (input.assignedToUserId) assignee = await assertEligibleAssignee(row.projectCode, input.assignedToUserId);
-  const { files, dueDays: _d, assignedToUserId: _a, recipientEmail, ...fields } = input;
+  const { files, dueDays: _d, assignedToUserId: _a, recipientEmail, recipientStakeholderIds, ...fields } = input;
   void _d;
   void _a;
-  if (recipientEmail && !isClientRequest(row)) throw new ValidationError("Only a client request has a recipient email");
+  if ((recipientEmail || recipientStakeholderIds) && !isClientRequest(row)) throw new ValidationError("Only a client request has recipients");
+  let newRecipients: ReturnType<typeof resolveRecipients> | null = null;
+  if (recipientEmail || recipientStakeholderIds) {
+    newRecipients = resolveRecipients({
+      projectCode: row.projectCode,
+      stakeholderIds: recipientStakeholderIds,
+      stakeholders: await stakeholderRepo.findByProject(row.projectCode),
+      legacyEmail: recipientEmail,
+    });
+    await repo.replaceRecipients(id, newRecipients);
+  }
   const updated = await repo.update(id, {
     ...fields,
-    ...(recipientEmail ? { recipientEmail: recipientEmail.trim() } : {}),
+    ...(newRecipients ? { recipientEmail: newRecipients[0]!.email } : {}),
     ...(assignee ? { assignedToUserId: assignee.userId, assignedToName: assignee.userName } : {}),
   });
   if (files) await repo.replaceRequestFiles(id, files.map((f) => ({ ...f, uploadedByName: actor.name })));
@@ -356,7 +431,9 @@ export const followUp = async (id: number, input: { requestText: string; dueDays
       timeImpact: "none",
       assignedToUserId: origin.assignedToUserId ?? undefined,
       recipientType: client ? "client" : "internal",
-      recipientEmail: client ? (origin.recipientEmail ?? undefined) : undefined,
+      // A follow-up goes to the same people as the request it follows up.
+      recipientStakeholderIds: client ? (await ensureRecipients(origin)).map((r) => r.stakeholderId).filter((x): x is number => x != null) : undefined,
+      recipientEmail: client ? ((await ensureRecipients(origin)).find((r) => r.stakeholderId == null)?.email ?? undefined) : undefined,
       dueDays: input.dueDays,
       designId: origin.designId ?? undefined,
       files: input.files,
@@ -381,16 +458,40 @@ export const recordReturned = async (id: number, input: { returnedByName: string
 // ── Client replies ────────────────────────────────────────────────────────
 
 /** Re-sends the email of a client request. Does not touch the due date or sent date. */
-export const resendEmail = async (id: number, actor: Actor) => {
+export const resendEmail = async (id: number, actor: Actor, recipientId?: number) => {
   const row = await requireRequest(id);
   await assertProjectVisible(visibility(actor), row.projectCode, "requests");
   if (!isClientRequest(row)) throw new ConflictError("Only a request sent to the client can be re-emailed");
   if (!canHandleClientRequest(row, actor)) throw new ForbiddenError("Only the sender or the PM can resend this email");
   await assertProjectWritable(row.projectCode);
   if (!CLIENT_ACTIVE_STATUSES.has(row.status)) throw new ConflictError(`Request is ${row.status}; it can no longer be re-emailed`);
-  if (!(await repo.claimResend(id, MAX_EMAIL_RESENDS))) throw new ConflictError(`This request has already been re-emailed ${MAX_EMAIL_RESENDS} times`);
-  const updated = await dispatchClientEmail(row, actor);
-  await logAudit({ entityType: "design-request", entityId: String(id), action: "email-resent", actor: actor.name, summary: `${row.number} email to ${row.recipientEmail} ${updated.emailStatus}`, projectCode: row.projectCode });
+  const recipients = await ensureRecipients(row);
+  // One person (the Resend button on their row), or everyone who has not replied yet.
+  const wanted = recipientId != null ? recipients.filter((r) => r.id === recipientId) : recipients.filter((r) => !r.repliedAt);
+  if (recipientId != null && wanted.length === 0) throw new NotFoundError("Recipient", String(recipientId));
+  const claimed: number[] = [];
+  const refusals: string[] = [];
+  for (const r of wanted) {
+    const verdict = canResendTo(r);
+    if (!verdict.ok) {
+      refusals.push(`${r.name}: ${verdict.reason}`);
+      continue;
+    }
+    if (await repo.claimRecipientResend(r.id, MAX_EMAIL_RESENDS)) claimed.push(r.id);
+    else refusals.push(`${r.name}: already re-emailed ${MAX_EMAIL_RESENDS} times`);
+  }
+  if (claimed.length === 0) throw new ConflictError(refusals[0] ?? "Nobody left to re-email");
+  const updated = await dispatchClientEmail(row, actor, { recipientIds: claimed });
+  await repo.update(id, { emailResendCount: row.emailResendCount + 1 });
+  const after = await repo.findRecipients(id);
+  await logAudit({
+    entityType: "design-request",
+    entityId: String(id),
+    action: "email-resent",
+    actor: actor.name,
+    summary: `${row.number} email re-sent: ${after.filter((r) => claimed.includes(r.id)).map((r) => `${r.email} ${r.emailStatus}`).join(", ")}`,
+    projectCode: row.projectCode,
+  });
   return toView(updated);
 };
 

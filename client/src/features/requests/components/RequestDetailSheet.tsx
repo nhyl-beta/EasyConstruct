@@ -21,6 +21,7 @@ import { EmailStatusBadge, formatDate, formatDateTime, KindBadge, OverdueBadge, 
 import { RequestFilePicker, uploadAll } from "./RequestFilePicker";
 import { RespondDialog } from "./RespondDialog";
 import { FileIntegrityBadge } from "@/features/uploads/components/FileIntegrityBadge";
+import { RecipientsList } from "./RecipientsList";
 
 const RAISERS = new Set(["project-manager", "engineer", "admin"]);
 
@@ -102,7 +103,8 @@ export function RequestDetailSheet({
     : (isAdmin || r.assignedToUserId === user?.id) && (r.status === "open" || r.status === "in_review"));
   const canMarkReplied = handlesClient && r?.status === "open";
   const resendsLeft = r ? MAX_EMAIL_RESENDS - r.emailResendCount : 0;
-  const canResend = handlesClient && clientActive && r?.emailStatus === "failed" && resendsLeft > 0;
+  // With a recipients list each person has their own Resend; this one is only for older requests without it.
+  const canResend = handlesClient && clientActive && (r?.recipients.length ?? 0) === 0 && r?.emailStatus === "failed" && resendsLeft > 0;
   const resend = useResendRequestEmail(() => done());
   const replied = useMarkClientReplied(() => done());
   const canSend = !!r && r.status === "draft" && (role === "project-manager" || isAdmin);
@@ -153,7 +155,7 @@ export function RequestDetailSheet({
                   </Field>
                   <Field label="Countersigned">{r.countersignedByName ? `${r.countersignedByName} · ${formatDate(r.countersignedAt)}` : "Not yet"}</Field>
                   {isClient ? (
-                    <Field label="Sent to client">{r.recipientEmail}</Field>
+                    <Field label="Sent to">{r.recipients.length > 0 ? `${r.recipients.length} stakeholder${r.recipients.length === 1 ? "" : "s"}` : r.recipientEmail}</Field>
                   ) : (
                     <Field label="Assigned to">{r.assignedToName}</Field>
                   )}
@@ -215,7 +217,10 @@ export function RequestDetailSheet({
                   </section>
                 )}
 
-                {isClient && r.emailStatus === "failed" && (
+                {isClient && r.recipients.length > 0 && (
+                  <RecipientsList requestId={r.id} recipients={r.recipients} canResend={handlesClient && clientActive} onChanged={done} />
+                )}
+                {isClient && r.recipients.length === 0 && r.emailStatus === "failed" && (
                   <p role="alert" className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive-strong">
                     The email to {r.recipientEmail} could not be sent. The request is saved
                     {resendsLeft > 0 ? `; you can resend it (${resendsLeft} resend${resendsLeft === 1 ? "" : "s"} left).` : " and has used all its resends."}

@@ -45,12 +45,15 @@ export const createDesignRequestSchema = z
     // Required for an internal request; a client request has no assignee.
     assignedToUserId: editable.assignedToUserId.optional(),
     recipientType: z.enum(RECIPIENT_TYPES).default("internal"),
+    // The project's stakeholders this request goes to (one email each); the older single address still works.
+    recipientStakeholderIds: z.array(z.number().int().positive()).max(20).optional(),
     recipientEmail: z.string().optional(),
   })
   .superRefine((data, ctx) => {
     if (data.recipientType === "client") {
-      if (!clientEmailSchema.safeParse(data.recipientEmail).success) {
-        ctx.addIssue({ code: "custom", path: ["recipientEmail"], message: "A valid client email address is required" });
+      const hasStakeholders = (data.recipientStakeholderIds?.length ?? 0) > 0;
+      if (!hasStakeholders && !clientEmailSchema.safeParse(data.recipientEmail).success) {
+        ctx.addIssue({ code: "custom", path: ["recipientStakeholderIds"], message: "Choose at least one stakeholder to send this request to" });
       }
     } else if (!data.assignedToUserId) {
       ctx.addIssue({ code: "custom", path: ["assignedToUserId"], message: "Choose who this request is sent to" });
@@ -71,6 +74,7 @@ export const updateDesignRequestSchema = z
     dueDays: editable.dueDays,
     discipline: z.enum(DISCIPLINES).optional(),
     recipientEmail: clientEmailSchema.optional(),
+    recipientStakeholderIds: z.array(z.number().int().positive()).min(1).max(20).optional(),
     files: z.array(requestFileSchema).max(10).optional(),
   })
   .strict();

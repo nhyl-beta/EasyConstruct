@@ -260,6 +260,13 @@
       "when": 1792059200000,
       "tag": "0036_project_stakeholders",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1792145600000,
+      "tag": "0037_design_request_recipients",
+      "breakpoints": true
     }
   ]
 }

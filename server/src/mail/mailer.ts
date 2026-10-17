@@ -46,10 +46,14 @@ export interface MailMessage {
 export const sendMail = async (message: MailMessage): Promise<void> => {
   const transport = getTransporter();
   try {
-    await transport.sendMail({
+    const info = await transport.sendMail({
       from: env.MAIL_FROM ?? `EasyConstruct <${env.MAIL_USER}>`,
       ...message,
     });
+    // SMTP can accept the message for the Cc address and refuse the "to" address. nodemailer reports that as
+    // a success with a `rejected` list, which would show a failed delivery as sent.
+    const refused = ((info.rejected ?? []) as unknown[]).map((r) => String(typeof r === "string" ? r : (r as { address?: string }).address ?? "").toLowerCase());
+    if (refused.includes(message.to.toLowerCase())) throw new Error(`recipient refused by the mail server: ${message.to}`);
   } catch (error) {
     console.error("[mail] send failed", error instanceof Error ? error.message : error);
     throw new AppError(

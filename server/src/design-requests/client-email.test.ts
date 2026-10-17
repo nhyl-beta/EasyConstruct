@@ -33,7 +33,7 @@ describe("client email", () => {
 
   test("user text is HTML-escaped", () => {
     const { html, text } = buildClientEmail(
-      { request, projectName: "Pacific <Mall>", senderName: "Ana", senderEmail: "ana@example.com", files: [] },
+      { request, projectName: "Pacific <Mall>", senderName: "Ana", senderEmail: "ana@example.com", files: [], to: "client@example.com" },
       ["big.pdf"],
     );
     assert.ok(!html.includes("<script>"));

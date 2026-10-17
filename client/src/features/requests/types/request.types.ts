@@ -113,7 +113,26 @@ export interface DesignRequest {
   suggestsChangeOrder: boolean;
 }
 
+/** One person a client request was emailed to (client demo changes #5 and #6). */
+export interface RequestRecipient {
+  id: number;
+  stakeholderId: number | null;
+  name: string;
+  /** Only returned to the sender, the PM and the Admin. */
+  email: string | null;
+  emailStatus: EmailStatus;
+  sentAt: string | null;
+  resendCount: number;
+  repliedAt: string | null;
+  canResend: boolean;
+  /** What they wrote through the reply link. */
+  responseText?: string | null;
+  responderName?: string | null;
+  responderPosition?: string | null;
+}
+
 export interface DesignRequestDetail extends DesignRequest {
+  recipients: RequestRecipient[];
   files: RequestFile[];
   followUps: DesignRequest[];
   followUpOf: { id: number; number: string } | null;
@@ -150,7 +169,9 @@ export interface CreateRequestInput {
   /** Required unless recipientType is "client". */
   assignedToUserId?: number;
   recipientType: RecipientType;
-  /** Required when recipientType is "client". */
+  /** The project's stakeholders a client request goes to (one email each). Required when recipientType is "client" unless recipientEmail is given. */
+  recipientStakeholderIds?: number[];
+  /** The older single address, still accepted. */
   recipientEmail?: string;
   dueDays?: number;
   designId?: number;

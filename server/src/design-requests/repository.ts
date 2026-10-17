@@ -3,11 +3,13 @@ import { and, asc, desc, eq, ilike, inArray, isNull, lt, notInArray, or, sql, SQ
 import { db } from "../db/connection.js";
 import {
   designRequestFiles,
+  designRequestRecipients,
   designRequests,
   transmittalAcknowledgements,
   transmittalItems,
   transmittals,
   type DesignRequest,
+  type DesignRequestRecipient,
   type NewDesignRequest,
 } from "../db/schema/design-requests.js";
 import { workflowStages, workflows } from "../db/schema/workflows.js";
@@ -282,4 +284,45 @@ export const updateTransmittal = async (id: number, data: Partial<typeof transmi
 export const addAcknowledgement = async (transmittalId: number, ack: { name: string; signature?: string; office?: string }) => {
   const [row] = await db.insert(transmittalAcknowledgements).values({ ...ack, transmittalId }).returning();
   return row!;
+};
+
+// ── Recipients of a client request (client demo change #5) ─────────────────
+
+export const findRecipients = (requestId: number): Promise<DesignRequestRecipient[]> =>
+  db.select().from(designRequestRecipients).where(eq(designRequestRecipients.requestId, requestId)).orderBy(asc(designRequestRecipients.id));
+
+export const findRecipientsFor = (requestIds: number[]): Promise<DesignRequestRecipient[]> =>
+  requestIds.length === 0
+    ? Promise.resolve([])
+    : db.select().from(designRequestRecipients).where(inArray(designRequestRecipients.requestId, requestIds)).orderBy(asc(designRequestRecipients.id));
+
+export const findRecipientById = async (id: number): Promise<DesignRequestRecipient | null> => {
+  const [row] = await db.select().from(designRequestRecipients).where(eq(designRequestRecipients.id, id));
+  return row ?? null;
+};
+
+export const insertRecipients = async (
+  requestId: number,
+  rows: { stakeholderId: number | null; name: string; email: string; emailStatus?: string; sentAt?: Date | null; resendCount?: number }[],
+): Promise<DesignRequestRecipient[]> =>
+  rows.length === 0 ? [] : db.insert(designRequestRecipients).values(rows.map((r) => ({ ...r, requestId }))).returning();
+
+export const replaceRecipients = async (requestId: number, rows: { stakeholderId: number | null; name: string; email: string }[]) => {
+  await db.delete(designRequestRecipients).where(eq(designRequestRecipients.requestId, requestId));
+  return insertRecipients(requestId, rows);
+};
+
+export const updateRecipient = async (id: number, data: Partial<typeof designRequestRecipients.$inferInsert>): Promise<DesignRequestRecipient | null> => {
+  const [row] = await db.update(designRequestRecipients).set(data).where(eq(designRequestRecipients.id, id)).returning();
+  return row ?? null;
+};
+
+/** Claims one more email attempt for one recipient while they are under the resend limit and have not replied. */
+export const claimRecipientResend = async (id: number, max: number): Promise<boolean> => {
+  const rows = await db
+    .update(designRequestRecipients)
+    .set({ resendCount: sql`${designRequestRecipients.resendCount} + 1` })
+    .where(and(eq(designRequestRecipients.id, id), isNull(designRequestRecipients.repliedAt), sql`${designRequestRecipients.resendCount} < ${max}`))
+    .returning({ id: designRequestRecipients.id });
+  return rows.length > 0;
 };
