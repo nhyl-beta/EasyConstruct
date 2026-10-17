@@ -158,6 +158,13 @@ const SECTIONS: { type: OverdueItemType; title: string }[] = [
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const oneLine = (s: string) => s.replace(/\s+/g, " ").trim();
 
+/** The line already starts with the project code, so a subject that begins "DEMO-S4: " does not repeat it. */
+export const subjectWithoutCode = (subject: string, projectCode: string): string => {
+  const clean = oneLine(subject);
+  const prefix = `${projectCode}: `;
+  return clean.startsWith(prefix) && clean.length > prefix.length ? clean.slice(prefix.length) : clean;
+};
+
 export const digestSubject = (count: number): string => `EasyConstruct: ${count} overdue ${count === 1 ? "item needs" : "items need"} your attention`;
 
 export const buildDigestEmail = (digest: Digest, appUrl: string, today: string): { subject: string; text: string; html: string } => {
@@ -173,8 +180,9 @@ export const buildDigestEmail = (digest: Digest, appUrl: string, today: string):
     html.push(`<h3 style="margin:18px 0 6px">${esc(s.title)} (${s.items.length})</h3><ul style="padding-left:18px;margin:0">`);
     for (const it of shown) {
       const url = `${base}${it.path}`;
-      text.push(`- ${it.projectCode} · ${oneLine(it.subject)} · ${oneLine(it.late)}`, `  ${url}`);
-      html.push(`<li style="margin:4px 0"><a href="${esc(url)}">${esc(it.projectCode)} · ${esc(oneLine(it.subject))}</a> · ${esc(oneLine(it.late))}</li>`);
+      const what = subjectWithoutCode(it.subject, it.projectCode);
+      text.push(`- ${it.projectCode} · ${what} · ${oneLine(it.late)}`, `  ${url}`);
+      html.push(`<li style="margin:4px 0"><a href="${esc(url)}">${esc(it.projectCode)} · ${esc(what)}</a> · ${esc(oneLine(it.late))}</li>`);
     }
     html.push("</ul>");
     if (more > 0) {
