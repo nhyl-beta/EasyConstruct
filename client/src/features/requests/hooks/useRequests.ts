@@ -93,7 +93,7 @@ function useRequestAction(action: (id: number) => Promise<DesignRequest>, onSucc
 
 /** POST /design-requests/:id/resend-email */
 export function useResendRequestEmail(onSuccess: (updated: DesignRequest) => void) {
-  return useRequestAction(RequestRepository.resendEmail, onSuccess);
+  return useRequestAction((id: number) => RequestRepository.resendEmail(id), onSuccess);
 }
 
 /** PATCH /design-requests/:id/client-replied */

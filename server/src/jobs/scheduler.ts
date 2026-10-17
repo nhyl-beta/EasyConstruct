@@ -6,6 +6,8 @@
 // from server/index.ts, and never when VERCEL or DISABLE_SCHEDULER is set.
 import { runSignalScan } from "../signals/scan.js";
 import { runDailyCheck as runAttendanceCheck } from "../attendance/exceptions-service.js";
+import { runOverdueJob } from "./overdue-service.js";
+import { withJobLock } from "./lock.js";
 
 const HOUR_MS = 60 * 60 * 1000;
 let started = false;
@@ -26,4 +28,6 @@ export function startScheduledJobs(): void {
   started = true;
   every("signals", 6 * HOUR_MS, () => runSignalScan());
   every("attendance-exceptions", 6 * HOUR_MS, () => runAttendanceCheck());
+  // Emails go out at most once per item per day however often this ticks (overdue_reminders).
+  every("overdue", 6 * HOUR_MS, () => withJobLock(74_2026_08, () => runOverdueJob()));
 }

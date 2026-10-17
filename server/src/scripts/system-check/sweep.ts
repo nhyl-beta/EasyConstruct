@@ -156,7 +156,7 @@ async function main() {
   }
 
   // 5. findings
-  const PUBLIC = [/^\/api\/auth\/(login|forgot|reset|recover|owner)/i, /\/api\/cron\//];
+  const PUBLIC = [/^\/api\/auth\/(login|forgot|reset|recover|owner)/i, /\/api\/cron\//, /^\/api\/public\/rfi-replies\//];
   const findings: string[] = [];
   const by = (k: string) => results.filter((p) => p.kind === k);
   // 501 is a deliberate "this server is not set up for that" (direct Blob uploads need a Blob token,

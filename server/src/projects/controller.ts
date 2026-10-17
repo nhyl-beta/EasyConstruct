@@ -10,6 +10,9 @@ import { cached } from "../cache/index.js";
 import { visibilityScope } from "../cache/scope.js";
 import { PROJECT_SORT_COLUMNS } from "./repository.js";
 import { parseIdParam } from "../utils/params.js";
+import { logAudit } from "../utils/audit.js";
+import { diffFields, formatChanges } from "../utils/diff-fields.js";
+import * as stakeholders from "../project-stakeholders/service.js";
 
 const PROJECT_SORTABLE = Object.keys(PROJECT_SORT_COLUMNS);
 
@@ -93,6 +96,22 @@ export const create = async (
       body,
       req.authUser?.role === "project-manager" ? req.authUser.id : undefined,
     );
+    if (data) {
+      // The wizard's stakeholders, plus an Owner made from the client name / email when none was given.
+      if (req.authUser) {
+        await stakeholders
+          .createInitial(data.code, (req.body as { stakeholders?: Parameters<typeof stakeholders.createInitial>[1] }).stakeholders, req.authUser)
+          .catch((err) => console.error("[projects] could not add stakeholders", err));
+      }
+      await logAudit({
+        entityType: "project",
+        entityId: String(data.id),
+        action: "created",
+        actor: req.authUser?.name ?? "unknown",
+        summary: `Created project "${data.name}" (${data.code}); PM ${data.pm}, client ${data.client ?? "(none)"}, due ${data.due}`,
+        projectCode: data.code,
+      });
+    }
     res.status(HTTP.CREATED).json(formatSuccess(data, MSG.projects.created));
   } catch (err) {
     next(err);
@@ -106,7 +125,23 @@ export const update = async (
 ) => {
   try {
     const id = parseIdParam(req.params.id, "id");
-    const data = await service.update(id, req.body, scopeOf(req));
+    const { before, after: data } = await service.updateTracked(id, req.body, scopeOf(req));
+    // Only the fields the request touched and that really changed, as old -> new.
+    const changes = diffFields(before as Record<string, unknown>, req.body as Record<string, unknown>, { ignore: ["confirmSimilar"] });
+    // Editing the client name / email on the project carries onto the first Owner stakeholder.
+    if (req.authUser && ("client" in req.body || "clientEmail" in req.body)) {
+      await stakeholders.syncFromProject(data, req.authUser).catch((err) => console.error("[projects] could not sync stakeholder", err));
+    }
+    if (changes.length > 0) {
+      await logAudit({
+        entityType: "project",
+        entityId: String(data.id),
+        action: "updated",
+        actor: req.authUser?.name ?? "unknown",
+        summary: `Edited project ${data.code}: ${formatChanges(changes)}`,
+        projectCode: data.code,
+      });
+    }
     res.json(formatSuccess(data, MSG.projects.updated));
   } catch (err) {
     next(err);
@@ -120,6 +155,14 @@ export const remove = async (
 ) => {
   try {
     const data = await service.remove(parseIdParam(req.params.id, "id"), scopeOf(req));
+    await logAudit({
+      entityType: "project",
+      entityId: String(data.id),
+      action: "deleted",
+      actor: req.authUser?.name ?? "unknown",
+      summary: `Deleted project "${data.name}" (${data.code}); PM ${data.pm}, status ${data.status}`,
+      projectCode: data.code,
+    });
     res.json(formatSuccess(data, MSG.projects.deleted));
   } catch (err) {
     next(err);

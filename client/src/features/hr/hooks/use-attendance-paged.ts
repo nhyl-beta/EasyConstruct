@@ -24,7 +24,14 @@ const NO_FILTERS: AttendanceFilterState = { verification: "all", status: "all" }
  * back to 1 whenever the search or a filter changes; the KPI counts come from
  * the whole filtered set rather than the visible page.
  */
-export function useAttendancePaged() {
+/** Narrows the log to one person and day, e.g. the clock-in an alert links to. */
+export interface AttendanceScope {
+  search?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+export function useAttendancePaged(scope?: AttendanceScope) {
   const [query, setQuery] = useState("");
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState<AttendanceFilterState>(NO_FILTERS);
@@ -56,13 +63,13 @@ export function useAttendancePaged() {
     setLoading(true);
     setError(null);
     try {
-      setData(await listAttendancePage({ page, pageSize, search, ...filters }, names));
+      setData(await listAttendancePage({ page, pageSize, search: scope?.search ?? search, dateFrom: scope?.dateFrom, dateTo: scope?.dateTo, ...filters }, names));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load attendance");
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, search, filters, names]);
+  }, [page, pageSize, search, filters, names, scope?.search, scope?.dateFrom, scope?.dateTo]);
 
   useEffect(() => {
     void load();

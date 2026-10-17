@@ -36,6 +36,8 @@ import {
 } from "@/features/projects/types/project.types";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
+import { StakeholderDraftEditor } from "@/features/stakeholders/components/StakeholderDraftEditor";
+import type { StakeholderInput } from "@/features/stakeholders/repositories/stakeholder.repository";
 
 // Architect and Consultant are required (D1) — the lifecycle's Proposal
 // phase gate checks P1/P2 need both staffed before the project can ever
@@ -206,6 +208,8 @@ export default function ProjectCreatePage() {
   // Draft milestones set during creation — applied via the milestones API
   // right after the project is created, same best-effort pattern as `team`.
   const [milestones, setMilestones] = useState<MilestoneDraft[]>([]);
+  // Stakeholders (owner, contractor...) typed in the "Team & stakeholders" step, sent with the create request.
+  const [stakeholders, setStakeholders] = useState<StakeholderInput[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
@@ -300,6 +304,7 @@ export default function ProjectCreatePage() {
         geofenceRadiusM: data.deliveryType === "Design" ? null : data.geofenceRadiusM,
         deliveryType: data.deliveryType,
         designDisciplines: data.deliveryType === "Design" ? data.designDisciplines : undefined,
+        stakeholders: stakeholders.length > 0 ? stakeholders : undefined,
       });
 
       const projectCode = created?.code ?? data.code.trim();
@@ -390,6 +395,8 @@ export default function ProjectCreatePage() {
             clearError("consultant");
           }}
           errors={fieldErrors}
+          stakeholders={stakeholders}
+          setStakeholders={setStakeholders}
         />
       )}
       {step === 5 && <StepReview data={data} />}
@@ -957,6 +964,8 @@ function StepTeam({
   team,
   setTeam,
   errors,
+  stakeholders,
+  setStakeholders,
 }: {
   data: ProjectFormData;
   set: <K extends keyof ProjectFormData>(
@@ -967,6 +976,8 @@ function StepTeam({
   team: TeamSelections;
   setTeam: (updater: (prev: TeamSelections) => TeamSelections) => void;
   errors: FieldErrors;
+  stakeholders: StakeholderInput[];
+  setStakeholders: (next: StakeholderInput[]) => void;
 }) {
   // A Project Manager creating their own project can't assign a different
   // PM — it's always them. Admin/IT Designer still assign a real PM, picked
@@ -1039,6 +1050,8 @@ function StepTeam({
         these can also be added or changed later from the project's detail
         page.
       </p>
+
+      <StakeholderDraftEditor value={stakeholders} onChange={setStakeholders} ownerHint={data.client.trim() || undefined} />
     </div>
   );
 }

@@ -37,10 +37,19 @@ export interface ClientEmailContext {
   senderName: string;
   senderEmail: string;
   files: Pick<DesignRequestFile, "url" | "filename" | "contentType" | "sizeBytes">[];
+  /** The one address this copy goes to (a request can go to several people, one email each). */
+  to: string;
+  /** Link to the no-login reply page for this recipient (client demo change #6). */
+  replyUrl?: string;
+}
+
+export interface PreparedAttachments {
+  attached: { filename: string; content: Buffer; contentType: string }[];
+  notAttached: string[];
 }
 
 /** Reads files into attachments up to the cap; the rest are listed as "available on request". */
-const collectAttachments = async (files: ClientEmailContext["files"]) => {
+export const collectAttachments = async (files: ClientEmailContext["files"]): Promise<PreparedAttachments> => {
   const attached: { filename: string; content: Buffer; contentType: string }[] = [];
   const notAttached: string[] = [];
   let total = 0;
@@ -83,6 +92,7 @@ export const buildClientEmail = (ctx: ClientEmailContext, notAttached: string[])
   ];
   const kindLabel = r.kind === "RFI" ? "Request for Information" : "Request for Approval";
   const sender = `${ctx.senderName}, ${r.requestedByRole}`;
+  const replyNote = ctx.replyUrl ? "You do not need an account: use the link to type your answer and attach files." : "";
   const attachmentNote = notAttached.length
     ? `The following files are too large to attach; full files available on request: ${notAttached.join(", ")}`
     : "";
@@ -92,6 +102,7 @@ export const buildClientEmail = (ctx: ClientEmailContext, notAttached: string[])
     "",
     ...rows.map(([k, v]) => `${k}: ${v}`),
     ...(attachmentNote ? ["", attachmentNote] : []),
+    ...(ctx.replyUrl ? ["", `Reply to this request: ${ctx.replyUrl}`, replyNote] : []),
     "",
     `Sent by ${sender}.`,
     `Please reply to this email; your reply goes to ${ctx.senderEmail}.`,
@@ -108,18 +119,26 @@ ${rows
   .join("\n")}
 </table>
 ${attachmentNote ? `<p>${escapeHtml(attachmentNote)}</p>` : ""}
+${
+  ctx.replyUrl
+    ? `<p style="margin:18px 0"><a href="${escapeHtml(ctx.replyUrl)}" style="background:#15803d;color:#ffffff;padding:10px 18px;border-radius:6px;text-decoration:none;font-weight:bold">Reply to this request</a></p><p style="color:#4b5563">${escapeHtml(replyNote)}<br>If the button does not work, open this address: ${escapeHtml(ctx.replyUrl)}</p>`
+    : ""
+}
 <p>Sent by ${escapeHtml(sender)}.<br>Please reply to this email; your reply goes to ${escapeHtml(ctx.senderEmail)}.</p>
 </div>`;
 
   return { text, html };
 };
 
-/** Sends the email; throws whatever the mailer throws (including its 503 when mail is not configured). */
-export const sendClientEmail = async (ctx: ClientEmailContext): Promise<void> => {
-  const { attached, notAttached } = await collectAttachments(ctx.files);
+/**
+ * Sends one copy; throws whatever the mailer throws (including its 503 when mail is not configured).
+ * Pass `prepared` when sending the same request to several people so the files are read only once.
+ */
+export const sendClientEmail = async (ctx: ClientEmailContext, prepared?: PreparedAttachments): Promise<void> => {
+  const { attached, notAttached } = prepared ?? (await collectAttachments(ctx.files));
   const { text, html } = buildClientEmail(ctx, notAttached);
   await sendMail({
-    to: ctx.request.recipientEmail!,
+    to: ctx.to,
     cc: ctx.senderEmail,
     replyTo: ctx.senderEmail,
     subject: buildSubject(ctx.request),

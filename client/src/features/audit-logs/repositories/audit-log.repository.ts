@@ -19,6 +19,7 @@ export const AuditLogRepository = {
     if (query.entityType) params.set("entityType", query.entityType);
     if (query.entityId) params.set("entityId", query.entityId);
     if (query.projectCode) params.set("projectCode", query.projectCode);
+    if (query.actions?.length) params.set("actions", query.actions.join(","));
     if (query.search) params.set("search", query.search);
     if (query.actor) params.set("actor", query.actor);
     if (query.dateFrom) params.set("dateFrom", query.dateFrom);

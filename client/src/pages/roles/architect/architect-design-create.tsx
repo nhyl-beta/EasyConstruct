@@ -24,6 +24,7 @@ import {
 import { useProjectMembers } from "@/features/project-members/hooks/use-project-members";
 import { openFileUrl } from "@/lib/file-url";
 import { Checkbox } from "@/components/ui/checkbox";
+import { FileIntegrityBadge } from "@/features/uploads/components/FileIntegrityBadge";
 
 const STEPS: Step[] = [
   {
@@ -550,6 +551,7 @@ function StepFiles({
                 >
                   {f.name}
                 </button>
+                <FileIntegrityBadge url={f.url} />
                 <button
                   type="button"
                   onClick={() => onRemove(f.url)}

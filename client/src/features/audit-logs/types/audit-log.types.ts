@@ -15,6 +15,8 @@ export interface AuditLogsQuery {
   entityType?: string;
   entityId?: string;
   projectCode?: string;
+  /** Only these actions (the Security screen asks for the sensitive ones). */
+  actions?: string[];
   // D1: server-side search/filter/pagination.
   search?: string;
   actor?: string;

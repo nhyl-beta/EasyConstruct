@@ -11,10 +11,15 @@ import * as service from "./service.js";
 import { assertCanOpenFile } from "./finance-files.js";
 import { assertDiskFileMatches } from "./sniff.js";
 import type { AuthedRequest } from "../middleware/auth.js";
+import { logAudit } from "../utils/audit.js";
+import { buildDownloadAudit, type DownloadResult } from "./download-audit.js";
+import { findFileContext } from "./file-context.js";
+import * as integrity from "./integrity/service.js";
+import { HashingTap } from "./integrity/rules.js";
 
 export const upload = async (req: AuthedRequest, res: Response, next: NextFunction) => {
   try {
-    const data = await service.uploadFile(req.body);
+    const data = await service.uploadFile(req.body, req.authUser?.id);
     res.status(HTTP.CREATED).json(formatSuccess(data, "File uploaded"));
   } catch (err) {
     next(err);
@@ -44,6 +49,13 @@ export const uploadStreamed = async (req: AuthedRequest, res: Response, next: Ne
     if (!req.file) throw new ValidationError("Choose a file to upload");
     // The file is already on disk; refuse (and delete) it when its bytes are not the type it claims.
     await assertDiskFileMatches(req.file.path, req.file.originalname, req.file.mimetype || "");
+    // Fingerprint the finished file (read from disk in chunks) so a later change is noticed.
+    await integrity.recordFromDisk({
+      url: `/uploads/generic/${req.file.filename}`,
+      absolutePath: req.file.path,
+      contentType: req.file.mimetype || "application/octet-stream",
+      uploadedByUserId: req.authUser?.id,
+    });
     res.status(HTTP.CREATED).json(
       formatSuccess(
         {
@@ -76,6 +88,19 @@ export const clientToken = async (req: AuthedRequest, res: Response, next: NextF
       token: env.BLOB_READ_WRITE_TOKEN,
       request: req,
       body: req.body as HandleUploadBody,
+      // Vercel Blob calls this route back (signed, no login) when the browser's direct upload has finished.
+      // The blob is read back once and hashed. In local development the callback cannot reach this machine,
+      // so such files simply stay "unverified".
+      onUploadCompleted: async ({ blob, tokenPayload }) => {
+        let userId: number | null = null;
+        try {
+          const parsed = JSON.parse(tokenPayload ?? "{}") as { userId?: number | null };
+          userId = typeof parsed.userId === "number" ? parsed.userId : null;
+        } catch {
+          userId = null;
+        }
+        await integrity.recordFromBlob(blob.url, { contentType: blob.contentType, uploadedByUserId: userId });
+      },
       onBeforeGenerateToken: async (pathname) => {
         if (!hasAllowedExtension(pathname)) {
           throw new ValidationError(`Unsupported file type: ${pathname}`);
@@ -98,16 +123,57 @@ export const clientToken = async (req: AuthedRequest, res: Response, next: NextF
 // an Authorization header, so the client fetches this with the token and turns
 // the response into an object URL (see client lib/file-url.ts).
 export const download = async (req: AuthedRequest, res: Response, next: NextFunction) => {
+  const url = typeof req.query.url === "string" ? req.query.url : "";
+  const actor = req.authUser?.name ?? "unknown";
+  // Every attempt leaves a line: who, which file, which project (when the file belongs to a document) and the
+  // result. A refused or failed attempt is recorded too. Downloads of Legal-category documents are "sensitive".
+  const record = async (result: DownloadResult, reason?: string) => {
+    const { ctx, sensitive } = await findFileContext(url);
+    await logAudit(buildDownloadAudit({ actor, url, ctx, sensitive, result, reason }));
+  };
   try {
-    const url = typeof req.query.url === "string" ? req.query.url : "";
     if (!url) throw new ValidationError("url is required");
     await assertCanOpenFile(url, req.authUser);
     const file = await service.openStoredFile(url);
+    await record("ok");
     res.setHeader("Content-Type", file.contentType);
     if (file.sizeBytes != null) res.setHeader("Content-Length", String(file.sizeBytes));
     res.setHeader("Cache-Control", "private, no-store");
     res.setHeader("X-Content-Type-Options", "nosniff");
-    await pipeline(file.stream, res);
+    // Hash the bytes as they go out (nothing is buffered). If they no longer match the fingerprint taken at
+    // upload, the file is marked damaged and Admin / IT Designer are told (integrity/service.ts).
+    const tap = new HashingTap();
+    await pipeline(file.stream, tap, res);
+    await integrity.afterDownload(url, { sha256: tap.digest(), bytes: tap.bytes }, actor).catch((e) => console.error("[integrity] download check failed", e));
+  } catch (err) {
+    if (url && !res.headersSent) {
+      const status = err instanceof AppError ? err.statusCode : 500;
+      await record(status === 403 ? "denied" : status === 404 ? "not_found" : "failed", err instanceof Error ? err.message : undefined);
+    }
+    next(err);
+  }
+};
+
+// POST /api/uploads/verify { url } - "Check file": hash the stored bytes without sending them to the user.
+export const verify = async (req: AuthedRequest, res: Response, next: NextFunction) => {
+  try {
+    const url = typeof req.body?.url === "string" ? req.body.url : "";
+    if (!url) throw new ValidationError("url is required");
+    await assertCanOpenFile(url, req.authUser);
+    const result = await integrity.verifyStored(url, req.authUser?.name ?? "unknown");
+    res.json(formatSuccess(result, result.status === "damaged" ? "This file does not match its original" : "File checked"));
+  } catch (err) {
+    next(err);
+  }
+};
+
+// POST /api/uploads/integrity { urls } - the badge next to a file link. A url with no record is "unverified".
+export const integrityStatuses = async (req: AuthedRequest, res: Response, next: NextFunction) => {
+  try {
+    const urls: unknown = req.body?.urls;
+    if (!Array.isArray(urls) || urls.some((u) => typeof u !== "string")) throw new ValidationError("urls must be a list of strings");
+    if (urls.length > integrity.MAX_URLS_PER_LOOKUP) throw new ValidationError(`At most ${integrity.MAX_URLS_PER_LOOKUP} urls at a time`);
+    res.json(formatSuccess(await integrity.statusMany(urls as string[]), "File integrity retrieved"));
   } catch (err) {
     next(err);
   }

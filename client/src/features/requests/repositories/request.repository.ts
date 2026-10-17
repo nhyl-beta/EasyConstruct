@@ -50,6 +50,12 @@ const normalize = (r: any): DesignRequest => ({
 
 const normalizeDetail = (r: any): DesignRequestDetail => ({
   ...normalize(r),
+  recipients: (r.recipients ?? []).map((x: any) => ({
+    ...x,
+    emailStatus: pick<EmailStatus>(EMAIL_STATUSES, x.emailStatus, "not_sent"),
+    resendCount: Number(x.resendCount ?? 0),
+    canResend: !!x.canResend,
+  })),
   files: r.files ?? [],
   followUps: (r.followUps ?? []).map(normalize),
   followUpOf: r.followUpOf ?? null,
@@ -86,8 +92,9 @@ export const RequestRepository = {
   async create(input: CreateRequestInput): Promise<DesignRequest> {
     return normalize(await unwrap<any>(apiClient.post("/design-requests", input)));
   },
-  async send(id: number, dueDays?: number): Promise<DesignRequest> {
-    return normalize(await unwrap<any>(apiClient.post(`/design-requests/${id}/send`, dueDays ? { dueDays } : {})));
+  /** `overrideReason` is how an Admin sends in the PM's place (client demo change #9). */
+  async send(id: number, dueDays?: number, overrideReason?: string): Promise<DesignRequest> {
+    return normalize(await unwrap<any>(apiClient.post(`/design-requests/${id}/send`, { ...(dueDays ? { dueDays } : {}), ...(overrideReason ? { overrideReason } : {}) })));
   },
   async acknowledge(id: number): Promise<DesignRequest> {
     return normalize(await unwrap<any>(apiClient.post(`/design-requests/${id}/acknowledge`, {})));
@@ -104,8 +111,9 @@ export const RequestRepository = {
   async recordReturned(id: number, input: { returnedByName: string; returnedByPosition: string; returnedAt?: string }): Promise<DesignRequest> {
     return normalize(await unwrap<any>(apiClient.post(`/design-requests/${id}/returned`, input)));
   },
-  async resendEmail(id: number): Promise<DesignRequest> {
-    return normalize(await unwrap<any>(apiClient.post(`/design-requests/${id}/resend-email`, {})));
+  /** Resend the email to one recipient, or (no recipientId) to everyone who has not replied. */
+  async resendEmail(id: number, recipientId?: number): Promise<DesignRequest> {
+    return normalize(await unwrap<any>(apiClient.post(`/design-requests/${id}/resend-email`, recipientId ? { recipientId } : {})));
   },
   async markClientReplied(id: number): Promise<DesignRequest> {
     return normalize(await unwrap<any>(apiClient.patch(`/design-requests/${id}/client-replied`, {})));

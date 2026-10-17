@@ -39,6 +39,9 @@ import engineeringReportRoutes from "./engineering-reports/routes.js";
 import roleRoutes from "./roles/routes.js";
 import userRoutes from "./users/routes.js";
 import projectMemberRoutes from "./project-members/routes.js";
+import stakeholderRoutes from "./project-stakeholders/routes.js";
+import userSettingsRoutes from "./user-settings/routes.js";
+import publicReplyRoutes from "./design-requests/public-reply-routes.js";
 
 // ── workflows/approvals ──
 import workflowRoutes from "./workflows/routes.js";
@@ -124,6 +127,10 @@ app.use("/api/engineering-reports", engineeringReportRoutes);
 app.use("/api/roles", roleRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/project-members", projectMemberRoutes);
+app.use("/api/stakeholders", stakeholderRoutes);
+app.use("/api/me/settings", userSettingsRoutes);
+// The only unauthenticated routes this feature adds: the RFI/RFA reply link, decided by a single-use token.
+app.use("/api/public/rfi-replies", publicReplyRoutes);
 app.use("/api/workflows", workflowRoutes);
 app.use("/api/milestones", milestoneRoutes);
 app.use("/api/plan-suggestions", planSuggestionRoutes);

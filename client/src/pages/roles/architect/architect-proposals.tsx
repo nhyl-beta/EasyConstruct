@@ -1,5 +1,5 @@
 import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useOpenOnAction } from "@/features/quick-search/useOpenOnAction";
 
 import {
@@ -48,6 +48,9 @@ import { Label } from "@/components/ui/label";
 import type { Proposal } from "@/features/proposals/types/proposal.types";
 import type { UpdateProposalInput } from "@/features/proposals/controllers/proposal.controller";
 import { FEATURES } from "@/config/features";
+import { SplitDetailLayout, selectedRowClass } from "@/components/detail-panel/DetailPanel";
+import { useSelectedParam } from "@/hooks/use-selected-param";
+import { ProposalDetailPanel } from "@/features/proposals/ProposalDetailPanel";
 
 interface ValidationResult {
   passed: boolean;
@@ -193,6 +196,21 @@ function EditProposalDialog({
 export default function ArchitectProposals() {
   const c = useProposals({ hideArchived: true });
   const { user } = useAuth();
+
+  // Details open in a right-hand panel; the selection is kept in the URL (?selected=<id>).
+  const [selectedId, selectProposal] = useSelectedParam();
+  const selectedProposal = c.proposals.find((p) => String(p.id) === selectedId) ?? null;
+  const closePanel = useCallback(() => selectProposal(null), [selectProposal]);
+  const stepSelection = useCallback(
+    (delta: 1 | -1) => {
+      const ids = c.proposals.map((p) => p.id);
+      if (ids.length === 0) return;
+      const at = ids.findIndex((id) => String(id) === selectedId);
+      const next = ids[Math.min(ids.length - 1, Math.max(0, at + delta))];
+      if (next !== undefined) selectProposal(next);
+    },
+    [c.proposals, selectedId, selectProposal],
+  );
 
   // Submitting a proposal also opens its Design Proposal Approval workflow
   // (Architect Submission → Consultant Review → PM Approval). Composed in the
@@ -484,6 +502,23 @@ export default function ArchitectProposals() {
           shrinking. Percentage widths keep the same relative proportions but
           always sum to 100% of the container, so text wraps (TableCell
           already breaks words by default) instead of overflowing. */}
+      <SplitDetailLayout
+        open={!!selectedProposal}
+        onClose={closePanel}
+        onStep={stepSelection}
+        sheetLabel="Proposal details"
+        panel={({ inSheet }) =>
+          selectedProposal && (
+            <ProposalDetailPanel
+              proposal={selectedProposal}
+              siblings={c.proposals}
+              onSelectRelated={(p) => selectProposal(p.id)}
+              onClose={closePanel}
+              inSheet={inSheet}
+            />
+          )
+        }
+      >
       <div className="overflow-hidden rounded-2xl border">
         <Table className="table-fixed">
           <TableHeader>
@@ -534,7 +569,12 @@ export default function ArchitectProposals() {
             ) : (
               c.proposals
                 .map((proposal) => (
-                <TableRow key={proposal.id}>
+                <TableRow
+                  key={proposal.id}
+                  aria-selected={selectedProposal?.id === proposal.id}
+                  onClick={() => selectProposal(proposal.id)}
+                  className={`cursor-pointer ${selectedProposal?.id === proposal.id ? selectedRowClass : ""}`}
+                >
                   <TableCell className="font-mono text-xs">
                     {proposal.proposalId}
                   </TableCell>
@@ -587,7 +627,7 @@ export default function ArchitectProposals() {
                     )}
                   </TableCell>
 
-                  <TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center gap-1">
                       {!proposal.reviewedAt && !proposal.reviewComment && (
                         <EditProposalDialog
@@ -624,6 +664,7 @@ export default function ArchitectProposals() {
           <DataTablePagination {...c.pagination} />
         </div>
       </div>
+      </SplitDetailLayout>
     </div>
   );
 }

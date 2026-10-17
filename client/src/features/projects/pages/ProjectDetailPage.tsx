@@ -35,9 +35,13 @@ import type { ProjectMemberRole } from "@/features/project-members/repositories/
 import { useUsersByRole } from "@/features/users/hooks/use-users-by-role";
 import { ArrowLeft, FileText, HardHat, Loader2, PencilRuler, Trash2, Upload, UserPlus, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import { z } from "zod";
 import { useAuth } from "@/auth/auth-context";
+import { FileIntegrityBadge } from "@/features/uploads/components/FileIntegrityBadge";
+import { ReportsTab } from "@/features/reports/components/ReportsTab";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { StakeholdersPanel } from "@/features/stakeholders/components/StakeholdersPanel";
 
 /**
  * Who may change the record itself. This mirrors the route guards on
@@ -77,6 +81,8 @@ const LIST_ROUTE_BY_ROLE: Record<string, string> = {
 
 export default function ProjectDetailPage() {
   const { projectId } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab = searchParams.get("tab") === "reports" ? "reports" : "overview";
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -259,6 +265,12 @@ export default function ProjectDetailPage() {
         loading={deleting}
         onConfirm={remove}
       />
+      <Tabs value={tab} onValueChange={(v) => setSearchParams(v === "reports" ? { tab: "reports" } : {}, { replace: true })}>
+        <TabsList>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="reports">Reports</TabsTrigger>
+        </TabsList>
+        <TabsContent value="overview" className="space-y-6">
       {error && <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive-strong">{error}</div>}
       {/* Was border-green-500/bg-green-500/text-green-700 — same dark-mode
           contrast bug as RISK_CLASS (see project-status.ts): a raw Tailwind
@@ -520,6 +532,11 @@ export default function ProjectDetailPage() {
         <ProjectRevisionsPanel projectCode={project.code} projectStatus={project.status} />
       </div>
 
+      {/* Owner, contractor and others outside the company: RFIs and RFAs are sent to them. */}
+      <div className="max-w-4xl">
+        <StakeholdersPanel projectCode={project.code} canManage={role === "project-manager" || role === "admin"} />
+      </div>
+
       {/* RFI / RFA requests on this project (an open one blocks closing it). */}
       <div className="max-w-4xl">
         <ProjectRequestsSection projectCode={project.code} />
@@ -565,6 +582,11 @@ export default function ProjectDetailPage() {
           </Button>
         </div>
       )}
+        </TabsContent>
+        <TabsContent value="reports" className="max-w-4xl">
+          <ReportsTab projectCode={project.code} canUpload={role === "project-manager" || role === "admin"} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
@@ -786,6 +808,7 @@ function DesignStageSection({
                         <span className="flex min-w-0 items-center gap-2">
                           <FileText className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                           <span className="truncate">{f.name}</span>
+                          <FileIntegrityBadge url={f.url} />
                         </span>
                         <button
                           type="button"
@@ -864,6 +887,7 @@ function DesignStageSection({
                   <span className="truncate">{d.title}</span>
                 </span>
                 <span className="flex shrink-0 items-center gap-3">
+                  {d.fileUrl && <FileIntegrityBadge url={d.fileUrl} />}
                   {d.fileUrl && (
                     // A bare <a href> to the stored URL opened the login page
                     // in a new tab — files are private, so the click fetches

@@ -153,11 +153,18 @@ export async function listAttendancePage(
   if (query.search) params.set("search", query.search);
   if (query.verification && query.verification !== "all") params.set("verification", query.verification);
   if (query.status && query.status !== "all") params.set("status", query.status);
+  if (query.dateFrom) params.set("dateFrom", query.dateFrom);
+  if (query.dateTo) params.set("dateTo", query.dateTo);
   const json = (await apiClient.get(`/attendance?${params.toString()}`)) as {
     data: BackendAttendance[];
     meta: Omit<AttendancePage, "items">;
   };
   return { items: json.data.map((r) => normalize(r, nameLookup)), ...json.meta };
+}
+
+/** One attendance record by id (the record an "outside the radius" alert points at). */
+export async function getAttendanceRecord(id: number): Promise<{ id: number; employeeId: string; logDate: string }> {
+  return unwrap<{ id: number; employeeId: string; logDate: string }>(apiClient.get(`/attendance/${id}`));
 }
 
 export interface AttendanceHeatmap {

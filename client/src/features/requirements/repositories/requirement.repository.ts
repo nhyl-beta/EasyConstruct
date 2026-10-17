@@ -117,8 +117,9 @@ export const RequirementRepository = {
   },
 
   /** F1: PM approve/reject. Only `status` is ever sent from this path. */
-  async setStatus(dbId: number, status: "Approved" | "Rejected"): Promise<Requirement> {
-    const raw = await unwrap<BackendRequirement>(apiClient.patch(`/requirements/${dbId}`, { status }));
+  async setStatus(dbId: number, status: "Approved" | "Rejected", overrideReason?: string): Promise<Requirement> {
+    // An Admin deciding in the PM's place sends the written reason too (client demo change #9).
+    const raw = await unwrap<BackendRequirement>(apiClient.patch(`/requirements/${dbId}`, overrideReason ? { status, overrideReason } : { status }));
     return normalizeRequirement(raw);
   },
 };

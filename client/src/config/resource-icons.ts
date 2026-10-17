@@ -22,6 +22,7 @@ import {
   Users,
   Wrench,
   type LucideIcon,
+  Tags,
 } from "lucide-react";
 
 export const RESOURCE_ICONS: Record<string, LucideIcon> = {
@@ -60,6 +61,7 @@ export const RESOURCE_ICONS: Record<string, LucideIcon> = {
   "admin-projects": FolderKanban,
   "admin-workflows": GitBranch,
   "admin-documents": FileText,
+  "admin-document-types": Tags,
   "admin-activity-logs": ShieldCheck,
   "admin-security": ShieldAlert,
   "admin-roles-permissions": UserCheck,

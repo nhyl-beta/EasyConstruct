@@ -27,6 +27,8 @@ import { resources } from "./providers/resources";
 import LoginPage from "@/pages/auth/login";
 import ForgotPasswordPage from "@/pages/auth/forgot-password";
 import ResetPasswordPage from "@/pages/auth/reset-password";
+import RfiReplyPage from "@/pages/public/rfi-reply";
+import SettingsPage from "@/pages/settings";
 
 
 // ── Project Manager Pages ──
@@ -91,6 +93,7 @@ import AdminRolesPermissions from "./pages/roles/admin/admin-roles-permissions";
 import AdminWorkflowConfiguration from "./pages/roles/admin/admin-workflow-configuration";
 import AdminApprovalHierarchy from "./pages/roles/admin/admin-approval-hierarchy";
 import AdminSupport from "./pages/roles/admin/admin-support";
+import AdminDocumentTypes from "./pages/roles/admin/admin-document-types";
 
 // ── Owner Pages ──
 import OwnerPortfolio from "./pages/roles/owner/owner-portfolio";
@@ -166,6 +169,8 @@ function App() {
                       their dashboard before they could use the link. */}
                       
                   <Route path="/reset-password" element={<ResetPasswordPage />} />
+                  {/* RFI/RFA reply link from an email: public, outside the app shell, decided by its token. */}
+                  <Route path="/reply/:token" element={<RfiReplyPage />} />
 
                   <Route element={<ProtectedRoutes />}>
                     {/* Printable RFI/RFA and transmittal forms: signed-in, but outside the
@@ -204,6 +209,7 @@ function App() {
                       }
                     />
                   )}
+                  <Route path="/settings" element={<SettingsPage />} />
                   <Route path="/reports" element={<SharedReports />} />
                   {/* Part B item 8: real decide action for gate D3, role-gated
                       server-side (consultant/project-manager/admin); every
@@ -387,6 +393,14 @@ function App() {
                     element={
                       <RequireRole allow={["admin", "it_designer"]}>
                         <AdminDocuments />
+                      </RequireRole>
+                    }
+                  />
+                  <Route
+                    path="/admin/document-types"
+                    element={
+                      <RequireRole allow={["admin", "it_designer"]}>
+                        <AdminDocumentTypes />
                       </RequireRole>
                     }
                   />

@@ -8,6 +8,9 @@ import { Button } from "@/components/ui/button";
 import { openFileUrl } from "@/lib/file-url";
 import { RequirementRepository } from "../repositories/requirement.repository";
 import type { Requirement } from "../types/requirements.types";
+import { FileIntegrityBadge } from "@/features/uploads/components/FileIntegrityBadge";
+import { useAuth } from "@/auth/auth-context";
+import { OverrideReasonDialog } from "@/components/shared/override-reason-dialog";
 
 /**
  * Requirements an Engineer has submitted (status "Under Review") and that are
@@ -21,6 +24,10 @@ export function RequirementApprovalsPanel() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
+  // Deciding belongs to the project's PM; an Admin gets an Override with a written reason (change #9).
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
+  const [overriding, setOverriding] = useState<{ dbId: number; status: "Approved" | "Rejected" } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -38,11 +45,11 @@ export function RequirementApprovalsPanel() {
     void load();
   }, [load]);
 
-  const decide = async (dbId: number, status: "Approved" | "Rejected") => {
+  const decide = async (dbId: number, status: "Approved" | "Rejected", overrideReason?: string) => {
     setBusyId(dbId);
     setError(null);
     try {
-      await RequirementRepository.setStatus(dbId, status);
+      await RequirementRepository.setStatus(dbId, status, overrideReason);
       setItems((prev) => prev.filter((r) => r.dbId !== dbId));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update requirement.");
@@ -84,7 +91,7 @@ export function RequirementApprovalsPanel() {
               {r.attachments.length > 0 && (
                 <ul className="flex flex-wrap gap-2">
                   {r.attachments.map((a) => (
-                    <li key={a.url}>
+                    <li key={a.url} className="flex items-center gap-1">
                       <button
                         type="button"
                         className="flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-xs text-primary-strong hover:bg-muted/40"
@@ -92,6 +99,7 @@ export function RequirementApprovalsPanel() {
                       >
                         <Paperclip className="h-3 w-3" /> {a.filename}
                       </button>
+                      <FileIntegrityBadge url={a.url} />
                     </li>
                   ))}
                 </ul>
@@ -101,11 +109,11 @@ export function RequirementApprovalsPanel() {
                   {r.createdBy} · {r.updatedAgo}
                 </span>
                 <div className="flex gap-2">
-                  <Button size="sm" className="h-7 text-xs" disabled={busyId === r.dbId} onClick={() => void decide(r.dbId, "Approved")}>
-                    <Check className="h-3 w-3" /> Approve
+                  <Button size="sm" className="h-7 text-xs" disabled={busyId === r.dbId} onClick={() => (isAdmin ? setOverriding({ dbId: r.dbId, status: "Approved" }) : void decide(r.dbId, "Approved"))}>
+                    <Check className="h-3 w-3" /> {isAdmin ? "Override: approve" : "Approve"}
                   </Button>
-                  <Button size="sm" variant="outline" className="h-7 text-xs text-destructive-strong" disabled={busyId === r.dbId} onClick={() => void decide(r.dbId, "Rejected")}>
-                    <X className="h-3 w-3" /> Reject
+                  <Button size="sm" variant="outline" className="h-7 text-xs text-destructive-strong" disabled={busyId === r.dbId} onClick={() => (isAdmin ? setOverriding({ dbId: r.dbId, status: "Rejected" }) : void decide(r.dbId, "Rejected"))}>
+                    <X className="h-3 w-3" /> {isAdmin ? "Override: reject" : "Reject"}
                   </Button>
                 </div>
               </div>
@@ -116,6 +124,19 @@ export function RequirementApprovalsPanel() {
           </div>
         </ul>
       )}
+      <OverrideReasonDialog
+        open={overriding !== null}
+        onOpenChange={(o) => !o && setOverriding(null)}
+        title={overriding ? `Override: ${overriding.status === "Approved" ? "approve" : "reject"} this requirement` : "Override"}
+        description="Deciding a requirement is the Project Manager's call. Give the reason you are stepping in; it is kept in the audit trail."
+        confirmLabel={overriding?.status === "Approved" ? "Approve as Admin" : "Reject as Admin"}
+        busy={overriding !== null && busyId === overriding.dbId}
+        error={error}
+        onConfirm={(reason) => {
+          if (!overriding) return;
+          void decide(overriding.dbId, overriding.status, reason).then(() => setOverriding(null));
+        }}
+      />
     </section>
   );
 }

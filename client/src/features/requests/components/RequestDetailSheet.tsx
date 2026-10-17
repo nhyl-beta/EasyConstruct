@@ -20,6 +20,9 @@ import { DISCIPLINE_LABEL, MAX_EMAIL_RESENDS, STATUS_LABEL, type DesignRequestDe
 import { EmailStatusBadge, formatDate, formatDateTime, KindBadge, OverdueBadge, RecipientBadge, RequestStatusBadge } from "./RequestBadges";
 import { RequestFilePicker, uploadAll } from "./RequestFilePicker";
 import { RespondDialog } from "./RespondDialog";
+import { FileIntegrityBadge } from "@/features/uploads/components/FileIntegrityBadge";
+import { RecipientsList } from "./RecipientsList";
+import { OverrideReasonDialog } from "@/components/shared/override-reason-dialog";
 
 const RAISERS = new Set(["project-manager", "engineer", "admin"]);
 
@@ -40,6 +43,7 @@ function Files({ files, stage }: { files: RequestFile[]; stage: "request" | "res
       {rows.map((f) => (
         <li key={f.id} className="flex items-center justify-between gap-2 rounded-lg bg-muted/40 px-2.5 py-1.5 text-xs">
           <span className="min-w-0 truncate">{f.filename}</span>
+          <FileIntegrityBadge url={f.url} />
           <button
             type="button"
             className="inline-flex shrink-0 items-center gap-1 text-primary-strong hover:underline"
@@ -100,10 +104,15 @@ export function RequestDetailSheet({
     : (isAdmin || r.assignedToUserId === user?.id) && (r.status === "open" || r.status === "in_review"));
   const canMarkReplied = handlesClient && r?.status === "open";
   const resendsLeft = r ? MAX_EMAIL_RESENDS - r.emailResendCount : 0;
-  const canResend = handlesClient && clientActive && r?.emailStatus === "failed" && resendsLeft > 0;
+  // With a recipients list each person has their own Resend; this one is only for older requests without it.
+  const canResend = handlesClient && clientActive && (r?.recipients.length ?? 0) === 0 && r?.emailStatus === "failed" && resendsLeft > 0;
   const resend = useResendRequestEmail(() => done());
   const replied = useMarkClientReplied(() => done());
-  const canSend = !!r && r.status === "draft" && (role === "project-manager" || isAdmin);
+  // Sending belongs to the project's PM. An Admin gets an Override that needs a written reason (change #9).
+  const canSend = !!r && r.status === "draft" && role === "project-manager";
+  const canOverrideSend = !!r && r.status === "draft" && isAdmin;
+  const [overrideOpen, setOverrideOpen] = useState(false);
+  const [overrideError, setOverrideError] = useState<string | null>(null);
   const canClose = !!r && r.status !== "closed" && (isAdmin || role === "project-manager" || r.requestedByUserId === user?.id);
   const canFollowUp = !!r && RAISERS.has(role) && r.status !== "draft" && r.status !== "closed";
   const canRecordReturned = !!r && RAISERS.has(role) && r.kind === "RFA" && ["approved", "approved_as_noted", "rejected"].includes(r.status);
@@ -111,6 +120,26 @@ export function RequestDetailSheet({
 
   return (
     <>
+      <OverrideReasonDialog
+        open={overrideOpen}
+        onOpenChange={setOverrideOpen}
+        title="Override: send this request"
+        description="Sending an RFI or RFA is the Project Manager's call. Give the reason you are sending it in their place; it is kept in the audit trail."
+        confirmLabel="Send as Admin"
+        busy={busy}
+        error={overrideError}
+        onConfirm={(reason) => {
+          if (!r) return;
+          setOverrideError(null);
+          void RequestRepository.send(r.id, undefined, reason)
+            .then(() => {
+              toast.success(`${r.number} sent`);
+              setOverrideOpen(false);
+              done();
+            })
+            .catch((e: unknown) => setOverrideError(e instanceof Error ? e.message : "Could not send the request"));
+        }}
+      />
       <Sheet open={id !== null} onOpenChange={onOpenChange}>
         <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-xl">
           <SheetHeader>
@@ -151,7 +180,7 @@ export function RequestDetailSheet({
                   </Field>
                   <Field label="Countersigned">{r.countersignedByName ? `${r.countersignedByName} · ${formatDate(r.countersignedAt)}` : "Not yet"}</Field>
                   {isClient ? (
-                    <Field label="Sent to client">{r.recipientEmail}</Field>
+                    <Field label="Sent to">{r.recipients.length > 0 ? `${r.recipients.length} stakeholder${r.recipients.length === 1 ? "" : "s"}` : r.recipientEmail}</Field>
                   ) : (
                     <Field label="Assigned to">{r.assignedToName}</Field>
                   )}
@@ -213,7 +242,10 @@ export function RequestDetailSheet({
                   </section>
                 )}
 
-                {isClient && r.emailStatus === "failed" && (
+                {isClient && r.recipients.length > 0 && (
+                  <RecipientsList requestId={r.id} recipients={r.recipients} canResend={handlesClient && clientActive} onChanged={done} />
+                )}
+                {isClient && r.recipients.length === 0 && r.emailStatus === "failed" && (
                   <p role="alert" className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive-strong">
                     The email to {r.recipientEmail} could not be sent. The request is saved
                     {resendsLeft > 0 ? `; you can resend it (${resendsLeft} resend${resendsLeft === 1 ? "" : "s"} left).` : " and has used all its resends."}
@@ -241,6 +273,11 @@ export function RequestDetailSheet({
                       onClick={() => void replied.run(r.id).then((u) => u && toast.success(`${u.number} marked as client replied`))}
                     >
                       <MailCheck className="h-4 w-4" /> Client replied
+                    </Button>
+                  )}
+                  {canOverrideSend && (
+                    <Button size="sm" variant="outline" disabled={busy} onClick={() => setOverrideOpen(true)}>
+                      <Send className="h-4 w-4" /> Override: send
                     </Button>
                   )}
                   {canSend && (

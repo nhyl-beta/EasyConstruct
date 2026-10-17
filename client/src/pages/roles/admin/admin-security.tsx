@@ -14,21 +14,21 @@ import { ReconciliationPanel } from "@/features/reconciliation/ReconciliationPan
 // Sensitive actions worth surfacing prominently — the audit-logs table
 // already records "rejected"/"deleted" across every module, so this filters
 // the same real data rather than inventing a separate security-events table.
-const SENSITIVE_ACTIONS = new Set(["rejected", "deleted"]);
+// Rejections and deletions, plus downloads of Legal documents, refused downloads and files that failed
+// their integrity check (client demo changes #2 and #3). The server filters, so the downloads log
+// (every download is recorded) is never loaded here.
+const SENSITIVE_ACTIONS = ["rejected", "deleted", "sensitive_download", "download_blocked", "integrity_failed"];
 
 const SIGNIN_PAGE_SIZE = 5;
 const SIGNIN_PAGE_SIZES = [5, 10, 20];
 
 export default function AdminSecurityPage() {
-  const { logs, loading, error } = useAuditLogs();
+  const { logs, loading, error } = useAuditLogs({ actions: SENSITIVE_ACTIONS });
   const security = useSecurityOverview();
 
   // Previously hard-capped at the first 20 (silently hiding the rest);
   // real pagination replaces that cap instead of stacking on top of it.
-  const sensitiveEvents = useMemo(
-    () => logs.filter((log) => SENSITIVE_ACTIONS.has(log.action)),
-    [logs],
-  );
+  const sensitiveEvents = useMemo(() => logs, [logs]);
   const pagination = usePagination(sensitiveEvents, 10);
 
   // Each login panel pages on its own: separate state, so turning a page in
@@ -41,7 +41,7 @@ export default function AdminSecurityPage() {
     <PageContainer>
       <PageHeader
         title="Security monitoring"
-        description="Sensitive operational events (rejections, deletions) drawn from the audit trail."
+        description="Sensitive events from the audit trail: rejections, deletions, legal file downloads and damaged files."
       />
       <PageContent className="space-y-6 p-6 md:p-8">
         <ReconciliationPanel />
@@ -56,7 +56,7 @@ export default function AdminSecurityPage() {
           )}
           {!loading && !error && sensitiveEvents.length === 0 && (
             <p className="text-sm text-muted-foreground">
-              No rejections or deletions recorded — nothing sensitive to review right now.
+              Nothing sensitive recorded — no rejections, deletions, legal downloads or damaged files.
             </p>
           )}
           {!loading && sensitiveEvents.length > 0 && (
@@ -76,14 +76,14 @@ export default function AdminSecurityPage() {
                     </div>
                     <div>
                       <p className="text-sm font-medium">
-                        {log.actor} {log.action} {log.entityType} #{log.entityId}
+                        {log.actor} {log.action.replace(/_/g, " ")} {log.entityType} #{log.entityId}
                       </p>
                       {log.summary && <p className="text-xs text-muted-foreground">{log.summary}</p>}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className="rounded-full border-destructive/30 text-overline capitalize text-destructive-strong">
-                      {log.action}
+                      {log.action.replace(/_/g, " ")}
                     </Badge>
                     <span className="text-xs text-muted-foreground">{formatRelativeTime(log.createdAt)}</span>
                   </div>

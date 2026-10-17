@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   Dialog,
@@ -14,40 +14,27 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ProjectPicker } from "@/components/shared/project-picker";
 
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { DocumentTypeSelect } from "@/features/document-types/components/DocumentTypeSelect";
 
 import type { UploadDocumentInput } from "@/features/documents/repositories/documents.repository";
 
-export const DOC_TYPES = [
-  "Field Report",
-  "Site Photo",
-  "Progress Evidence",
-  "Supporting Document",
-  // Lifecycle gate documents (D5) — each one is what a specific gate check
-  // reads: P5 (Notice of Award + Contract), C5 (Notice to Proceed), X2
-  // (Certificate of Completion). Turnover Document and As-Built Drawing
-  // aren't gate-checked but round out project closeout paperwork.
-  "Notice of Award",
-  "Contract",
-  "Notice to Proceed",
-  "Certificate of Completion",
-  "Turnover Document",
-  "As-Built Drawing",
-  // Design-delivery projects: the client signs off the turnover (gate T2).
-  "Client Acceptance",
-] as const;
+
+
+/** Fills the dialog in: used by the project Reports tab, where the type and period are already known. */
+export interface UploadPreset {
+  project?: string;
+  type?: string;
+  title?: string;
+  reportPeriod?: "daily" | "weekly" | "monthly";
+  periodDate?: string;
+}
 
 interface UploadDocumentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   uploading: boolean;
   onSubmit: (input: UploadDocumentInput) => Promise<unknown>;
+  preset?: UploadPreset;
 }
 
 export function UploadDocumentDialog({
@@ -55,13 +42,21 @@ export function UploadDocumentDialog({
   onOpenChange,
   uploading,
   onSubmit,
+  preset,
 }: UploadDocumentDialogProps) {
   const [title, setTitle] = useState("");
   const [project, setProject] = useState("");
-  const [type, setType] =
-    useState<(typeof DOC_TYPES)[number]>("Field Report");
+  const [type, setType] = useState("Field Report");
 
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // A preset (the Reports tab) fills in the project, type, title and period each time the dialog opens.
+  useEffect(() => {
+    if (!open || !preset) return;
+    setTitle(preset.title ?? "");
+    setProject(preset.project ?? "");
+    setType(preset.type ?? "Field Report");
+  }, [open, preset]);
 
   const reset = () => {
     setTitle("");
@@ -90,6 +85,7 @@ export function UploadDocumentDialog({
         title: title.trim(),
         project: project.trim(),
         type,
+        ...(preset?.reportPeriod ? { reportPeriod: preset.reportPeriod, periodDate: preset.periodDate } : {}),
       });
 
       reset();
@@ -144,24 +140,12 @@ export function UploadDocumentDialog({
           <div className="grid gap-1.5">
             <Label>Document type</Label>
 
-            <Select
-              value={type}
-              onValueChange={(value) =>
-                setType(value as (typeof DOC_TYPES)[number])
-              }
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-
-              <SelectContent>
-                {DOC_TYPES.map((documentType) => (
-                  <SelectItem key={documentType} value={documentType}>
-                    {documentType}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {/* Loaded from the API (Admin / IT Designer edit the list), grouped by category. */}
+            {preset?.type ? (
+              <p className="rounded-md border border-border bg-muted/40 px-3 py-2 text-sm">{preset.type}{preset.periodDate ? ` · period starting ${preset.periodDate}` : ""}</p>
+            ) : (
+              <DocumentTypeSelect value={type} onChange={setType} />
+            )}
           </div>
 
           <div className="grid gap-1.5">

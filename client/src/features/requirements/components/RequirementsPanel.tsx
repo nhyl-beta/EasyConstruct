@@ -5,6 +5,10 @@ import { openFileUrl } from "@/lib/file-url";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useProjectRequirements } from "../hooks/useProjectRequirements";
+import { FileIntegrityBadge } from "@/features/uploads/components/FileIntegrityBadge";
+import { useState } from "react";
+import { useAuth } from "@/auth/auth-context";
+import { OverrideReasonDialog } from "@/components/shared/override-reason-dialog";
 
 const STATUS_TONE: Record<string, string> = {
   Draft: "bg-muted text-muted-foreground border-border",
@@ -28,6 +32,10 @@ export function RequirementsPanel({
   canDecide: boolean;
 }) {
   const { requirements, loading, error, decidingId, decide } = useProjectRequirements(projectCode);
+  // Deciding belongs to the project's PM. An Admin gets an Override with a written reason instead.
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
+  const [overriding, setOverriding] = useState<{ dbId: number; status: "Approved" | "Rejected" } | null>(null);
   const pg = usePagination(requirements, 8);
 
   return (
@@ -69,7 +77,7 @@ export function RequirementsPanel({
               {r.attachments.length > 0 && (
                 <ul className="flex flex-wrap gap-2">
                   {r.attachments.map((a) => (
-                    <li key={a.url}>
+                    <li key={a.url} className="flex items-center gap-1">
                       <button
                         type="button"
                         className="flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-xs text-primary-strong hover:bg-muted/40"
@@ -77,6 +85,7 @@ export function RequirementsPanel({
                       >
                         <Paperclip className="h-3 w-3" /> {a.filename}
                       </button>
+                      <FileIntegrityBadge url={a.url} />
                     </li>
                   ))}
                 </ul>
@@ -89,18 +98,18 @@ export function RequirementsPanel({
                     size="sm"
                     className="h-7 text-xs"
                     disabled={decidingId === r.dbId}
-                    onClick={() => void decide(r.dbId, "Approved")}
+                    onClick={() => (isAdmin ? setOverriding({ dbId: r.dbId, status: "Approved" }) : void decide(r.dbId, "Approved"))}
                   >
-                    <Check className="h-3 w-3" /> Approve
+                    <Check className="h-3 w-3" /> {isAdmin ? "Override: approve" : "Approve"}
                   </Button>
                   <Button
                     size="sm"
                     variant="outline"
                     className="h-7 text-xs text-destructive-strong"
                     disabled={decidingId === r.dbId}
-                    onClick={() => void decide(r.dbId, "Rejected")}
+                    onClick={() => (isAdmin ? setOverriding({ dbId: r.dbId, status: "Rejected" }) : void decide(r.dbId, "Rejected"))}
                   >
-                    <X className="h-3 w-3" /> Reject
+                    <X className="h-3 w-3" /> {isAdmin ? "Override: reject" : "Reject"}
                   </Button>
                 </div>
               )}
@@ -111,6 +120,18 @@ export function RequirementsPanel({
           </div>
         </ul>
       )}
+      <OverrideReasonDialog
+        open={overriding !== null}
+        onOpenChange={(o) => !o && setOverriding(null)}
+        title={overriding ? `Override: ${overriding.status === "Approved" ? "approve" : "reject"} this requirement` : "Override"}
+        description="Deciding a requirement is the Project Manager's call. Give the reason you are stepping in; it is kept in the audit trail."
+        confirmLabel={overriding?.status === "Approved" ? "Approve as Admin" : "Reject as Admin"}
+        busy={overriding !== null && decidingId === overriding.dbId}
+        onConfirm={(reason) => {
+          if (!overriding) return;
+          void decide(overriding.dbId, overriding.status, reason).then(() => setOverriding(null));
+        }}
+      />
     </div>
   );
 }

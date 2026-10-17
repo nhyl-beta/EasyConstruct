@@ -42,7 +42,8 @@ export const generateDraftSchema = z.object({
   category: z.enum(["Objectives", "Materials", "Constraints", "Specifications", "Other"]),
 });
 
-export const updateRequirementSchema = createRequirementSchema.partial();
+// overrideReason: an Admin deciding a requirement in the PM's place must say why (client demo change #9).
+export const updateRequirementSchema = createRequirementSchema.partial().extend({ overrideReason: z.string().trim().max(500).optional() });
 
 export type CreateRequirementInput = z.infer<typeof createRequirementSchema>;
 export type UpdateRequirementInput = z.infer<typeof updateRequirementSchema>;

@@ -6,7 +6,6 @@ import { responseWindowProblem } from "../lib/response-window";
 
 import { useAuth } from "@/auth/auth-context";
 import { ProjectPicker } from "@/components/shared/project-picker";
-import { useProjects } from "@/features/projects/hooks/useProjects";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -24,6 +23,8 @@ import {
   type RequestKind,
 } from "../types/request.types";
 import { RequestFilePicker, uploadAll } from "./RequestFilePicker";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useStakeholders } from "@/features/stakeholders/hooks/use-stakeholders";
 
 export interface CreateRequestInitial {
   projectCode?: string;
@@ -67,7 +68,9 @@ export function CreateRequestDialog({ open, onOpenChange, initial, onCreated }: 
   const [timeImpact, setTimeImpact] = useState<Impact>("none");
   const [timeDays, setTimeDays] = useState("");
   const [dueDays, setDueDays] = useState("");
-  const [clientEmail, setClientEmail] = useState("");
+  // Client request: the project's stakeholders to email (one copy each), and an optional extra address.
+  const [stakeholderIds, setStakeholderIds] = useState<number[]>([]);
+  const [extraEmail, setExtraEmail] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [tried, setTried] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -75,14 +78,18 @@ export function CreateRequestDialog({ open, onOpenChange, initial, onCreated }: 
   const [error, setError] = useState<string | null>(null);
 
   const { assignees, loading: assigneesLoading } = useAssignees(project);
-  const { projects } = useProjects();
   const toClient = assignee === CLIENT_OPTION;
-  const projectClientEmail = projects.find((p) => p.code === project)?.clientEmail ?? "";
+  const { items: stakeholders, loading: stakeholdersLoading, error: stakeholdersError } = useStakeholders(toClient && project ? project : null);
 
-  // Prefill the client's address from the project whenever the client option is picked (still editable).
+  // The project's Owner is pre-selected (when it has an email) the first time the client option is picked.
   useEffect(() => {
-    if (toClient) setClientEmail(projectClientEmail);
-  }, [toClient, projectClientEmail]);
+    if (!toClient) return;
+    setStakeholderIds((prev) => {
+      if (prev.length > 0) return prev;
+      const owner = stakeholders.find((s) => s.role === "Owner" && s.hasEmail);
+      return owner ? [owner.id] : prev;
+    });
+  }, [toClient, stakeholders]);
 
   useEffect(() => {
     if (!open) return;
@@ -94,7 +101,8 @@ export function CreateRequestDialog({ open, onOpenChange, initial, onCreated }: 
     setSections("");
     setText("");
     setAssignee("");
-    setClientEmail("");
+    setStakeholderIds([]);
+    setExtraEmail("");
     setCostImpact("none");
     setCostNote("");
     setTimeImpact("none");
@@ -107,8 +115,9 @@ export function CreateRequestDialog({ open, onOpenChange, initial, onCreated }: 
 
   const defaultDays = kind === "RFI" ? 3 : 4;
   const dueProblem = responseWindowProblem(dueDays);
-  const emailProblem = toClient ? (emailSchema.safeParse(clientEmail).error?.issues[0]?.message ?? null) : null;
-  const invalid = !project || subject.trim().length < 3 || text.trim().length < 10 || !assignee || dueProblem !== null || emailProblem !== null;
+  const extraProblem = toClient && extraEmail.trim() ? (emailSchema.safeParse(extraEmail).error?.issues[0]?.message ?? null) : null;
+  const recipientProblem = toClient && stakeholderIds.length === 0 && !extraEmail.trim() ? "Choose at least one stakeholder to send this to." : extraProblem;
+  const invalid = !project || subject.trim().length < 3 || text.trim().length < 10 || !assignee || dueProblem !== null || recipientProblem !== null;
 
   const submit = async () => {
     setTried(true);
@@ -130,12 +139,14 @@ export function CreateRequestDialog({ open, onOpenChange, initial, onCreated }: 
         timeImpact,
         timeDays: timeImpact !== "none" && timeDays ? Number(timeDays) : undefined,
         recipientType: toClient ? "client" : "internal",
-        ...(toClient ? { recipientEmail: clientEmail.trim() } : { assignedToUserId: Number(assignee) }),
+        ...(toClient
+          ? { recipientStakeholderIds: stakeholderIds, ...(extraEmail.trim() ? { recipientEmail: extraEmail.trim() } : {}) }
+          : { assignedToUserId: Number(assignee) }),
         dueDays: dueDays ? Number(dueDays) : undefined,
         designId: initial?.designId,
         files: uploaded,
       });
-      toast.success(isEngineer ? `${created.number} saved as a draft for the PM to send` : `${created.number} sent`);
+      toast.success(created.status === "draft" ? `${created.number} saved as a draft for the PM to send` : `${created.number} sent`);
       onCreated(created);
       onOpenChange(false);
     } catch (e) {
@@ -181,7 +192,8 @@ export function CreateRequestDialog({ open, onOpenChange, initial, onCreated }: 
                 onChange={(c) => {
                   setProject(c);
                   setAssignee("");
-                  setClientEmail("");
+                  setStakeholderIds([]);
+                  setExtraEmail("");
                 }}
                 disabled={!!initial?.projectCode || submitting}
                 className="w-full"
@@ -286,32 +298,53 @@ export function CreateRequestDialog({ open, onOpenChange, initial, onCreated }: 
                       {a.name} · {a.role}
                     </SelectItem>
                   ))}
-                  <SelectItem value={CLIENT_OPTION}>Client (email)</SelectItem>
+                  <SelectItem value={CLIENT_OPTION}>Stakeholders outside the company (email)</SelectItem>
                 </SelectContent>
               </Select>
               {tried && !assignee && <p className="text-xs text-destructive-strong">Choose who should respond.</p>}
               {toClient && (
-                <div className="space-y-1.5 pt-1">
-                  <Label htmlFor="rq-client-email">
-                    Client email <span className="text-destructive-strong">*</span>
+                <div className="space-y-2 pt-1">
+                  <Label>
+                    Stakeholders <span className="text-destructive-strong">*</span>
                   </Label>
-                  <Input
-                    id="rq-client-email"
-                    type="email"
-                    value={clientEmail}
-                    onChange={(e) => setClientEmail(e.target.value)}
-                    placeholder="client@company.com"
-                    maxLength={255}
-                    disabled={submitting}
-                    aria-invalid={emailProblem !== null && (tried || clientEmail.length > 0)}
-                    aria-describedby={emailProblem ? "rq-client-email-error" : undefined}
-                  />
-                  {emailProblem && (tried || clientEmail.length > 0) && (
-                    <p id="rq-client-email-error" className="text-xs text-destructive-strong">
-                      {emailProblem}
-                    </p>
+                  {stakeholdersLoading && <p className="text-xs text-muted-foreground">Loading stakeholders…</p>}
+                  {stakeholdersError && <p className="text-xs text-destructive-strong">Couldn&apos;t load stakeholders. {stakeholdersError}</p>}
+                  {!stakeholdersLoading && !stakeholdersError && stakeholders.length === 0 && (
+                    <p className="text-xs text-muted-foreground">This project has no stakeholders yet. Add them on the project page, or enter one address below.</p>
                   )}
-                  {!projectClientEmail && !clientEmail && <p className="text-xs text-muted-foreground">This project has no client email on file yet; enter one here.</p>}
+                  <ul className="space-y-1.5">
+                    {stakeholders.map((s) => (
+                      <li key={s.id} className="flex items-start gap-2">
+                        <Checkbox
+                          id={`rq-sh-${s.id}`}
+                          checked={stakeholderIds.includes(s.id)}
+                          disabled={!s.hasEmail || submitting}
+                          onCheckedChange={(v) => setStakeholderIds((prev) => (v === true ? [...prev, s.id] : prev.filter((x) => x !== s.id)))}
+                        />
+                        <Label htmlFor={`rq-sh-${s.id}`} className="flex-1 text-sm font-normal leading-tight">
+                          {s.name}
+                          {s.company ? ` (${s.company})` : ""} <span className="text-xs text-muted-foreground">· {s.role}</span>
+                          {!s.hasEmail && <span className="block text-xs text-warning-strong">No email on file</span>}
+                        </Label>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="rq-extra-email" className="text-xs text-muted-foreground">
+                      Another address (optional)
+                    </Label>
+                    <Input
+                      id="rq-extra-email"
+                      type="email"
+                      value={extraEmail}
+                      onChange={(e) => setExtraEmail(e.target.value)}
+                      placeholder="someone@company.com"
+                      maxLength={255}
+                      disabled={submitting}
+                      aria-invalid={extraProblem !== null}
+                    />
+                  </div>
+                  {recipientProblem && (tried || stakeholderIds.length > 0 || extraEmail.length > 0) && <p className="text-xs text-destructive-strong">{recipientProblem}</p>}
                 </div>
               )}
             </div>

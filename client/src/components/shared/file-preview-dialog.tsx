@@ -23,6 +23,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { downloadFileUrl, isRealFileUrl, useFileObjectUrl } from "@/lib/file-url";
+import { FileIntegrityBadge } from "@/features/uploads/components/FileIntegrityBadge";
+import { useFileIntegrity } from "@/features/uploads/hooks/use-file-integrity";
 
 type PreviewKind = "image" | "pdf" | "other";
 
@@ -62,6 +64,7 @@ export function FilePreviewDialog({
   const { objectUrl: resolved, error, loading } = useFileObjectUrl(url, open && hasFile);
   const available: boolean | null = !hasFile || loading ? null : error ? false : resolved ? true : null;
   const [downloadError, setDownloadError] = useState<string | null>(null);
+  const integrity = useFileIntegrity(hasFile ? url : null);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -76,6 +79,17 @@ export function FilePreviewDialog({
             </DialogDescription>
           )}
         </DialogHeader>
+
+        {hasFile && (
+          <div className="flex flex-wrap items-center gap-2">
+            <FileIntegrityBadge url={url} withCheck />
+            {integrity === "damaged" && (
+              <p role="alert" className="text-xs text-destructive-strong">
+                This file no longer matches the version that was uploaded. Treat its contents with care.
+              </p>
+            )}
+          </div>
+        )}
 
         <div className="flex min-h-72 items-center justify-center overflow-hidden rounded-xl border border-border bg-muted/30">
           {!hasFile && (

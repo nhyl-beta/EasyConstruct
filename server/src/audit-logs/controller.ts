@@ -19,6 +19,7 @@ export const getAll = async (req: Request, res: Response, next: NextFunction) =>
       projectCode: str(req.query.projectCode),
       search: str(req.query.search),
       actor: str(req.query.actor),
+      actions: str(req.query.actions)?.split(",").map((a) => a.trim()).filter(Boolean).slice(0, 20),
       dateFrom: str(req.query.dateFrom),
       dateTo: str(req.query.dateTo),
     };

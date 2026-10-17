@@ -17,6 +17,8 @@ export const users = pgTable("users", {
   // Sessions issued before this instant are rejected (middleware/auth.ts). Set by sign-out,
   // a password change and deactivation.
   tokensValidAfter: timestamp("tokens_valid_after"),
+  // "Email me overdue reminders" (client demo change #8). On by default; the in-app alert is sent either way.
+  emailOverdueReminders: boolean("email_overdue_reminders").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

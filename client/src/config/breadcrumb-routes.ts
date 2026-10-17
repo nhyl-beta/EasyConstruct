@@ -22,17 +22,19 @@ export const BREADCRUMB_ROUTES: BreadcrumbRoute[] = [
   { pattern: "/projects/:projectId", label: "Project", parent: "/projects" },
   { pattern: "/employees/new", label: "Add employee", parent: "/employees" },
   { pattern: "/employees/:id/edit", label: "Edit employee", parent: "/employees" },
+  { pattern: "/settings", label: "Settings" },
   { pattern: "/blueprint-reviews", label: "Blueprint reviews" },
   { pattern: "/transmittals", label: "Transmittals" },
   { pattern: "/consultant/design-reviews", label: "Design reviews" },
 ];
 
-// Routes that deliberately show no in-app breadcrumb: public auth pages, the
+// Routes that deliberately show no in-app breadcrumb: public auth pages, the public RFI/RFA reply page, the
 // 404 page, print pages, redirects and the dev-only design-system page.
 export const BREADCRUMB_EXCEPTIONS: string[] = [
   "/login",
   "/forgot-password",
   "/reset-password",
+  "/reply/:token",
   "/requests/:id/print",
   "/transmittals/:id/print",
   "/ai-insights",

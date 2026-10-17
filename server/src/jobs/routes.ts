@@ -12,6 +12,8 @@ import { formatSuccess } from "../utils/response.js";
 import { ForbiddenError, UnauthorizedError } from "../utils/errors.js";
 import { runSignalScan } from "../signals/scan.js";
 import { runDailyCheck as runAttendanceCheck } from "../attendance/exceptions-service.js";
+import { runOverdueJob } from "./overdue-service.js";
+import { withJobLock } from "./lock.js";
 
 export const secretMatches = (provided: string | undefined, expected: string | undefined): boolean => {
   if (!expected || !provided) return false;
@@ -48,5 +50,13 @@ router.post("/signals", signals);
 const attendance = job("attendance-exceptions", () => runAttendanceCheck());
 router.get("/attendance-exceptions", attendance);
 router.post("/attendance-exceptions", attendance);
+
+// Client demo change #8: the RFI/RFA overdue sweep and the 48-hour workflow-stage sweep, with the emails.
+// This is what runs the sweep on Vercel, where the hourly in-process timer never starts. Only one instance
+// runs it at a time; a run that finds another one going reports ran: false.
+const OVERDUE_LOCK = 74_2026_08;
+const overdue = job("overdue", () => withJobLock(OVERDUE_LOCK, () => runOverdueJob()));
+router.get("/overdue", overdue);
+router.post("/overdue", overdue);
 
 export default router;

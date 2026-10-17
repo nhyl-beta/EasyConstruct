@@ -22,6 +22,8 @@ import * as employeesRepo from "../employees/repository.js";
 import * as projectMemberRepo from "../project-members/repository.js";
 
 import * as repo from "./repository.js";
+import * as notifications from "../notifications/service.js";
+import { FLAGGED_CLOCK_IN_ROLES, buildFlaggedAlert, shouldAlertFlagged } from "./alert.js";
 
 import type {
   AttendanceFilters,
@@ -329,7 +331,7 @@ export const create = async (
   // Create attendance record.
   // ---------------------------------------------------------
 
-  return repo.create({
+  const created = await repo.create({
     ...input,
     geofence,
     distanceFromSiteM,
@@ -347,6 +349,44 @@ export const create = async (
       input.attendanceStatus ?? "Present",
     hours,
   } as Parameters<typeof repo.create>[0]);
+
+  // Client demo change #7: a clock-in outside the radius tells the PM, HR and Admin straight away, not at the
+  // daily exceptions check. One notification per saved record (a replayed offline entry returned earlier, above).
+  if (created && shouldAlertFlagged(created)) {
+    await alertFlaggedClockIn(created, input.projectCode, project.name, project.geofenceRadiusM ?? 300);
+  }
+  return created;
+};
+
+/** Never throws: telling people is secondary to saving the clock-in. */
+const alertFlaggedClockIn = async (
+  record: NonNullable<Awaited<ReturnType<typeof repo.create>>>,
+  projectCode: string,
+  projectName: string,
+  radiusM: number,
+) => {
+  try {
+    const employee = await employeesRepo.findByEmployeeId(record.employeeId);
+    const alert = buildFlaggedAlert({
+      record: {
+        id: record.id,
+        status: record.status,
+        geofence: record.geofence,
+        employeeId: record.employeeId,
+        projectCode,
+        logDate: record.logDate,
+        clockIn: record.clockIn,
+        distanceFromSiteM: record.distanceFromSiteM ?? null,
+        validatedOffline: !!record.validatedOffline,
+      },
+      employeeName: employee?.name ?? record.employeeId,
+      projectName,
+      radiusM,
+    });
+    await notifications.notifyProject(projectCode, [...FLAGGED_CLOCK_IN_ROLES], alert);
+  } catch (err) {
+    console.error("[attendance] could not send the outside-radius alert", err instanceof Error ? err.message : err);
+  }
 };
 
 /**
