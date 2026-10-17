@@ -22,6 +22,7 @@ import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from ".
 import * as repo from "./repository.js";
 import { collectAttachments, sendClientEmail } from "./client-email.js";
 import * as stakeholderRepo from "../project-stakeholders/repository.js";
+import { mintReplyLink } from "./public-reply.js";
 import { awaitingReply, canResendTo, legacyColumnsFromFirst, resolveRecipients } from "./recipients.js";
 import {
   canRaise,
@@ -109,7 +110,9 @@ const dispatchClientEmail = async (row: DesignRequest, actor: Actor, opts: { rec
     let ok = false;
     try {
       if (!context) throw loadError ?? new Error("could not prepare the email");
-      await sendClientEmail({ request: row, ...context.base, to: r.email }, context.prepared);
+      // Each person gets their own single-use reply link.
+      const replyUrl = await mintReplyLink(r.id);
+      await sendClientEmail({ request: row, ...context.base, to: r.email, replyUrl }, context.prepared);
       ok = true;
     } catch (err) {
       console.warn(`[design-requests] client email for ${row.number} to ${r.email} failed:`, err instanceof Error ? err.message : err);
@@ -213,6 +216,9 @@ export const getById = async (id: number, actor: Actor) => {
         sentAt: r.sentAt,
         resendCount: r.resendCount,
         repliedAt: r.repliedAt,
+        responseText: r.responseText,
+        responderName: r.responderName,
+        responderPosition: r.responderPosition,
         canResend: canResendTo(r).ok,
       }))
     : [];

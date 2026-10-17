@@ -27,12 +27,13 @@ export const BREADCRUMB_ROUTES: BreadcrumbRoute[] = [
   { pattern: "/consultant/design-reviews", label: "Design reviews" },
 ];
 
-// Routes that deliberately show no in-app breadcrumb: public auth pages, the
+// Routes that deliberately show no in-app breadcrumb: public auth pages, the public RFI/RFA reply page, the
 // 404 page, print pages, redirects and the dev-only design-system page.
 export const BREADCRUMB_EXCEPTIONS: string[] = [
   "/login",
   "/forgot-password",
   "/reset-password",
+  "/reply/:token",
   "/requests/:id/print",
   "/transmittals/:id/print",
   "/ai-insights",

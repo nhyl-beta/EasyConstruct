@@ -27,6 +27,7 @@ import { resources } from "./providers/resources";
 import LoginPage from "@/pages/auth/login";
 import ForgotPasswordPage from "@/pages/auth/forgot-password";
 import ResetPasswordPage from "@/pages/auth/reset-password";
+import RfiReplyPage from "@/pages/public/rfi-reply";
 
 
 // ── Project Manager Pages ──
@@ -167,6 +168,8 @@ function App() {
                       their dashboard before they could use the link. */}
                       
                   <Route path="/reset-password" element={<ResetPasswordPage />} />
+                  {/* RFI/RFA reply link from an email: public, outside the app shell, decided by its token. */}
+                  <Route path="/reply/:token" element={<RfiReplyPage />} />
 
                   <Route element={<ProtectedRoutes />}>
                     {/* Printable RFI/RFA and transmittal forms: signed-in, but outside the

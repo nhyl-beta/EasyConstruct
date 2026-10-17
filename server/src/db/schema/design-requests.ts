@@ -53,6 +53,8 @@ export const designRequests = pgTable(
     responseText: text("response_text"),
     respondedByUserId: integer("responded_by_user_id").references(() => users.id),
     respondedByName: varchar("responded_by_name", { length: 100 }),
+    // Position given on the public reply form (client demo change #6).
+    respondedByPosition: varchar("responded_by_position", { length: 100 }),
     respondedAt: timestamp("responded_at"),
     returnedByName: varchar("returned_by_name", { length: 100 }),
     returnedByPosition: varchar("returned_by_position", { length: 100 }),
@@ -85,6 +87,8 @@ export const designRequestFiles = pgTable("design_request_files", {
   contentType: varchar("content_type", { length: 100 }).notNull(),
   sizeBytes: integer("size_bytes").notNull().default(0),
   uploadedByName: varchar("uploaded_by_name", { length: 100 }).notNull(),
+  // Set on response files that came through a recipient's reply link (client demo change #6).
+  recipientId: integer("recipient_id"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -105,12 +109,35 @@ export const designRequestRecipients = pgTable(
     sentAt: timestamp("sent_at"),
     resendCount: integer("resend_count").notNull().default(0),
     repliedAt: timestamp("replied_at"),
+    // The answer this person sent through the reply link, kept per recipient (client demo change #6).
+    responseText: text("response_text"),
+    responderName: varchar("responder_name", { length: 100 }),
+    responderPosition: varchar("responder_position", { length: 100 }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (t) => [index("design_request_recipients_request_idx").on(t.requestId)],
 );
 
 export type DesignRequestRecipient = typeof designRequestRecipients.$inferSelect;
+
+// Single-use, expiring link a recipient answers through, with no login (client demo change #6). Only the
+// SHA-256 of the random token is stored, never the token itself.
+export const designRequestReplyTokens = pgTable(
+  "design_request_reply_tokens",
+  {
+    id: serial("id").primaryKey(),
+    recipientId: integer("recipient_id")
+      .notNull()
+      .references(() => designRequestRecipients.id, { onDelete: "cascade" }),
+    tokenHash: varchar("token_hash", { length: 64 }).notNull().unique(),
+    expiresAt: timestamp("expires_at").notNull(),
+    usedAt: timestamp("used_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => [index("design_request_reply_tokens_recipient_idx").on(t.recipientId)],
+);
+
+export type DesignRequestReplyToken = typeof designRequestReplyTokens.$inferSelect;
 
 export const transmittals = pgTable("transmittals", {
   id: serial("id").primaryKey(),

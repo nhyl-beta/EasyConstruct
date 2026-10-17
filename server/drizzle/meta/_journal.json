@@ -267,6 +267,13 @@
       "when": 1792145600000,
       "tag": "0037_design_request_recipients",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1792232000000,
+      "tag": "0038_rfi_reply_tokens",
+      "breakpoints": true
     }
   ]
 }

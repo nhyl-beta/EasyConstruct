@@ -62,6 +62,7 @@ export const PAGINATION_EXEMPT: PaginationExemption[] = [
   { file: "features/document-types/components/DocumentTypeSelect.tsx", reason: "A dropdown of the document types (a few dozen at most), not a record list." },
   { file: "features/requests/components/CreateRequestDialog.tsx", reason: "Checkbox list of one project's few stakeholders inside a form." },
   { file: "features/requests/components/RecipientsList.tsx", reason: "The (at most 20) people one request was emailed to." },
+  { file: "pages/public/rfi-reply.tsx", reason: "One request's attachments (at most 10) and the files being attached to the reply." },
   { file: "features/stakeholders/components/StakeholdersPanel.tsx", reason: "A project's handful of outside contacts (owner, contractor, a few others)." },
   { file: "pages/roles/admin/admin-document-types.tsx", reason: "The short, admin-curated list of document types (a few dozen at most), shown grouped by category." },
   { file: "pages/roles/admin/admin-approval-hierarchy.tsx", reason: "The few workflow templates and their stages; fixed by configuration." },
