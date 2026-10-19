@@ -1,13 +1,17 @@
 {
   "name": "easyconstruct",
   "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "dev": "node scripts/dev.mjs",
-    "dev:client": "npm --prefix client run dev",
-    "dev:server": "npm --prefix server run dev",
-    "build:client": "npm --prefix client run build",
-    "build:server": "npm --prefix server run build",
-    "db:seed": "npm --prefix server run db:seed",
-    "db:reset": "npm --prefix server run db:reset"
+    "dev:client": "npm run dev --workspace=@easyconstruct/web",
+    "dev:server": "npm run dev --workspace=@easyconstruct/api",
+    "build:client": "npm run build --workspace=@easyconstruct/web",
+    "build:server": "npm run build --workspace=@easyconstruct/api",
+    "db:seed": "npm run db:seed --workspace=@easyconstruct/api",
+    "db:reset": "npm run db:reset --workspace=@easyconstruct/api"
   }
 }

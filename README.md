@@ -12,11 +12,13 @@ EasyConstruct is a full-stack construction management platform built as a thesis
 
 ```
 .
-├── client/          # React + Refine frontend (Vite)
-├── server/          # Express + Drizzle REST API
-│   ├── src/         # Feature modules (repository → service → controller → routes)
-│   └── drizzle/     # SQL migrations and schema snapshots
-└── scripts/dev.mjs  # Runs client and server dev servers together
+├── apps/
+│   ├── web/          # React + Refine frontend (Vite)
+│   └── api/          # Express + Drizzle REST API
+│       ├── src/      # Feature modules (repository → service → controller → routes)
+│       └── drizzle/  # SQL migrations and schema snapshots
+├── packages/        # Shared TypeScript and lint configuration
+└── scripts/dev.mjs  # Runs the web and API development servers together
 ```
 
 Backend modules (projects, employees, HR, finance, engineering reports, documents, requirements, workflows, etc.) follow a consistent layering pattern: **schema → repository → service → controller → routes**. The frontend mirrors this with a **feature folder → hook → page** structure, using `projects` and `employees` as the canonical reference modules.
@@ -33,13 +35,12 @@ Backend modules (projects, employees, HR, finance, engineering reports, document
 ```bash
 git clone https://github.com/nhyl-beta/construction-system-easyconstruct.git
 cd construction-system-easyconstruct
-npm --prefix client install
-npm --prefix server install
+npm ci
 ```
 
 ### 2. Configure environment variables
 
-Create a `.env` file inside `server/` with at least:
+Create a `.env` file inside `apps/api/` with at least:
 
 ```bash
 DATABASE_URL=postgresql://user:password@host/dbname
@@ -57,7 +58,7 @@ MAIL_USER=your.sending.account@gmail.com
 MAIL_APP_PASSWORD=xxxx xxxx xxxx xxxx
 # Optional — enables Vercel Blob storage for uploads (the store is PRIVATE; files are
 # served through the authenticated GET /api/uploads/file route). Falls back to local
-# disk (server/uploads) in development if unset.
+# disk (apps/api/uploads) in development if unset.
 BLOB_READ_WRITE_TOKEN=
 # Decision-support layer (proposal validation, cost comparison, advisory
 # signals, suggested plans, task allocation advice, impact forecasts).
@@ -68,16 +69,16 @@ FEATURE_AI=true
 CRON_SECRET=
 ```
 
-The client reads `VITE_API_BASE` to decide whether to talk to the real API or use mock data; set it in a `.env` file inside `client/` (e.g. `VITE_API_BASE=http://localhost:8000` — **no `/api` suffix**: `client/src/services/api.client.ts`'s `apiUrl()` always appends `/api` itself, so a value ending in `/api` here produces a double `/api/api/...` and every request 404s) once the server is running. Decision-support surfaces are on by default on the client too; set `VITE_FEATURE_AI=false` (separate flag, separate `.env`, same gate) together with the server's `FEATURE_AI=false` to hide them.
+The client reads `VITE_API_BASE` to decide whether to talk to the real API or use mock data; set it in a `.env` file inside `apps/web/` (e.g. `VITE_API_BASE=http://localhost:8000` — **no `/api` suffix**: `apps/web/src/services/api.client.ts`'s `apiUrl()` always appends `/api` itself, so a value ending in `/api` here produces a double `/api/api/...` and every request 404s) once the server is running. Decision-support surfaces are on by default on the client too; set `VITE_FEATURE_AI=false` (separate flag, separate `.env`, same gate) together with the server's `FEATURE_AI=false` to hide them.
 
 ### 3. Set up the database
 
-From `server/`:
+From the repository root:
 
 ```bash
-npm run db:generate   # generate Drizzle migrations from the schema (if needed)
-npm run db:migrate    # apply migrations to DATABASE_URL
-npm run db:seed       # idempotent schema top-ups (server/src/scripts/ensure-demo-schema.ts) + demo roles, employees, and login accounts
+npm run db:generate --workspace=@easyconstruct/api   # generate Drizzle migrations from the schema (if needed)
+npm run db:migrate --workspace=@easyconstruct/api    # apply migrations to DATABASE_URL
+npm run db:seed                          # idempotent schema top-ups (apps/api/src/scripts/ensure-demo-schema.ts) + demo roles, employees, and login accounts
 ```
 
 The seed script prints a table of demo accounts on completion — one per role (admin, project manager, HR, finance, architect, engineer, site personnel, consultant, owner, IT designer), all sharing the password `Demo@12345`.
@@ -108,9 +109,11 @@ npm run dev:server   # Express API with hot reload (tsx watch), default http://l
 | `npm run dev:server` | Runs only the backend dev server |
 | `npm run build:client` | Builds the frontend for production |
 | `npm run build:server` | Builds the backend for production |
-| `npm run db:seed` | Seeds demo accounts and roles (proxies to `server`) |
+| `npm run db:seed` | Seeds demo accounts and roles (proxies to the API workspace) |
 
-**`server/`**
+**API workspace (`apps/api/`)**
+
+Run these commands from `apps/api/` unless a workspace selector is shown.
 
 | Script | Description |
 | --- | --- |
@@ -122,7 +125,7 @@ npm run dev:server   # Express API with hot reload (tsx watch), default http://l
 | `npm run db:seed` | Seeds demo roles, employees, and user accounts |
 | `npm run db:backfill-employee-links` | Backfills employee ↔ user links |
 | `npm run ai:seed-references` | Pulls the EstimationPro.ai cost-reference catalog (idempotent upsert) |
-| `npm run demo:seed` | Creates `DEMO-STAGE-0`..`6`, one demo project per lifecycle phase, via real API calls against a running `npm run dev` server. Idempotent — deletes and rebuilds its own rows on every run. Run `ai:seed-references` first for a full cost-reference catalog (falls back to a single seeded reference row otherwise — see `server/src/scripts/demo-seed-stages.ts`'s header comment). |
+| `npm run demo:seed` | Creates `DEMO-STAGE-0`..`6`, one demo project per lifecycle phase, via real API calls against a running `npm run dev` server. Idempotent — deletes and rebuilds its own rows on every run. Run `ai:seed-references` first for a full cost-reference catalog (falls back to a single seeded reference row otherwise — see `apps/api/src/scripts/demo-seed-stages.ts`'s header comment). |
 | `npm run demo:ai-signals` | The one bookmarkable place to see the AI-validation decision-support layer trip all five advisory signals at once (cost-variance, cumulative-change-impact, burn-vs-progress, issue-recurrence, stalled-stage) — see "AI-validation demo project" below. |
 
 **AI-validation demo project.** `npm run demo:ai-signals` builds a single project at the stable
@@ -136,7 +139,9 @@ themselves** — the script's own console output prints the project's numeric id
 Manager or Engineer (the five signals' `ownerRoles`) to see `DecisionSupportSection` under the
 gate checklist with all five signals live.
 
-**`client/`**
+**Web workspace (`apps/web/`)**
+
+Run these commands from `apps/web/`.
 
 | Script | Description |
 | --- | --- |

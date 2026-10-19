@@ -1,9 +1,20 @@
 import { spawn } from "node:child_process";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const npm = process.platform === "win32" ? "npm.cmd" : "npm";
+const root = path.dirname(fileURLToPath(import.meta.url));
 const children = [
-  spawn(npm, ["run", "dev"], { cwd: "client", stdio: "inherit", shell: true }),
-  spawn(npm, ["run", "dev"], { cwd: "server", stdio: "inherit", shell: true }),
+  spawn(npm, ["run", "dev"], {
+    cwd: path.join(root, "..", "apps", "web"),
+    stdio: "inherit",
+    shell: true,
+  }),
+  spawn(npm, ["run", "dev"], {
+    cwd: path.join(root, "..", "apps", "api"),
+    stdio: "inherit",
+    shell: true,
+  }),
 ];
 
 function stop() {

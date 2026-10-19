@@ -1,0 +1,50 @@
+{
+  "extends": "../../packages/config/tsconfig.base.json",
+  "compilerOptions": {
+    /* Project Structure */
+    "rootDir": ".",
+    "outDir": "./dist",
+
+    /* Language & Environment */
+    "target": "ES2022",
+    "lib": ["ES2022"],
+
+    /* Node.js ESM */
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+
+    /* Type Checking */
+    "strict": true,
+    "noImplicitReturns": true,
+    "noUncheckedIndexedAccess": true,
+    "forceConsistentCasingInFileNames": true,
+
+    /* Module Resolution */
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+
+    /* Node Types */
+    "types": ["node"],
+
+    /* Build */
+    "sourceMap": true,
+    "declaration": true,
+    "declarationMap": true,
+
+    /* Performance */
+    /* Output */
+    "removeComments": false
+  },
+
+  "include": [
+  "index.ts",
+  "src/**/*.ts",
+  "drizzle.config.ts"
+],
+
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}

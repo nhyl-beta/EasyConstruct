@@ -2,12 +2,12 @@
 docs/
 
 # Uploaded advisory documents
-server/uploads/documents
-!server/uploads/documents/.gitkeep
+apps/api/uploads/documents
+!apps/api/uploads/documents/.gitkeep
 
 # Locally-stored uploads (design files, photos, task evidence) — written
-# when no Vercel Blob store is usable; see server/src/uploads/service.ts
-server/uploads/generic
+# when no Vercel Blob store is usable; see apps/api/src/uploads/service.ts
+apps/api/uploads/generic
 .claude/worktrees/
 
-server/backups/
+apps/api/backups/
