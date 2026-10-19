@@ -214,3 +214,63 @@ None.
 
 ### Next step
 - Phase 4: add import-boundary guardrails, relocate operational/demo scripts, clean up, add shared roles, CI, infrastructure, and documentation.
+
+## Phase 4: Guardrails and clean-up
+- Status: partial
+- Date: 2026-10-20
+- Head after phase: thesis-final @ dc8cdef, pushed: no
+- Commits:
+  - dc8cdef phase 4: move API scripts and add repository guardrails
+  - Log entry commit follows this implementation commit.
+
+### What moved
+| From | To |
+| --- | --- |
+| `apps/api/src/scripts/` (72 files) | `apps/api/scripts/ops/` and `apps/api/scripts/demo/` |
+| `apps/api/src/modules/platform/audit-logs/repository.ts` | `apps/api/src/core/audit/repository.ts` |
+| API session lookup, project-visibility roles, and audit types | `apps/api/src/core/auth/`, `core/access/`, and `core/audit/` |
+| `apps/web/Dockerfile` | `infra/docker/web.Dockerfile` |
+| Selected progress and thesis notes | `docs/history/` |
+| Security and performance documents | `docs/architecture/` |
+| New-server setup guide | `docs/setup/` |
+| — | `infra/compose/`, `infra/docker/api.Dockerfile`, architecture guide, ADR, CI workflow, and canonical shared role IDs |
+
+### Checks
+| Check | Baseline | Now | Command |
+| --- | --- | --- | --- |
+| API tests passed / failed | 931 / 0 | 932 / 0 | `npm --prefix apps/api test` |
+| Web tests passed / failed | 333 / 0 | 333 / 0 | `npm --prefix apps/web test` |
+| API build | pass | pass | `npm --prefix apps/api run build` |
+| Web build | pass | pass | `npm --prefix apps/web run build` |
+| API type errors | 0 | 0 | `npm --prefix apps/api run typecheck` |
+| API route list | 263 routes | 263 routes; identical / 0 lines differ | `apps/api/node_modules/.bin/tsx.cmd apps/api/scripts/ops/list-routes.ts` with placeholder `DATABASE_URL` |
+| API lint | not run | pass; 0 errors, 63 warnings | `npm --prefix apps/api run lint` |
+| Web lint | not run | pass; 0 errors, 36 warnings | `npm --prefix apps/web run lint` |
+| Web typecheck | not run | pass | `npm --prefix apps/web run typecheck` |
+| API script targets | not run | 34 targets; 0 missing | package-script target scan |
+| Moved API script relative imports | not run | 0 unresolved | relative-import resolution scan |
+| Compose configuration | not run | pass | `docker compose -f infra/compose/docker-compose.yml config -q` |
+| Root workspace install | blocked in Phase 1 | not run; same exFAT junction limitation | `npm ci` |
+| GitHub Actions CI | not run | not run; commits intentionally remain local | GitHub Actions |
+
+### Route list differences
+(none)
+
+### Deviations from the prompt
+- Commits remain local and no push was attempted, per Nhyl's instruction. Consequently the remote CI workflow could not run.
+- The first web test run timed out under concurrent test/build load (332 passed, 1 timed out); rerunning the suite without concurrent builds passed 333/333.
+- `npm ci` was not repeated at the root because Phase 1 established that this D: exFAT volume cannot create npm workspace junctions. App-local installs and checks were used; CI is configured to install on Linux.
+- Kept the fixed `/api` rewrite target in `apps/web/vercel.json`; no branch-safe runtime configuration was identified, and no Vercel project settings were changed.
+- Removed the `finance_manager` alias from the finance payroll-review `requireRole` call because it is the underscore spelling of the canonical `finance-manager` role already accepted by that check.
+- Removed unused declarations/imports and replaced one `any` query parameter type in the web app to make the newly added lint/build checks pass; these are type/lint-only cleanups.
+- Removing the old `docs/` ignore rule revealed pre-existing untracked root documents. They were left unmodified and unstaged; only the requested tracked documentation moves and new architecture documents were committed.
+- Existing historical path references in `docs/architecture/PERFORMANCE_AUDIT.md` remain as an audit of the earlier staging snapshot.
+
+### Needs Nhyl's decision
+- None. Push and review of the local branch remain manual.
+
+### Unresolved errors
+None. The remote CI run and root `npm ci` were not run for the reasons recorded above.
+
+### Next step
+- Phase 5: append the final report and manual hand-back steps; commit locally, then stop.
