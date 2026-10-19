@@ -104,3 +104,58 @@ npm error EISDIR: illegal operation on a directory, symlink
 
 ### Next step
 - Phase 2: API core, after Nhyl pushes the local Phase 0 and Phase 1 commits and says "continue".
+
+## Phase 2: API core
+- Status: partial
+- Date: 2026-10-20
+- Head after phase: thesis-final @ fcc76ae, pushed: no
+- Commits:
+  - fcc76ae phase 2: move API plumbing into core
+
+### What moved
+| From | To |
+| --- | --- |
+| `apps/api/src/config/`, `constants/` | `apps/api/src/core/config/` |
+| `apps/api/src/middleware/` | `apps/api/src/core/http/` |
+| `apps/api/src/db/` including schema | `apps/api/src/core/db/` including schema |
+| `apps/api/src/cache/`, `mail/` | `apps/api/src/core/cache/`, `core/mail/` |
+| `apps/api/src/utils/`, `types/` | `apps/api/src/core/utils/` |
+| `apps/api/src/utils/audit.ts` | `apps/api/src/core/audit/audit.ts` |
+| auth middleware, session and throttle helpers | `apps/api/src/core/auth/` |
+| `apps/api/src/jobs/lock.ts`, `scheduler.ts` | `apps/api/src/core/jobs/` |
+| Vercel Blob and local-disk upload handling | `apps/api/src/core/storage/` adapters; upload service delegates to the selected adapter |
+| `apps/api/src/index.ts` | `apps/api/src/main.ts`; added thin `src/vercel.ts` and root handler re-export |
+
+### Checks
+| Check | Baseline | Now | Command |
+| --- | --- | --- | --- |
+| API tests passed / failed | 931 / 0 | 931 / 0 | `npm test` from `apps/api/` |
+| Web tests passed / failed | 333 / 0 | not run (API-only phase) | not run |
+| API build | pass | pass | `npm run build` from `apps/api/` |
+| Web build | pass | not run (API-only phase) | not run |
+| API type errors | 0 | 0 | `apps/api/node_modules/.bin/tsc.cmd --noEmit -p apps/api` |
+| API route list | 263 routes | identical / 0 lines differ | `apps/api/node_modules/.bin/tsx.cmd apps/api/scripts/ops/list-routes.ts` |
+| Unauthenticated projects route | 401 | 401 | `GET http://localhost:8000/api/projects` while `npm run dev` was running |
+| Production JWT validation | no requirement | missing secret rejected | Isolated `node --import tsx` check with `NODE_ENV=production` |
+| Drizzle schema generation | — | not verified | `drizzle-kit generate` has no `--dry-run`; scratch-output invocation stopped on a non-TTY interactive snapshot/schema conflict |
+
+### Route list differences
+(none)
+
+### Deviations from the prompt
+- The filesystem's exFAT workspace-link limitation from Phase 1 remains. App-local dependency installations were used for API checks.
+- Drizzle schema generation could not be confirmed. The installed Drizzle CLI has no `--dry-run`; a disposable output attempt required an interactive prompt when comparing the existing snapshots. No migration or schema file was edited or retained.
+- Starting `npm run dev` for the required request smoke check also started the configured scheduled jobs. Their logs reported attendance exceptions flagged, signal scan results, and overdue reminders/reports; no rollback was attempted. This was normal startup behavior in the existing entrypoint.
+- Changes and commits remain local for Nhyl to push manually.
+
+### Needs Nhyl's decision
+- None.
+
+### Unresolved errors
+Drizzle's disposable-output comparison could not run non-interactively:
+```text
+Error: Interactive prompts require a TTY terminal (process.stdin.isTTY or process.stdout.isTTY is false).
+```
+
+### Next step
+- Phase 3: move API features into modules and add the module registry while preserving mount order and routes.
