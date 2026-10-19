@@ -159,3 +159,58 @@ Error: Interactive prompts require a TTY terminal (process.stdin.isTTY or proces
 
 ### Next step
 - Phase 3: move API features into modules and add the module registry while preserving mount order and routes.
+
+## Phase 3: API modules
+- Status: done
+- Date: 2026-10-20
+- Head after phase: thesis-final @ 439b6b4, pushed: no
+- Commits:
+  - 439b6b4 phase 3: move API features into modules
+
+### What moved
+| From | To |
+| --- | --- |
+| API feature folders and their tests | `apps/api/src/modules/design/` (65 files) |
+| API feature folders and their tests | `apps/api/src/modules/documents/` (33 files) |
+| API feature folders and their tests | `apps/api/src/modules/finance/` (87 files) |
+| API feature folders and their tests | `apps/api/src/modules/iam/` (20 files) |
+| API feature folders and their tests | `apps/api/src/modules/insights/` (53 files) |
+| API feature folders and their tests | `apps/api/src/modules/platform/` (26 files) |
+| API feature folders and their tests | `apps/api/src/modules/projects/` (111 files) |
+| API feature folders and their tests | `apps/api/src/modules/workflow/` (7 files) |
+| API feature folders and their tests | `apps/api/src/modules/workforce/` (54 files) |
+| Validators | Beside their corresponding module sub-features; auth routes moved to `modules/iam/auth/routes.ts` |
+| `reference/document-types/` | `modules/documents/document-types/`; platform reference routes consume it via the documents module index |
+| API mounts | `modules/*/module.ts` manifests and `modules/index.ts`; `app.ts` mounts the registry in preserved order |
+
+### Checks
+| Check | Baseline | Now | Command |
+| --- | --- | --- | --- |
+| API tests passed / failed | 931 / 0 | 931 / 0 | `npm test` from `apps/api/` |
+| Web tests passed / failed | 333 / 0 | not run (API-only phase) | not run |
+| API build | pass | pass | `npm run build` from `apps/api/` |
+| Web build | pass | not run (API-only phase) | not run |
+| API type errors | 0 | 0 | `apps/api/node_modules/.bin/tsc.cmd --noEmit -p apps/api` |
+| API route list | 263 routes | identical / 0 lines differ | `apps/api/node_modules/.bin/tsx.cmd apps/api/scripts/ops/list-routes.ts` |
+| Finance module flag | — | 3 finance routes removed; 0 unexpected differences | Route inventory with `MODULE_FINANCE=false` |
+| AI compatibility flag | — | 0 insights routes remain | Route inventory with `FEATURE_AI=false` |
+| Module import boundaries | — | 0 cross-module deep imports | TypeScript import scan of `apps/api/src/modules/` |
+
+### Route list differences
+(none)
+
+### Deviations from the prompt
+- Mounts carry an explicit order number because the existing mount sequence interleaves features from different modules. Sorting the registry mounts by this order reproduced the exact route inventory.
+- The runtime route-list script now traverses module manifests rather than assuming `app.ts` contains literal `app.use` calls.
+- One full API suite attempt had a transient timeout in the Upstash round-trip test; that test passed when rerun alone, and the subsequent full suite passed 931/931.
+- Commits remain local for Nhyl to push manually.
+
+### Needs Nhyl's decision
+- `employee-validator.ts` and `employee-validators.ts` remain separate as `modules/workforce/employees/validators.ts` and `employee-validators.ts`; no merge was attempted.
+- `validators/tickets.test.ts` spans auth, projects, workflow, requirements, and workforce parsing. It was placed in `modules/iam/auth/tickets.test.ts` as a cross-feature test, with module imports routed through public indexes.
+
+### Unresolved errors
+None.
+
+### Next step
+- Phase 4: add import-boundary guardrails, relocate operational/demo scripts, clean up, add shared roles, CI, infrastructure, and documentation.
