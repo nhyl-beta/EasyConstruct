@@ -274,3 +274,59 @@ None. The remote CI run and root `npm ci` were not run for the reasons recorded 
 
 ### Next step
 - Phase 5: append the final report and manual hand-back steps; commit locally, then stop.
+
+## Phase 5: Report and hand back
+- Status: done
+- Date: 2026-10-20
+- Head after phase: thesis-final @ 213b2d2, pushed: no
+- Commits:
+  - Final report commit follows; no additional implementation changes were needed.
+
+### What moved
+The final structure is documented in `docs/architecture/structure.md`. API feature files moved in Phase 3:
+
+| Module | Files moved |
+| --- | ---: |
+| `design` | 65 |
+| `documents` | 33 |
+| `finance` | 87 |
+| `iam` | 20 |
+| `insights` | 53 |
+| `platform` | 26 |
+| `projects` | 111 |
+| `workflow` | 7 |
+| `workforce` | 54 |
+| **Total** | **456** |
+
+### Checks
+| Check | Before refactor | Final local result | Command |
+| --- | --- | --- | --- |
+| API tests passed / failed | 931 / 0 | 932 / 0 | `npm --prefix apps/api test` |
+| Web tests passed / failed | 333 / 0 | 333 / 0 | `npm --prefix apps/web test` |
+| API build | pass | pass | `npm --prefix apps/api run build` |
+| Web build | pass | pass | `npm --prefix apps/web run build` |
+| API type errors | 0 | 0 | `npm --prefix apps/api run typecheck` |
+| API routes | 263 | 263; identical / 0 lines differ | `apps/api/scripts/ops/list-routes.ts` with placeholder `DATABASE_URL` |
+| Web route values | 77 | 77; identical / 0 lines differ | Extract `path` values from `apps/web/src/App.tsx` and compare with `web-routes-before.txt` |
+| API / web lint | not run | pass / pass; 63 / 36 warnings, 0 errors | `npm --prefix apps/api run lint`; `npm --prefix apps/web run lint` |
+| API import and script paths | not run | boundaries pass; 34 package script targets and moved relative imports resolve | API ESLint and local path scans |
+| Schema and migrations | unchanged | unchanged; Drizzle snapshot comparison not verified | `git diff --name-only -- apps/api/drizzle` |
+| Remote CI | not run | not run; branch intentionally remains local | GitHub Actions |
+
+### Route list differences
+(none for API or web)
+
+### Deviations from the prompt
+- All work is committed locally on `thesis-final`; no commits were pushed, per Nhyl's instruction.
+- CI and the root `npm ci` remain unverified remotely/locally for the recorded reasons: no push, and the local exFAT volume cannot create npm workspace junctions.
+- The existing API smoke test was not run against a demo database. A local demo database was not verified as available, and the script now lives at `apps/api/scripts/demo/api-smoke-test.ts` with the production guard.
+- No schema or migration files were changed. The Drizzle schema-generation comparison remains the Phase 2 unverified item.
+
+### Needs Nhyl's decision
+- None. When ready, Nhyl can push `thesis-final` and review the resulting GitHub Actions run.
+
+### Unresolved errors
+None in the final local checks. Remote CI, root `npm ci`, and Drizzle snapshot comparison were not run as documented.
+
+### Next step
+- Manually push `thesis-final` with `git push -u origin thesis-final`, then review the GitHub Actions workflow. No branch, Vercel, Neon, or GitHub settings were changed.
