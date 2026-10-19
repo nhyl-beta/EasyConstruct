@@ -7,7 +7,7 @@ import { projects } from "../core/db/schema/projects.js";
 import { roles } from "../core/db/schema/roles.js";
 import { users } from "../core/db/schema/users.js";
 import { workflowTemplates } from "../core/db/schema/workflows.js";
-import { refreshProjectProgress } from "../lifecycle/service.js";
+import { refreshProjectProgress } from "../modules/projects/lifecycle/service.js";
 import { assertDemoDatabase } from "./demo-guard.js";
 
 const PASSWORD = "Demo@12345";

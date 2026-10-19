@@ -1,7 +1,7 @@
 import app from "./app.js";
 import { env } from "./core/config/env.js";
 import { startScheduledJobs } from "./core/jobs/scheduler.js";
-import { startOverdueSweeper } from "./design-requests/scheduler.js";
+import { startOverdueSweeper } from "./modules/design/index.js";
 
 app.listen(env.PORT, () => {
   startOverdueSweeper();

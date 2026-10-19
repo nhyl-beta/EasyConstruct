@@ -34,9 +34,9 @@ import {
 } from "../core/db/schema/finance.js";
 import { requirements } from "../core/db/schema/requirements.js";
 import { users } from "../core/db/schema/users.js";
-import { monthKey } from "../finance/cash-flow/months.js";
-import { refreshMonth } from "../finance/cash-flow/service.js";
-import { lineItemsTotal } from "../finance/purchasing/rules.js";
+import { monthKey } from "../modules/finance/cash-flow/months.js";
+import { refreshMonth } from "../modules/finance/cash-flow/service.js";
+import { lineItemsTotal } from "../modules/finance/purchasing/rules.js";
 import { assertDemoDatabase } from "./demo-guard.js";
 import { EMAILS } from "./demo-seed-lib.js";
 

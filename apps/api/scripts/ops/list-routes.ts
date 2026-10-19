@@ -1,8 +1,9 @@
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import * as ts from "typescript";
 import app from "../../src/app.js";
+import { getEnabledMounts } from "../../src/modules/index.js";
 
 type ImportBinding = {
   specifier: string;
@@ -148,6 +149,76 @@ async function findMountedRouters(
   return mounts;
 }
 
+async function findModuleMounts(): Promise<
+  Array<{ prefix: string; sourceFilePath: string; router: RouteLayer }>
+> {
+  const mounts: Array<{ prefix: string; sourceFilePath: string; router: RouteLayer }> = [];
+  const modulesRoot = path.join(sourceRoot, "modules");
+  const moduleDirectories = await readdir(modulesRoot, { withFileTypes: true });
+
+  for (const directory of moduleDirectories) {
+    if (!directory.isDirectory()) continue;
+    const sourceFilePath = path.join(modulesRoot, directory.name, "module.ts");
+    const source = await readFile(sourceFilePath, "utf8");
+    const sourceFile = parseSource(source, sourceFilePath);
+    const imports = getImports(sourceFile);
+
+    for (const statement of sourceFile.statements) {
+      if (!ts.isVariableStatement(statement)) continue;
+      for (const declaration of statement.declarationList.declarations) {
+        if (!ts.isIdentifier(declaration.name) || declaration.name.text !== "module") continue;
+        if (!declaration.initializer || !ts.isObjectLiteralExpression(declaration.initializer)) continue;
+        const mountsProperty = declaration.initializer.properties.find(
+          (property) =>
+            ts.isPropertyAssignment(property) &&
+            property.name.getText(sourceFile).replaceAll('"', "") === "mounts",
+        );
+        if (!mountsProperty || !ts.isPropertyAssignment(mountsProperty)) continue;
+        if (!ts.isArrayLiteralExpression(mountsProperty.initializer)) continue;
+
+        for (const element of mountsProperty.initializer.elements) {
+          if (!ts.isObjectLiteralExpression(element)) continue;
+          const prefixProperty = element.properties.find(
+            (property) =>
+              ts.isPropertyAssignment(property) &&
+              property.name.getText(sourceFile).replaceAll('"', "") === "prefix",
+          );
+          const routerProperty = element.properties.find(
+            (property) =>
+              ts.isPropertyAssignment(property) &&
+              property.name.getText(sourceFile).replaceAll('"', "") === "router",
+          );
+          if (
+            !prefixProperty ||
+            !ts.isPropertyAssignment(prefixProperty) ||
+            !ts.isStringLiteral(prefixProperty.initializer) ||
+            !routerProperty ||
+            !ts.isPropertyAssignment(routerProperty) ||
+            !ts.isIdentifier(routerProperty.initializer)
+          ) {
+            continue;
+          }
+
+          const binding = imports.get(routerProperty.initializer.text);
+          if (!binding) continue;
+          const imported = await loadImport(sourceFilePath, binding);
+          const router = imported[binding.exportName] as RouteLayer | undefined;
+          if (!router || !Array.isArray(router.stack)) continue;
+          mounts.push({
+            prefix: prefixProperty.initializer.text,
+            sourceFilePath: path.resolve(
+              path.dirname(sourceFilePath),
+              binding.specifier.replace(/\.js$/, ".ts"),
+            ),
+            router,
+          });
+        }
+      }
+    }
+  }
+  return mounts;
+}
+
 function addRoute(prefix: string, routePath: string, methods: Record<string, boolean> = {}) {
   const activeMethods = Object.entries(methods)
     .filter(([, active]) => active)
@@ -189,12 +260,11 @@ async function collectRoutes(
   }
 }
 
-const appSourcePath = path.join(sourceRoot, "app.ts");
-const appSource = await readFile(appSourcePath, "utf8");
-const appSourceFile = parseSource(appSource, appSourcePath);
-const appMounts = await findMountedRouters(appSourcePath, appSourceFile);
+const appMounts = await findModuleMounts();
+const enabledMounts = new Set(getEnabledMounts().map((mount) => mount.router));
 
 for (const mount of appMounts) {
+  if (!enabledMounts.has(mount.router)) continue;
   await collectRoutes(mount.prefix, mount.router, mount.sourceFilePath);
 }
 

@@ -6,7 +6,7 @@
 //
 //   npm --prefix server run reconcile
 import "dotenv/config";
-import { runReconciliation } from "../reconciliation/service.js";
+import { runReconciliation } from "../modules/insights/reconciliation/service.js";
 
 async function main() {
   const report = await runReconciliation();

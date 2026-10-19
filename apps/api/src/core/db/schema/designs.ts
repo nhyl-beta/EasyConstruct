@@ -2,7 +2,7 @@ import {
   pgTable, serial, varchar,
   integer, text, timestamp, jsonb, boolean,
 } from 'drizzle-orm/pg-core';
-import { users } from './users.js';
+import { users } from "./users.js";
 
 export const designs = pgTable('designs', {
   id:             serial('id').primaryKey(),

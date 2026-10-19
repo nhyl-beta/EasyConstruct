@@ -1,0 +1,24 @@
+import { Router } from "express";
+import * as controller from "./controller.js";
+import { validate } from "../../../core/http/validate.js";
+import { authenticate, requireRole } from "../../../core/auth/middleware.js";
+import { createProjectMemberSchema } from "./validators.js";
+
+const router = Router();
+
+router.use(authenticate);
+
+router.get("/", controller.getAll);
+router.post(
+  "/",
+  requireRole("project-manager", "admin"),
+  validate(createProjectMemberSchema),
+  controller.create,
+);
+router.delete(
+  "/:id",
+  requireRole("project-manager", "admin"),
+  controller.remove,
+);
+
+export default router;

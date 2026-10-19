@@ -1,0 +1,11 @@
+export * as findingsRepo from "./signals/findings-repository.js";
+export * as forecastController from "./forecast/controller.js";
+export * as planSuggestionService from "./plan-suggestion/service.js";
+export * as validationRepo from "./ai-validation/repository.js";
+export type { LineItemValidationSummary } from "./ai-validation/types.js";
+export type { Signal } from "./signals/index.js";
+export { dice } from "./ai-validation/matcher.js";
+export { evaluateSignals } from "./signals/index.js";
+export { findingKey } from "./signals/findings.js";
+export { runSignalScan } from "./signals/scan.js";
+export { validateWorkflowLineItems } from "./ai-validation/service.js";

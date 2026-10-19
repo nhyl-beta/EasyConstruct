@@ -18,8 +18,8 @@ import { db } from "../core/db/connection.js";
 import { expenses, procurementOrders, purchaseRequests } from "../core/db/schema/finance.js";
 import { projects } from "../core/db/schema/projects.js";
 import { clients, vendors } from "../core/db/schema/reference.js";
-import { normalizeName } from "../reference/names.js";
-import { planBackfill, type BackfillPlan } from "../reference/backfill.js";
+import { normalizeName } from "../modules/platform/reference/names.js";
+import { planBackfill, type BackfillPlan } from "../modules/platform/reference/backfill.js";
 
 const APPLY = process.argv.includes("--apply");
 

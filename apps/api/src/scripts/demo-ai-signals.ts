@@ -14,9 +14,9 @@
 // Run with: npm run demo:ai-signals
 import "dotenv/config";
 import { api, login, EMAILS } from "./demo-seed-lib.js";
-import { loadSnapshot } from "../lifecycle/repository.js";
-import { evaluateGate } from "../lifecycle/gates.js";
-import { NEXT_PHASE, isSequencedPhase, type SequencedPhase } from "../lifecycle/phases.js";
+import { loadSnapshot } from "../modules/projects/lifecycle/repository.js";
+import { evaluateGate } from "../modules/projects/lifecycle/gates.js";
+import { NEXT_PHASE, isSequencedPhase, type SequencedPhase } from "../modules/projects/lifecycle/phases.js";
 
 const PROJECT_CODE = process.env.AISIG_PROJECT_CODE ?? "DEMO-S4";
 

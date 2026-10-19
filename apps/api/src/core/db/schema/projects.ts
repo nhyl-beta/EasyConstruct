@@ -3,8 +3,8 @@ import {
   pgTable, serial, varchar,
   integer, text, timestamp, numeric, jsonb,
 } from 'drizzle-orm/pg-core';
-import { users } from './users.js';
-import { clients } from './reference.js';
+import { users } from "./users.js";
+import { clients } from "./reference.js";
 
 export const projects = pgTable('projects', {
   id:          serial('id').primaryKey(),

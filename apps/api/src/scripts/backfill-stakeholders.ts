@@ -9,8 +9,8 @@
 import "dotenv/config";
 import { db } from "../core/db/connection.js";
 import { projects } from "../core/db/schema/projects.js";
-import { planBackfill } from "../project-stakeholders/rules.js";
-import * as repo from "../project-stakeholders/repository.js";
+import { planBackfill } from "../modules/projects/project-stakeholders/rules.js";
+import * as repo from "../modules/projects/project-stakeholders/repository.js";
 
 const apply = process.argv.includes("--apply");
 

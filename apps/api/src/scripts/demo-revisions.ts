@@ -13,7 +13,7 @@ import { db } from "../core/db/connection.js";
 import { designRevisions } from "../core/db/schema/design-revisions.js";
 import { designs } from "../core/db/schema/designs.js";
 import { projects } from "../core/db/schema/projects.js";
-import { ensureProjectRevisionDemo, removeDemoRevisions } from "../designs/design-revisions/demo.js";
+import { ensureProjectRevisionDemo, removeDemoRevisions } from "../modules/design/designs/design-revisions/demo.js";
 import { assertDemoDatabase } from "./demo-guard.js";
 
 const args = process.argv.slice(2);

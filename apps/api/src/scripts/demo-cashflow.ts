@@ -40,11 +40,11 @@ import { budgets, cashFlowEntries, expenses, payrollBatches } from "../core/db/s
 import { payrollBatchDecisions } from "../core/db/schema/payroll.js";
 import { projects } from "../core/db/schema/projects.js";
 import { FEATURES } from "../core/config/features.js";
-import { assignSlots, pickInstant, projectInflow } from "../finance/cash-flow/demo-plan.js";
-import { keyToLabel, lastMonthKeys, monthKey, round2 } from "../finance/cash-flow/months.js";
-import { refreshMonth } from "../finance/cash-flow/service.js";
-import { expenseOutflowByMonth, payrollOutflowByMonth } from "../finance/cash-flow/sources.js";
-import { expensesService } from "../finance/expenses/services.js";
+import { assignSlots, pickInstant, projectInflow } from "../modules/finance/cash-flow/demo-plan.js";
+import { keyToLabel, lastMonthKeys, monthKey, round2 } from "../modules/finance/cash-flow/months.js";
+import { refreshMonth } from "../modules/finance/cash-flow/service.js";
+import { expenseOutflowByMonth, payrollOutflowByMonth } from "../modules/finance/cash-flow/sources.js";
+import { expensesService } from "../modules/finance/expenses/services.js";
 import { assertDemoDatabase } from "./demo-guard.js";
 
 const DRY = process.argv.includes("--dry-run");

@@ -1,5 +1,5 @@
 import { pgTable, serial, varchar, integer, timestamp } from 'drizzle-orm/pg-core';
-import { designs } from './designs.js';
+import { designs } from "./designs.js";
 
 export const architectDocuments = pgTable('architect_documents', {
   id: serial('id').primaryKey(),

@@ -9,7 +9,7 @@
 //
 // Safe to re-run; every row is upserted on (source, source_item_id).
 import "dotenv/config";
-import { fetchTrades, fetchCostsForTrade } from "../ai-validation/reference-client.js";
+import { fetchTrades, fetchCostsForTrade } from "../modules/insights/ai-validation/reference-client.js";
 
 async function main() {
   const trades = await fetchTrades();

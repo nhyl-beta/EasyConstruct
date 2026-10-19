@@ -1,5 +1,5 @@
 import { pgTable, serial, varchar, integer, timestamp, unique } from 'drizzle-orm/pg-core';
-import { users } from './users.js';
+import { users } from "./users.js";
 
 // Generalized from the original engineer-only "project_engineers" table
 // (EC-013/017/018/024): a PM marks any team member — engineer, architect,
