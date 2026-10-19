@@ -1,6 +1,6 @@
 // Tiny controller plumbing shared by the three purchasing modules.
 import type { NextFunction, Request, Response } from "express";
-import { sendSuccess } from "../../utils/response.js";
+import { sendSuccess } from "../../core/utils/response.js";
 import { actorOf, type Actor } from "./access.js";
 
 type Result = { data: unknown; status?: number; message?: string };

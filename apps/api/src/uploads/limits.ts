@@ -3,7 +3,7 @@
 // One place for "how big may an upload be and what kinds are allowed", shared
 // by the base64 upload, the streaming (multipart) upload and the Vercel Blob
 // client-upload token route.
-import { env } from "../config/env.js";
+import { env } from "../core/config/env.js";
 
 const MB = 1024 * 1024;
 

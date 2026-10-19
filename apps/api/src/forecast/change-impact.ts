@@ -7,8 +7,8 @@
 // "How much is done" is task completion, not projects.progress, for the same
 // reason signals/burn-vs-progress.ts gives: progress includes the phase-band
 // offset (Construction starts at 30%), which would flatter the estimate.
-import { SIGNAL_THRESHOLDS } from "../config/signals.js";
-import { addDaysIso } from "../utils/dates.js";
+import { SIGNAL_THRESHOLDS } from "../core/config/signals.js";
+import { addDaysIso } from "../core/utils/dates.js";
 
 export type ForecastSeverity = "info" | "warn" | "critical";
 

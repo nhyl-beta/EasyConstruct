@@ -1,12 +1,12 @@
 // apps/api/src/tasks/service.ts — NEW
-import { ForbiddenError, NotFoundError, ValidationError } from "../utils/errors.js";
-import { tasks } from "../db/schema/task.js";
-import { orderByFor, paginate, type PageRequest } from "../utils/pagination.js";
+import { ForbiddenError, NotFoundError, ValidationError } from "../core/utils/errors.js";
+import { tasks } from "../core/db/schema/task.js";
+import { orderByFor, paginate, type PageRequest } from "../core/utils/pagination.js";
 import { assertProjectWritable, refreshProjectProgress } from "../lifecycle/service.js";
 import * as repo from "./repository.js";
 import * as milestonesRepo from "../milestones/repository.js";
 import * as notificationsService from "../notifications/service.js";
-import { todayManila, addDaysIso } from "../utils/dates.js";
+import { todayManila, addDaysIso } from "../core/utils/dates.js";
 import {
   ALLOCATION_CONFIG,
   allocateTasks,

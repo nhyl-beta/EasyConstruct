@@ -1,5 +1,5 @@
-﻿import { Router } from "express";
-import { requireRole } from "../../middleware/auth.js";
+import { Router } from "express";
+import { requireRole } from "../../core/auth/middleware.js";
 import { approvalsController } from "./controller.js";
 
 export const approvalsRouter = Router();

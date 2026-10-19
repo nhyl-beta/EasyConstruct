@@ -1,6 +1,6 @@
 // apps/api/src/dashboard/cycle-times.repository.ts (objectives fix 1.4): start and end timestamps that already exist, nothing new.
 import { sql } from "drizzle-orm";
-import { db } from "../db/connection.js";
+import { db } from "../core/db/connection.js";
 import type { CycleSample } from "./cycle-times.js";
 
 const rows = async <T>(query: ReturnType<typeof sql>): Promise<T[]> => (await db.execute(query)).rows as T[];

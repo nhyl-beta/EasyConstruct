@@ -1,6 +1,6 @@
-import { db } from "../../db/connection.js";
-import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "../../utils/errors.js";
-import { logAudit } from "../../utils/audit.js";
+import { db } from "../../core/db/connection.js";
+import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "../../core/utils/errors.js";
+import { logAudit } from "../../core/audit/audit.js";
 import { assertProjectWritable } from "../../lifecycle/service.js";
 import * as requirementsRepo from "../../requirements/repository.js";
 import { resolveActiveCategory, resolveCategoryChange } from "../categories/service.js";
@@ -28,7 +28,7 @@ import {
   prStatusAfterRaise,
 } from "../purchasing/rules.js";
 import { purchaseRequestsRepository as repo, type PurchaseRequestRow } from "./repository.js";
-import type { PurchaseLineItem } from "../../db/schema/finance.js";
+import type { PurchaseLineItem } from "../../core/db/schema/finance.js";
 
 export interface CreatePurchaseRequestInput {
   requirementId: number;

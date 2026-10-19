@@ -1,7 +1,7 @@
 // apps/api/src/transmittals/routes.ts — mounted at /api/transmittals
 import { Router } from "express";
-import { authenticate, requireRole } from "../middleware/auth.js";
-import { validate } from "../middleware/validate.js";
+import { authenticate, requireRole } from "../core/auth/middleware.js";
+import { validate } from "../core/http/validate.js";
 import {
   acknowledgeTransmittalSchema,
   createTransmittalSchema,

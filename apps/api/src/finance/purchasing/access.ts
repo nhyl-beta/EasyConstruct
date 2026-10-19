@@ -2,11 +2,11 @@
 // only: the same rules the rest of the app uses (project PM link, project
 // membership), never a client-supplied role.
 import type { Request } from "express";
-import { ForbiddenError, NotFoundError, UnauthorizedError } from "../../utils/errors.js";
+import { ForbiddenError, NotFoundError, UnauthorizedError } from "../../core/utils/errors.js";
 import * as projectsRepo from "../../projects/repository.js";
 import * as projectMemberRepo from "../../project-members/repository.js";
 import { isOwnProject, visibleProjectCodes } from "../../projects/service.js";
-import type { AuthedRequest } from "../../middleware/auth.js";
+import type { AuthedRequest } from "../../core/auth/middleware.js";
 
 export interface Actor {
   id: number;

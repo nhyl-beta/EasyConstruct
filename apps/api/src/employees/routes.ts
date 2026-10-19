@@ -1,7 +1,7 @@
 import { Router } from "express";
 import * as controller from "./controller.js";
-import { validate } from "../middleware/validate.js";
-import { authenticate } from "../middleware/auth.js";
+import { validate } from "../core/http/validate.js";
+import { authenticate } from "../core/auth/middleware.js";
 import {
   createEmployeeSchema,
   updateEmployeeSchema,

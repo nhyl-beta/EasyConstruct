@@ -1,6 +1,6 @@
-import { db } from "../db/connection.js";
-import { requirements } from "../db/schema/requirements.js";
-import { countRows, groupCount, inCodes, selectPage } from "../db/paged.js";
+import { db } from "../core/db/connection.js";
+import { requirements } from "../core/db/schema/requirements.js";
+import { countRows, groupCount, inCodes, selectPage } from "../core/db/paged.js";
 import { and, desc, eq, ilike, SQL } from "drizzle-orm";
 import type {
   CreateRequirementInput,

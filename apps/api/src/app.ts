@@ -8,12 +8,12 @@ import deliverablesRoutes from "../src/deliverables/routes.js";
 import architectDocumentsRoutes from "./architect-documents/routes.js";
 import blueprintsRoutes from "./blueprints/routes.js";
 import designRoutes from "./designs/routes.js";
-import { corsMiddleware } from "./middleware/cors.js";
-import { errorMiddleware } from "./middleware/error.js";
-import { logger } from "./middleware/logger.js";
-import { requestId } from "./middleware/request-id.js";
-import { securityHeaders } from "./middleware/security-headers.js";
-import { cacheInvalidation } from "./cache/invalidate.js";
+import { corsMiddleware } from "./core/http/cors.js";
+import { errorMiddleware } from "./core/http/error.js";
+import { logger } from "./core/http/logger.js";
+import { requestId } from "./core/http/request-id.js";
+import { securityHeaders } from "./core/http/security-headers.js";
+import { cacheInvalidation } from "./core/cache/invalidate.js";
 import projectRoutes from "./projects/routes.js";
 import proposalRoutes from "./proposals/routes.js";
 import hrRoutes from "./hr/routes.js";
@@ -29,7 +29,7 @@ import payrollReviewRoutes from "./finance/payroll-review/routes.js";
 import {
   authenticate,
   requireRole,
-} from "./middleware/auth.js";
+} from "./core/auth/middleware.js";
 
 import { financeRouter } from "./routes/finance.js";
 import notificationRoutes from "./notifications/route.js";

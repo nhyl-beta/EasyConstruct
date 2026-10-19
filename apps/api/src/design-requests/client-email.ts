@@ -3,8 +3,8 @@
 // Builds and sends the "RFI/RFA to client" email. Outbound only: the client
 // replies from their own mailbox to the sender (Cc + Reply-To), and the sender
 // updates the request status in the app by hand.
-import type { DesignRequest, DesignRequestFile } from "../db/schema/design-requests.js";
-import { sendMail } from "../mail/mailer.js";
+import type { DesignRequest, DesignRequestFile } from "../core/db/schema/design-requests.js";
+import { sendMail } from "../core/mail/mailer.js";
 import { openStoredFile } from "../uploads/service.js";
 
 /** Total attachment size we are willing to put on one email. */

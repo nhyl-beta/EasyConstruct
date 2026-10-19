@@ -1,14 +1,14 @@
 import { NextFunction, Request, Response } from "express";
-import { HTTP } from "../constants/http-status.js";
-import { MSG }  from "../constants/messages.js";
-import { formatSuccess } from "../utils/response.js";
+import { HTTP } from "../core/config/http-status.js";
+import { MSG }  from "../core/config/messages.js";
+import { formatSuccess } from "../core/utils/response.js";
 import * as service from "./service.js";
 import type { DesignFilters } from "./types.js";
-import type { AuthedRequest } from "../middleware/auth.js";
+import type { AuthedRequest } from "../core/auth/middleware.js";
 import { assertAssignedToProject, assignedCodesFor, isAssignedScoped, scopeRowsToAssigned } from "../projects/scope.js";
-import { parsePageRequest, sendPaged } from "../utils/pagination.js";
+import { parsePageRequest, sendPaged } from "../core/utils/pagination.js";
 import { DESIGN_SORT_COLUMNS } from "./repository.js";
-import { parseIdParam } from "../utils/params.js";
+import { parseIdParam } from "../core/utils/params.js";
 
 export const getAll = async (req: Request, res: Response, next: NextFunction) => {
   const auth = (req as AuthedRequest).authUser;

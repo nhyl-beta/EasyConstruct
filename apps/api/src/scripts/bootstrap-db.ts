@@ -17,8 +17,8 @@ import "dotenv/config";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
-import { bootstrapRefusal, dataSteps, extraSql, journalRows, realSchemaDifferences, unclassifiedDataMigrations } from "../db/bootstrap.js";
-import { checkJournal, loadMigrations } from "../db/migrations.js";
+import { bootstrapRefusal, dataSteps, extraSql, journalRows, realSchemaDifferences, unclassifiedDataMigrations } from "../core/db/bootstrap.js";
+import { checkJournal, loadMigrations } from "../core/db/migrations.js";
 import { compareWithSchema } from "./db-schema-tools.js";
 
 const drizzleDir = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "drizzle");

@@ -1,10 +1,10 @@
-import { NotFoundError, ValidationError } from "../utils/errors.js";
-import { db } from "../db/connection.js";
-import { projects } from "../db/schema/projects.js";
+import { NotFoundError, ValidationError } from "../core/utils/errors.js";
+import { db } from "../core/db/connection.js";
+import { projects } from "../core/db/schema/projects.js";
 import { eq } from "drizzle-orm";
 import { ensureValidation, validateProposal } from "./validation.js";
 import { loadValidationContext } from "./validation-context.js";
-import { FEATURES } from "../config/features.js";
+import { FEATURES } from "../core/config/features.js";
 import { assertProjectWritable, refreshProjectProgress } from "../lifecycle/service.js";
 import { createWorkflow, decideStage } from "../workflows/service.js";
 import * as workflowsRepo from "../workflows/repository.js";
@@ -18,8 +18,8 @@ import {
   statusCounts,
   type ProposalFilters,
 } from "./repository.js";
-import { proposals as proposalsTable } from "../db/schema/proposals.js";
-import { orderByFor, paginate, type PageRequest } from "../utils/pagination.js";
+import { proposals as proposalsTable } from "../core/db/schema/proposals.js";
+import { orderByFor, paginate, type PageRequest } from "../core/utils/pagination.js";
 
 const DESIGN_APPROVAL_TEMPLATE = "Design Proposal Approval";
 

@@ -1,12 +1,12 @@
 // apps/api/src/attendance/exceptions-repository.ts (objectives fix 2.3): reads for the exception rules.
 import { and, eq, gte, inArray, isNotNull, lte, sql } from "drizzle-orm";
-import { db } from "../db/connection.js";
-import { attendance } from "../db/schema/attendance.js";
-import { employees } from "../db/schema/employees.js";
-import { notifications } from "../db/schema/notifications.js";
-import { projectMembers } from "../db/schema/project-members.js";
-import { projects } from "../db/schema/projects.js";
-import { tasks } from "../db/schema/task.js";
+import { db } from "../core/db/connection.js";
+import { attendance } from "../core/db/schema/attendance.js";
+import { employees } from "../core/db/schema/employees.js";
+import { notifications } from "../core/db/schema/notifications.js";
+import { projectMembers } from "../core/db/schema/project-members.js";
+import { projects } from "../core/db/schema/projects.js";
+import { tasks } from "../core/db/schema/task.js";
 import type { AttendanceRow, ExpectedWorker, OpenTaskDue } from "./exceptions.js";
 
 export const findRows = async (from: string, to: string): Promise<AttendanceRow[]> => {

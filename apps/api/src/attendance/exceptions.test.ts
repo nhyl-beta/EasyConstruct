@@ -11,7 +11,7 @@ import {
   type AttendanceRow,
   type ExpectedWorker,
 } from "./exceptions.js";
-import type { AttendanceRules } from "../config/attendance.js";
+import type { AttendanceRules } from "../core/config/attendance.js";
 
 const RULES: AttendanceRules = {
   shiftStart: "08:00",

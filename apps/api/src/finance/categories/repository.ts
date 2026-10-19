@@ -1,5 +1,5 @@
 import { and, asc, eq, sql } from "drizzle-orm";
-import { db } from "../../db/connection.js";
+import { db } from "../../core/db/connection.js";
 import {
   budgetAllocations,
   budgets,
@@ -7,7 +7,7 @@ import {
   expenses,
   procurementOrders,
   purchaseRequests,
-} from "../../db/schema/finance.js";
+} from "../../core/db/schema/finance.js";
 import { emptyUsage, nameKey, type CategoryUsage } from "./rules.js";
 
 export type CategoryRow = typeof expenseCategories.$inferSelect;

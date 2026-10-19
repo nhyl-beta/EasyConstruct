@@ -1,9 +1,9 @@
 // apps/api/src/reports/repository.ts (client demo change #10)
 import { and, desc, eq, inArray, isNotNull } from "drizzle-orm";
-import { db } from "../db/connection.js";
-import { documents } from "../db/schema/documents.js";
-import { projectPhaseHistory } from "../db/schema/project-phase-history.js";
-import { projects } from "../db/schema/projects.js";
+import { db } from "../core/db/connection.js";
+import { documents } from "../core/db/schema/documents.js";
+import { projectPhaseHistory } from "../core/db/schema/project-phase-history.js";
+import { projects } from "../core/db/schema/projects.js";
 import { REPORT_PERIODS, type ReportPeriod } from "./periods.js";
 
 /** Start dates of the reports filed for each project, by period. */

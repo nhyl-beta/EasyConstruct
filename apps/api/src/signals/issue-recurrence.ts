@@ -11,7 +11,7 @@
 // this", neither of which K3's count communicates.
 import type { Signal, SignalContext, SignalRule } from "./types.js";
 import type { LifecycleSnapshot } from "../lifecycle/repository.js";
-import { SIGNAL_THRESHOLDS } from "../config/signals.js";
+import { SIGNAL_THRESHOLDS } from "../core/config/signals.js";
 import { actionFor } from "./playbook.js";
 import { rankPrecedents } from "../issues/precedents.js";
 

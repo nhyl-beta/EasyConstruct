@@ -1,4 +1,4 @@
-import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "../utils/errors.js";
+import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "../core/utils/errors.js";
 import { assertProjectWritable, refreshProjectProgress } from "../lifecycle/service.js";
 import { CLOSEOUT_TEMPLATE_NAME } from "../lifecycle/repository.js";
 import { filterRowsToCodes } from "../projects/visibility.js";
@@ -9,14 +9,14 @@ import * as notificationsService from "../notifications/service.js";
 import { validateWorkflowLineItems } from "../ai-validation/service.js";
 import * as validationRepo from "../ai-validation/repository.js";
 import type { LineItemValidationSummary } from "../ai-validation/types.js";
-import { FEATURES } from "../config/features.js";
+import { FEATURES } from "../core/config/features.js";
 import * as budgetService from "../finance/budget/service.js";
 import * as budgetAdjustmentsService from "../finance/budget-adjustments/service.js";
 import * as projectsRepo from "../projects/repository.js";
 import { expensesRepository } from "../finance/expenses/repository.js";
 import * as repo from "./repository.js";
-import { workflows as workflowsTable } from "../db/schema/workflows.js";
-import { orderByFor, paginate, paginateRows, byDate, byString, type PageRequest } from "../utils/pagination.js";
+import { workflows as workflowsTable } from "../core/db/schema/workflows.js";
+import { orderByFor, paginate, paginateRows, byDate, byString, type PageRequest } from "../core/utils/pagination.js";
 import type {
   ApprovalQueueItem,
   ApprovalScope,
@@ -155,7 +155,7 @@ export const deleteTemplate = async (id: number) => {
 
 // ── Workflows ──────────────────────────────────────────────────────────────
 
-const attachStages = async (rows: (typeof import("../db/schema/workflows.js").workflows.$inferSelect)[]) => {
+const attachStages = async (rows: (typeof import("../core/db/schema/workflows.js").workflows.$inferSelect)[]) => {
   const ids = rows.map((r) => r.id);
   // Attachments and line items are fetched with the stages, not on a separate
   // round trip per screen: every approval view needs the full submission

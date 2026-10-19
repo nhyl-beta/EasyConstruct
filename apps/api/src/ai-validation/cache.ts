@@ -3,11 +3,11 @@
 // The read path every comparison uses (matcher.ts via service.ts) — never
 // call reference-client.ts directly outside this file, so the TTL and
 // budget logic stay in one place.
-import { db } from "../db/connection.js";
-import { referenceSnapshots, type ReferenceSnapshotRow } from "../db/schema/ai-validation.js";
+import { db } from "../core/db/connection.js";
+import { referenceSnapshots, type ReferenceSnapshotRow } from "../core/db/schema/ai-validation.js";
 import { desc } from "drizzle-orm";
 import { fetchTrades, fetchCostsForTrade } from "./reference-client.js";
-import { REFERENCE_CACHE_TTL_MS } from "../config/signals.js";
+import { REFERENCE_CACHE_TTL_MS } from "../core/config/signals.js";
 
 let refreshInFlight: Promise<void> | null = null;
 

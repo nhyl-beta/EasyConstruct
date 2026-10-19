@@ -1,10 +1,10 @@
 import { and, desc, eq, gte, ilike, inArray, or, sql, type SQL } from "drizzle-orm";
-import { countRows, selectPage } from "../../db/paged.js";
+import { countRows, selectPage } from "../../core/db/paged.js";
 import type { ExpenseDecision } from "./decision.js";
 import type { ExpenseLike } from "./anomaly.js";
 
-import { db } from "../../db/connection.js";
-import { expenses } from "../../db/schema/finance.js";
+import { db } from "../../core/db/connection.js";
+import { expenses } from "../../core/db/schema/finance.js";
 import { nextId } from "../purchasing/ids.js";
 
 import type { CreateExpenseInput, ListExpensesQuery } from "./types.js";

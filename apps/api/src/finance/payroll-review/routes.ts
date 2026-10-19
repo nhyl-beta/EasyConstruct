@@ -1,7 +1,7 @@
 import { Router } from "express";
 
 import * as controller from "./controller.js";
-import { validate } from "../../middleware/validate.js";
+import { validate } from "../../core/http/validate.js";
 import { decidePayrollBatchSchema } from "../validators/payroll-review-validators.js";
 
 const router = Router();

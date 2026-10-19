@@ -8,7 +8,7 @@
 // PM the project's own PM" check has to live anyway, so a role-only route
 // guard here would just be a second, looser copy of the same rule.
 import { Router } from "express";
-import { authenticate } from "../middleware/auth.js";
+import { authenticate } from "../core/auth/middleware.js";
 import * as controller from "./controller.js";
 
 const router = Router({ mergeParams: true });

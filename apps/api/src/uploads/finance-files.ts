@@ -1,11 +1,11 @@
 // Finance files are not open to every signed-in role: a receipt or delivery receipt belongs to a
 // finance record, and opening it follows the same rule as reading that record (finance/access.ts).
 import { eq, sql } from "drizzle-orm";
-import { db } from "../db/connection.js";
-import { expenses, procurementOrders, reimbursements } from "../db/schema/finance.js";
+import { db } from "../core/db/connection.js";
+import { expenses, procurementOrders, reimbursements } from "../core/db/schema/finance.js";
 import { canReadFinanceFile, type FinanceFileKind } from "../finance/access.js";
 import { assertProjectVisible } from "../projects/service.js";
-import { ForbiddenError } from "../utils/errors.js";
+import { ForbiddenError } from "../core/utils/errors.js";
 
 interface FinanceFileOwner {
   kind: FinanceFileKind;

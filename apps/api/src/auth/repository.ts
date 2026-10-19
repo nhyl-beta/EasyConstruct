@@ -1,8 +1,8 @@
 import { and, desc, eq, gte, isNull, sql } from "drizzle-orm";
-import { db } from "../db/connection.js";
-import { users } from "../db/schema/users.js";
-import { auditLogs } from "../db/schema/audit-logs.js";
-import { passwordResetTokens } from "../db/schema/password-reset-tokens.js";
+import { db } from "../core/db/connection.js";
+import { users } from "../core/db/schema/users.js";
+import { auditLogs } from "../core/db/schema/audit-logs.js";
+import { passwordResetTokens } from "../core/db/schema/password-reset-tokens.js";
 
 export const findByEmail = async (email: string) => {
   const [user] = await db.select().from(users).where(eq(users.email, email));

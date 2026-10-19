@@ -1,5 +1,5 @@
 // apps/api/src/milestones/types.ts — NEW
-import type { MilestoneLinkType, MilestoneStatus } from "../db/schema/milestones.js";
+import type { MilestoneLinkType, MilestoneStatus } from "../core/db/schema/milestones.js";
 
 export type { MilestoneLinkType, MilestoneStatus };
 

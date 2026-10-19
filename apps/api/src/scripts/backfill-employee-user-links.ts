@@ -1,7 +1,7 @@
 import { eq, isNull } from "drizzle-orm";
-import { db } from "../db/connection.js";
-import { employees } from "../db/schema/employees.js";
-import { users } from "../db/schema/users.js";
+import { db } from "../core/db/connection.js";
+import { employees } from "../core/db/schema/employees.js";
+import { users } from "../core/db/schema/users.js";
 
 async function main() {
   const unlinked = await db.select().from(employees).where(isNull(employees.userId));

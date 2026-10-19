@@ -1,11 +1,11 @@
 // apps/api/src/documents/repository.ts — NEW
 import { and, desc, eq, ilike, or, sql, SQL } from "drizzle-orm";
-import { countRows, inCodes, selectPage } from "../db/paged.js";
-import { db } from "../db/connection.js";
-import { documents } from "../db/schema/documents.js";
-import { projects } from "../db/schema/projects.js";
-import { proposals } from "../db/schema/proposals.js";
-import { designs } from "../db/schema/designs.js";
+import { countRows, inCodes, selectPage } from "../core/db/paged.js";
+import { db } from "../core/db/connection.js";
+import { documents } from "../core/db/schema/documents.js";
+import { projects } from "../core/db/schema/projects.js";
+import { proposals } from "../core/db/schema/proposals.js";
+import { designs } from "../core/db/schema/designs.js";
 import type { RelatedType } from "./advisory.js";
 import type { CreateDocumentInput, DocumentFilters } from "./types.js";
 

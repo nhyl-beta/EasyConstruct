@@ -1,6 +1,6 @@
 // repository.ts
-import { db } from "../../db/connection.js";
-import { designReviews } from "../../db/schema/design-reviews.js";
+import { db } from "../../core/db/connection.js";
+import { designReviews } from "../../core/db/schema/design-reviews.js";
 import { eq, and, desc, SQL } from 'drizzle-orm';
 import type { CreateDesignReviewInput, DesignReviewFilters } from "./types.js";
 

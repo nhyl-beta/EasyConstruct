@@ -1,7 +1,7 @@
 import * as repo from "./repository.js";
-import { orderByFor, paginate, type PageRequest } from "../utils/pagination.js";
-import { engineeringReports as engineeringReportsTable } from "../db/schema/engineering-reports.js";
-import { ForbiddenError, NotFoundError, ValidationError } from "../utils/errors.js";
+import { orderByFor, paginate, type PageRequest } from "../core/utils/pagination.js";
+import { engineeringReports as engineeringReportsTable } from "../core/db/schema/engineering-reports.js";
+import { ForbiddenError, NotFoundError, ValidationError } from "../core/utils/errors.js";
 import { refreshProjectProgress } from "../lifecycle/service.js";
 import * as projectsRepo from "../projects/repository.js";
 import { resolveProjectCode } from "./project-code.js";

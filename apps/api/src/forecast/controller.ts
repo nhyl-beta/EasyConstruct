@@ -1,13 +1,13 @@
 // apps/api/src/forecast/controller.ts (objectives fix 3.2)
 import { NextFunction, Response } from "express";
-import { formatSuccess } from "../utils/response.js";
+import { formatSuccess } from "../core/utils/response.js";
 import { assertProjectVisible } from "../projects/service.js";
 import * as workflowsRepo from "../workflows/repository.js";
-import { NotFoundError } from "../utils/errors.js";
-import type { AuthedRequest } from "../middleware/auth.js";
+import { NotFoundError } from "../core/utils/errors.js";
+import type { AuthedRequest } from "../core/auth/middleware.js";
 import * as service from "./service.js";
-import { FEATURES } from "../config/features.js";
-import { parseIdParam } from "../utils/params.js";
+import { FEATURES } from "../core/config/features.js";
+import { parseIdParam } from "../core/utils/params.js";
 
 /** GET /api/workflows/:id/impact-forecast?timeImpactDays=N, project-scoped like the workflow itself. */
 export const workflowForecast = async (req: AuthedRequest, res: Response, next: NextFunction) => {

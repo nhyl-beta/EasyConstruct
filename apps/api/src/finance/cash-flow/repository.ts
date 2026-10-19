@@ -1,7 +1,7 @@
-﻿import { desc, sql } from "drizzle-orm";
+import { desc, sql } from "drizzle-orm";
 
-import { db } from "../../db/connection.js";
-import { cashFlowEntries } from "../../db/schema/finance.js";
+import { db } from "../../core/db/connection.js";
+import { cashFlowEntries } from "../../core/db/schema/finance.js";
 import { latestByCalendar } from "./months.js";
 
 export const cashFlowRepository = {

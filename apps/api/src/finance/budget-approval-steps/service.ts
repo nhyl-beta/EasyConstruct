@@ -1,4 +1,4 @@
-import { ValidationError } from "../../utils/errors.js";
+import { ValidationError } from "../../core/utils/errors.js";
 import * as repo from "./repository.js";
 import type {
   ApprovalStage,

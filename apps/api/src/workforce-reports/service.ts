@@ -1,8 +1,8 @@
 import { and, eq, gte, lte, sql, SQL } from "drizzle-orm";
-import { db } from "../db/connection.js";
-import { attendance } from "../db/schema/attendance.js";
-import { employees } from "../db/schema/employees.js";
-import { payroll } from "../db/schema/payroll.js";
+import { db } from "../core/db/connection.js";
+import { attendance } from "../core/db/schema/attendance.js";
+import { employees } from "../core/db/schema/employees.js";
+import { payroll } from "../core/db/schema/payroll.js";
 import { loadFairnessData, type FairnessFilters } from "./fairness-repository.js";
 import { summarizeFairness } from "./fairness.js";
 

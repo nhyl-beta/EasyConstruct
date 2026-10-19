@@ -1,10 +1,10 @@
 import type { NextFunction, Request, Response } from "express";
-import { sendSuccess } from "../../utils/response.js";
+import { sendSuccess } from "../../core/utils/response.js";
 import { expensesService } from "./services.js";
-import { parsePageRequest, sendPaged } from "../../utils/pagination.js";
+import { parsePageRequest, sendPaged } from "../../core/utils/pagination.js";
 import { EXPENSE_SORT_COLUMNS } from "./repository.js";
 import { scopedProjectCodes } from "../../projects/service.js";
-import type { AuthedRequest } from "../../middleware/auth.js";
+import type { AuthedRequest } from "../../core/auth/middleware.js";
 
 export const expensesController = {
   async list(req: Request, res: Response, next: NextFunction) {

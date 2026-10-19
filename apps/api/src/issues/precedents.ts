@@ -8,7 +8,7 @@
 // Anything whose TEXT similarity is under SIMILARITY_FLOOR is dropped, so a
 // category match alone never produces a suggestion.
 import { dice } from "../ai-validation/matcher.js";
-import { SIMILARITY_FLOOR } from "../config/signals.js";
+import { SIMILARITY_FLOOR } from "../core/config/signals.js";
 
 export const SAME_CATEGORY_BONUS = 0.05;
 export const MAX_PRECEDENTS = 2;

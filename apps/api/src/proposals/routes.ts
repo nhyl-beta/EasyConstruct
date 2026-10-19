@@ -9,8 +9,8 @@ import {
 } from "../validators/proposal-validators.js";
 
 import { PROPOSAL_VALIDATE_ROLES } from "./validation.js";
-import { validate } from "../middleware/validate.js";
-import { authenticate, requireRole } from "../middleware/auth.js";
+import { validate } from "../core/http/validate.js";
+import { authenticate, requireRole } from "../core/auth/middleware.js";
 
 const router = Router();
 

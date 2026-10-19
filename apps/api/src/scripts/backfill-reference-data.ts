@@ -14,10 +14,10 @@
 //   npm --prefix server run db:backfill-reference -- --apply (write)
 import "dotenv/config";
 import { isNull, sql } from "drizzle-orm";
-import { db } from "../db/connection.js";
-import { expenses, procurementOrders, purchaseRequests } from "../db/schema/finance.js";
-import { projects } from "../db/schema/projects.js";
-import { clients, vendors } from "../db/schema/reference.js";
+import { db } from "../core/db/connection.js";
+import { expenses, procurementOrders, purchaseRequests } from "../core/db/schema/finance.js";
+import { projects } from "../core/db/schema/projects.js";
+import { clients, vendors } from "../core/db/schema/reference.js";
 import { normalizeName } from "../reference/names.js";
 import { planBackfill, type BackfillPlan } from "../reference/backfill.js";
 

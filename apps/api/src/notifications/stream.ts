@@ -10,7 +10,7 @@
 // multi-instance deployment would need a shared pub/sub (e.g. Postgres
 // LISTEN/NOTIFY) instead of this in-memory Map — out of scope here.
 import type { Response } from "express";
-import type { Notification } from "../db/schema/notifications.js";
+import type { Notification } from "../core/db/schema/notifications.js";
 
 type NotificationRecord = Notification;
 

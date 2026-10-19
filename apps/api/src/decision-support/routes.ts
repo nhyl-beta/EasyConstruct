@@ -1,9 +1,9 @@
 // apps/api/src/decision-support/routes.ts (objectives fix 3.7), mounted at /api/decision-support
 import { NextFunction, Response, Router } from "express";
 import { z } from "zod";
-import { authenticate, requireRole, type AuthedRequest } from "../middleware/auth.js";
-import { validate } from "../middleware/validate.js";
-import { formatSuccess } from "../utils/response.js";
+import { authenticate, requireRole, type AuthedRequest } from "../core/auth/middleware.js";
+import { validate } from "../core/http/validate.js";
+import { formatSuccess } from "../core/utils/response.js";
 import { EVENT_ACTIONS, EVENT_KINDS } from "./summary.js";
 import * as service from "./service.js";
 

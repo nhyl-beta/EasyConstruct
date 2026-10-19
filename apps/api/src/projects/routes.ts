@@ -1,16 +1,16 @@
 import { NextFunction, Request, Response, Router } from 'express';
 import * as controller from "./controller.js";
-import { validate }    from "../middleware/validate.js";
+import { validate }    from "../core/http/validate.js";
 import {
   createProjectSchema,
   updateProjectSchema,
 } from "../validators/project-validator.js";
-import { authenticate, requireRole } from '../middleware/auth.js';
-import { ValidationError } from "../utils/errors.js";
+import { authenticate, requireRole } from '../core/auth/middleware.js';
+import { ValidationError } from "../core/utils/errors.js";
 import lifecycleRoutes from "../lifecycle/routes.js";
 import * as service from "./service.js";
-import type { AuthedRequest } from "../middleware/auth.js";
-import { parseIdParam } from "../utils/params.js";
+import type { AuthedRequest } from "../core/auth/middleware.js";
+import { parseIdParam } from "../core/utils/params.js";
 
 const router = Router();
 

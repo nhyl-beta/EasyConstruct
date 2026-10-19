@@ -1,11 +1,11 @@
 // apps/api/src/revisions/repository.ts
 import { and, count, desc, eq, gte, ilike, inArray, lte, or, sql, SQL } from "drizzle-orm";
-import { db } from "../db/connection.js";
-import { revisions, type RevisionRow } from "../db/schema/revisions.js";
-import { designs } from "../db/schema/designs.js";
-import { blueprints } from "../db/schema/blueprints.js";
-import { documents } from "../db/schema/documents.js";
-import { architectDocuments } from "../db/schema/architect-documents.js";
+import { db } from "../core/db/connection.js";
+import { revisions, type RevisionRow } from "../core/db/schema/revisions.js";
+import { designs } from "../core/db/schema/designs.js";
+import { blueprints } from "../core/db/schema/blueprints.js";
+import { documents } from "../core/db/schema/documents.js";
+import { architectDocuments } from "../core/db/schema/architect-documents.js";
 import {
   nextVersionNumber,
   normalizeItemType,

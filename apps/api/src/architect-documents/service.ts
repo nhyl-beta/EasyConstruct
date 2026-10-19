@@ -1,5 +1,5 @@
 // service.ts
-import { NotFoundError } from "../utils/errors.js";
+import { NotFoundError } from "../core/utils/errors.js";
 import * as repo from "./repository.js";
 import type {
   ArchitectDocumentFilters,

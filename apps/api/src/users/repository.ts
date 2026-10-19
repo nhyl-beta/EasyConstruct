@@ -1,7 +1,7 @@
-import { db } from "../db/connection.js";
-import { users } from "../db/schema/users.js";
+import { db } from "../core/db/connection.js";
+import { users } from "../core/db/schema/users.js";
 import { and, asc, eq, ilike, or, SQL } from "drizzle-orm";
-import { countRows } from "../db/paged.js";
+import { countRows } from "../core/db/paged.js";
 import type { CreateUserInput, UpdateUserInput, UserFilters } from "./types.js";
 
 // Never select `password`. This module serves two callers: the read-only,

@@ -1,12 +1,12 @@
 // routes.ts
 import { Router } from "express";
-import { validate } from "../middleware/validate.js";
+import { validate } from "../core/http/validate.js";
 import {
   createArchitectDocumentSchema,
   updateArchitectDocumentSchema,
 } from "../validators/architect-document-validators.js";
 import * as controller from "./controller.js";
-import { authenticate } from "../middleware/auth.js";
+import { authenticate } from "../core/auth/middleware.js";
 
 const router = Router();
 

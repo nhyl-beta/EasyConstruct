@@ -8,7 +8,7 @@
 // The core (filterRowsByCodes / canAccessCode) is pure so it can be tested
 // without a database; the exported helpers add the membership lookup.
 import * as projectMemberRepo from "../project-members/repository.js";
-import { ForbiddenError } from "../utils/errors.js";
+import { ForbiddenError } from "../core/utils/errors.js";
 import * as designsRepo from "../designs/repository.js";
 import { projectCodesForPm } from "./service.js";
 

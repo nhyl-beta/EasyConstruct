@@ -2,7 +2,7 @@
 //
 // Stakeholder roles, who may see contact details, how the first Owner keeps projects.client in step, and the
 // plan for the Owner backfill. Nothing here touches the database.
-import { ValidationError } from "../utils/errors.js";
+import { ValidationError } from "../core/utils/errors.js";
 
 export const STAKEHOLDER_ROLES = ["Owner", "Contractor", "Other"] as const;
 export type StakeholderRole = (typeof STAKEHOLDER_ROLES)[number];

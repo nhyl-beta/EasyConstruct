@@ -3,9 +3,9 @@ import * as projectsRepo from "../projects/repository.js";
 import * as projectMemberRepo from "../project-members/repository.js";
 import * as usersRepo from "../users/repository.js";
 import * as stream from "./stream.js";
-import { NotFoundError } from "../utils/errors.js";
+import { NotFoundError } from "../core/utils/errors.js";
 import { ownsNotification } from "./ownership.js";
-import { PROJECT_MEMBER_ROLES } from "../db/schema/project-members.js";
+import { PROJECT_MEMBER_ROLES } from "../core/db/schema/project-members.js";
 import type {
   CreateNotificationInput,
   NotificationFilters,

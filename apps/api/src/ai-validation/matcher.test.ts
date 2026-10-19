@@ -1,7 +1,7 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import { tokenize, dice, bestMatch } from "./matcher.js";
-import type { ReferenceSnapshotRow } from "../db/schema/ai-validation.js";
+import type { ReferenceSnapshotRow } from "../core/db/schema/ai-validation.js";
 
 const makeItem = (overrides: Partial<ReferenceSnapshotRow>): ReferenceSnapshotRow => ({
   id: 1,

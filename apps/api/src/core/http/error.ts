@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import multer from "multer";
-import { HTTP } from "../constants/http-status.js";
+import { HTTP } from "../config/http-status.js";
 import { AppError } from "../utils/errors.js";
 import { formatError } from "../utils/response.js";
 import { mapPgError } from "./pg-errors.js";

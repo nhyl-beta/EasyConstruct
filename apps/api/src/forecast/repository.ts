@@ -1,10 +1,10 @@
 // apps/api/src/forecast/repository.ts (objectives fix 3.2): the rows the forecast reads, nothing else.
 import { eq } from "drizzle-orm";
-import { db } from "../db/connection.js";
-import { budgets } from "../db/schema/finance.js";
-import { milestones } from "../db/schema/milestones.js";
-import { projects } from "../db/schema/projects.js";
-import { tasks } from "../db/schema/task.js";
+import { db } from "../core/db/connection.js";
+import { budgets } from "../core/db/schema/finance.js";
+import { milestones } from "../core/db/schema/milestones.js";
+import { projects } from "../core/db/schema/projects.js";
+import { tasks } from "../core/db/schema/task.js";
 
 export const loadProjectInputs = async (projectCode: string) => {
   const [project, budgetRows, taskRows, milestoneRows] = await Promise.all([

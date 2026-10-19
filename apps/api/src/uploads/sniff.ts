@@ -5,7 +5,7 @@
 // mismatch. It is not a virus scan: it only answers "is this really the kind of file it says".
 import path from "node:path";
 import fs from "node:fs";
-import { AppError } from "../utils/errors.js";
+import { AppError } from "../core/utils/errors.js";
 
 export type DetectedKind =
   | "png"

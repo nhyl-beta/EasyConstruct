@@ -3,8 +3,8 @@
 // Pure, no I/O. Normalized-token Dice coefficient (S-3): 2*|A∩B| / (|A|+|B|)
 // over token multisets, floor 0.40. Below the floor there is no match, full
 // stop — no partial/best-effort range is ever shown for a weak match.
-import type { ReferenceSnapshotRow } from "../db/schema/ai-validation.js";
-import { SIMILARITY_FLOOR } from "../config/signals.js";
+import type { ReferenceSnapshotRow } from "../core/db/schema/ai-validation.js";
+import { SIMILARITY_FLOOR } from "../core/config/signals.js";
 
 const STOPWORDS = new Set([
   "a", "an", "and", "the", "of", "for", "with", "to", "in", "on", "at", "per",

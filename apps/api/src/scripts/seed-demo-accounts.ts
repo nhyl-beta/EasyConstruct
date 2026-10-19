@@ -1,12 +1,12 @@
 import bcrypt from "bcryptjs";
 import { eq, or } from "drizzle-orm";
 
-import { db } from "../db/connection.js";
-import { employees } from "../db/schema/employees.js";
-import { projects } from "../db/schema/projects.js";
-import { roles } from "../db/schema/roles.js";
-import { users } from "../db/schema/users.js";
-import { workflowTemplates } from "../db/schema/workflows.js";
+import { db } from "../core/db/connection.js";
+import { employees } from "../core/db/schema/employees.js";
+import { projects } from "../core/db/schema/projects.js";
+import { roles } from "../core/db/schema/roles.js";
+import { users } from "../core/db/schema/users.js";
+import { workflowTemplates } from "../core/db/schema/workflows.js";
 import { refreshProjectProgress } from "../lifecycle/service.js";
 import { assertDemoDatabase } from "./demo-guard.js";
 

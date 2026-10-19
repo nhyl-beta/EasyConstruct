@@ -4,7 +4,7 @@
 // segregation-of-duties checks, the budget arithmetic, payment variance and
 // the "unsettled" predicate the closeout gate uses. Every state change in the
 // services goes through these so each rule is unit-tested once.
-import { ConflictError, ForbiddenError, ValidationError } from "../../utils/errors.js";
+import { ConflictError, ForbiddenError, ValidationError } from "../../core/utils/errors.js";
 
 // ── Statuses ────────────────────────────────────────────────────────────────
 

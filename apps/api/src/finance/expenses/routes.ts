@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { requireRole } from "../../middleware/auth.js";
+import { requireRole } from "../../core/auth/middleware.js";
 import { FINANCE_PROJECT_READERS } from "../access.js";
 import { expensesController } from "./controller.js";
 

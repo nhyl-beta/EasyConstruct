@@ -8,7 +8,7 @@ import {
   normalizeStatus,
   statusWhenSuperseded,
 } from "./rules.js";
-import { ForbiddenError, ValidationError } from "../utils/errors.js";
+import { ForbiddenError, ValidationError } from "../core/utils/errors.js";
 
 describe("version numbering", () => {
   test("a new item starts at 1; otherwise one past the highest, gaps notwithstanding", () => {

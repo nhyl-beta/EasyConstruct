@@ -10,7 +10,7 @@ import { projectedFinishRule } from "./projected-finish.js";
 import { overdueTasksRule } from "./overdue-tasks.js";
 import { milestoneSlipRule } from "./milestone-slip.js";
 import { actionFor } from "./playbook.js";
-import { FEATURES } from "../config/features.js";
+import { FEATURES } from "../core/config/features.js";
 
 const RULES: SignalRule[] = [
   costVarianceRule,

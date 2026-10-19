@@ -2,7 +2,7 @@ import type {
   WorkflowAttachmentKind,
   WorkflowLineItemCategory,
   WorkflowStageDefinition,
-} from "../db/schema/workflows.js";
+} from "../core/db/schema/workflows.js";
 
 export type {
   WorkflowAttachmentKind,

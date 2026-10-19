@@ -5,8 +5,8 @@
 // Pure; grades and never gates (C3 and K2 in gates.ts own the hard checks).
 import type { Signal, SignalContext, SignalRule } from "./types.js";
 import type { LifecycleSnapshot } from "../lifecycle/repository.js";
-import { SIGNAL_THRESHOLDS } from "../config/signals.js";
-import { daysBetweenIso } from "../utils/dates.js";
+import { SIGNAL_THRESHOLDS } from "../core/config/signals.js";
+import { daysBetweenIso } from "../core/utils/dates.js";
 
 export const milestoneSlipRule: SignalRule = {
   rule: "milestone-slip",

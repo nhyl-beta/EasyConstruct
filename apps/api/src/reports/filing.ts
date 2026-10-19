@@ -2,7 +2,7 @@
 //
 // What a Daily / Weekly / Monthly Report upload must carry. The document type decides the period; the date is
 // moved to the start of its period so "the report for Wednesday's week" and "the report for Friday's week" are one.
-import { ValidationError } from "../utils/errors.js";
+import { ValidationError } from "../core/utils/errors.js";
 import { manilaDay } from "../jobs/overdue.js";
 import { REPORT_TYPE_BY_PERIOD, normalizeReportPeriod, periodForType } from "./periods.js";
 

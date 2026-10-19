@@ -1,13 +1,13 @@
 import { NextFunction, Request, Response } from "express";
-import { HTTP } from "../constants/http-status.js";
-import { AuthedRequest } from "../middleware/auth.js";
-import { logAudit } from "../utils/audit.js";
-import { formatSuccess } from "../utils/response.js";
+import { HTTP } from "../core/config/http-status.js";
+import { AuthedRequest } from "../core/auth/middleware.js";
+import { logAudit } from "../core/audit/audit.js";
+import { formatSuccess } from "../core/utils/response.js";
 import * as service from "./service.js";
 import type { UserFilters } from "./types.js";
-import { parsePageRequest, sendPaged } from "../utils/pagination.js";
+import { parsePageRequest, sendPaged } from "../core/utils/pagination.js";
 import { USER_SORT_COLUMNS } from "./repository.js";
-import { parseIdParam } from "../utils/params.js";
+import { parseIdParam } from "../core/utils/params.js";
 
 export const getAll = async (req: Request, res: Response, next: NextFunction) => {
   try {

@@ -1,6 +1,6 @@
-import { db } from "../../db/connection.js";
-import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "../../utils/errors.js";
-import { logAudit } from "../../utils/audit.js";
+import { db } from "../../core/db/connection.js";
+import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "../../core/utils/errors.js";
+import { logAudit } from "../../core/audit/audit.js";
 import { assertProjectWritable } from "../../lifecycle/service.js";
 import { assertCanSee, isFinance, isProjectPm, loadProject, staffing, visibleCodes, type Actor } from "../purchasing/access.js";
 import { adjustCommitted, applyApprovedSpend } from "../purchasing/booking.js";
@@ -18,7 +18,7 @@ import { purchaseRequestsRepository as prRepo } from "../purchase-requests/repos
 import { expensesRepository } from "../expenses/repository.js";
 import { annotateSpendExpense } from "../expenses/services.js";
 import { procurementRepository as repo, type ProcurementOrderRow } from "./repository.js";
-import type { PurchaseLineItem } from "../../db/schema/finance.js";
+import type { PurchaseLineItem } from "../../core/db/schema/finance.js";
 
 const ENTITY = "procurement-order";
 const finLink = links.finance("procurement");

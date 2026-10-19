@@ -8,8 +8,8 @@
 //   * adjustCommitted     — budgets.committed += delta (atomic SQL, floored at 0).
 // Budget line matching is `project + category` string equality, newest line first.
 import { and, desc, eq, sql } from "drizzle-orm";
-import { budgets } from "../../db/schema/finance.js";
-import type { db } from "../../db/connection.js";
+import { budgets } from "../../core/db/schema/finance.js";
+import type { db } from "../../core/db/connection.js";
 import { monthKey } from "../cash-flow/months.js";
 import { refreshMonth, type WriteExecutor } from "../cash-flow/service.js";
 import type { BudgetLine } from "./rules.js";

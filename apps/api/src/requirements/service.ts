@@ -1,13 +1,13 @@
-import { db } from "../db/connection.js";
-import { requirements } from "../db/schema/requirements.js";
-import { projects } from "../db/schema/projects.js";
+import { db } from "../core/db/connection.js";
+import { requirements } from "../core/db/schema/requirements.js";
+import { projects } from "../core/db/schema/projects.js";
 import { and, desc, eq, ilike, SQL } from "drizzle-orm";
-import { ForbiddenError, NotFoundError, ValidationError } from "../utils/errors.js";
-import { orNotFound } from "../utils/found.js";
+import { ForbiddenError, NotFoundError, ValidationError } from "../core/utils/errors.js";
+import { orNotFound } from "../core/utils/found.js";
 import * as repo from "./repository.js";
 import { loadDraftSources } from "./draft-repository.js";
 import { generateDraft } from "./templates.js";
-import { orderByFor, paginate, type PageRequest } from "../utils/pagination.js";
+import { orderByFor, paginate, type PageRequest } from "../core/utils/pagination.js";
 import * as projectMemberRepo from "../project-members/repository.js";
 import { assertSitePersonnelMayCreate, assertSitePersonnelMayUpdate } from "./permissions.js";
 import { assertProjectWritable, refreshProjectProgress } from "../lifecycle/service.js";
@@ -15,7 +15,7 @@ import * as notificationsService from "../notifications/service.js";
 import * as projectsRepo from "../projects/repository.js";
 import { isOwnProject } from "../projects/service.js";
 import { decideAuthority, overrideSummary } from "../lifecycle/approval-authority.js";
-import { logAudit } from "../utils/audit.js";
+import { logAudit } from "../core/audit/audit.js";
 import type {
   CreateRequirementInput,
   UpdateRequirementInput,

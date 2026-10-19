@@ -1,7 +1,7 @@
-import { db } from "../db/connection.js";
-import { projectMembers } from "../db/schema/project-members.js";
+import { db } from "../core/db/connection.js";
+import { projectMembers } from "../core/db/schema/project-members.js";
 import { and, eq, SQL } from "drizzle-orm";
-import { countRows, selectPage } from "../db/paged.js";
+import { countRows, selectPage } from "../core/db/paged.js";
 import type { CreateProjectMemberInput, ProjectMemberFilters } from "./types.js";
 
 export const findAll = async (filters: ProjectMemberFilters = {}) => {

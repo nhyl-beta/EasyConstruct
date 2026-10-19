@@ -1,6 +1,6 @@
 // apps/api/src/reconciliation/repository.ts (objectives fix 1.3): read-only queries for the cross-checks.
 import { sql } from "drizzle-orm";
-import { db } from "../db/connection.js";
+import { db } from "../core/db/connection.js";
 import type { BatchTotalsRow, BudgetRow, InactiveMemberRow, OrphanRow } from "./checks.js";
 
 const rows = async <T>(query: ReturnType<typeof sql>): Promise<T[]> => (await db.execute(query)).rows as T[];

@@ -1,7 +1,7 @@
 // apps/api/src/revisions/service.ts
-import { ForbiddenError, NotFoundError, ValidationError } from "../utils/errors.js";
-import { revisions as revisionsTable } from "../db/schema/revisions.js";
-import { orderByFor, paginate, resolveMeta, type PageRequest } from "../utils/pagination.js";
+import { ForbiddenError, NotFoundError, ValidationError } from "../core/utils/errors.js";
+import { revisions as revisionsTable } from "../core/db/schema/revisions.js";
+import { orderByFor, paginate, resolveMeta, type PageRequest } from "../core/utils/pagination.js";
 import { assertProjectWritable } from "../lifecycle/service.js";
 import * as notificationsService from "../notifications/service.js";
 import { openStoredFile } from "../uploads/service.js";

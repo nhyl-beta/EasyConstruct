@@ -1,7 +1,7 @@
 import { and, eq } from "drizzle-orm";
 
-import { db } from "../../db/connection.js";
-import { payrollBatches } from "../../db/schema/finance.js";
+import { db } from "../../core/db/connection.js";
+import { payrollBatches } from "../../core/db/schema/finance.js";
 
 import type { PayrollBatchFilters } from "./types.js";
 

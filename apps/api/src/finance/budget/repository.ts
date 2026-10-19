@@ -1,6 +1,6 @@
 import { and, eq, ilike, or, type SQL } from "drizzle-orm";
-import { db } from "../../db/connection.js";
-import { budgets } from "../../db/schema/finance.js";
+import { db } from "../../core/db/connection.js";
+import { budgets } from "../../core/db/schema/finance.js";
 
 import type {
   BudgetFilters,

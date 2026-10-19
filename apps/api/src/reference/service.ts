@@ -1,5 +1,5 @@
 // apps/api/src/reference/service.ts (objectives fix 1.2)
-import { AppError, ValidationError } from "../utils/errors.js";
+import { AppError, ValidationError } from "../core/utils/errors.js";
 import * as repo from "./repository.js";
 import { findNameMatches, normalizeName, type NameMatch } from "./names.js";
 

@@ -1,6 +1,6 @@
-﻿import { sql } from "drizzle-orm";
-import { db } from "../../db/connection.js";
-import { budgets } from "../../db/schema/finance.js";
+import { sql } from "drizzle-orm";
+import { db } from "../../core/db/connection.js";
+import { budgets } from "../../core/db/schema/finance.js";
 import { projectCosts } from "../cash-flow/sources.js";
 
 /**

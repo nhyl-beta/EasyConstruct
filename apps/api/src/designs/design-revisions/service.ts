@@ -4,8 +4,8 @@ import * as designsRepo from "../repository.js";
 import * as projectsRepo from "../../projects/repository.js";
 import * as projectsService from "../../projects/service.js";
 import { assertProjectWritable } from "../../lifecycle/service.js";
-import { logAudit } from "../../utils/audit.js";
-import { ConflictError, ForbiddenError, NotFoundError } from "../../utils/errors.js";
+import { logAudit } from "../../core/audit/audit.js";
+import { ConflictError, ForbiddenError, NotFoundError } from "../../core/utils/errors.js";
 import type {
   CreateDesignRevisionInput,
   DesignRevisionDetail,

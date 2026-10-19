@@ -1,7 +1,7 @@
 // apps/api/src/signals/cumulative-change-impact.ts — NEW (ai-signals D4)
 import type { Signal, SignalContext, SignalRule } from "./types.js";
 import type { LifecycleSnapshot } from "../lifecycle/repository.js";
-import { SIGNAL_THRESHOLDS } from "../config/signals.js";
+import { SIGNAL_THRESHOLDS } from "../core/config/signals.js";
 
 export const cumulativeChangeImpactRule: SignalRule = {
   rule: "cumulative-change-impact",

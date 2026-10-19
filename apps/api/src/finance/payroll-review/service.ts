@@ -1,6 +1,6 @@
 import * as repository from "./repository.js";
 import * as payrollService from "../../payroll/service.js";
-import { NotFoundError } from "../../utils/errors.js";
+import { NotFoundError } from "../../core/utils/errors.js";
 
 import type { PayrollBatchFilters } from "./types.js";
 import type { DecideBatchInput } from "../../payroll/types.js";

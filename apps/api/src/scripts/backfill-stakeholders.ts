@@ -7,8 +7,8 @@
 // It runs against whatever DATABASE_URL points at (printed first). The staging deployment shares the
 // production database, so read the host before using --apply.
 import "dotenv/config";
-import { db } from "../db/connection.js";
-import { projects } from "../db/schema/projects.js";
+import { db } from "../core/db/connection.js";
+import { projects } from "../core/db/schema/projects.js";
 import { planBackfill } from "../project-stakeholders/rules.js";
 import * as repo from "../project-stakeholders/repository.js";
 

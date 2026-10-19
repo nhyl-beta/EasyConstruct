@@ -1,14 +1,14 @@
 // apps/api/src/dashboard/routes.ts — mounted at /api/dashboard
 import { NextFunction, Response, Router } from "express";
-import { authenticate, requireRole, type AuthedRequest } from "../middleware/auth.js";
+import { authenticate, requireRole, type AuthedRequest } from "../core/auth/middleware.js";
 import { loadCycleSamples } from "./cycle-times.repository.js";
 import { summarizeCycles } from "./cycle-times.js";
-import { UnauthorizedError } from "../utils/errors.js";
-import { formatSuccess } from "../utils/response.js";
+import { UnauthorizedError } from "../core/utils/errors.js";
+import { formatSuccess } from "../core/utils/response.js";
 import * as service from "./service.js";
 import { workforceBoard } from "../hr/aggregates.js";
-import { ALL_DOMAIN, cached } from "../cache/index.js";
-import { visibilityScope } from "../cache/scope.js";
+import { ALL_DOMAIN, cached } from "../core/cache/index.js";
+import { visibilityScope } from "../core/cache/scope.js";
 
 const router = Router();
 router.use(authenticate);

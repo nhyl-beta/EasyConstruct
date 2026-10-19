@@ -1,7 +1,7 @@
 // apps/api/src/reference/repository.ts (objectives fix 1.2): clients and vendors share one shape.
 import { asc, eq, ilike, sql } from "drizzle-orm";
-import { db } from "../db/connection.js";
-import { clients, vendors } from "../db/schema/reference.js";
+import { db } from "../core/db/connection.js";
+import { clients, vendors } from "../core/db/schema/reference.js";
 
 export type ReferenceKind = "clients" | "vendors";
 

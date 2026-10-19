@@ -1,6 +1,6 @@
 // repository.ts
-import { db } from "../db/connection.js";
-import { blueprints } from "../db/schema/blueprints.js";
+import { db } from "../core/db/connection.js";
+import { blueprints } from "../core/db/schema/blueprints.js";
 import { eq, ilike, and, or, SQL } from 'drizzle-orm';
 import type { CreateBlueprintInput, UpdateBlueprintInput, BlueprintFilters } from "./types.js";
 

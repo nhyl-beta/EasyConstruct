@@ -1,11 +1,11 @@
-import { ConflictError, ForbiddenError, NotFoundError } from "../utils/errors.js";
+import { ConflictError, ForbiddenError, NotFoundError } from "../core/utils/errors.js";
 import * as projectsService from "../projects/service.js";
 import * as notificationsService from "../notifications/service.js";
 import { assertProjectWritable, refreshProjectProgress } from "../lifecycle/service.js";
 import * as repo from "./repository.js";
 import { asc } from "drizzle-orm";
-import { projectMembers as projectMembersTable } from "../db/schema/project-members.js";
-import { orderByFor, paginate, type PageRequest } from "../utils/pagination.js";
+import { projectMembers as projectMembersTable } from "../core/db/schema/project-members.js";
+import { orderByFor, paginate, type PageRequest } from "../core/utils/pagination.js";
 import type { CreateProjectMemberInput, ProjectMemberFilters } from "./types.js";
 
 const PRIVILEGED_ROLES = ["admin", "it-designer"];

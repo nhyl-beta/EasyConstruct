@@ -1,8 +1,8 @@
 import { eq, sql, type AnyColumn } from "drizzle-orm";
-import { db } from "../db/connection.js";
-import { payrollBatches } from "../db/schema/finance.js";
-import { payroll } from "../db/schema/payroll.js";
-import { projects } from "../db/schema/projects.js";
+import { db } from "../core/db/connection.js";
+import { payrollBatches } from "../core/db/schema/finance.js";
+import { payroll } from "../core/db/schema/payroll.js";
+import { projects } from "../core/db/schema/projects.js";
 
 // One row per batch: the batch's own totals plus SUMs over its lines. The
 // line columns selected here are numeric/date columns only. The employee id,

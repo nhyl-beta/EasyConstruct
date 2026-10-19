@@ -1,7 +1,7 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import { assertEngineerMayUpdate, openLinkedTasks } from "./permissions.js";
-import { ForbiddenError } from "../utils/errors.js";
+import { ForbiddenError } from "../core/utils/errors.js";
 
 describe("assertEngineerMayUpdate", () => {
   test("staffed engineer can complete an active or at-risk milestone", () => {

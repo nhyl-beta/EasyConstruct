@@ -1,6 +1,6 @@
 import { and, desc, eq, inArray } from "drizzle-orm";
-import { db } from "../../db/connection.js";
-import { purchaseRequests } from "../../db/schema/finance.js";
+import { db } from "../../core/db/connection.js";
+import { purchaseRequests } from "../../core/db/schema/finance.js";
 
 export type PurchaseRequestRow = typeof purchaseRequests.$inferSelect;
 type Write = Pick<typeof db, "update" | "insert">;

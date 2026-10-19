@@ -5,8 +5,8 @@
 // approvals_queue, so this list can never disagree with those pages.
 import { eq } from "drizzle-orm";
 
-import { db } from "../../db/connection.js";
-import { budgets, expenses, payrollBatches, purchaseRequests } from "../../db/schema/finance.js";
+import { db } from "../../core/db/connection.js";
+import { budgets, expenses, payrollBatches, purchaseRequests } from "../../core/db/schema/finance.js";
 import { payrollCost } from "../cash-flow/months.js";
 import type { PendingItem } from "./merge.js";
 

@@ -1,5 +1,5 @@
 // apps/api/src/ai-validation/types.ts — NEW (ai-signals C7)
-import type { ValidationVerdict } from "../db/schema/ai-validation.js";
+import type { ValidationVerdict } from "../core/db/schema/ai-validation.js";
 
 export interface LineItemValidationSource {
   source: string;

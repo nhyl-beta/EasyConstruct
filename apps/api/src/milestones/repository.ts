@@ -1,9 +1,9 @@
 // apps/api/src/milestones/repository.ts — NEW
 import { and, asc, eq, inArray, SQL } from "drizzle-orm";
-import { countRows, inCodes, selectPage } from "../db/paged.js";
-import { db } from "../db/connection.js";
-import { milestones, milestoneLinks } from "../db/schema/milestones.js";
-import { tasks } from "../db/schema/task.js";
+import { countRows, inCodes, selectPage } from "../core/db/paged.js";
+import { db } from "../core/db/connection.js";
+import { milestones, milestoneLinks } from "../core/db/schema/milestones.js";
+import { tasks } from "../core/db/schema/task.js";
 import type { CreateMilestoneInput, CreateMilestoneLinkInput, UpdateMilestoneInput } from "./types.js";
 
 export const findAll = async (projectCode?: string) => {

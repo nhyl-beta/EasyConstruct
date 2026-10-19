@@ -1,5 +1,5 @@
-import { db }       from "../db/connection.js";
-import { projects } from "../db/schema/projects.js";
+import { db }       from "../core/db/connection.js";
+import { projects } from "../core/db/schema/projects.js";
 import { eq, ne, ilike, and, or, isNull, inArray, sql, SQL } from 'drizzle-orm';
 import type { CreateProjectInput, UpdateProjectInput, ProjectFilters } from "./types.js";
 

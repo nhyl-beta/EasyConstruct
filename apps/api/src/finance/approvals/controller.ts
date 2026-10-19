@@ -1,5 +1,5 @@
-﻿import type { NextFunction, Request, Response } from "express";
-import { sendSuccess } from "../../utils/response.js";
+import type { NextFunction, Request, Response } from "express";
+import { sendSuccess } from "../../core/utils/response.js";
 import { approvalsService } from "./service.js";
 import { clampLimit } from "./merge.js";
 

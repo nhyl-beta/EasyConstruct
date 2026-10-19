@@ -4,9 +4,9 @@
 // an item; acceptance goes through the normal milestone and task services so
 // every existing rule (draft milestones under C3, due dates inside a
 // milestone, write locks) still applies. Nothing is applied automatically.
-import { ConflictError, NotFoundError, ValidationError } from "../utils/errors.js";
-import { FEATURES } from "../config/features.js";
-import { todayManila, addDaysIso } from "../utils/dates.js";
+import { ConflictError, NotFoundError, ValidationError } from "../core/utils/errors.js";
+import { FEATURES } from "../core/config/features.js";
+import { todayManila, addDaysIso } from "../core/utils/dates.js";
 import * as repo from "./repository.js";
 import {
   buildPlan,

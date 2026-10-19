@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { validate } from "../middleware/validate.js";
-import { authenticate, requireRole } from "../middleware/auth.js";
+import { validate } from "../core/http/validate.js";
+import { authenticate, requireRole } from "../core/auth/middleware.js";
 import * as controller from "./controller.js";
 import {
   attendanceSchema,

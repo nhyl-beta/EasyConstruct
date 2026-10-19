@@ -1,4 +1,4 @@
-﻿// apps/api/src/finance/cash-flow/service.ts
+// apps/api/src/finance/cash-flow/service.ts
 //
 // Keeps one `cash_flow_entries` row per month in step with the approved
 // expense and payroll records. The outflow is RECOMPUTED from the records
@@ -7,8 +7,8 @@
 // is left untouched.
 import { sql } from "drizzle-orm";
 
-import { db } from "../../db/connection.js";
-import { cashFlowEntries } from "../../db/schema/finance.js";
+import { db } from "../../core/db/connection.js";
+import { cashFlowEntries } from "../../core/db/schema/finance.js";
 import { keyToLabel, round2 } from "./months.js";
 import { expenseOutflowByMonth, payrollOutflowByMonth, type Executor } from "./sources.js";
 

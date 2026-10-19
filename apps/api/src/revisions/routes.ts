@@ -1,8 +1,8 @@
 // apps/api/src/revisions/routes.ts
 import { Router } from "express";
 import * as controller from "./controller.js";
-import { validate } from "../middleware/validate.js";
-import { authenticate, requireRole } from "../middleware/auth.js";
+import { validate } from "../core/http/validate.js";
+import { authenticate, requireRole } from "../core/auth/middleware.js";
 import { createRevisionSchema, revisionStatusSchema } from "../validators/revision-validators.js";
 import { REVISION_READ_ROLES, REVISION_WRITE_ROLES } from "./rules.js";
 

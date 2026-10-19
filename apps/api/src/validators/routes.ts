@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { validate } from "../middleware/validate.js";
-import { authenticate, requireRole } from "../middleware/auth.js";
+import { validate } from "../core/http/validate.js";
+import { authenticate, requireRole } from "../core/auth/middleware.js";
 import {
   forgotPasswordSchema,
   loginSchema,
@@ -8,8 +8,8 @@ import {
   resetPasswordSchema,
 } from "../validators/auth-validators.js";
 import * as controller from "../auth/controller.js";
-import { hitLimiter } from "../auth/throttle.js";
-import { AppError } from "../utils/errors.js";
+import { hitLimiter } from "../core/auth/throttle.js";
+import { AppError } from "../core/utils/errors.js";
 import type { NextFunction, Request, Response } from "express";
 
 // Coarse per-address limit on sign-in attempts (fix 1.5). Held in memory, so on

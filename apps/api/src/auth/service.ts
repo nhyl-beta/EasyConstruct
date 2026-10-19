@@ -2,12 +2,12 @@ import bcrypt from "bcryptjs";
 import crypto from "node:crypto";
 import jwt from "jsonwebtoken";
 import * as repo from "./repository.js";
-import { AppError, NotFoundError, UnauthorizedError, ValidationError } from "../utils/errors.js";
-import { env } from "../config/env.js";
-import { logAudit } from "../utils/audit.js";
-import { assertMailConfigured, sendMail } from "../mail/mailer.js";
-import { invalidateSessionCache } from "../middleware/auth.js";
-import { LOGIN_THROTTLE, throttleMessage, throttleState } from "./throttle.js";
+import { AppError, NotFoundError, UnauthorizedError, ValidationError } from "../core/utils/errors.js";
+import { env } from "../core/config/env.js";
+import { logAudit } from "../core/audit/audit.js";
+import { assertMailConfigured, sendMail } from "../core/mail/mailer.js";
+import { invalidateSessionCache } from "../core/auth/middleware.js";
+import { LOGIN_THROTTLE, throttleMessage, throttleState } from "../core/auth/throttle.js";
 import type {
   ForgotPasswordInput,
   LoginInput,

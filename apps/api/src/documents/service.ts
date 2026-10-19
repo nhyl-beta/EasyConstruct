@@ -1,9 +1,9 @@
 import * as repo from "./repository.js";
-import { documents as documentsTable } from "../db/schema/documents.js";
-import { orderByFor, paginate, type PageRequest } from "../utils/pagination.js";
+import { documents as documentsTable } from "../core/db/schema/documents.js";
+import { orderByFor, paginate, type PageRequest } from "../core/utils/pagination.js";
 import { assertProjectWritable, refreshProjectProgress } from "../lifecycle/service.js";
 import { deleteStoredFile } from "../uploads/service.js";
-import { NotFoundError } from "../utils/errors.js";
+import { NotFoundError } from "../core/utils/errors.js";
 import { resolveForNewDocument } from "../reference/document-types/service.js";
 import { resolveReportFields } from "../reports/filing.js";
 import { assertAdvisoryHasFile, resolveRelatedItem, type RelatedInput } from "./advisory.js";

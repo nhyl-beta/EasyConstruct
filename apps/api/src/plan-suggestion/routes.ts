@@ -2,8 +2,8 @@
 import { Router } from "express";
 import { z } from "zod";
 import * as controller from "./controller.js";
-import { authenticate, requireRole } from "../middleware/auth.js";
-import { validate, validateQuery } from "../middleware/validate.js";
+import { authenticate, requireRole } from "../core/auth/middleware.js";
+import { validate, validateQuery } from "../core/http/validate.js";
 
 const router = Router();
 router.use(authenticate);

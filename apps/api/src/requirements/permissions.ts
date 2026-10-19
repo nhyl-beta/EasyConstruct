@@ -7,7 +7,7 @@
 // Limitation: requirements store createdBy as a display name, not a user id,
 // so "own" is a case-insensitive name match against the signed-in user. Two
 // people with the same name would be indistinguishable here.
-import { ForbiddenError } from "../utils/errors.js";
+import { ForbiddenError } from "../core/utils/errors.js";
 
 const SP_CREATE_STATUSES = new Set(["Draft", "Under Review"]);
 const SP_UPDATABLE_FIELDS = new Set(["title", "category", "description", "attachments", "status"]);

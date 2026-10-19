@@ -12,7 +12,7 @@ import {
   type ValidationLine,
   type WarningContext,
 } from "./validation.js";
-import type { PayrollWarningConfig } from "../config/payroll.js";
+import type { PayrollWarningConfig } from "../core/config/payroll.js";
 
 const CFG: PayrollWarningConfig = { maxHoursPerDay: 12, defaultPeriodDays: 31, maxOvertimeShare: 0.5, rateTolerancePct: 25, minPeers: 3 };
 

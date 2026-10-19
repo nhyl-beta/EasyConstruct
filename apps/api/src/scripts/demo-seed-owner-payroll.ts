@@ -27,11 +27,11 @@
 import "dotenv/config";
 import { and, desc, eq, sql } from "drizzle-orm";
 
-import { db } from "../db/connection.js";
-import { budgets, payrollBatches } from "../db/schema/finance.js";
-import { employees } from "../db/schema/employees.js";
-import { payroll, payrollBatchDecisions } from "../db/schema/payroll.js";
-import { users } from "../db/schema/users.js";
+import { db } from "../core/db/connection.js";
+import { budgets, payrollBatches } from "../core/db/schema/finance.js";
+import { employees } from "../core/db/schema/employees.js";
+import { payroll, payrollBatchDecisions } from "../core/db/schema/payroll.js";
+import { users } from "../core/db/schema/users.js";
 import { refreshMonth } from "../finance/cash-flow/service.js";
 import { monthKey } from "../finance/cash-flow/months.js";
 import { computeLine, getRules, round2 } from "../payroll/engine.js";

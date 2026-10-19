@@ -2,7 +2,7 @@
 //
 // Who a client RFI/RFA is emailed to. Turns the chosen stakeholders (and the old single email) into a
 // clean recipient list, and works out the request-level summary from the per-recipient results.
-import { ValidationError } from "../utils/errors.js";
+import { ValidationError } from "../core/utils/errors.js";
 import { isValidEmail, normalizeEmail } from "../project-stakeholders/rules.js";
 import { MAX_EMAIL_RESENDS, type EmailStatus } from "./rules.js";
 

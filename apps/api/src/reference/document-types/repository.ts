@@ -1,8 +1,8 @@
 // apps/api/src/reference/document-types/repository.ts (client demo change #1)
 import { asc, eq, sql } from "drizzle-orm";
-import { db } from "../../db/connection.js";
-import { documents } from "../../db/schema/documents.js";
-import { documentTypes, type DocumentType } from "../../db/schema/document-types.js";
+import { db } from "../../core/db/connection.js";
+import { documents } from "../../core/db/schema/documents.js";
+import { documentTypes, type DocumentType } from "../../core/db/schema/document-types.js";
 import { DOCUMENT_TYPE_SEEDS, normalizeTypeName } from "./rules.js";
 
 export const findAll = (opts: { includeInactive: boolean }): Promise<DocumentType[]> => {

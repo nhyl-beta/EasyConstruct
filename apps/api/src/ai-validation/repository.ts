@@ -1,6 +1,6 @@
 // apps/api/src/ai-validation/repository.ts — NEW (ai-signals C7)
-import { db } from "../db/connection.js";
-import { validationResults, type ValidationResultRow } from "../db/schema/ai-validation.js";
+import { db } from "../core/db/connection.js";
+import { validationResults, type ValidationResultRow } from "../core/db/schema/ai-validation.js";
 import { desc, inArray } from "drizzle-orm";
 
 // One row per line item — the most recent validation_results row for each

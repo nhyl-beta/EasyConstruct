@@ -1,5 +1,5 @@
 // Pure rules for the managed expense-category list (no database).
-import { ConflictError, ValidationError } from "../../utils/errors.js";
+import { ConflictError, ValidationError } from "../../core/utils/errors.js";
 
 export const NAME_MIN = 2;
 export const NAME_MAX = 64;

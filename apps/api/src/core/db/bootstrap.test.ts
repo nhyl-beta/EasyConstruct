@@ -18,7 +18,7 @@ import {
 } from "./bootstrap.js";
 import { hashSql, loadMigrations } from "./migrations.js";
 
-const drizzleDir = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "drizzle");
+const drizzleDir = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "drizzle");
 const migrations = loadMigrations(drizzleDir);
 
 describe("bootstrapRefusal: only an empty database may be built", () => {

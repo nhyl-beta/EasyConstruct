@@ -7,13 +7,13 @@
 // run. With no CRON_SECRET configured every request is refused.
 import { timingSafeEqual } from "node:crypto";
 import { NextFunction, Request, Response, Router } from "express";
-import { env } from "../config/env.js";
-import { formatSuccess } from "../utils/response.js";
-import { ForbiddenError, UnauthorizedError } from "../utils/errors.js";
+import { env } from "../core/config/env.js";
+import { formatSuccess } from "../core/utils/response.js";
+import { ForbiddenError, UnauthorizedError } from "../core/utils/errors.js";
 import { runSignalScan } from "../signals/scan.js";
 import { runDailyCheck as runAttendanceCheck } from "../attendance/exceptions-service.js";
 import { runOverdueJob } from "./overdue-service.js";
-import { withJobLock } from "./lock.js";
+import { withJobLock } from "../core/jobs/lock.js";
 
 export const secretMatches = (provided: string | undefined, expected: string | undefined): boolean => {
   if (!expected || !provided) return false;

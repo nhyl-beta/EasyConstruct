@@ -5,9 +5,9 @@
 import { NextFunction, Request, Response, Router } from "express";
 import multer from "multer";
 import { z } from "zod";
-import { hitLimiter } from "../auth/throttle.js";
-import { AppError, ValidationError } from "../utils/errors.js";
-import { formatSuccess } from "../utils/response.js";
+import { hitLimiter } from "../core/auth/throttle.js";
+import { AppError, ValidationError } from "../core/utils/errors.js";
+import { formatSuccess } from "../core/utils/response.js";
 import * as publicReply from "./public-reply.js";
 
 const router = Router();

@@ -24,7 +24,7 @@ import {
   prStatusAfterRaise,
   unsettledIds,
 } from "./rules.js";
-import { ConflictError, ForbiddenError, ValidationError } from "../../utils/errors.js";
+import { ConflictError, ForbiddenError, ValidationError } from "../../core/utils/errors.js";
 
 describe("transitions: every pair is checked against the table", () => {
   for (const [kind, statuses, table] of [

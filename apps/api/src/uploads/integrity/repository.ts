@@ -1,7 +1,7 @@
 // apps/api/src/uploads/integrity/repository.ts (client demo change #2)
 import { eq, inArray } from "drizzle-orm";
-import { db } from "../../db/connection.js";
-import { storedFiles, type StoredFile } from "../../db/schema/stored-files.js";
+import { db } from "../../core/db/connection.js";
+import { storedFiles, type StoredFile } from "../../core/db/schema/stored-files.js";
 import type { IntegrityStatus } from "./rules.js";
 
 export const findByUrl = async (url: string): Promise<StoredFile | null> => {

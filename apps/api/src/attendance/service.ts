@@ -3,12 +3,12 @@
  */
 
 import { eq } from "drizzle-orm";
-import { attendance } from "../db/schema/attendance.js";
-import { orderByFor, paginate, type PageRequest } from "../utils/pagination.js";
+import { attendance } from "../core/db/schema/attendance.js";
+import { orderByFor, paginate, type PageRequest } from "../core/utils/pagination.js";
 import { buildHeatmap, lastDays } from "./heatmap.js";
 
-import { db } from "../db/connection.js";
-import { projects } from "../db/schema/projects.js";
+import { db } from "../core/db/connection.js";
+import { projects } from "../core/db/schema/projects.js";
 import {
   AppError,
   ConflictError,
@@ -16,7 +16,7 @@ import {
   ForbiddenError,
   NotFoundError,
   ValidationError,
-} from "../utils/errors.js";
+} from "../core/utils/errors.js";
 import { assertProjectWritable } from "../lifecycle/service.js";
 import * as employeesRepo from "../employees/repository.js";
 import * as projectMemberRepo from "../project-members/repository.js";

@@ -1,9 +1,9 @@
 import { sql } from "drizzle-orm";
-import { db } from "../../db/connection.js";
+import { db } from "../../core/db/connection.js";
 import {
   budgets,
   payrollBatches,
-} from "../../db/schema/finance.js";
+} from "../../core/db/schema/finance.js";
 import { cashFlowRepository } from "../cash-flow/repository.js";
 import { currentMonthExpenseOutflow } from "../cash-flow/sources.js";
 import { projectProfitabilityRepository } from "../project-profitability/repository.js";

@@ -1,7 +1,7 @@
 import { describe, test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { DEFAULT_EXPENSE_CATEGORIES } from "../../constants/expense-categories.js";
+import { DEFAULT_EXPENSE_CATEGORIES } from "../../core/config/expense-categories.js";
 import {
   assertNameFree,
   assertRenamable,

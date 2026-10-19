@@ -6,9 +6,9 @@
 import { after, before, describe, test } from "node:test";
 import assert from "node:assert/strict";
 
-import { db } from "../../db/connection.js";
-import { expenses, payrollBatches } from "../../db/schema/finance.js";
-import { payrollBatchDecisions } from "../../db/schema/payroll.js";
+import { db } from "../../core/db/connection.js";
+import { expenses, payrollBatches } from "../../core/db/schema/finance.js";
+import { payrollBatchDecisions } from "../../core/db/schema/payroll.js";
 import { assertDemoDatabase } from "../../scripts/demo-guard.js";
 import { refreshMonth } from "./service.js";
 import { expenseOutflowByMonth, payrollOutflowByMonth, projectCosts } from "./sources.js";

@@ -4,8 +4,8 @@
 // Consultant staffed on the project answers it. An Engineer's request is a
 // draft until the PM sends it (the countersign). Open requests block closing a
 // project (lifecycle gate X5).
-import { SIGNAL_THRESHOLDS } from "../config/signals.js";
-import type { DesignRequest } from "../db/schema/design-requests.js";
+import { SIGNAL_THRESHOLDS } from "../core/config/signals.js";
+import type { DesignRequest } from "../core/db/schema/design-requests.js";
 import { assertProjectWritable } from "../lifecycle/service.js";
 import * as notifications from "../notifications/service.js";
 import * as projectMemberRepo from "../project-members/repository.js";
@@ -17,8 +17,8 @@ import type {
   RespondDesignRequestInput,
   UpdateDesignRequestInput,
 } from "../validators/design-request-validators.js";
-import { logAudit } from "../utils/audit.js";
-import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "../utils/errors.js";
+import { logAudit } from "../core/audit/audit.js";
+import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "../core/utils/errors.js";
 import * as repo from "./repository.js";
 import { collectAttachments, sendClientEmail } from "./client-email.js";
 import * as stakeholderRepo from "../project-stakeholders/repository.js";

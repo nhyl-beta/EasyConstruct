@@ -1,4 +1,4 @@
-import { ForbiddenError, ValidationError } from "../../utils/errors.js";
+import { ForbiddenError, ValidationError } from "../../core/utils/errors.js";
 import { handle } from "../purchasing/http.js";
 import { categoriesService as service } from "./service.js";
 

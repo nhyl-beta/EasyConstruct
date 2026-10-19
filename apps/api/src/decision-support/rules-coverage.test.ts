@@ -33,7 +33,7 @@ const RULE_MODULES = [
   "reference/names",
   "reference/backfill",
   "dashboard/cycle-times",
-  "auth/throttle",
+  "core/auth/throttle",
   "decision-support/summary",
 ];
 

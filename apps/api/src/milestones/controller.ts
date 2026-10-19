@@ -1,15 +1,15 @@
 // apps/api/src/milestones/controller.ts — NEW
 import { NextFunction, Response } from "express";
-import { HTTP } from "../constants/http-status.js";
-import { MSG } from "../constants/messages.js";
-import { formatSuccess } from "../utils/response.js";
-import { logAudit } from "../utils/audit.js";
+import { HTTP } from "../core/config/http-status.js";
+import { MSG } from "../core/config/messages.js";
+import { formatSuccess } from "../core/utils/response.js";
+import { logAudit } from "../core/audit/audit.js";
 import * as service from "./service.js";
-import type { AuthedRequest } from "../middleware/auth.js";
+import type { AuthedRequest } from "../core/auth/middleware.js";
 import { assertProjectVisible, scopeRowsToVisible, scopedProjectCodes } from "../projects/service.js";
-import { parsePageRequest, sendPaged } from "../utils/pagination.js";
+import { parsePageRequest, sendPaged } from "../core/utils/pagination.js";
 import { MILESTONE_SORT_COLUMNS } from "./repository.js";
-import { parseIdParam } from "../utils/params.js";
+import { parseIdParam } from "../core/utils/params.js";
 
 export const getAll = async (req: AuthedRequest, res: Response, next: NextFunction) => {
   try {

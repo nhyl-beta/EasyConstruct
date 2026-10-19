@@ -10,9 +10,9 @@
 // Pending and rejected expenses, and budget changes, are not cash.
 import { and, eq } from "drizzle-orm";
 
-import { db } from "../../db/connection.js";
-import { expenses, payrollBatches } from "../../db/schema/finance.js";
-import { payrollBatchDecisions } from "../../db/schema/payroll.js";
+import { db } from "../../core/db/connection.js";
+import { expenses, payrollBatches } from "../../core/db/schema/finance.js";
+import { payrollBatchDecisions } from "../../core/db/schema/payroll.js";
 import { bucketByMonth, monthKey, payrollCost, round2 } from "./months.js";
 
 export type Executor = Pick<typeof db, "select">;

@@ -4,7 +4,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { LEGACY_HASHES, checkJournal, hashSql, loadMigrations, planMigrations, splitStatements } from "./migrations.js";
 
-const drizzleDir = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "drizzle");
+const drizzleDir = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "drizzle");
 
 test("every .sql file has a journal entry and every entry has a file, in order", () => {
   assert.deepEqual(checkJournal(drizzleDir), []);

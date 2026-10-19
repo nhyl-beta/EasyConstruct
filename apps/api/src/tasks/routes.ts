@@ -1,7 +1,7 @@
 import { Router } from "express";
 import * as controller from "./controller.js";
-import { validate, validateQuery } from "../middleware/validate.js";
-import { authenticate, requireRole } from "../middleware/auth.js";
+import { validate, validateQuery } from "../core/http/validate.js";
+import { authenticate, requireRole } from "../core/auth/middleware.js";
 import { assignmentWarningsQuerySchema, suggestAllocationSchema, suggestAssigneesQuerySchema, createTaskSchema, updateTaskSchema, updateTaskStatusSchema } from "../validators/task-validators.js";
 
 const router = Router();

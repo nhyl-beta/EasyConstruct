@@ -1,11 +1,11 @@
-import { db } from "../db/connection.js";
+import { db } from "../core/db/connection.js";
 import {
   proposals,
   type NewProposal,
-} from "../db/schema/proposals.js";
+} from "../core/db/schema/proposals.js";
 
 import { and, desc, eq, ilike, isNull, ne, or, sql, SQL } from "drizzle-orm";
-import { countRows, inCodes, selectPage } from "../db/paged.js";
+import { countRows, inCodes, selectPage } from "../core/db/paged.js";
 
 export interface ProposalFilters {
   /** Restrict to these project codes (assigned-project scope; set by the controller). */

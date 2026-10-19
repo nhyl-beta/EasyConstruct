@@ -1,8 +1,8 @@
 // apps/api/src/plan-suggestion/repository.ts (objectives fix 3.1)
 import { and, desc, eq, inArray } from "drizzle-orm";
-import { db } from "../db/connection.js";
-import { planSuggestionItems, planSuggestions } from "../db/schema/plan-suggestions.js";
-import { documents } from "../db/schema/documents.js";
+import { db } from "../core/db/connection.js";
+import { planSuggestionItems, planSuggestions } from "../core/db/schema/plan-suggestions.js";
+import { documents } from "../core/db/schema/documents.js";
 
 export const findByProposal = async (proposalId: number) => {
   const [row] = await db.select().from(planSuggestions).where(eq(planSuggestions.proposalId, proposalId));

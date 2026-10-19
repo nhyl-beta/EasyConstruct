@@ -1,9 +1,9 @@
-import { NotFoundError, ValidationError } from "../utils/errors.js";
+import { NotFoundError, ValidationError } from "../core/utils/errors.js";
 import { assertProjectWritable, refreshProjectProgress } from "../lifecycle/service.js";
 import * as projectMemberRepo from "../project-members/repository.js";
 import * as repo from "./repository.js";
-import { designs as designsTable } from "../db/schema/designs.js";
-import { orderByFor, paginate, type PageRequest } from "../utils/pagination.js";
+import { designs as designsTable } from "../core/db/schema/designs.js";
+import { orderByFor, paginate, type PageRequest } from "../core/utils/pagination.js";
 import type {
   AssignedEngineer,
   CreateDesignInput,

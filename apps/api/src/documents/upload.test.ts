@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { upload } from "./controller.js";
-import type { AuthedRequest } from "../middleware/auth.js";
+import type { AuthedRequest } from "../core/auth/middleware.js";
 import type { Response } from "express";
 
 // The upload handler refuses a request with no file before touching the

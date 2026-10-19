@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import * as controller from "./controller.js";
-import { validate } from "../../middleware/validate.js";
+import { validate } from "../../core/http/validate.js";
 import { createDesignReviewSchema, decideDesignReviewSchema } from "../../validators/design-review-validator.js";
-import { authenticate, requireRole } from '../../middleware/auth.js';
+import { authenticate, requireRole } from '../../core/auth/middleware.js';
 
 const router = Router();
 

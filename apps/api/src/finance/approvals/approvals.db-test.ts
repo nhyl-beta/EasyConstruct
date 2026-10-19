@@ -1,4 +1,4 @@
-﻿// apps/api/src/finance/approvals/approvals.db-test.ts
+// apps/api/src/finance/approvals/approvals.db-test.ts
 //
 // Real-database test for the Finance "waiting on you" list (npm run test:db).
 // Rows are written in ONE transaction that is rolled back, so nothing persists.
@@ -7,8 +7,8 @@ import { after, before, describe, test } from "node:test";
 import assert from "node:assert/strict";
 import { eq, sql } from "drizzle-orm";
 
-import { db } from "../../db/connection.js";
-import { budgets, expenses, payrollBatches } from "../../db/schema/finance.js";
+import { db } from "../../core/db/connection.js";
+import { budgets, expenses, payrollBatches } from "../../core/db/schema/finance.js";
 import { assertDemoDatabase } from "../../scripts/demo-guard.js";
 import { approvalsService } from "./service.js";
 

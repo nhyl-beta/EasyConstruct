@@ -24,16 +24,16 @@
 import "dotenv/config";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 
-import { db } from "../db/connection.js";
+import { db } from "../core/db/connection.js";
 import {
   budgets,
   expenses,
   procurementOrders,
   purchaseRequests,
   type PurchaseLineItem,
-} from "../db/schema/finance.js";
-import { requirements } from "../db/schema/requirements.js";
-import { users } from "../db/schema/users.js";
+} from "../core/db/schema/finance.js";
+import { requirements } from "../core/db/schema/requirements.js";
+import { users } from "../core/db/schema/users.js";
 import { monthKey } from "../finance/cash-flow/months.js";
 import { refreshMonth } from "../finance/cash-flow/service.js";
 import { lineItemsTotal } from "../finance/purchasing/rules.js";

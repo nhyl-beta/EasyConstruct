@@ -1,13 +1,13 @@
 // apps/api/src/uploads/routes.ts — NEW
 import { Router } from "express";
 import * as controller from "./controller.js";
-import { validate } from "../middleware/validate.js";
-import { authenticate } from "../middleware/auth.js";
+import { validate } from "../core/http/validate.js";
+import { authenticate } from "../core/auth/middleware.js";
 import type { NextFunction, Request, Response } from "express";
 import { uploadSchema } from "../validators/upload-validators.js";
 import { streamUpload } from "./stream.js";
 import { formatLimit, maxUploadBytes } from "./limits.js";
-import { ValidationError } from "../utils/errors.js";
+import { ValidationError } from "../core/utils/errors.js";
 
 const router = Router();
 

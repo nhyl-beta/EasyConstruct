@@ -4,10 +4,10 @@
 // the fx rate to use, produce the validation_results row. No I/O, no
 // randomness, no "AI" — every number here is arithmetic over inputs the
 // caller already has.
-import type { NewValidationResultRow, ReferenceSnapshotRow } from "../db/schema/ai-validation.js";
+import type { NewValidationResultRow, ReferenceSnapshotRow } from "../core/db/schema/ai-validation.js";
 import { convertQuantity } from "./units.js";
 import type { MatchResult } from "./matcher.js";
-import { SIGNAL_THRESHOLDS } from "../config/signals.js";
+import { SIGNAL_THRESHOLDS } from "../core/config/signals.js";
 
 export interface LineItemForCost {
   id: number;

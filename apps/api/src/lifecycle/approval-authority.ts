@@ -3,7 +3,7 @@
 // Who may approve or reject a material/spec requirement and who may send an RFI/RFA: the project's own PM.
 // An Admin keeps read access and an override that needs a written reason of at least 10 characters, which the
 // caller records in the audit trail (the same pattern as the lifecycle Advance override).
-import { AppError, ForbiddenError } from "../utils/errors.js";
+import { AppError, ForbiddenError } from "../core/utils/errors.js";
 
 export const MIN_OVERRIDE_REASON = 10;
 

@@ -1,7 +1,7 @@
 // apps/api/src/project-stakeholders/routes.ts, mounted at /api/stakeholders (client demo change #4)
 import { Router } from "express";
-import { authenticate, requireRole } from "../middleware/auth.js";
-import { validate } from "../middleware/validate.js";
+import { authenticate, requireRole } from "../core/auth/middleware.js";
+import { validate } from "../core/http/validate.js";
 import { createStakeholderSchema, updateStakeholderSchema } from "../validators/stakeholder-validators.js";
 import * as controller from "./controller.js";
 

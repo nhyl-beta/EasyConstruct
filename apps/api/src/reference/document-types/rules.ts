@@ -4,7 +4,7 @@
 // The lifecycle gates (lifecycle/gates.ts, lifecycle/service.ts, plan-suggestion) read
 // some of these by exact name, so those are `isSystem`: they cannot be renamed or
 // deactivated. Nothing else in the codebase may depend on a type name.
-import { AppError, ValidationError } from "../../utils/errors.js";
+import { AppError, ValidationError } from "../../core/utils/errors.js";
 
 export const LEGAL_CATEGORY = "Legal";
 export const REPORTS_CATEGORY = "Reports";

@@ -2,7 +2,7 @@
 // PR-0001, PO-0001, EXP-0001. The old random "EXP-" + 4 digits could
 // collide; nextval cannot.
 import { sql } from "drizzle-orm";
-import type { db } from "../../db/connection.js";
+import type { db } from "../../core/db/connection.js";
 
 type Exec = Pick<typeof db, "execute">;
 

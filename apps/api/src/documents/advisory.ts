@@ -3,7 +3,7 @@
 // Pure rules for Consultant advisory documents: a file is always required, and
 // an optional "related to" proposal/design must exist on the SAME project.
 // The lookup is injected so the rules are testable without a database.
-import { ValidationError } from "../utils/errors.js";
+import { ValidationError } from "../core/utils/errors.js";
 
 export const RELATED_TYPES = ["proposal", "design"] as const;
 export type RelatedType = (typeof RELATED_TYPES)[number];

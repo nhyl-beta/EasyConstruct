@@ -13,7 +13,7 @@
 // matching exactly what's asserted below.
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import { ConflictError, ForbiddenError } from "../utils/errors.js";
+import { ConflictError, ForbiddenError } from "../core/utils/errors.js";
 import { assertCloseoutWorkflowAllowed } from "./service.js";
 
 const closeoutProject = { code: "DEMO-PRJ", status: "Closeout" };

@@ -1,14 +1,14 @@
 // apps/api/src/deliverables/routes.ts — mounted at /api/deliverables
 import { NextFunction, Response, Router } from "express";
 import { z } from "zod";
-import { authenticate, requireRole, type AuthedRequest } from "../middleware/auth.js";
-import { validate } from "../middleware/validate.js";
+import { authenticate, requireRole, type AuthedRequest } from "../core/auth/middleware.js";
+import { validate } from "../core/http/validate.js";
 import { DELIVERABLE_DISCIPLINES, DELIVERABLE_STATUSES } from "../lifecycle/delivery.js";
-import { formatSuccess } from "../utils/response.js";
-import { HTTP } from "../constants/http-status.js";
-import { UnauthorizedError } from "../utils/errors.js";
+import { formatSuccess } from "../core/utils/response.js";
+import { HTTP } from "../core/config/http-status.js";
+import { UnauthorizedError } from "../core/utils/errors.js";
 import * as service from "./service.js";
-import { parseIdParam } from "../utils/params.js";
+import { parseIdParam } from "../core/utils/params.js";
 
 const router = Router();
 router.use(authenticate);

@@ -4,8 +4,8 @@
 // nothing here writes an absence or changes a record. Likely absences are
 // listed for HR to confirm one by one ("Mark absent" in the attendance
 // service); the system never records an absence on its own.
-import { ATTENDANCE_RULES, type AttendanceRules } from "../config/attendance.js";
-import { addDaysIso } from "../utils/dates.js";
+import { ATTENDANCE_RULES, type AttendanceRules } from "../core/config/attendance.js";
+import { addDaysIso } from "../core/utils/dates.js";
 
 export const EXCEPTION_KINDS = [
   "missing_clock_out",

@@ -1,7 +1,7 @@
 import { and, desc, eq, gte, ilike, inArray, lte, or, sql, SQL } from "drizzle-orm";
-import { employees } from "../db/schema/employees.js";
-import { db } from "../db/connection.js";
-import { attendance } from "../db/schema/attendance.js";
+import { employees } from "../core/db/schema/employees.js";
+import { db } from "../core/db/connection.js";
+import { attendance } from "../core/db/schema/attendance.js";
 import type {
   AttendanceFilters,
   CreateAttendanceInput,

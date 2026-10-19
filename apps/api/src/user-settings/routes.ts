@@ -4,10 +4,10 @@
 // that is one switch: "Email me overdue reminders" (on by default; the in-app alert is sent either way).
 import { NextFunction, Response, Router } from "express";
 import { z } from "zod";
-import { authenticate, type AuthedRequest } from "../middleware/auth.js";
-import { validate } from "../middleware/validate.js";
-import { UnauthorizedError } from "../utils/errors.js";
-import { formatSuccess } from "../utils/response.js";
+import { authenticate, type AuthedRequest } from "../core/auth/middleware.js";
+import { validate } from "../core/http/validate.js";
+import { UnauthorizedError } from "../core/utils/errors.js";
+import { formatSuccess } from "../core/utils/response.js";
 import { getEmailSetting, setEmailSetting } from "../jobs/overdue-repository.js";
 
 const router = Router();

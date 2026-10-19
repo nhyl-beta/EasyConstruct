@@ -1,18 +1,18 @@
 import { Request, Response } from "express";
-import type { AuthedRequest } from "../middleware/auth.js";
-import { logAudit } from "../utils/audit.js";
+import type { AuthedRequest } from "../core/auth/middleware.js";
+import { logAudit } from "../core/audit/audit.js";
 import { assertAssignedToProject, assignedCodesFor, isAssignedScoped, scopeRowsToAssigned } from "../projects/scope.js";
-import { parsePageRequest } from "../utils/pagination.js";
-import { cached } from "../cache/index.js";
-import { userScope } from "../cache/scope.js";
+import { parsePageRequest } from "../core/utils/pagination.js";
+import { cached } from "../core/cache/index.js";
+import { userScope } from "../core/cache/scope.js";
 import { PROPOSAL_SORT_COLUMNS } from "./repository.js";
 import { canSeeProposalFiles } from "./files.js";
-import { ForbiddenError } from "../utils/errors.js";
+import { ForbiddenError } from "../core/utils/errors.js";
 
 import {
   proposalService,
 } from "./service.js";
-import { parseIdParam } from "../utils/params.js";
+import { parseIdParam } from "../core/utils/params.js";
 
 export const proposalController = {
   async getAll(

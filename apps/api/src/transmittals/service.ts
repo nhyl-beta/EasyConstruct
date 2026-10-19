@@ -2,8 +2,8 @@
 import { assertProjectWritable } from "../lifecycle/service.js";
 import * as repo from "../design-requests/repository.js";
 import { assertProjectVisible, scopeRowsToVisible } from "../projects/service.js";
-import { logAudit } from "../utils/audit.js";
-import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "../utils/errors.js";
+import { logAudit } from "../core/audit/audit.js";
+import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "../core/utils/errors.js";
 import type { CreateTransmittalInput } from "../validators/design-request-validators.js";
 
 export interface Actor {

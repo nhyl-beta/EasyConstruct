@@ -14,7 +14,7 @@
 // a failed read falls through to the loader, a loader error is rethrown
 // untouched and nothing is stored for it.
 import { createHash } from "node:crypto";
-import { noteCache } from "../middleware/request-context.js";
+import { noteCache } from "../http/request-context.js";
 import { MemoryCacheStore } from "./memory.js";
 import type { CacheStore } from "./store.js";
 import { UpstashCacheStore } from "./upstash.js";

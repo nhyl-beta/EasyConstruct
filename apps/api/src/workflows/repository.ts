@@ -1,13 +1,13 @@
 import { and, desc, eq, ilike, inArray, or, sql, SQL } from "drizzle-orm";
-import { countRows, inCodes, selectPage } from "../db/paged.js";
-import { db } from "../db/connection.js";
+import { countRows, inCodes, selectPage } from "../core/db/paged.js";
+import { db } from "../core/db/connection.js";
 import {
   workflowAttachments,
   workflowLineItems,
   workflowStages,
   workflowTemplates,
   workflows,
-} from "../db/schema/workflows.js";
+} from "../core/db/schema/workflows.js";
 
 // ── Templates ──────────────────────────────────────────────────────────────
 

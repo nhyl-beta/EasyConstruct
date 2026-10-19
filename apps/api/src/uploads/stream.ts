@@ -10,7 +10,7 @@ import multer from "multer";
 
 import { uploadDirectory } from "./service.js";
 import { hasAllowedExtension, maxUploadBytes } from "./limits.js";
-import { ValidationError } from "../utils/errors.js";
+import { ValidationError } from "../core/utils/errors.js";
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => {

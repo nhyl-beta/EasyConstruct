@@ -1,6 +1,6 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import type { DesignRequest } from "../db/schema/design-requests.js";
+import type { DesignRequest } from "../core/db/schema/design-requests.js";
 import { buildClientEmail, buildSubject, oneLine } from "./client-email.js";
 import { isOpenRequest } from "./rules.js";
 

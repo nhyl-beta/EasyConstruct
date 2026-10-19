@@ -1,6 +1,6 @@
 // apps/api/src/design-requests/repository.ts
 import { and, asc, desc, eq, ilike, inArray, isNull, lt, notInArray, or, sql, SQL } from "drizzle-orm";
-import { db } from "../db/connection.js";
+import { db } from "../core/db/connection.js";
 import {
   designRequestFiles,
   designRequestRecipients,
@@ -11,8 +11,8 @@ import {
   type DesignRequest,
   type DesignRequestRecipient,
   type NewDesignRequest,
-} from "../db/schema/design-requests.js";
-import { workflowStages, workflows } from "../db/schema/workflows.js";
+} from "../core/db/schema/design-requests.js";
+import { workflowStages, workflows } from "../core/db/schema/workflows.js";
 import { formatControlNo, formatRequestNumber, type RequestDiscipline, type RequestKind } from "./rules.js";
 
 export interface RequestFilters {

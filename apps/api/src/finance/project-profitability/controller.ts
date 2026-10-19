@@ -1,5 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
-import { sendSuccess } from "../../utils/response.js";
+import { sendSuccess } from "../../core/utils/response.js";
 import { projectProfitabilityRepository } from "./repository.js";
 
 export const projectProfitabilityController = {

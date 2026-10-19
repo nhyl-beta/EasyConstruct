@@ -1,13 +1,13 @@
 // apps/api/src/project-stakeholders/controller.ts (client demo change #4)
 import { NextFunction, Response } from "express";
-import { HTTP } from "../constants/http-status.js";
-import type { AuthedRequest } from "../middleware/auth.js";
-import { UnauthorizedError } from "../utils/errors.js";
-import { logAudit } from "../utils/audit.js";
-import { byString, respondList } from "../utils/pagination.js";
-import { parseIdParam } from "../utils/params.js";
-import { formatSuccess } from "../utils/response.js";
-import { diffFields, formatChanges } from "../utils/diff-fields.js";
+import { HTTP } from "../core/config/http-status.js";
+import type { AuthedRequest } from "../core/auth/middleware.js";
+import { UnauthorizedError } from "../core/utils/errors.js";
+import { logAudit } from "../core/audit/audit.js";
+import { byString, respondList } from "../core/utils/pagination.js";
+import { parseIdParam } from "../core/utils/params.js";
+import { formatSuccess } from "../core/utils/response.js";
+import { diffFields, formatChanges } from "../core/utils/diff-fields.js";
 import * as service from "./service.js";
 import type { VisibleStakeholder } from "./rules.js";
 

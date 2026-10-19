@@ -2,7 +2,7 @@
 //
 // Read-only. Builds the inputs for forecastChangeImpact from the workflow or
 // request, the project and its budget, tasks and milestones. Nothing is written.
-import { NotFoundError } from "../utils/errors.js";
+import { NotFoundError } from "../core/utils/errors.js";
 import * as workflowsRepo from "../workflows/repository.js";
 import * as designRequestsService from "../design-requests/service.js";
 import * as repo from "./repository.js";

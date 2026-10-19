@@ -11,8 +11,8 @@ import * as milestonesRepo from "../milestones/repository.js";
 import * as workflowsRepo from "../workflows/repository.js";
 import * as lifecycleRepo from "../lifecycle/repository.js";
 import * as tasksRepo from "../tasks/repository.js";
-import { PROJECT_MEMBER_ROLES } from "../db/schema/project-members.js";
-import { todayManila } from "../utils/dates.js";
+import { PROJECT_MEMBER_ROLES } from "../core/db/schema/project-members.js";
+import { todayManila } from "../core/utils/dates.js";
 import {
   inRange,
   milestoneAttention,

@@ -12,13 +12,13 @@
 // never to a demo/test address, and never when mail is not configured (the run reports that instead). A summary is
 // recorded only after the mail really went out, so a failed one is retried whole on the next run.
 // Admins get their own items in full plus a per-project overview of everything else (not recorded per item).
-import { env } from "../config/env.js";
+import { env } from "../core/config/env.js";
 import * as notifications from "../notifications/service.js";
 import * as projectsRepo from "../projects/repository.js";
 import * as requestsRepo from "../design-requests/repository.js";
 import { sweepOverdue } from "../design-requests/service.js";
-import { sendMail } from "../mail/mailer.js";
-import { AppError } from "../utils/errors.js";
+import { sendMail } from "../core/mail/mailer.js";
+import { AppError } from "../core/utils/errors.js";
 import { MAX_OVERVIEW_PROJECTS, buildDigestEmail, manilaDay, planDigests, stageAgeHours, stageOverdueHours, uniquePeople, type DigestCandidate, type OverdueItem, type OverdueItemType, type Person } from "./overdue.js";
 import * as repo from "./overdue-repository.js";
 import { collectMissingReports, sendInAppReminders } from "./reports-check.js";

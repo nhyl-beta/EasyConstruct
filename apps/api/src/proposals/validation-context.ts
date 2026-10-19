@@ -4,9 +4,9 @@
 // best effort: if anything fails the checks that need it are simply skipped,
 // because validation is advice and must never stop a proposal being filed.
 import { and, desc, eq, ne } from "drizzle-orm";
-import { db } from "../db/connection.js";
-import { projects } from "../db/schema/projects.js";
-import { proposals } from "../db/schema/proposals.js";
+import { db } from "../core/db/connection.js";
+import { projects } from "../core/db/schema/projects.js";
+import { proposals } from "../core/db/schema/proposals.js";
 import { parseAmount, type ValidationContext } from "./validation.js";
 
 /** Past proposals compared against; the newest ones are the relevant market. */

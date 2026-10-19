@@ -4,13 +4,13 @@
 // revision to which status, version numbering and what happens to the previous
 // current version when a new one is uploaded. No I/O, so each rule is tested
 // directly.
-import { ForbiddenError, ValidationError } from "../utils/errors.js";
+import { ForbiddenError, ValidationError } from "../core/utils/errors.js";
 import {
   REVISION_ITEM_TYPES,
   REVISION_STATUSES,
   type RevisionItemType,
   type RevisionStatus,
-} from "../db/schema/revisions.js";
+} from "../core/db/schema/revisions.js";
 
 export { REVISION_ITEM_TYPES, REVISION_STATUSES };
 export type { RevisionItemType, RevisionStatus };

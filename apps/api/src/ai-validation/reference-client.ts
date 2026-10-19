@@ -8,10 +8,10 @@
 // `multiplier`/`location` are fields on the trade-level response, not per
 // item, so every item from one fetchCostsForTrade call shares one
 // regionMultiplier).
-import { db } from "../db/connection.js";
-import { referenceSnapshots, type NewReferenceSnapshotRow } from "../db/schema/ai-validation.js";
+import { db } from "../core/db/connection.js";
+import { referenceSnapshots, type NewReferenceSnapshotRow } from "../core/db/schema/ai-validation.js";
 import { sql } from "drizzle-orm";
-import { DAILY_REQUEST_BUDGET } from "../config/signals.js";
+import { DAILY_REQUEST_BUDGET } from "../core/config/signals.js";
 
 // Overridable so tests and offline runs can point at a stand-in server (ESTIMATIONPRO_BASE_URL).
 const BASE_URL = (process.env.ESTIMATIONPRO_BASE_URL ?? "https://estimationpro.ai/api/v1").replace(/\/+$/, "");

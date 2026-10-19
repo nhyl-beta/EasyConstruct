@@ -1,17 +1,17 @@
 import { NextFunction, Request, Response } from "express";
-import { HTTP } from "../constants/http-status.js";
-import { MSG } from "../constants/messages.js";
-import { formatSuccess } from "../utils/response.js";
-import type { AuthedRequest } from "../middleware/auth.js";
+import { HTTP } from "../core/config/http-status.js";
+import { MSG } from "../core/config/messages.js";
+import { formatSuccess } from "../core/utils/response.js";
+import type { AuthedRequest } from "../core/auth/middleware.js";
 import * as service from "./service.js";
 import type { RequirementFilters } from "./types.js";
 import { assertProjectVisible, scopeRowsToVisible, scopedProjectCodes } from "../projects/service.js";
-import { parsePageRequest, sendPaged } from "../utils/pagination.js";
+import { parsePageRequest, sendPaged } from "../core/utils/pagination.js";
 import { REQUIREMENT_SORT_COLUMNS } from "./repository.js";
-import { FEATURES } from "../config/features.js";
-import { NotFoundError } from "../utils/errors.js";
+import { FEATURES } from "../core/config/features.js";
+import { NotFoundError } from "../core/utils/errors.js";
 import { structureRequirement } from "./structuring.js";
-import { parseIdParam } from "../utils/params.js";
+import { parseIdParam } from "../core/utils/params.js";
 
 export const getAll = async (req: Request, res: Response, next: NextFunction) => {
   try {

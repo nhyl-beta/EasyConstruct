@@ -20,7 +20,7 @@ import "dotenv/config";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
-import { checkJournal, loadMigrations, planMigrations } from "../db/migrations.js";
+import { checkJournal, loadMigrations, planMigrations } from "../core/db/migrations.js";
 
 const drizzleDir = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "drizzle");
 const args = process.argv.slice(2);

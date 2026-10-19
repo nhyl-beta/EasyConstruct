@@ -1,5 +1,5 @@
-import { logAudit } from "../../utils/audit.js";
-import { ConflictError, NotFoundError } from "../../utils/errors.js";
+import { logAudit } from "../../core/audit/audit.js";
+import { ConflictError, NotFoundError } from "../../core/utils/errors.js";
 import { categoriesRepository as repo, type CategoryRow } from "./repository.js";
 import {
   assertNameFree,

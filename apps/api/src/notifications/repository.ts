@@ -1,5 +1,5 @@
-import { db } from "../db/connection.js";
-import { notifications } from "../db/schema/notifications.js";
+import { db } from "../core/db/connection.js";
+import { notifications } from "../core/db/schema/notifications.js";
 import { eq, and, or, desc, isNull, SQL } from "drizzle-orm";
 import type {
   CreateNotificationInput,

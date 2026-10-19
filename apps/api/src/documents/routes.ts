@@ -5,9 +5,9 @@ import * as controller from "./controller.js";
 import {
   authenticate,
   requireRole,
-} from "../middleware/auth.js";
+} from "../core/auth/middleware.js";
 
-import { validate } from "../middleware/validate.js";
+import { validate } from "../core/http/validate.js";
 
 import {
   createDocumentSchema,

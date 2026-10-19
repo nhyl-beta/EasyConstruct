@@ -1,11 +1,11 @@
 // apps/api/src/plan-suggestion/controller.ts (objectives fix 3.1)
 import { NextFunction, Response } from "express";
-import { formatSuccess } from "../utils/response.js";
-import { logAudit } from "../utils/audit.js";
+import { formatSuccess } from "../core/utils/response.js";
+import { logAudit } from "../core/audit/audit.js";
 import { assertProjectVisible } from "../projects/service.js";
-import type { AuthedRequest } from "../middleware/auth.js";
+import type { AuthedRequest } from "../core/auth/middleware.js";
 import * as service from "./service.js";
-import { parseIdParam } from "../utils/params.js";
+import { parseIdParam } from "../core/utils/params.js";
 
 const actorOf = (req: AuthedRequest) => ({
   id: req.authUser!.id,

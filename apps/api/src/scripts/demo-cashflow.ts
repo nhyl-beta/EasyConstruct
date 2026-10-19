@@ -35,11 +35,11 @@ import fs from "node:fs";
 import path from "node:path";
 import { and, eq, sql } from "drizzle-orm";
 
-import { db } from "../db/connection.js";
-import { budgets, cashFlowEntries, expenses, payrollBatches } from "../db/schema/finance.js";
-import { payrollBatchDecisions } from "../db/schema/payroll.js";
-import { projects } from "../db/schema/projects.js";
-import { FEATURES } from "../config/features.js";
+import { db } from "../core/db/connection.js";
+import { budgets, cashFlowEntries, expenses, payrollBatches } from "../core/db/schema/finance.js";
+import { payrollBatchDecisions } from "../core/db/schema/payroll.js";
+import { projects } from "../core/db/schema/projects.js";
+import { FEATURES } from "../core/config/features.js";
 import { assignSlots, pickInstant, projectInflow } from "../finance/cash-flow/demo-plan.js";
 import { keyToLabel, lastMonthKeys, monthKey, round2 } from "../finance/cash-flow/months.js";
 import { refreshMonth } from "../finance/cash-flow/service.js";

@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
-import { db } from "../../db/connection.js";
-import { budgetApprovalSteps, budgets, budgetStatusEnum } from "../../db/schema/finance.js";
+import { db } from "../../core/db/connection.js";
+import { budgetApprovalSteps, budgets, budgetStatusEnum } from "../../core/db/schema/finance.js";
 import type { DecideBudgetApprovalInput } from "./types.js";
 
 type BudgetStatus = (typeof budgetStatusEnum.enumValues)[number];

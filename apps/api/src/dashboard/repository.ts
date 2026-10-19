@@ -5,24 +5,24 @@
 // download and count in the browser. Scope arguments are the same visibility
 // rules the list endpoints apply (see projects/service.ts).
 import { and, asc, count, desc, eq, gte, inArray, ne, sql, type SQL } from "drizzle-orm";
-import { db } from "../db/connection.js";
-import { inCodes } from "../db/paged.js";
-import { attendance } from "../db/schema/attendance.js";
-import { auditLogs } from "../db/schema/audit-logs.js";
-import { budgets, expenses } from "../db/schema/finance.js";
-import { designs } from "../db/schema/designs.js";
-import { documents } from "../db/schema/documents.js";
-import { employees } from "../db/schema/employees.js";
-import { engineeringReports } from "../db/schema/engineering-reports.js";
-import { issues } from "../db/schema/issues.js";
-import { projectMembers } from "../db/schema/project-members.js";
-import { projects } from "../db/schema/projects.js";
-import { proposals } from "../db/schema/proposals.js";
-import { requirements } from "../db/schema/requirements.js";
-import { roles } from "../db/schema/roles.js";
-import { tasks } from "../db/schema/task.js";
-import { users } from "../db/schema/users.js";
-import { workflows } from "../db/schema/workflows.js";
+import { db } from "../core/db/connection.js";
+import { inCodes } from "../core/db/paged.js";
+import { attendance } from "../core/db/schema/attendance.js";
+import { auditLogs } from "../core/db/schema/audit-logs.js";
+import { budgets, expenses } from "../core/db/schema/finance.js";
+import { designs } from "../core/db/schema/designs.js";
+import { documents } from "../core/db/schema/documents.js";
+import { employees } from "../core/db/schema/employees.js";
+import { engineeringReports } from "../core/db/schema/engineering-reports.js";
+import { issues } from "../core/db/schema/issues.js";
+import { projectMembers } from "../core/db/schema/project-members.js";
+import { projects } from "../core/db/schema/projects.js";
+import { proposals } from "../core/db/schema/proposals.js";
+import { requirements } from "../core/db/schema/requirements.js";
+import { roles } from "../core/db/schema/roles.js";
+import { tasks } from "../core/db/schema/task.js";
+import { users } from "../core/db/schema/users.js";
+import { workflows } from "../core/db/schema/workflows.js";
 import * as projectsRepo from "../projects/repository.js";
 import type { ProjectFilters } from "../projects/types.js";
 

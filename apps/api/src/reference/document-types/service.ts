@@ -1,6 +1,6 @@
 // apps/api/src/reference/document-types/service.ts (client demo change #1)
-import { NotFoundError, ValidationError } from "../../utils/errors.js";
-import type { DocumentType } from "../../db/schema/document-types.js";
+import { NotFoundError, ValidationError } from "../../core/utils/errors.js";
+import type { DocumentType } from "../../core/db/schema/document-types.js";
 import * as repo from "./repository.js";
 import {
   assertEditAllowed,

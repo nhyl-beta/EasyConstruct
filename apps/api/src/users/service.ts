@@ -2,16 +2,16 @@ import bcrypt from "bcryptjs";
 
 import { count, eq } from "drizzle-orm";
 
-import { db } from "../db/connection.js";
-import { employees } from "../db/schema/employees.js";
-import { projectMembers } from "../db/schema/project-members.js";
-import { tasks } from "../db/schema/task.js";
+import { db } from "../core/db/connection.js";
+import { employees } from "../core/db/schema/employees.js";
+import { projectMembers } from "../core/db/schema/project-members.js";
+import { tasks } from "../core/db/schema/task.js";
 import * as roleRepo from "../roles/repository.js";
-import { ConflictError, NotFoundError, ValidationError } from "../utils/errors.js";
+import { ConflictError, NotFoundError, ValidationError } from "../core/utils/errors.js";
 import * as repo from "./repository.js";
-import { invalidateSessionCache } from "../middleware/auth.js";
-import { users as usersTable } from "../db/schema/users.js";
-import { orderByFor, paginate, type PageRequest } from "../utils/pagination.js";
+import { invalidateSessionCache } from "../core/auth/middleware.js";
+import { users as usersTable } from "../core/db/schema/users.js";
+import { orderByFor, paginate, type PageRequest } from "../core/utils/pagination.js";
 import type {
   CreateUserInput,
   UpdateUserInput,

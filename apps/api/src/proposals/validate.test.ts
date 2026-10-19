@@ -1,8 +1,8 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import { ensureValidation, PROPOSAL_VALIDATE_ROLES } from "./validation.js";
-import { NotFoundError, ForbiddenError } from "../utils/errors.js";
-import { requireRole, type AuthedRequest } from "../middleware/auth.js";
+import { NotFoundError, ForbiddenError } from "../core/utils/errors.js";
+import { requireRole, type AuthedRequest } from "../core/auth/middleware.js";
 
 const proposal = { title: "Warehouse design proposal", content: "A".repeat(40), amount: "500000", projectCode: "PRJ-1" };
 

@@ -1,6 +1,6 @@
-import { db } from "../db/connection.js";
-import { engineeringReports } from "../db/schema/engineering-reports.js";
-import { countRows, inCodes, selectPage } from "../db/paged.js";
+import { db } from "../core/db/connection.js";
+import { engineeringReports } from "../core/db/schema/engineering-reports.js";
+import { countRows, inCodes, selectPage } from "../core/db/paged.js";
 import { and, desc, eq, ilike, inArray, sql, SQL } from "drizzle-orm";
 import type {
   CreateEngineeringReportInput,

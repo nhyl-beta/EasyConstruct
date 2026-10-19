@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
-import type { AuthedRequest } from "../middleware/auth.js";
+import type { AuthedRequest } from "../core/auth/middleware.js";
 import * as service from "./service.js";
-import { sendSuccess } from "../utils/response.js";
+import { sendSuccess } from "../core/utils/response.js";
 
 export const login = async (req: Request, res: Response, next: NextFunction) => {
   try {

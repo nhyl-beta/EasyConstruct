@@ -5,7 +5,7 @@
 // basis it was built from. Nothing here writes anything; the Project Manager
 // accepts or discards each item.
 import { PLAN_TEMPLATES, RESPONSIBILITIES, type PlanTemplate } from "./templates.js";
-import { addDaysIso } from "../utils/dates.js";
+import { addDaysIso } from "../core/utils/dates.js";
 
 export type PlanItemKind = "milestone" | "task" | "responsibility";
 

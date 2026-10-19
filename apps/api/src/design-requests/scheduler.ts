@@ -1,4 +1,4 @@
-﻿// apps/api/src/design-requests/scheduler.ts
+// apps/api/src/design-requests/scheduler.ts
 //
 // Hourly in-process job: tell the assignee and the Admin, once per request,
 // when an RFI/RFA becomes overdue. Guarded so it runs once however many
@@ -7,7 +7,7 @@
 // (`overdue_notified_at` additionally makes a repeat sweep a no-op).
 // Not started on Vercel (serverless has no long-lived process): there the same
 // sweep is reachable as POST /api/design-requests/sweep for an external cron.
-import { db } from "../db/connection.js";
+import { db } from "../core/db/connection.js";
 import { sql } from "drizzle-orm";
 import { sweepOverdue } from "./service.js";
 

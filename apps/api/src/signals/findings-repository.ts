@@ -1,7 +1,7 @@
 // apps/api/src/signals/findings-repository.ts (objectives fix 3.5)
 import { and, inArray, isNull } from "drizzle-orm";
-import { db } from "../db/connection.js";
-import { signalFindings } from "../db/schema/signal-findings.js";
+import { db } from "../core/db/connection.js";
+import { signalFindings } from "../core/db/schema/signal-findings.js";
 
 export const findForProjects = async (projectCodes: string[]) => {
   if (projectCodes.length === 0) return [];

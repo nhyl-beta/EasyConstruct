@@ -1,6 +1,6 @@
 // Pure rules for the calendar: who can see which projects, the date window,
 // and the quiet "needs attention" flag. No database access.
-import { daysBetweenIso } from "../utils/dates.js";
+import { daysBetweenIso } from "../core/utils/dates.js";
 
 export type CalendarEventType = "milestone" | "submission" | "progress" | "task";
 

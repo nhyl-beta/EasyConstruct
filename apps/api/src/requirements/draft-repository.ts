@@ -1,9 +1,9 @@
 // apps/api/src/requirements/draft-repository.ts (objectives fix 3.4): the rows the draft generator reads.
 import { and, desc, eq } from "drizzle-orm";
-import { db } from "../db/connection.js";
-import { designs } from "../db/schema/designs.js";
-import { projects } from "../db/schema/projects.js";
-import { proposals } from "../db/schema/proposals.js";
+import { db } from "../core/db/connection.js";
+import { designs } from "../core/db/schema/designs.js";
+import { projects } from "../core/db/schema/projects.js";
+import { proposals } from "../core/db/schema/proposals.js";
 
 export const loadDraftSources = async (projectCode: string) => {
   const [[project], proposalRows, designRows] = await Promise.all([

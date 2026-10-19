@@ -16,7 +16,7 @@ import {
 } from "./index.js";
 import { cacheInvalidation, domainsForWrite, CACHE_DOMAINS } from "./invalidate.js";
 import { visibilityScope } from "./scope.js";
-import { logger } from "../middleware/logger.js";
+import { logger } from "../http/logger.js";
 
 let store: MemoryCacheStore;
 beforeEach(() => {

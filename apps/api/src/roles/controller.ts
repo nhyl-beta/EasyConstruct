@@ -1,10 +1,10 @@
 import { NextFunction, Request, Response } from "express";
-import { MSG } from "../constants/messages.js";
-import { formatSuccess } from "../utils/response.js";
+import { MSG } from "../core/config/messages.js";
+import { formatSuccess } from "../core/utils/response.js";
 import * as service from "./service.js";
-import { byString, respondList } from "../utils/pagination.js";
-import { cached } from "../cache/index.js";
-import { parseIdParam } from "../utils/params.js";
+import { byString, respondList } from "../core/utils/pagination.js";
+import { cached } from "../core/cache/index.js";
+import { parseIdParam } from "../core/utils/params.js";
 
 export const getAll = async (
   req: Request,

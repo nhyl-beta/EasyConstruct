@@ -1,17 +1,17 @@
 // apps/api/src/revisions/controller.ts
 import { NextFunction, Response } from "express";
 import { pipeline } from "node:stream/promises";
-import { HTTP } from "../constants/http-status.js";
-import { formatSuccess } from "../utils/response.js";
-import { logAudit } from "../utils/audit.js";
-import { ValidationError } from "../utils/errors.js";
-import type { AuthedRequest } from "../middleware/auth.js";
+import { HTTP } from "../core/config/http-status.js";
+import { formatSuccess } from "../core/utils/response.js";
+import { logAudit } from "../core/audit/audit.js";
+import { ValidationError } from "../core/utils/errors.js";
+import type { AuthedRequest } from "../core/auth/middleware.js";
 import * as service from "./service.js";
 import { REVISION_ITEM_TYPES, REVISION_STATUSES, type RevisionItemType, type RevisionStatus } from "./rules.js";
 import type { RevisionActor } from "./types.js";
-import { parsePageRequest, sendPaged } from "../utils/pagination.js";
+import { parsePageRequest, sendPaged } from "../core/utils/pagination.js";
 import { REVISION_SORT_COLUMNS } from "./repository.js";
-import { parseIdParam } from "../utils/params.js";
+import { parseIdParam } from "../core/utils/params.js";
 
 const actorOf = (req: AuthedRequest): RevisionActor => {
   const u = req.authUser;

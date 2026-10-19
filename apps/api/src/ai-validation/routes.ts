@@ -6,15 +6,15 @@
 // now" for when someone wants fresher data without waiting for the 7-day
 // TTL to lapse.
 import { Router } from "express";
-import { mapWithConcurrency } from "../utils/concurrency.js";
-import { authenticate, requireRole } from "../middleware/auth.js";
-import { formatSuccess } from "../utils/response.js";
-import { db } from "../db/connection.js";
-import { referenceSnapshots } from "../db/schema/ai-validation.js";
+import { mapWithConcurrency } from "../core/utils/concurrency.js";
+import { authenticate, requireRole } from "../core/auth/middleware.js";
+import { formatSuccess } from "../core/utils/response.js";
+import { db } from "../core/db/connection.js";
+import { referenceSnapshots } from "../core/db/schema/ai-validation.js";
 import { desc, count } from "drizzle-orm";
 import { fetchTrades, fetchCostsForTrade } from "./reference-client.js";
-import { SIGNAL_THRESHOLDS, SIMILARITY_FLOOR, REFERENCE_CACHE_TTL_MS } from "../config/signals.js";
-import { FEATURES } from "../config/features.js";
+import { SIGNAL_THRESHOLDS, SIMILARITY_FLOOR, REFERENCE_CACHE_TTL_MS } from "../core/config/signals.js";
+import { FEATURES } from "../core/config/features.js";
 
 const router = Router();
 router.use(authenticate);

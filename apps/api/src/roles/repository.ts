@@ -1,6 +1,6 @@
-import { db }    from "../db/connection.js";
-import { roles } from "../db/schema/roles.js";
-import { users }    from "../db/schema/users.js";
+import { db }    from "../core/db/connection.js";
+import { roles } from "../core/db/schema/roles.js";
+import { users }    from "../core/db/schema/users.js";
 import { asc, eq }    from "drizzle-orm";
 
 export const findAll = async () => {

@@ -14,7 +14,7 @@
 // stored JSON stays backward compatible: `passed`, `issues`, `warnings` and
 // `checkedAt` are unchanged; `version` and `basis` are additions.
 import { dice } from "../ai-validation/matcher.js";
-import { PROPOSAL_CHECKS } from "../config/signals.js";
+import { PROPOSAL_CHECKS } from "../core/config/signals.js";
 
 /** Bump when the checks change; a stored result with an older version is recomputed. */
 export const VALIDATION_VERSION = 2;

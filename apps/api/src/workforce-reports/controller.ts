@@ -1,9 +1,9 @@
 import { NextFunction, Request, Response } from "express";
-import { formatSuccess } from "../utils/response.js";
+import { formatSuccess } from "../core/utils/response.js";
 import * as service from "./service.js";
-import { cached } from "../cache/index.js";
+import { cached } from "../core/cache/index.js";
 import type { WorkforceReportFilters } from "./service.js";
-import { byNumber, byString, paginateRows, parsePageRequest, sendPaged } from "../utils/pagination.js";
+import { byNumber, byString, paginateRows, parsePageRequest, sendPaged } from "../core/utils/pagination.js";
 import type { WorkerProjectRow } from "./fairness.js";
 
 export const getSummary = async (req: Request, res: Response, next: NextFunction) => {

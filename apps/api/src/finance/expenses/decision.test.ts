@@ -1,6 +1,6 @@
-﻿import { test, describe } from "node:test";
+import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import { ConflictError } from "../../utils/errors.js";
+import { ConflictError } from "../../core/utils/errors.js";
 import { NO_BUDGET_WARNING, assertDecidable, budgetOutcome } from "./decision.js";
 
 describe("expense decision guards", () => {

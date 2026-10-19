@@ -1,8 +1,8 @@
 // apps/api/src/issues/repository.ts — NEW
 import { and, desc, eq, isNotNull, SQL } from "drizzle-orm";
-import { db } from "../db/connection.js";
-import { issues } from "../db/schema/issues.js";
-import { countRows, groupCount, inCodes, selectPage } from "../db/paged.js";
+import { db } from "../core/db/connection.js";
+import { issues } from "../core/db/schema/issues.js";
+import { countRows, groupCount, inCodes, selectPage } from "../core/db/paged.js";
 import type { CreateIssueInput, IssueFilters } from "./types.js";
 
 const buildConditions = (filters: IssueFilters): SQL[] => {

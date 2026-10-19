@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { requireRole } from "../../middleware/auth.js";
-import { validate } from "../../middleware/validate.js";
+import { requireRole } from "../../core/auth/middleware.js";
+import { validate } from "../../core/http/validate.js";
 import { createCategorySchema, updateCategorySchema } from "../../validators/category-validators.js";
 import { categoriesController as c } from "./controller.js";
 

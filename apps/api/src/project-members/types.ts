@@ -1,4 +1,4 @@
-import type { ProjectMemberRole } from "../db/schema/project-members.js";
+import type { ProjectMemberRole } from "../core/db/schema/project-members.js";
 
 export type { ProjectMemberRole };
 

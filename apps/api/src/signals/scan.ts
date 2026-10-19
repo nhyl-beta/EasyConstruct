@@ -7,8 +7,8 @@
 //
 // Runs from POST/GET /api/cron/signals (Vercel Cron, see jobs/routes.ts) and,
 // for local development only, from an in-process timer (jobs/scheduler.ts).
-import { withJobLock } from "../jobs/lock.js";
-import { FEATURES } from "../config/features.js";
+import { withJobLock } from "../core/jobs/lock.js";
+import { FEATURES } from "../core/config/features.js";
 import * as projectsRepo from "../projects/repository.js";
 import * as lifecycleRepo from "../lifecycle/repository.js";
 import * as notificationsService from "../notifications/service.js";

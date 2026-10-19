@@ -1,15 +1,15 @@
 // apps/api/src/reference/routes.ts (objectives fix 1.2), mounted at /api/reference
 import { NextFunction, Request, Response, Router } from "express";
 import { z } from "zod";
-import { HTTP } from "../constants/http-status.js";
-import { authenticate, requireRole, type AuthedRequest } from "../middleware/auth.js";
-import { validate } from "../middleware/validate.js";
-import { formatSuccess } from "../utils/response.js";
-import { logAudit } from "../utils/audit.js";
-import { byString, respondList } from "../utils/pagination.js";
+import { HTTP } from "../core/config/http-status.js";
+import { authenticate, requireRole, type AuthedRequest } from "../core/auth/middleware.js";
+import { validate } from "../core/http/validate.js";
+import { formatSuccess } from "../core/utils/response.js";
+import { logAudit } from "../core/audit/audit.js";
+import { byString, respondList } from "../core/utils/pagination.js";
 import * as service from "./service.js";
 import * as documentTypes from "./document-types/service.js";
-import { parseIdParam } from "../utils/params.js";
+import { parseIdParam } from "../core/utils/params.js";
 
 const router = Router();
 router.use(authenticate);

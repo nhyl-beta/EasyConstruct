@@ -6,7 +6,7 @@
 // and also checks the sequences and indexes that only the migrations create. Changes nothing.
 import "dotenv/config";
 import pg from "pg";
-import { EXTRA_INDEXES, EXTRA_SEQUENCES, realSchemaDifferences } from "../db/bootstrap.js";
+import { EXTRA_INDEXES, EXTRA_SEQUENCES, realSchemaDifferences } from "../core/db/bootstrap.js";
 import { compareWithSchema } from "./db-schema-tools.js";
 
 async function main() {

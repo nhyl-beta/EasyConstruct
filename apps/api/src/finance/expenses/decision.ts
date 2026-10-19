@@ -1,8 +1,8 @@
-﻿// apps/api/src/finance/expenses/decision.ts
+// apps/api/src/finance/expenses/decision.ts
 //
 // Pure rules for approving or rejecting an expense, kept apart from the
 // database so each guard is unit-tested.
-import { ConflictError } from "../../utils/errors.js";
+import { ConflictError } from "../../core/utils/errors.js";
 
 export type ExpenseDecision = "approved" | "rejected";
 

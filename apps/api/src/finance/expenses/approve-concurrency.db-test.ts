@@ -9,9 +9,9 @@ import { after, before, describe, test } from "node:test";
 import assert from "node:assert/strict";
 import { and, eq, like } from "drizzle-orm";
 
-import { db } from "../../db/connection.js";
-import { budgets, cashFlowEntries, expenses } from "../../db/schema/finance.js";
-import { projects } from "../../db/schema/projects.js";
+import { db } from "../../core/db/connection.js";
+import { budgets, cashFlowEntries, expenses } from "../../core/db/schema/finance.js";
+import { projects } from "../../core/db/schema/projects.js";
 import { assertDemoDatabase } from "../../scripts/demo-guard.js";
 import { keyToLabel } from "../cash-flow/months.js";
 import { expensesService } from "./services.js";

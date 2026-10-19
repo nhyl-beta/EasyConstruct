@@ -5,8 +5,8 @@
 // "these are already late" while there is still time to act.
 import type { Signal, SignalContext, SignalRule } from "./types.js";
 import type { LifecycleSnapshot } from "../lifecycle/repository.js";
-import { SIGNAL_THRESHOLDS } from "../config/signals.js";
-import { daysBetweenIso } from "../utils/dates.js";
+import { SIGNAL_THRESHOLDS } from "../core/config/signals.js";
+import { daysBetweenIso } from "../core/utils/dates.js";
 
 export const overdueTasksRule: SignalRule = {
   rule: "overdue-tasks",

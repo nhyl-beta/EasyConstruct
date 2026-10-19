@@ -4,10 +4,10 @@
 // discipline, its sheet range and its status. Each plan set also reports the
 // designs that belong to it and the open RFI/RFAs against its discipline.
 import { and, asc, eq } from "drizzle-orm";
-import { db } from "../db/connection.js";
-import { designs } from "../db/schema/designs.js";
-import { projectDeliverables, type ProjectDeliverable } from "../db/schema/project-deliverables.js";
-import { designRequests } from "../db/schema/design-requests.js";
+import { db } from "../core/db/connection.js";
+import { designs } from "../core/db/schema/designs.js";
+import { projectDeliverables, type ProjectDeliverable } from "../core/db/schema/project-deliverables.js";
+import { designRequests } from "../core/db/schema/design-requests.js";
 import { assertProjectWritable, refreshProjectProgress } from "../lifecycle/service.js";
 import {
   canSetDeliverableStatus,
@@ -22,8 +22,8 @@ import * as projectMemberRepo from "../project-members/repository.js";
 import * as projectsRepo from "../projects/repository.js";
 import { assertProjectVisible } from "../projects/service.js";
 import { isOpenRequest } from "../design-requests/rules.js";
-import { logAudit } from "../utils/audit.js";
-import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "../utils/errors.js";
+import { logAudit } from "../core/audit/audit.js";
+import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "../core/utils/errors.js";
 
 export interface Actor {
   id: number;

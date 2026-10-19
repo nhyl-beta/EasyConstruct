@@ -1,6 +1,6 @@
 import * as repo from "./repository.js";
 import * as designsRepo from "../repository.js";
-import { NotFoundError } from "../../utils/errors.js";
+import { NotFoundError } from "../../core/utils/errors.js";
 import { assertProjectWritable, refreshProjectProgress } from "../../lifecycle/service.js";
 import * as notificationsService from "../../notifications/service.js";
 import type { CreateDesignReviewInput, DecideDesignReviewInput, DesignReviewFilters } from "./types.js";

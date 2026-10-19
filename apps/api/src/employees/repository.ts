@@ -1,8 +1,8 @@
 import { and, eq, ilike, inArray, or, SQL } from "drizzle-orm";
 
-import { db } from "../db/connection.js";
-import { employees } from "../db/schema/employees.js";
-import { countRows, selectPage } from "../db/paged.js";
+import { db } from "../core/db/connection.js";
+import { employees } from "../core/db/schema/employees.js";
+import { countRows, selectPage } from "../core/db/paged.js";
 
 import type {
   CreateEmployeeInput,

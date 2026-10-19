@@ -4,8 +4,8 @@
 // are unchanged; hr/aggregates.db-test.ts compares this against the previous
 // JavaScript implementation on the same rows.
 import { and, eq, gte, lte, sql, SQL } from "drizzle-orm";
-import { db } from "../db/connection.js";
-import { attendance, employees } from "../db/schema/index.js";
+import { db } from "../core/db/connection.js";
+import { attendance, employees } from "../core/db/schema/index.js";
 
 // clock_in is a varchar "HH:MM"; the old code compared it as a JS string
 // ("> '08:00'"), i.e. byte order. COLLATE "C" gives the same ordering in SQL

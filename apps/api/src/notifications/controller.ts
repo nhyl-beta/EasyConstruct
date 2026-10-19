@@ -1,9 +1,9 @@
 import { NextFunction, Response } from "express";
-import { MSG } from "../constants/messages.js";
-import { formatSuccess } from "../utils/response.js";
-import { UnauthorizedError } from "../utils/errors.js";
-import { parseIdParam } from "../utils/params.js";
-import type { AuthedRequest } from "../middleware/auth.js";
+import { MSG } from "../core/config/messages.js";
+import { formatSuccess } from "../core/utils/response.js";
+import { UnauthorizedError } from "../core/utils/errors.js";
+import { parseIdParam } from "../core/utils/params.js";
+import type { AuthedRequest } from "../core/auth/middleware.js";
 import * as service from "./service.js";
 import * as stream from "./stream.js";
 

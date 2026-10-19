@@ -4,9 +4,9 @@
 // Vercel, where the same jobs run from Vercel Cron through /api/cron/* (see
 // jobs/routes.ts and server/vercel.json). Started only from src/index.ts, never
 // from apps/api/index.ts, and never when VERCEL or DISABLE_SCHEDULER is set.
-import { runSignalScan } from "../signals/scan.js";
-import { runDailyCheck as runAttendanceCheck } from "../attendance/exceptions-service.js";
-import { runOverdueJob } from "./overdue-service.js";
+import { runSignalScan } from "../../signals/scan.js";
+import { runDailyCheck as runAttendanceCheck } from "../../attendance/exceptions-service.js";
+import { runOverdueJob } from "../../jobs/overdue-service.js";
 import { withJobLock } from "./lock.js";
 
 const HOUR_MS = 60 * 60 * 1000;

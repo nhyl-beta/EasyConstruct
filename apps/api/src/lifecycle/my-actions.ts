@@ -13,25 +13,25 @@
 // (assertProjectWritable/refreshProjectProgress), so this instead reads
 // workflows/repository.ts directly — a leaf module neither side imports.
 import { Router } from "express";
-import { authenticate } from "../middleware/auth.js";
-import type { AuthedRequest } from "../middleware/auth.js";
-import { formatSuccess } from "../utils/response.js";
-import { UnauthorizedError } from "../utils/errors.js";
+import { authenticate } from "../core/auth/middleware.js";
+import type { AuthedRequest } from "../core/auth/middleware.js";
+import { formatSuccess } from "../core/utils/response.js";
+import { UnauthorizedError } from "../core/utils/errors.js";
 import * as projectsRepo from "../projects/repository.js";
 import * as projectMemberRepo from "../project-members/repository.js";
 import * as workflowsRepo from "../workflows/repository.js";
 import * as repo from "./repository.js";
 import { evaluateGate } from "./gates.js";
 import { isSequencedPhase, type SequencedPhase } from "./phases.js";
-import { PROJECT_MEMBER_ROLES } from "../db/schema/project-members.js";
+import { PROJECT_MEMBER_ROLES } from "../core/db/schema/project-members.js";
 import { evaluateSignals } from "../signals/index.js";
 import * as findingsRepo from "../signals/findings-repository.js";
 import { findingKey } from "../signals/findings.js";
-import { FEATURES } from "../config/features.js";
+import { FEATURES } from "../core/config/features.js";
 import { scopeRowsToAssigned } from "../projects/scope.js";
 import { visibleProjectCodes } from "../projects/service.js";
-import { ALL_DOMAIN, cached } from "../cache/index.js";
-import { userScope } from "../cache/scope.js";
+import { ALL_DOMAIN, cached } from "../core/cache/index.js";
+import { userScope } from "../core/cache/scope.js";
 
 export interface MyActionItem {
   projectCode: string;

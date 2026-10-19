@@ -9,10 +9,10 @@
 // Idempotent: a project that already has any revision (real or demo) is left alone.
 import "dotenv/config";
 import { eq } from "drizzle-orm";
-import { db } from "../db/connection.js";
-import { designRevisions } from "../db/schema/design-revisions.js";
-import { designs } from "../db/schema/designs.js";
-import { projects } from "../db/schema/projects.js";
+import { db } from "../core/db/connection.js";
+import { designRevisions } from "../core/db/schema/design-revisions.js";
+import { designs } from "../core/db/schema/designs.js";
+import { projects } from "../core/db/schema/projects.js";
 import { ensureProjectRevisionDemo, removeDemoRevisions } from "../designs/design-revisions/demo.js";
 import { assertDemoDatabase } from "./demo-guard.js";
 

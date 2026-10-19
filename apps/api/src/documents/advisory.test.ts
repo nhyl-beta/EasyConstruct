@@ -1,7 +1,7 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import { assertAdvisoryHasFile, resolveRelatedItem, type RelatedLookup } from "./advisory.js";
-import { ValidationError } from "../utils/errors.js";
+import { ValidationError } from "../core/utils/errors.js";
 
 const lookup: RelatedLookup = async (type, id) => {
   if (type === "proposal" && id === 1) return { projectCode: "PRJ-1" };

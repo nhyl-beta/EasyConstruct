@@ -1,13 +1,13 @@
 // apps/api/src/uploads/integrity/service.ts (client demo change #2)
 import { Readable } from "node:stream";
-import { logAudit } from "../../utils/audit.js";
+import { logAudit } from "../../core/audit/audit.js";
 import { create as createNotification } from "../../notifications/service.js";
-import { NotFoundError } from "../../utils/errors.js";
+import { NotFoundError } from "../../core/utils/errors.js";
 import { openStoredFile } from "../service.js";
 import { fileNameOf } from "../download-audit.js";
 import * as repo from "./repository.js";
 import { hashStream, statusOf, verdictFor, type IntegrityStatus } from "./rules.js";
-import type { StoredFile } from "../../db/schema/stored-files.js";
+import type { StoredFile } from "../../core/db/schema/stored-files.js";
 
 export { recordBuffer, recordFromDisk } from "./record.js";
 

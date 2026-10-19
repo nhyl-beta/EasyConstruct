@@ -1,12 +1,12 @@
 // apps/api/src/tasks/repository.ts — NEW
 import { and, desc, eq, gte, inArray, isNull, sql, SQL } from "drizzle-orm";
-import { db } from "../db/connection.js";
-import { tasks } from "../db/schema/task.js";
-import { projectMembers } from "../db/schema/project-members.js";
-import { employees } from "../db/schema/employees.js";
-import { attendance } from "../db/schema/attendance.js";
+import { db } from "../core/db/connection.js";
+import { tasks } from "../core/db/schema/task.js";
+import { projectMembers } from "../core/db/schema/project-members.js";
+import { employees } from "../core/db/schema/employees.js";
+import { attendance } from "../core/db/schema/attendance.js";
 import type { AllocationCandidate } from "./suggest.js";
-import { countRows, inCodes, selectPage } from "../db/paged.js";
+import { countRows, inCodes, selectPage } from "../core/db/paged.js";
 import type { CreateTaskInput, TaskFilters, UpdateTaskInput } from "./types.js";
 
 const buildConditions = (filters: TaskFilters): SQL[] => {

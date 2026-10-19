@@ -1,12 +1,12 @@
-import { NotFoundError, ValidationError } from "../../utils/errors.js";
+import { NotFoundError, ValidationError } from "../../core/utils/errors.js";
 import { assertProjectWritable } from "../../lifecycle/service.js";
 import { expensesRepository, EXPENSE_SORT_COLUMNS, defaultExpenseOrder } from "./repository.js";
-import { expenses as expensesTable } from "../../db/schema/finance.js";
-import { orderByFor, paginate, type PageRequest } from "../../utils/pagination.js";
+import { expenses as expensesTable } from "../../core/db/schema/finance.js";
+import { orderByFor, paginate, type PageRequest } from "../../core/utils/pagination.js";
 import type { CreateExpenseInput, ListExpensesQuery } from "./types.js";
 import { scoreExpense } from "./anomaly.js";
-import { FEATURES } from "../../config/features.js";
-import { db } from "../../db/connection.js";
+import { FEATURES } from "../../core/config/features.js";
+import { db } from "../../core/db/connection.js";
 import { assertDecidable, budgetOutcome } from "./decision.js";
 import { applyApprovedSpend } from "../purchasing/booking.js";
 import { resolveActiveCategory } from "../categories/service.js";

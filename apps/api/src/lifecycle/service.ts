@@ -4,8 +4,8 @@ import {
   ForbiddenError,
   GateBlockedError,
   NotFoundError,
-} from "../utils/errors.js";
-import { logAudit } from "../utils/audit.js";
+} from "../core/utils/errors.js";
+import { logAudit } from "../core/audit/audit.js";
 import * as notificationsService from "../notifications/service.js";
 import * as projectsRepo from "../projects/repository.js";
 import * as repo from "./repository.js";
@@ -32,7 +32,7 @@ import {
   planSetAverage,
   type DeliveryType,
 } from "./delivery.js";
-import { FEATURES } from "../config/features.js";
+import { FEATURES } from "../core/config/features.js";
 
 export interface LifecycleActor {
   id: number;

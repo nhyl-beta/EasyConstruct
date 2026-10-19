@@ -3,19 +3,19 @@ import fs from "node:fs";
 import { Response, NextFunction } from "express";
 import { storeBuffer } from "../uploads/service.js";
 import { assertContentMatches } from "../uploads/sniff.js";
-import type { AuthedRequest } from "../middleware/auth.js";
-import { HTTP } from "../constants/http-status.js";
-import { MSG } from "../constants/messages.js";
-import { formatError, formatSuccess } from "../utils/response.js";
-import { logAudit } from "../utils/audit.js";
+import type { AuthedRequest } from "../core/auth/middleware.js";
+import { HTTP } from "../core/config/http-status.js";
+import { MSG } from "../core/config/messages.js";
+import { formatError, formatSuccess } from "../core/utils/response.js";
+import { logAudit } from "../core/audit/audit.js";
 import * as service from "./service.js";
 import type { ApprovalScope } from "./types.js";
 import { assertProjectVisible, scopeRowsToVisible, scopedProjectCodes, visibleProjectCodes } from "../projects/service.js";
-import { parsePageRequest, sendPaged } from "../utils/pagination.js";
-import { ALL_DOMAIN, cached } from "../cache/index.js";
-import { userScope } from "../cache/scope.js";
+import { parsePageRequest, sendPaged } from "../core/utils/pagination.js";
+import { ALL_DOMAIN, cached } from "../core/cache/index.js";
+import { userScope } from "../core/cache/scope.js";
 import { WORKFLOW_SORT_COLUMNS } from "./repository.js";
-import { parseIdParam } from "../utils/params.js";
+import { parseIdParam } from "../core/utils/params.js";
 
 export const getTemplates = async (_req: AuthedRequest, res: Response, next: NextFunction) => {
   try {

@@ -4,8 +4,8 @@
 // so its project and type), and whether that type is in the Legal category. Best effort: a file that
 // belongs to a blueprint or a request attachment simply has no document context.
 import { eq } from "drizzle-orm";
-import { db } from "../db/connection.js";
-import { documents } from "../db/schema/documents.js";
+import { db } from "../core/db/connection.js";
+import { documents } from "../core/db/schema/documents.js";
 import { isLegalType } from "../reference/document-types/service.js";
 import type { FileContext } from "./download-audit.js";
 

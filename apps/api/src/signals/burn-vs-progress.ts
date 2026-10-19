@@ -6,7 +6,7 @@
 // artificially closer to completion than it is.
 import type { Signal, SignalContext, SignalRule } from "./types.js";
 import type { LifecycleSnapshot } from "../lifecycle/repository.js";
-import { SIGNAL_THRESHOLDS } from "../config/signals.js";
+import { SIGNAL_THRESHOLDS } from "../core/config/signals.js";
 
 export const burnVsProgressRule: SignalRule = {
   rule: "burn-vs-progress",

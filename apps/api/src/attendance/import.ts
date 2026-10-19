@@ -15,14 +15,14 @@
 import ExcelJS from "exceljs";
 import { eq } from "drizzle-orm";
 
-import { db } from "../db/connection.js";
-import { projects } from "../db/schema/projects.js";
-import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "../utils/errors.js";
+import { db } from "../core/db/connection.js";
+import { projects } from "../core/db/schema/projects.js";
+import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "../core/utils/errors.js";
 import { assertProjectWritable } from "../lifecycle/service.js";
 import * as employeesRepo from "../employees/repository.js";
 import * as projectMemberRepo from "../project-members/repository.js";
 import * as notificationsService from "../notifications/service.js";
-import { logAudit } from "../utils/audit.js";
+import { logAudit } from "../core/audit/audit.js";
 import * as repo from "./repository.js";
 
 export const MAX_SHEET_ROWS = 500;

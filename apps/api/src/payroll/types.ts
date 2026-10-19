@@ -1,4 +1,4 @@
-import type { Payroll } from "../db/schema/payroll.js";
+import type { Payroll } from "../core/db/schema/payroll.js";
 
 export type PayrollLine = Payroll;
 

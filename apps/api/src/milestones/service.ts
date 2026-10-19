@@ -1,10 +1,10 @@
 // apps/api/src/milestones/service.ts — NEW
-import { ConflictError, ForbiddenError, NotFoundError } from "../utils/errors.js";
+import { ConflictError, ForbiddenError, NotFoundError } from "../core/utils/errors.js";
 import * as notificationsService from "../notifications/service.js";
 import { assertProjectWritable, refreshProjectProgress } from "../lifecycle/service.js";
 import * as repo from "./repository.js";
-import { milestones as milestonesTable } from "../db/schema/milestones.js";
-import { orderByFor, paginate, type PageRequest } from "../utils/pagination.js";
+import { milestones as milestonesTable } from "../core/db/schema/milestones.js";
+import { orderByFor, paginate, type PageRequest } from "../core/utils/pagination.js";
 import * as projectMemberRepo from "../project-members/repository.js";
 import { assertEngineerMayUpdate, openLinkedTasks } from "./permissions.js";
 import * as tasksRepo from "../tasks/repository.js";

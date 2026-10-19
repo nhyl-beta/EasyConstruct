@@ -1,8 +1,8 @@
 // apps/api/src/project-stakeholders/repository.ts (client demo change #4)
 import { asc, eq, inArray, sql } from "drizzle-orm";
-import { db } from "../db/connection.js";
-import { projectStakeholders, type ProjectStakeholder } from "../db/schema/project-stakeholders.js";
-import { projects } from "../db/schema/projects.js";
+import { db } from "../core/db/connection.js";
+import { projectStakeholders, type ProjectStakeholder } from "../core/db/schema/project-stakeholders.js";
+import { projects } from "../core/db/schema/projects.js";
 
 export type StakeholderInsert = {
   projectCode: string;

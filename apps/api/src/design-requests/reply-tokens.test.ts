@@ -12,7 +12,7 @@ import {
   replyUrl,
   tokenDays,
 } from "./reply-tokens.js";
-import { hitLimiter } from "../auth/throttle.js";
+import { hitLimiter } from "../core/auth/throttle.js";
 
 describe("token generation and hashing", () => {
   test("a token is 32 random bytes and never repeats", () => {

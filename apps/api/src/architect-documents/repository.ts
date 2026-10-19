@@ -1,6 +1,6 @@
 // repository.ts
-import { db } from "../db/connection.js";
-import { architectDocuments } from "../db/schema/architect-documents.js";
+import { db } from "../core/db/connection.js";
+import { architectDocuments } from "../core/db/schema/architect-documents.js";
 import { eq, ilike, and, or, SQL } from 'drizzle-orm';
 import type { CreateArchitectDocumentInput, UpdateArchitectDocumentInput, ArchitectDocumentFilters } from "./types.js";
 

@@ -1,4 +1,4 @@
-import { ConflictError, NotFoundError, ValidationError } from "../utils/errors.js";
+import { ConflictError, NotFoundError, ValidationError } from "../core/utils/errors.js";
 import * as repo from "./repository.js";
 import * as aggregates from "./aggregates.js";
 import * as employeesRepo from "../employees/repository.js";

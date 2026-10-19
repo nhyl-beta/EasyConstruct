@@ -1,6 +1,6 @@
 import { and, desc, eq, gte, ilike, lte, or, SQL } from "drizzle-orm";
-import { db } from "../db/connection.js";
-import { attendance, employees, payroll } from "../db/schema/index.js";
+import { db } from "../core/db/connection.js";
+import { attendance, employees, payroll } from "../core/db/schema/index.js";
 
 export async function findEmployees(filters: {
   search?: string;

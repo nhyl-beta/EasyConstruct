@@ -1,10 +1,10 @@
 import * as repo           from "./repository.js";
-import { projects } from "../db/schema/projects.js";
+import { projects } from "../core/db/schema/projects.js";
 import { projectKpis, type ProjectKpis } from "../dashboard/aggregates.js";
-import { orderByFor, paginate, type PageRequest } from "../utils/pagination.js";
+import { orderByFor, paginate, type PageRequest } from "../core/utils/pagination.js";
 import * as projectMemberRepo from "../project-members/repository.js";
 import * as usersRepo from "../users/repository.js";
-import { AppError, ForbiddenError, NotFoundError, ValidationError } from "../utils/errors.js";
+import { AppError, ForbiddenError, NotFoundError, ValidationError } from "../core/utils/errors.js";
 import * as referenceRepo from "../reference/repository.js";
 import { findNameMatches, normalizeName } from "../reference/names.js";
 import { assertProjectWritable } from "../lifecycle/service.js";

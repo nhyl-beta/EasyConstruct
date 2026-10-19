@@ -5,8 +5,8 @@
 // and never gates (see signals/types.ts).
 import type { Signal, SignalContext, SignalRule } from "./types.js";
 import type { LifecycleSnapshot } from "../lifecycle/repository.js";
-import { SIGNAL_THRESHOLDS } from "../config/signals.js";
-import { addDaysIso, daysBetweenIso } from "../utils/dates.js";
+import { SIGNAL_THRESHOLDS } from "../core/config/signals.js";
+import { addDaysIso, daysBetweenIso } from "../core/utils/dates.js";
 
 const DAY_MS = 86_400_000;
 

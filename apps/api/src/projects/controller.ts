@@ -1,17 +1,17 @@
 import { NextFunction, Response } from "express";
-import { HTTP } from "../constants/http-status.js";
-import { MSG } from "../constants/messages.js";
-import { formatSuccess } from "../utils/response.js";
-import type { AuthedRequest } from "../middleware/auth.js";
+import { HTTP } from "../core/config/http-status.js";
+import { MSG } from "../core/config/messages.js";
+import { formatSuccess } from "../core/utils/response.js";
+import type { AuthedRequest } from "../core/auth/middleware.js";
 import * as service from "./service.js";
 import type { ProjectFilters } from "./types.js";
-import { parsePageRequest, sendPaged } from "../utils/pagination.js";
-import { cached } from "../cache/index.js";
-import { visibilityScope } from "../cache/scope.js";
+import { parsePageRequest, sendPaged } from "../core/utils/pagination.js";
+import { cached } from "../core/cache/index.js";
+import { visibilityScope } from "../core/cache/scope.js";
 import { PROJECT_SORT_COLUMNS } from "./repository.js";
-import { parseIdParam } from "../utils/params.js";
-import { logAudit } from "../utils/audit.js";
-import { diffFields, formatChanges } from "../utils/diff-fields.js";
+import { parseIdParam } from "../core/utils/params.js";
+import { logAudit } from "../core/audit/audit.js";
+import { diffFields, formatChanges } from "../core/utils/diff-fields.js";
 import * as stakeholders from "../project-stakeholders/service.js";
 
 const PROJECT_SORTABLE = Object.keys(PROJECT_SORT_COLUMNS);

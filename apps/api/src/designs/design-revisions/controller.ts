@@ -1,15 +1,15 @@
 // controller.ts
 import { NextFunction, Request, Response } from "express";
-import { HTTP } from "../../constants/http-status.js";
-import { MSG } from "../../constants/messages.js";
-import { formatSuccess } from "../../utils/response.js";
+import { HTTP } from "../../core/config/http-status.js";
+import { MSG } from "../../core/config/messages.js";
+import { formatSuccess } from "../../core/utils/response.js";
 import * as service from "./service.js";
-import { byDate, byString, respondList } from "../../utils/pagination.js";
+import { byDate, byString, respondList } from "../../core/utils/pagination.js";
 import { ensureProjectRevisionDemo } from "./demo.js";
-import { env } from "../../config/env.js";
-import { ForbiddenError, ValidationError } from "../../utils/errors.js";
-import type { AuthedRequest } from "../../middleware/auth.js";
-import { parseIdParam } from "../../utils/params.js";
+import { env } from "../../core/config/env.js";
+import { ForbiddenError, ValidationError } from "../../core/utils/errors.js";
+import type { AuthedRequest } from "../../core/auth/middleware.js";
+import { parseIdParam } from "../../core/utils/params.js";
 
 const scopeOf = (req: Request) => {
   const u = (req as AuthedRequest).authUser;

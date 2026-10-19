@@ -3,11 +3,11 @@
 // Builds the exception list for HR and runs the daily check. Read-only apart
 // from one in-app notice to HR per day: absences are never written here. HR
 // confirms a likely absence with "Mark absent" (attendance/service.ts markAbsent).
-import { ATTENDANCE_RULES } from "../config/attendance.js";
-import { FEATURES } from "../config/features.js";
-import { addDaysIso, todayManila } from "../utils/dates.js";
+import { ATTENDANCE_RULES } from "../core/config/attendance.js";
+import { FEATURES } from "../core/config/features.js";
+import { addDaysIso, todayManila } from "../core/utils/dates.js";
 import * as notificationsService from "../notifications/service.js";
-import { withJobLock } from "../jobs/lock.js";
+import { withJobLock } from "../core/jobs/lock.js";
 import * as repo from "./exceptions-repository.js";
 import {
   absentWhileTaskDue,

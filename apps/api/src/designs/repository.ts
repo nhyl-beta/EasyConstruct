@@ -1,8 +1,8 @@
 import { and, desc, eq, ilike, inArray, or, sql, SQL } from "drizzle-orm";
-import { countRows, inCodes, selectPage } from "../db/paged.js";
-import { db } from "../db/connection.js";
-import { designEngineers } from "../db/schema/design-engineers.js";
-import { designs } from "../db/schema/designs.js";
+import { countRows, inCodes, selectPage } from "../core/db/paged.js";
+import { db } from "../core/db/connection.js";
+import { designEngineers } from "../core/db/schema/design-engineers.js";
+import { designs } from "../core/db/schema/designs.js";
 import type {
   CreateDesignInput,
   DesignFilters,

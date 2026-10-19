@@ -1,6 +1,6 @@
 // service.ts
 import * as repo from "./repository.js";
-import { NotFoundError, ValidationError } from "../utils/errors.js";
+import { NotFoundError, ValidationError } from "../core/utils/errors.js";
 import { assertProjectWritable, refreshProjectProgress } from "../lifecycle/service.js";
 import * as notificationsService from "../notifications/service.js";
 import type {

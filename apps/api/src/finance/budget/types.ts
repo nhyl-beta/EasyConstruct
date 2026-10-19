@@ -1,5 +1,5 @@
 import type { InferSelectModel } from "drizzle-orm";
-import { budgets } from "../../db/schema/finance.js";
+import { budgets } from "../../core/db/schema/finance.js";
 
 export type BudgetStatus = InferSelectModel<typeof budgets>["status"];
 

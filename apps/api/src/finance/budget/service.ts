@@ -1,7 +1,7 @@
-import { db } from "../../db/connection.js";
-import { projects } from "../../db/schema/projects.js";
+import { db } from "../../core/db/connection.js";
+import { projects } from "../../core/db/schema/projects.js";
 import { eq } from "drizzle-orm";
-import { NotFoundError, ValidationError } from "../../utils/errors.js";
+import { NotFoundError, ValidationError } from "../../core/utils/errors.js";
 import { assertProjectWritable, refreshProjectProgress } from "../../lifecycle/service.js";
 import { resolveActiveCategory, resolveCategoryChange } from "../categories/service.js";
 import * as repo from "./repository.js";

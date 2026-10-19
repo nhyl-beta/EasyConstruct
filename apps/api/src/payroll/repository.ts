@@ -1,7 +1,7 @@
 import { and, desc, eq, inArray, isNull, notInArray, or, sql, SQL } from "drizzle-orm";
-import { countRows, selectPage } from "../db/paged.js";
-import { db } from "../db/connection.js";
-import { payroll } from "../db/schema/payroll.js";
+import { countRows, selectPage } from "../core/db/paged.js";
+import { db } from "../core/db/connection.js";
+import { payroll } from "../core/db/schema/payroll.js";
 import type { PayrollFilters } from "./types.js";
 
 // Either the shared pool-backed db or a transaction handle.

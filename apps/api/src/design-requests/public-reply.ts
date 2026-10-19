@@ -3,14 +3,14 @@
 // What a stakeholder can do through the link in an RFI/RFA email, with no account: read the request, download
 // its attachments, and send one answer. Everything is decided by the token alone, and the token is checked on
 // every call (hashed, in date, unused). Every open, download, refusal and submit leaves an audit line.
-import { env } from "../config/env.js";
+import { env } from "../core/config/env.js";
 import * as notifications from "../notifications/service.js";
 import * as projectsRepo from "../projects/repository.js";
 import { storeBuffer, openStoredFile } from "../uploads/service.js";
 import { assertContentMatches } from "../uploads/sniff.js";
 import { hasAllowedExtension } from "../uploads/limits.js";
-import { AppError, NotFoundError, ValidationError } from "../utils/errors.js";
-import { logAudit } from "../utils/audit.js";
+import { AppError, NotFoundError, ValidationError } from "../core/utils/errors.js";
+import { logAudit } from "../core/audit/audit.js";
 import * as repo from "./reply-repository.js";
 import { CLIENT_ACTIVE_STATUSES } from "./rules.js";
 import {

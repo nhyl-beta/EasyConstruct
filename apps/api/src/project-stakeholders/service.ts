@@ -1,5 +1,5 @@
 // apps/api/src/project-stakeholders/service.ts (client demo change #4)
-import { NotFoundError, ValidationError } from "../utils/errors.js";
+import { NotFoundError, ValidationError } from "../core/utils/errors.js";
 import { assertProjectWritable } from "../lifecycle/service.js";
 import { assertProjectVisible } from "../projects/service.js";
 import * as projectsRepo from "../projects/repository.js";

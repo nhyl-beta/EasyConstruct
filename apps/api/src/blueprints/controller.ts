@@ -1,13 +1,13 @@
 // controller.ts
 import { NextFunction, Request, Response } from "express";
-import { HTTP } from "../constants/http-status.js";
-import { MSG } from "../constants/messages.js";
-import { formatSuccess } from "../utils/response.js";
+import { HTTP } from "../core/config/http-status.js";
+import { MSG } from "../core/config/messages.js";
+import { formatSuccess } from "../core/utils/response.js";
 import * as service from "./service.js";
-import { byDate, byString, respondList } from "../utils/pagination.js";
-import type { AuthedRequest } from "../middleware/auth.js";
+import { byDate, byString, respondList } from "../core/utils/pagination.js";
+import type { AuthedRequest } from "../core/auth/middleware.js";
 import { assertAssignedToDesign, assertAssignedToProject, scopeRowsByDesign } from "../projects/scope.js";
-import { parseIdParam } from "../utils/params.js";
+import { parseIdParam } from "../core/utils/params.js";
 
 export const getAll = async (req: Request, res: Response, next: NextFunction) => {
   try {

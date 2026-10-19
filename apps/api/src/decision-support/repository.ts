@@ -1,7 +1,7 @@
 // apps/api/src/decision-support/repository.ts (objectives fix 3.7)
 import { sql } from "drizzle-orm";
-import { db } from "../db/connection.js";
-import { decisionSupportEvents } from "../db/schema/decision-support-events.js";
+import { db } from "../core/db/connection.js";
+import { decisionSupportEvents } from "../core/db/schema/decision-support-events.js";
 import type { EventAction, EventCount, EventKind } from "./summary.js";
 
 export interface NewEvent {

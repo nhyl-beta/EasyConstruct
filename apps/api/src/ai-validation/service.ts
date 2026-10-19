@@ -4,14 +4,14 @@
 // line items. Its whole body is wrapped in try/catch — a failure here
 // (network, quota, a bad row) must never fail workflow creation, since
 // decision support can never block anything.
-import { db } from "../db/connection.js";
-import { validationResults, type NewValidationResultRow } from "../db/schema/ai-validation.js";
-import { workflowLineItems } from "../db/schema/workflows.js";
+import { db } from "../core/db/connection.js";
+import { validationResults, type NewValidationResultRow } from "../core/db/schema/ai-validation.js";
+import { workflowLineItems } from "../core/db/schema/workflows.js";
 import { eq } from "drizzle-orm";
 import { getReferenceItems } from "./cache.js";
 import { bestMatch } from "./matcher.js";
 import { compareLineItem, type LineItemForCost, type FxRate } from "./cost.js";
-import { env } from "../config/env.js";
+import { env } from "../core/config/env.js";
 import * as repo from "../workflows/repository.js";
 
 const MAX_NOTE_LENGTH = 500;

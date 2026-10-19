@@ -9,30 +9,30 @@
 // plain object, so gates.ts's checks stay pure functions, testable with no
 // database at all (see lifecycle/gates.test.ts).
 import { and, desc, eq, inArray, isNotNull } from "drizzle-orm";
-import { db } from "../db/connection.js";
-import { projects } from "../db/schema/projects.js";
-import { projectMembers } from "../db/schema/project-members.js";
-import { proposals } from "../db/schema/proposals.js";
-import { workflows, workflowStages } from "../db/schema/workflows.js";
-import { documents } from "../db/schema/documents.js";
-import { designs } from "../db/schema/designs.js";
-import { designReviews } from "../db/schema/design-reviews.js";
-import { blueprints } from "../db/schema/blueprints.js";
-import { requirements } from "../db/schema/requirements.js";
-import { budgets } from "../db/schema/finance.js";
-import { milestones, milestoneLinks } from "../db/schema/milestones.js";
-import { employees } from "../db/schema/employees.js";
-import { tasks } from "../db/schema/task.js";
-import { issues } from "../db/schema/issues.js";
-import { engineeringReports } from "../db/schema/engineering-reports.js";
-import { payrollBatches } from "../db/schema/finance.js";
-import { projectPhaseHistory } from "../db/schema/project-phase-history.js";
-import { workflowTemplates } from "../db/schema/workflows.js";
-import { validationResults } from "../db/schema/ai-validation.js";
+import { db } from "../core/db/connection.js";
+import { projects } from "../core/db/schema/projects.js";
+import { projectMembers } from "../core/db/schema/project-members.js";
+import { proposals } from "../core/db/schema/proposals.js";
+import { workflows, workflowStages } from "../core/db/schema/workflows.js";
+import { documents } from "../core/db/schema/documents.js";
+import { designs } from "../core/db/schema/designs.js";
+import { designReviews } from "../core/db/schema/design-reviews.js";
+import { blueprints } from "../core/db/schema/blueprints.js";
+import { requirements } from "../core/db/schema/requirements.js";
+import { budgets } from "../core/db/schema/finance.js";
+import { milestones, milestoneLinks } from "../core/db/schema/milestones.js";
+import { employees } from "../core/db/schema/employees.js";
+import { tasks } from "../core/db/schema/task.js";
+import { issues } from "../core/db/schema/issues.js";
+import { engineeringReports } from "../core/db/schema/engineering-reports.js";
+import { payrollBatches } from "../core/db/schema/finance.js";
+import { projectPhaseHistory } from "../core/db/schema/project-phase-history.js";
+import { workflowTemplates } from "../core/db/schema/workflows.js";
+import { validationResults } from "../core/db/schema/ai-validation.js";
 import { findOpenByProjects as findOpenRequests } from "../design-requests/repository.js";
-import { projectDeliverables } from "../db/schema/project-deliverables.js";
+import { projectDeliverables } from "../core/db/schema/project-deliverables.js";
 import { DESIGN_TURNOVER_TEMPLATE_NAME } from "./delivery.js";
-import { procurementOrders, purchaseRequests } from "../db/schema/finance.js";
+import { procurementOrders, purchaseRequests } from "../core/db/schema/finance.js";
 import { unsettledIds } from "../finance/purchasing/rules.js";
 
 // Gate X4 needs to know which workflows were raised from the "Project

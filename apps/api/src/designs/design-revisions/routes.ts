@@ -1,9 +1,9 @@
 // routes.ts
 import { Router } from 'express';
 import * as controller from "./controller.js";
-import { validate } from "../../middleware/validate.js";
+import { validate } from "../../core/http/validate.js";
 import { createDesignRevisionSchema, updateDesignRevisionSchema } from "../../validators/design-revision-validator.js";
-import { authenticate, requireRole } from '../../middleware/auth.js';
+import { authenticate, requireRole } from '../../core/auth/middleware.js';
 
 const router = Router();
 

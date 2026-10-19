@@ -1,8 +1,8 @@
 // apps/api/src/jobs/overdue-repository.ts (client demo change #8)
 import { and, eq, inArray } from "drizzle-orm";
-import { db } from "../db/connection.js";
-import { overdueReminders } from "../db/schema/overdue-reminders.js";
-import { users } from "../db/schema/users.js";
+import { db } from "../core/db/connection.js";
+import { overdueReminders } from "../core/db/schema/overdue-reminders.js";
+import { users } from "../core/db/schema/users.js";
 import { sentKey, type OverdueItemType, type Person } from "./overdue.js";
 
 const personColumns = { id: users.id, name: users.name, email: users.email, emailOverdueReminders: users.emailOverdueReminders, role: users.role };

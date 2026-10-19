@@ -1,6 +1,6 @@
 import { and, count, desc, eq, gte, ilike, inArray, lte, or, SQL } from "drizzle-orm";
-import { db } from "../db/connection.js";
-import { auditLogs } from "../db/schema/audit-logs.js";
+import { db } from "../core/db/connection.js";
+import { auditLogs } from "../core/db/schema/audit-logs.js";
 import type { AuditLogFilters, CreateAuditLogInput } from "./types.js";
 
 const DEFAULT_PER_PAGE = 10;

@@ -1,9 +1,9 @@
 // apps/api/src/workforce-reports/fairness-repository.ts (objectives fix 2.6): aggregates in the database, nothing row by row.
 import { and, eq, gte, isNotNull, lte, sql, SQL } from "drizzle-orm";
-import { db } from "../db/connection.js";
-import { attendance } from "../db/schema/attendance.js";
-import { employees } from "../db/schema/employees.js";
-import { tasks } from "../db/schema/task.js";
+import { db } from "../core/db/connection.js";
+import { attendance } from "../core/db/schema/attendance.js";
+import { employees } from "../core/db/schema/employees.js";
+import { tasks } from "../core/db/schema/task.js";
 import type { WorkerProjectRow, WorkerRate } from "./fairness.js";
 
 export interface FairnessFilters {

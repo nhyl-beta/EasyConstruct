@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import * as controller from "./controller.js";
-import { authenticate, requireRole } from "../middleware/auth.js";
+import { authenticate, requireRole } from "../core/auth/middleware.js";
 
 const router = Router();
 // Owner's capstone scope is "system oversight and audit-log viewing" and IT

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { PROJECT_MEMBER_ROLES } from "../db/schema/project-members.js";
+import { PROJECT_MEMBER_ROLES } from "../core/db/schema/project-members.js";
 
 export const createProjectMemberSchema = z.object({
   projectCode: z.string().min(1).max(50),

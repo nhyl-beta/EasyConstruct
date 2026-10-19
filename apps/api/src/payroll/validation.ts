@@ -1,6 +1,6 @@
 import type { PayrollRules } from "./engine.js";
 import type { ValidationIssue } from "./types.js";
-import { PAYROLL_WARNINGS, type PayrollWarningConfig } from "../config/payroll.js";
+import { PAYROLL_WARNINGS, type PayrollWarningConfig } from "../core/config/payroll.js";
 
 export interface ValidationLine {
   empId: string;

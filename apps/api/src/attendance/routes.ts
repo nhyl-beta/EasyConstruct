@@ -1,14 +1,14 @@
 import { Router } from "express";
 import * as controller from "./controller.js";
-import { validate } from "../middleware/validate.js";
-import { authenticate, requireRole } from "../middleware/auth.js";
+import { validate } from "../core/http/validate.js";
+import { authenticate, requireRole } from "../core/auth/middleware.js";
 import {
   createAttendanceSchema,
   markAbsentSchema,
   updateAttendanceSchema,
 } from "../validators/attendance-validators.js";
 import multer from "multer";
-import { ValidationError } from "../utils/errors.js";
+import { ValidationError } from "../core/utils/errors.js";
 
 const router = Router();
 

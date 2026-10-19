@@ -204,9 +204,9 @@ describe("password rule for reset (B1)", () => {
 
 describe("recovery email delivery (B1)", () => {
   test("with no Gmail credentials configured, sending fails loudly instead of pretending", async () => {
-    const { env } = await import("../config/env.js");
+    const { env } = await import("../core/config/env.js");
     if (env.MAIL_USER && env.MAIL_APP_PASSWORD) return; // configured here — nothing to assert
-    const { assertMailConfigured } = await import("../mail/mailer.js");
+    const { assertMailConfigured } = await import("../core/mail/mailer.js");
     assert.throws(() => assertMailConfigured(), (err: { code?: string; statusCode?: number }) =>
       err.code === "MAIL_NOT_CONFIGURED" && err.statusCode === 503);
   });

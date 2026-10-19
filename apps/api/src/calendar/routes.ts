@@ -1,13 +1,13 @@
 // apps/api/src/calendar/routes.ts — NEW (A2)
 import { Router } from "express";
-import { authenticate } from "../middleware/auth.js";
-import type { AuthedRequest } from "../middleware/auth.js";
-import { formatSuccess } from "../utils/response.js";
-import { UnauthorizedError, ValidationError } from "../utils/errors.js";
+import { authenticate } from "../core/auth/middleware.js";
+import type { AuthedRequest } from "../core/auth/middleware.js";
+import { formatSuccess } from "../core/utils/response.js";
+import { UnauthorizedError, ValidationError } from "../core/utils/errors.js";
 import { getCalendarEvents } from "./service.js";
 import { parseRange } from "./events.js";
-import { ALL_DOMAIN, cached } from "../cache/index.js";
-import { userScope } from "../cache/scope.js";
+import { ALL_DOMAIN, cached } from "../core/cache/index.js";
+import { userScope } from "../core/cache/scope.js";
 
 const router = Router();
 router.use(authenticate);

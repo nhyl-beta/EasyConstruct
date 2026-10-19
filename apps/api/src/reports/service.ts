@@ -2,7 +2,7 @@
 import { manilaDay } from "../jobs/overdue.js";
 import * as projectsRepo from "../projects/repository.js";
 import { assertProjectVisible } from "../projects/service.js";
-import { NotFoundError } from "../utils/errors.js";
+import { NotFoundError } from "../core/utils/errors.js";
 import * as repo from "./repository.js";
 import { REPORT_PERIODS, REPORT_TYPE_BY_PERIOD, applicablePeriods, parseWorkingDays, reportGrid, type GridCell, type ReportPeriod } from "./periods.js";
 

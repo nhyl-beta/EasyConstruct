@@ -2,7 +2,7 @@ import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import { compareLineItem, type LineItemForCost, type FxRate } from "./cost.js";
 import type { MatchResult } from "./matcher.js";
-import type { ReferenceSnapshotRow } from "../db/schema/ai-validation.js";
+import type { ReferenceSnapshotRow } from "../core/db/schema/ai-validation.js";
 
 const FX: FxRate = { rate: 62.73, asOf: "2026-09-22" };
 

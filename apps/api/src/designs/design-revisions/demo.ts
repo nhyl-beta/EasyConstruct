@@ -5,15 +5,15 @@
 // the admin-only POST /api/design-revisions/demo. Every row it writes is flagged
 // `is_demo`, so `removeDemoRevisions()` can take them (and nothing else) out.
 import { desc, eq } from "drizzle-orm";
-import { db } from "../../db/connection.js";
-import { designs } from "../../db/schema/designs.js";
-import { users } from "../../db/schema/users.js";
+import { db } from "../../core/db/connection.js";
+import { designs } from "../../core/db/schema/designs.js";
+import { users } from "../../core/db/schema/users.js";
 import * as projectMemberRepo from "../../project-members/repository.js";
 import * as projectsRepo from "../../projects/repository.js";
 import * as designsRepo from "../repository.js";
 import * as repo from "./repository.js";
 import * as service from "./service.js";
-import { NotFoundError } from "../../utils/errors.js";
+import { NotFoundError } from "../../core/utils/errors.js";
 
 /** FNV-1a — a stable seed from a string (so randomness is deterministic per project/design). */
 export const hash = (s: string): number => {

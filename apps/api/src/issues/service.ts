@@ -1,16 +1,16 @@
 // apps/api/src/issues/service.ts — NEW
-import { db } from "../db/connection.js";
-import { projects } from "../db/schema/projects.js";
+import { db } from "../core/db/connection.js";
+import { projects } from "../core/db/schema/projects.js";
 import { eq } from "drizzle-orm";
-import { ForbiddenError, NotFoundError, ValidationError } from "../utils/errors.js";
+import { ForbiddenError, NotFoundError, ValidationError } from "../core/utils/errors.js";
 import { assertProjectWritable, refreshProjectProgress } from "../lifecycle/service.js";
 import * as notificationsService from "../notifications/service.js";
 import * as repo from "./repository.js";
-import { issues as issuesTable } from "../db/schema/issues.js";
-import { orderByFor, paginate, type PageRequest } from "../utils/pagination.js";
+import { issues as issuesTable } from "../core/db/schema/issues.js";
+import { orderByFor, paginate, type PageRequest } from "../core/utils/pagination.js";
 import { projectCodesForPm } from "../projects/service.js";
 import type { CreateIssueInput, IssueFilters } from "./types.js";
-import { FEATURES } from "../config/features.js";
+import { FEATURES } from "../core/config/features.js";
 import { rankPrecedents, type RankedPrecedent } from "./precedents.js";
 
 // ai-signals E5: decision support, read-only, never gates issue status.

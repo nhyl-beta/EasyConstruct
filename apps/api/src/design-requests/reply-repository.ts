@@ -1,6 +1,6 @@
 // apps/api/src/design-requests/reply-repository.ts (client demo change #6)
 import { and, eq, gt, isNull } from "drizzle-orm";
-import { db } from "../db/connection.js";
+import { db } from "../core/db/connection.js";
 import {
   designRequestFiles,
   designRequestRecipients,
@@ -10,7 +10,7 @@ import {
   type DesignRequestFile,
   type DesignRequestRecipient,
   type DesignRequestReplyToken,
-} from "../db/schema/design-requests.js";
+} from "../core/db/schema/design-requests.js";
 
 export const insertToken = async (recipientId: number, tokenHash: string, expiresAt: Date): Promise<DesignRequestReplyToken> => {
   const [row] = await db.insert(designRequestReplyTokens).values({ recipientId, tokenHash, expiresAt }).returning();

@@ -1,7 +1,7 @@
 import { and, desc, eq, inArray, ne } from "drizzle-orm";
-import { db } from "../db/connection.js";
-import { payrollBatches } from "../db/schema/finance.js";
-import { payrollBatchAcknowledgements, payrollBatchDecisions } from "../db/schema/payroll.js";
+import { db } from "../core/db/connection.js";
+import { payrollBatches } from "../core/db/schema/finance.js";
+import { payrollBatchAcknowledgements, payrollBatchDecisions } from "../core/db/schema/payroll.js";
 import type { Db } from "./repository.js";
 
 export type BatchRow = typeof payrollBatches.$inferSelect;

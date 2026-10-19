@@ -6,7 +6,7 @@
 // surface solely as the line-item badge (see ai-validation/ Group C/E).
 import type { Signal, SignalContext, SignalRule } from "./types.js";
 import type { LifecycleSnapshot } from "../lifecycle/repository.js";
-import { SIGNAL_THRESHOLDS } from "../config/signals.js";
+import { SIGNAL_THRESHOLDS } from "../core/config/signals.js";
 
 const RECENT_WORKFLOW_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 

@@ -5,7 +5,7 @@ import {
   assertSitePersonnelMayUpdate,
   isOwnRequirement,
 } from "./permissions.js";
-import { ForbiddenError } from "../utils/errors.js";
+import { ForbiddenError } from "../core/utils/errors.js";
 
 const own = { createdBy: "Rico Domingo", status: "Draft" };
 
