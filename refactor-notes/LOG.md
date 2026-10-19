@@ -4,11 +4,12 @@ Prompt: claude/enterprise-structure-refactor-prompt.md
 Agent: GitHub Copilot
 
 ## Phase 0: Baseline
-- Status: done
+- Status: partial
 - Date: 2026-10-19
-- Head after phase: thesis-final @ ce6188e, pushed: yes
+- Head after phase: thesis-final @ 367b03c, pushed: no
 - Commits:
   - ce6188e phase 0: capture baseline results and routes
+  - 367b03c phase 0: record baseline completion in log
 
 ### What moved
 | From | To |
@@ -35,13 +36,13 @@ Agent: GitHub Copilot
 ### Deviations from the prompt
 - The Express 5 router stack was walked at runtime; TypeScript source AST was used to associate mounted routers with their source prefixes because the runtime layer stack does not retain those prefixes.
 - The route-list command received a temporary placeholder `DATABASE_URL` because importing the app validates environment configuration. The script did not listen or connect to a database.
-- This entry records the baseline artifact commit. A separate log-only commit completes this phase entry; its own hash cannot be embedded in its commit content.
+- Push failed because the non-interactive environment could not prompt for GitHub credentials; the branch and commit remain local. A log-only correction commit records the push failure; its own hash cannot be embedded in its commit content.
 
 ### Needs Nhyl's decision
-- None.
+- Provide authenticated push access or push the phase 0 commits on `thesis-final` manually before continuing.
 
 ### Unresolved errors
 None.
 
 ### Next step
-- Phase 1: Workspace skeleton.
+- Push the phase 0 commits on `thesis-final`; then wait for Nhyl to say "continue" before Phase 1.
