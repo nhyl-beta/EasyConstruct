@@ -4,7 +4,7 @@ import { ROLE_RESOURCE_ACCESS } from "@/config/role-resources";
 import { toFrontendRole } from "@/config/role-mapping";
 
 export const accessControlProvider: AccessControlProvider = {
-  can: async ({ resource, action }) => {
+  can: async ({ resource }) => {
     const rawUser = sessionStorage.getItem("easyconstruct_user")
       ?? localStorage.getItem("easyconstruct_user");
     let role = "project_manager";
@@ -22,7 +22,6 @@ export const accessControlProvider: AccessControlProvider = {
 
     const canAccess = allowed.includes(resource);
 
-    console.log(`[ACL] role=${role} resource=${resource} action=${action} → ${canAccess}`);
 
     return { can: canAccess };
   },

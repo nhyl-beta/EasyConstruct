@@ -1,7 +1,7 @@
 // Minimal RFC 4180 CSV reader for the legacy-import manifest: quoted cells,
 // doubled quotes, CRLF/LF, a UTF-8 BOM. Returns rows of raw strings.
 export function parseCsv(text: string): string[][] {
-  const src = text.replace(/^﻿/, "");
+  const src = text.replace(/^\uFEFF/, "");
   const rows: string[][] = [];
   let row: string[] = [];
   let cell = "";

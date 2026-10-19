@@ -1,4 +1,4 @@
-import { Project } from "../types/project.types";
+import { Project, ProjectsQuery } from "../types/project.types";
 import { ProjectRepository } from "../repositories/project.repository";
 import { ProjectsKpi } from "../types/project.types";
 
@@ -12,7 +12,7 @@ export const ProjectService = {
   },
 
   // business logic: filtering / searching / pagination happen here so views remain thin
-  async queryProjects({ q, status, risk, page = 1, perPage = 20 }: any) {
+  async queryProjects({ q, status, risk, page = 1, perPage = 20 }: ProjectsQuery) {
     const all = await ProjectRepository.list();
     let filtered = all;
     if (q) {

@@ -26,8 +26,7 @@ import {
   ReportStatusBadge,
 } from "@/pages/roles/shared/shared-engineer";
 
-const DECISION_TABS = ["pending", "approved", "rejected"] as const;
-type DecisionTab = (typeof DECISION_TABS)[number];
+type DecisionTab = "pending" | "approved" | "rejected";
 
 const TAB_STATUSES: Record<DecisionTab, string> = {
   pending: "Submitted,Under Review",

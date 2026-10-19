@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - thesis-final
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint --workspace=@easyconstruct/api
+      - run: npm run lint --workspace=@easyconstruct/web
+      - run: npm test --workspace=@easyconstruct/api
+      - run: npm test --workspace=@easyconstruct/web
+      - run: npm run build:server
+      - run: npm run build:client
+      - run: npm run typecheck --workspace=@easyconstruct/web
+      - name: Compare API type errors with baseline
+        shell: bash
+        run: |
+          baseline="$(grep -oE 'API type errors: *[0-9]+' refactor-notes/baseline.md | grep -oE '[0-9]+$')"
+          if [[ -z "$baseline" ]]; then
+            echo "Could not read the API type-error baseline."
+            exit 1
+          fi
+          set +e
+          npm run typecheck --workspace=@easyconstruct/api > api-typecheck.log 2>&1
+          status=$?
+          set -e
+          count="$(grep -cE 'error TS[0-9]+' api-typecheck.log || true)"
+          echo "API TypeScript errors: $count (baseline: $baseline)"
+          if [[ "$status" -ne 0 && "$count" -eq 0 ]]; then
+            cat api-typecheck.log
+            exit "$status"
+          fi
+          if [[ "$count" -gt "$baseline" ]]; then
+            cat api-typecheck.log
+            exit 1
+          fi

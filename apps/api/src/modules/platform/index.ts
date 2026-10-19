@@ -9,3 +9,4 @@ export { isUndeliverableEmail } from "./jobs/overdue.js";
 export { manilaDay } from "./jobs/overdue.js";
 export { normalizeName } from "./reference/names.js";
 export { setEmailSetting } from "./jobs/overdue-repository.js";
+export { runOverdueJob } from "./jobs/overdue-service.js";

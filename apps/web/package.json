@@ -96,6 +96,8 @@
     "dev": "refine dev",
     "build": "tsc && refine build",
     "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
     "start": "refine start",
     "refine": "refine"
   },

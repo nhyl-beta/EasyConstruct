@@ -4,7 +4,7 @@
 // keyed by that dependence: the user for roles whose data is their own
 // assignments, the role for roles that see the same org-wide data, `all` only
 // where the handler never looks at who is asking.
-import { MEMBERSHIP_SCOPED_ROLES } from "../../modules/projects/projects/visibility.js";
+import { MEMBERSHIP_SCOPED_ROLES } from "../access/project-visibility.js";
 
 export interface ScopeAuth {
   id: number;

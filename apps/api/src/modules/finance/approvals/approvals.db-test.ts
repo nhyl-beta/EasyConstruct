@@ -9,7 +9,7 @@ import { eq, sql } from "drizzle-orm";
 
 import { db } from "../../../core/db/connection.js";
 import { budgets, expenses, payrollBatches } from "../../../core/db/schema/finance.js";
-import { assertDemoDatabase } from "../../../scripts/demo-guard.js";
+import { assertDemoDatabase } from "../../../../scripts/demo/demo-guard.js";
 import { approvalsService } from "./service.js";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];

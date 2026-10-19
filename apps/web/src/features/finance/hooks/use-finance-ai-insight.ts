@@ -20,9 +20,9 @@ interface UseFinanceAiInsightsResult {
 // this never calls them at all rather than hitting routes that don't exist.
 export function useFinanceAiInsightsController(): UseFinanceAiInsightsResult {
   const [insights, setInsights] = useState<AIInsight[]>([]);
-  const [risks, setRisks] = useState<FinancialRisk[]>([]);
-  const [isLoading, setIsLoading] = useState(FEATURES.aiPlaceholders);
-  const [error, setError] = useState<string | null>(null);
+  const [risks] = useState<FinancialRisk[]>([]);
+  const [isLoading] = useState(FEATURES.aiPlaceholders);
+  const [error] = useState<string | null>(null);
 
   // Acknowledge is a client-side dismissal for now — add a persisted
   // "acknowledged_at" column on ai_insights if this needs to survive reloads.

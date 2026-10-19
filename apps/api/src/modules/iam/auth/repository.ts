@@ -61,21 +61,6 @@ export const revokeOpenResetTokens = async (userId: number) => {
     .where(and(eq(passwordResetTokens.userId, userId), isNull(passwordResetTokens.usedAt)));
 };
 
-/**
- * What the session check needs about an account: when its password last changed
- * (older tokens are signed out) and whether it is still active (a deactivated
- * account's existing tokens stop working). undefined when the account is gone.
- */
-export const findSessionState = async (id: number) => {
-  const [row] = await db
-    .select({ passwordChangedAt: users.passwordChangedAt, tokensValidAfter: users.tokensValidAfter, isActive: users.isActive })
-    .from(users)
-    .where(eq(users.id, id));
-  return row
-    ? { changedAt: row.passwordChangedAt ?? null, validAfter: row.tokensValidAfter ?? null, isActive: row.isActive }
-    : undefined;
-};
-
 /** Signs the account out everywhere: every token issued before now stops working. */
 export const revokeTokens = async (id: number) => {
   await db.update(users).set({ tokensValidAfter: new Date() }).where(eq(users.id, id));

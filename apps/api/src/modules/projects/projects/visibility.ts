@@ -1,3 +1,6 @@
+import { MEMBERSHIP_SCOPED_ROLES } from "../../../core/access/project-visibility.js";
+export { MEMBERSHIP_SCOPED_ROLES } from "../../../core/access/project-visibility.js";
+
 // apps/api/src/projects/visibility.ts
 //
 // The pure core of "which projects may this role see": no database, so it is
@@ -10,13 +13,6 @@
  * and Owner oversee everything; HR and Finance work company-wide (payroll,
  * budgets); the PM runs the portfolio (their own projects, see below).
  */
-export const MEMBERSHIP_SCOPED_ROLES: ReadonlySet<string> = new Set([
-  "engineer",
-  "architect",
-  "site-personnel",
-  "consultant",
-]);
-
 export type VisibilityMode = "own-projects" | "staffed-projects" | "all";
 
 export const visibilityModeFor = (role: string): VisibilityMode =>

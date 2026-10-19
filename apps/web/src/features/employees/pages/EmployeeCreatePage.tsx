@@ -62,10 +62,6 @@ const initialForm: EmployeeFormData = {
   rateType: "Monthly",
 };
 
-function initialsFrom(first: string, last: string) {
-  return `${first.charAt(0)}${last.charAt(0)}`.toUpperCase() || "NA";
-}
-
 export default function EmployeeCreatePage() {
   const navigate = useNavigate();
   const { id } = useParams();

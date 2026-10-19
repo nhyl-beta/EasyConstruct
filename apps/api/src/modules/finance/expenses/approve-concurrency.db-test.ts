@@ -12,7 +12,7 @@ import { and, eq, like } from "drizzle-orm";
 import { db } from "../../../core/db/connection.js";
 import { budgets, cashFlowEntries, expenses } from "../../../core/db/schema/finance.js";
 import { projects } from "../../../core/db/schema/projects.js";
-import { assertDemoDatabase } from "../../../scripts/demo-guard.js";
+import { assertDemoDatabase } from "../../../../scripts/demo/demo-guard.js";
 import { keyToLabel } from "../cash-flow/months.js";
 import { expensesService } from "./services.js";
 

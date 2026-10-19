@@ -1,5 +1,5 @@
-#Ignore docs
-docs/
+# Package installations are always local.
+node_modules/
 
 # Uploaded advisory documents
 apps/api/uploads/documents
@@ -8,6 +8,7 @@ apps/api/uploads/documents
 # Locally-stored uploads (design files, photos, task evidence) — written
 # when no Vercel Blob store is usable; see apps/api/src/uploads/service.ts
 apps/api/uploads/generic
+apps/api/src/modules/documents/uploads/documents/
 .claude/worktrees/
 
 apps/api/backups/

@@ -5,7 +5,7 @@ import jwt from "jsonwebtoken";
 
 import { env } from "../config/env.js";
 import { UnauthorizedError, ForbiddenError } from "../utils/errors.js";
-import { findSessionState } from "../../modules/iam/auth/repository.js";
+import { findSessionState } from "./session.repository.js";
 import { allowsQueryToken, isTokenSignedOut, sessionCutoff } from "./session.js";
 
 // A password change (reset link, or IT Designer's admin reset) signs out every

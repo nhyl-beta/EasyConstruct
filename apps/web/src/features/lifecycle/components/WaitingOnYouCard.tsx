@@ -5,7 +5,6 @@
 import { AlertCircle, ChevronRight, ClipboardCheck, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatRelativeTime } from "@/lib/format-relative-time";
 import { useEffect, useState } from "react";

@@ -71,11 +71,6 @@ function distanceMeters(lat1: number, lon1: number, lat2: number, lon2: number):
 
 
 
-function useMyEmployeeId(): string | null {
-  const { user } = useAuth();
-  return useMemo(() => (user ? user.email.split("@")[0] : null), [user]);
-}
-
 /** G1: attendance can only be logged against a project this worker is
  * actually staffed on as site personnel — the server enforces this too,
  * but without a scoped picker the page had no way to pick a project at all. */

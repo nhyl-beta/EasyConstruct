@@ -1,5 +1,5 @@
-import { create as createAuditLog } from "../../modules/platform/audit-logs/repository.js";
-import type { CreateAuditLogInput } from "../../modules/platform/audit-logs/types.js";
+import { create as createAuditLog } from "./repository.js";
+import type { CreateAuditLogInput } from "./types.js";
 
 // Fire-and-forget audit write: a logging failure must never fail the
 // primary action it's recording, so errors are swallowed (not silently

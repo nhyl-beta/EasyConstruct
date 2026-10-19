@@ -15,13 +15,17 @@ EasyConstruct is a full-stack construction management platform built as a thesis
 ├── apps/
 │   ├── web/          # React + Refine frontend (Vite)
 │   └── api/          # Express + Drizzle REST API
-│       ├── src/      # Feature modules (repository → service → controller → routes)
-│       └── drizzle/  # SQL migrations and schema snapshots
-├── packages/        # Shared TypeScript and lint configuration
+│       ├── src/core/ # HTTP, auth, storage, database, jobs and shared plumbing
+│       ├── src/modules/ # API features and their public module indexes
+│       ├── drizzle/  # SQL migrations and schema snapshots
+│       └── scripts/{ops,demo}/
+├── packages/        # Shared role ids and TypeScript/ESLint configuration
+├── infra/           # Dockerfiles and local PostgreSQL/MinIO Compose stack
+├── docs/            # Architecture, ADRs, setup and history
 └── scripts/dev.mjs  # Runs the web and API development servers together
 ```
 
-Backend modules (projects, employees, HR, finance, engineering reports, documents, requirements, workflows, etc.) follow a consistent layering pattern: **schema → repository → service → controller → routes**. The frontend mirrors this with a **feature folder → hook → page** structure, using `projects` and `employees` as the canonical reference modules.
+The API modules (IAM, documents, projects, design, workflow, workforce, finance, insights, and platform) use a consistent layering pattern: **schema → repository → service → controller → routes**. The frontend remains in its existing feature-folder structure. See [the architecture guide](docs/architecture/structure.md) for the complete tree and import rules.
 
 ## Prerequisites
 
@@ -73,12 +77,20 @@ The client reads `VITE_API_BASE` to decide whether to talk to the real API or us
 
 ### 3. Set up the database
 
+For a local PostgreSQL 16 instance and S3-compatible MinIO service, start the provided Compose stack:
+
+```bash
+docker compose -f infra/compose/docker-compose.yml up -d
+```
+
+See [local infrastructure](infra/compose/README.md) for connection details. Demo seed/reset scripts refuse to run with `NODE_ENV=production` and require the configured local demo safeguards.
+
 From the repository root:
 
 ```bash
 npm run db:generate --workspace=@easyconstruct/api   # generate Drizzle migrations from the schema (if needed)
 npm run db:migrate --workspace=@easyconstruct/api    # apply migrations to DATABASE_URL
-npm run db:seed                          # idempotent schema top-ups (apps/api/src/scripts/ensure-demo-schema.ts) + demo roles, employees, and login accounts
+ALLOW_DEMO_RESET=true npm run db:seed    # guarded demo schema top-ups and demo accounts
 ```
 
 The seed script prints a table of demo accounts on completion — one per role (admin, project manager, HR, finance, architect, engineer, site personnel, consultant, owner, IT designer), all sharing the password `Demo@12345`.
@@ -125,7 +137,7 @@ Run these commands from `apps/api/` unless a workspace selector is shown.
 | `npm run db:seed` | Seeds demo roles, employees, and user accounts |
 | `npm run db:backfill-employee-links` | Backfills employee ↔ user links |
 | `npm run ai:seed-references` | Pulls the EstimationPro.ai cost-reference catalog (idempotent upsert) |
-| `npm run demo:seed` | Creates `DEMO-STAGE-0`..`6`, one demo project per lifecycle phase, via real API calls against a running `npm run dev` server. Idempotent — deletes and rebuilds its own rows on every run. Run `ai:seed-references` first for a full cost-reference catalog (falls back to a single seeded reference row otherwise — see `apps/api/src/scripts/demo-seed-stages.ts`'s header comment). |
+| `npm run demo:seed` | Creates `DEMO-STAGE-0`..`6`, one demo project per lifecycle phase, via real API calls against a running `npm run dev` server. Idempotent — deletes and rebuilds its own rows on every run. Run `ai:seed-references` first for a full cost-reference catalog (falls back to a single seeded reference row otherwise — see `apps/api/scripts/demo/demo-seed-stages.ts`'s header comment). |
 | `npm run demo:ai-signals` | The one bookmarkable place to see the AI-validation decision-support layer trip all five advisory signals at once (cost-variance, cumulative-change-impact, burn-vs-progress, issue-recurrence, stalled-stage) — see "AI-validation demo project" below. |
 
 **AI-validation demo project.** `npm run demo:ai-signals` builds a single project at the stable

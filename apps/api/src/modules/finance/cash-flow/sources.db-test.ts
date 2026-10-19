@@ -9,7 +9,7 @@ import assert from "node:assert/strict";
 import { db } from "../../../core/db/connection.js";
 import { expenses, payrollBatches } from "../../../core/db/schema/finance.js";
 import { payrollBatchDecisions } from "../../../core/db/schema/payroll.js";
-import { assertDemoDatabase } from "../../../scripts/demo-guard.js";
+import { assertDemoDatabase } from "../../../../scripts/demo/demo-guard.js";
 import { refreshMonth } from "./service.js";
 import { expenseOutflowByMonth, payrollOutflowByMonth, projectCosts } from "./sources.js";
 

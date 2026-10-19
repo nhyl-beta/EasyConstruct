@@ -10,7 +10,7 @@ export const module: ApiModule = {
     {
       order: 20,
       prefix: "/api/finance/payroll-review",
-      middleware: [authenticate, requireRole("finance-manager", "finance_manager", "admin", "it-designer")],
+      middleware: [authenticate, requireRole("finance-manager", "admin", "it-designer")],
       router: payrollReviewRoutes,
     },
     {

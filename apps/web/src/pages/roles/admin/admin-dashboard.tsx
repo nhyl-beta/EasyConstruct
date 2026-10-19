@@ -15,7 +15,6 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ComingSoonCard } from "@/components/refine-ui/views/coming-soon-card";
 import { KpiStrip } from "@/components/ui/kpi-strip";
 import { Progress } from "@/components/ui/progress";
 import { useRoleConfig } from "@/hooks/use-role-config";

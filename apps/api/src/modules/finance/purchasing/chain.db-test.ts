@@ -16,7 +16,7 @@ import { projectMembers } from "../../../core/db/schema/project-members.js";
 import { projects } from "../../../core/db/schema/projects.js";
 import { requirements } from "../../../core/db/schema/requirements.js";
 import { users } from "../../../core/db/schema/users.js";
-import { assertDemoDatabase } from "../../../scripts/demo-guard.js";
+import { assertDemoDatabase } from "../../../../scripts/demo/demo-guard.js";
 import { monthKey } from "../cash-flow/months.js";
 import { refreshMonth } from "../cash-flow/service.js";
 import { ConflictError, ForbiddenError } from "../../../core/utils/errors.js";
