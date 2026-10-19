@@ -278,9 +278,9 @@ None. The remote CI run and root `npm ci` were not run for the reasons recorded 
 ## Phase 5: Report and hand back
 - Status: done
 - Date: 2026-10-20
-- Head after phase: thesis-final @ 213b2d2, pushed: no
+- Head after phase: thesis-final @ 5846fe1, pushed: no
 - Commits:
-  - Final report commit follows; no additional implementation changes were needed.
+  - 5846fe1 phase 5: finalize restructuring report
 
 ### What moved
 The final structure is documented in `docs/architecture/structure.md`. API feature files moved in Phase 3:
