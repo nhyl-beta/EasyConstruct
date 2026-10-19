@@ -39,7 +39,7 @@ Agent: GitHub Copilot
 - Push failed because the non-interactive environment could not prompt for GitHub credentials; the branch and commit remain local. A log-only correction commit records the push failure; its own hash cannot be embedded in its commit content.
 
 ### Needs Nhyl's decision
-- Provide authenticated push access or push the phase 0 commits on `thesis-final` manually before continuing.
+- Nhyl chose to leave the commits local. Publish them to `thesis-final` before Phase 1, then say "continue".
 
 ### Unresolved errors
 None.
