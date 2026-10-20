@@ -22,6 +22,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm install --no-save --workspace=@easyconstruct/web @rollup/rollup-linux-x64-gnu@4.62.2
       - run: npm run lint --workspace=@easyconstruct/api
       - run: npm run lint --workspace=@easyconstruct/web
       - run: npm test --workspace=@easyconstruct/api
