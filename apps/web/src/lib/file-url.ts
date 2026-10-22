@@ -1,10 +1,11 @@
 // Shared resolution for stored file URLs (documents, design files, attendance
 // photos, advisory docs).
 //
-// Stored files live in one of two places:
-//   - a PRIVATE Vercel Blob store (absolute blob URL), or
+// Stored files live in one of three places:
+//   - an S3-compatible bucket ("s3:<key>"), or
+//   - a PRIVATE Vercel Blob store (absolute blob URL; older files), or
 //   - local disk ("/uploads/..." path) in development.
-// Neither is fetchable by a bare link any more: a new tab carries no
+// None is fetchable by a bare link any more: a new tab carries no
 // Authorization header, which is exactly how "Download" used to land on the
 // login page. Both are read through GET /api/uploads/file, which checks the
 // caller's token and streams the bytes. Because that needs a header, the
@@ -27,12 +28,12 @@ const isBlobHost = (url: string) => {
  * is configured (see upload-document-dialog.tsx).
  */
 export function isRealFileUrl(url: string | null | undefined): boolean {
-  return !!url && (/^https?:\/\//.test(url) || url.startsWith("/"));
+  return !!url && (/^https?:\/\//.test(url) || url.startsWith("/") || url.startsWith("s3:"));
 }
 
 /** Files that must go through the authenticated download route. */
 function needsAuthFetch(url: string): boolean {
-  return url.startsWith("/") || isBlobHost(url);
+  return url.startsWith("/") || url.startsWith("s3:") || isBlobHost(url);
 }
 
 /** Fetch a stored file's bytes with the caller's credentials. */

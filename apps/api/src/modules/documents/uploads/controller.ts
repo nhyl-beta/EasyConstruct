@@ -1,7 +1,9 @@
 import { NextFunction, Response } from "express";
 import { pipeline } from "node:stream/promises";
 import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
-import { env } from "../../../core/config/env.js";
+import { env, isS3Configured } from "../../../core/config/env.js";
+import { unlink } from "node:fs/promises";
+import { storage } from "../../../core/storage/index.js";
 import { AppError } from "../../../core/utils/errors.js";
 import { formatLimit, hasAllowedExtension, isBlobClientUploadBody, maxUploadBytes } from "./limits.js";
 import { ValidationError } from "../../../core/utils/errors.js";
@@ -29,12 +31,13 @@ export const upload = async (req: AuthedRequest, res: Response, next: NextFuncti
 // GET /api/uploads/config — what the browser needs to pick an upload path:
 // "blob" = upload straight to Vercel Blob with a short-lived token (the only
 // way past the ~4.5 MB request limit of serverless functions), "disk" =
-// multipart stream to this server (local development).
+// multipart stream to this server (local development, and any S3-backed deployment, where the server then
+// forwards the file to the bucket).
 export const config = (_req: AuthedRequest, res: Response, next: NextFunction) => {
   try {
     res.json(
       formatSuccess(
-        { maxBytes: maxUploadBytes(), mode: env.BLOB_READ_WRITE_TOKEN ? "blob" : "disk" },
+        { maxBytes: maxUploadBytes(), mode: !isS3Configured() && env.BLOB_READ_WRITE_TOKEN ? "blob" : "disk" },
         "Upload configuration",
       ),
     );
@@ -49,6 +52,7 @@ export const uploadStreamed = async (req: AuthedRequest, res: Response, next: Ne
     if (!req.file) throw new ValidationError("Choose a file to upload");
     // The file is already on disk; refuse (and delete) it when its bytes are not the type it claims.
     await assertDiskFileMatches(req.file.path, req.file.originalname, req.file.mimetype || "");
+    if (isS3Configured()) return await uploadStreamedToS3(req, res);
     // Fingerprint the finished file (read from disk in chunks) so a later change is noticed.
     await integrity.recordFromDisk({
       url: `/uploads/generic/${req.file.filename}`,
@@ -69,6 +73,34 @@ export const uploadStreamed = async (req: AuthedRequest, res: Response, next: Ne
     );
   } catch (err) {
     next(err);
+  }
+};
+
+// S3 variant of uploadStreamed: the temp file goes to the bucket, is fingerprinted while it still exists, then
+// removed. Any failure removes the temp file and answers STORAGE_UNAVAILABLE (502).
+const uploadStreamedToS3 = async (req: AuthedRequest, res: Response) => {
+  const file = req.file!;
+  const contentType = file.mimetype || "application/octet-stream";
+  try {
+    const stored = await storage.putFile(file.path, file.originalname, contentType);
+    await integrity.recordFromDisk({
+      url: stored.url,
+      absolutePath: file.path,
+      contentType,
+      uploadedByUserId: req.authUser?.id,
+    });
+    res.status(HTTP.CREATED).json(
+      formatSuccess(
+        { url: stored.url, filename: file.originalname, contentType, sizeBytes: file.size },
+        "File uploaded",
+      ),
+    );
+  } catch (err) {
+    if (err instanceof AppError) throw err;
+    console.error("[uploads] streamed S3 upload failed", err);
+    throw new AppError(502, "STORAGE_UNAVAILABLE", "File storage is unavailable right now. Please try again.");
+  } finally {
+    await unlink(file.path).catch(() => undefined);
   }
 };
 

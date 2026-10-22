@@ -1,9 +1,7 @@
 import os from "node:os";
 import path from "node:path";
-import { env } from "../../../core/config/env.js";
 import { storage } from "../../../core/storage/index.js";
-import { isStoredBlobUrl } from "../../../core/storage/vercel-blob.adapter.js";
-import { NotFoundError, ValidationError } from "../../../core/utils/errors.js";
+import { ValidationError } from "../../../core/utils/errors.js";
 import { assertContentMatches } from "./sniff.js";
 import { recordBuffer } from "./integrity/record.js";
 import type { UploadInput, UploadResult } from "./types.js";
@@ -100,7 +98,8 @@ export const deleteStoredFile = async (storedUrl: string): Promise<void> => {
 export const isStoredFileAvailable = (storedUrl: string): boolean =>
   storage.exists(storedUrl);
 
+// The storage router sends s3:, Blob and /uploads/ urls to their own adapters (and refuses a Blob url when
+// no Blob token is set).
 export const openStoredFile = async (storedUrl: string): Promise<StoredFile> => {
-  if (isStoredBlobUrl(storedUrl) && !env.BLOB_READ_WRITE_TOKEN) throw new NotFoundError("File");
   return storage.open(storedUrl);
 };
