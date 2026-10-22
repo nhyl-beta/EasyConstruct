@@ -6,5 +6,5 @@ export const corsConfig = {
   methods:     ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID'],
   // Lets the browser (and the client's own diagnostics) read the timing and cache headers.
-  exposedHeaders: ['Server-Timing', 'X-Cache', 'X-Request-ID'],
+  exposedHeaders: ['Server-Timing', 'X-Cache', 'X-Request-ID', 'Content-Disposition', 'Content-Length'],
 };

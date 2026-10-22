@@ -5,6 +5,7 @@
 import { NextFunction, Request, Response, Router } from "express";
 import multer from "multer";
 import { z } from "zod";
+import { env } from "../../../core/config/env.js";
 import { hitLimiter } from "../../../core/auth/throttle.js";
 import { AppError, ValidationError } from "../../../core/utils/errors.js";
 import { formatSuccess } from "../../../core/utils/response.js";
@@ -13,6 +14,8 @@ import * as publicReply from "./public-reply.js";
 const router = Router();
 
 const callerOf = (req: Request): publicReply.Caller => {
+  // Behind a trusted proxy Express resolves the real client address itself; the raw header is spoofable.
+  if (env.TRUST_PROXY > 0 && req.ip) return { ip: req.ip.slice(0, 64) };
   const forwarded = req.headers["x-forwarded-for"];
   const first = (Array.isArray(forwarded) ? forwarded[0] : forwarded)?.split(",")[0]?.trim();
   return { ip: (first || req.ip || "unknown").slice(0, 64) };
