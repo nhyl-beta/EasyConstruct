@@ -1,0 +1,91 @@
+name: Weekly database backup
+
+# Dumps the Neon database to the private Filebase bucket `easyconstruct-backups` (BACKUP_BUCKET) and keeps
+# the newest 8 dumps. Secrets used (names only): DATABASE_URL, BACKUP_BUCKET, S3_ENDPOINT, S3_REGION,
+# BACKUP_S3_ACCESS_KEY_ID, BACKUP_S3_SECRET_ACCESS_KEY.
+on:
+  schedule:
+    - cron: "0 20 * * 0"   # Sundays 20:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: db-backup
+  cancel-in-progress: false
+
+env:
+  # pg_dump must be the same major version as the Neon server or newer. Set this to the Postgres version shown
+  # in the Neon console (Project > Settings) and update it when Neon is upgraded.
+  PG_MAJOR: "17"
+  KEEP: "8"
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Install matching postgresql-client
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list > /dev/null
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq "postgresql-client-${PG_MAJOR}"
+          "/usr/lib/postgresql/${PG_MAJOR}/bin/pg_dump" --version
+
+      - name: Dump
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          "/usr/lib/postgresql/${PG_MAJOR}/bin/pg_dump" "$DATABASE_URL" --no-owner --format=custom -f neon.dump
+          ls -l neon.dump
+
+      - name: Check the dump
+        run: |
+          size=$(stat -c %s neon.dump)
+          if [ "$size" -lt 10240 ]; then
+            echo "Dump is suspiciously small ($size bytes)"; exit 1
+          fi
+          tables=$("/usr/lib/postgresql/${PG_MAJOR}/bin/pg_restore" --list neon.dump | grep -c " TABLE " || true)
+          echo "Tables in dump: $tables"
+          if [ "$tables" -lt 1 ]; then
+            echo "pg_restore --list shows no tables"; exit 1
+          fi
+
+      - name: Upload to the backup bucket
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.BACKUP_S3_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.BACKUP_S3_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.S3_REGION }}
+          ENDPOINT: ${{ secrets.S3_ENDPOINT }}
+          BUCKET: ${{ secrets.BACKUP_BUCKET }}
+        run: |
+          key="db/neon-$(date -u +%Y-%m-%d).dump"
+          aws s3 cp neon.dump "s3://$BUCKET/$key" --endpoint-url "$ENDPOINT" --only-show-errors
+          echo "Uploaded $key"
+
+      - name: Keep a copy as a workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: neon-dump
+          path: neon.dump
+          retention-days: 14
+
+      - name: Prune old backups (keep newest ${{ env.KEEP }})
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.BACKUP_S3_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.BACKUP_S3_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.S3_REGION }}
+          ENDPOINT: ${{ secrets.S3_ENDPOINT }}
+          BUCKET: ${{ secrets.BACKUP_BUCKET }}
+        run: |
+          # Dump names carry the UTC date, so a reverse sort puts the newest first.
+          aws s3api list-objects-v2 --bucket "$BUCKET" --prefix db/ --endpoint-url "$ENDPOINT" \
+            --query 'Contents[].Key' --output text | tr '\t' '\n' | grep -E '^db/neon-.*\.dump$' | sort -r > keys.txt || true
+          echo "Backups present: $(wc -l < keys.txt)"
+          tail -n +$((KEEP + 1)) keys.txt | while read -r old; do
+            echo "Deleting $old"
+            aws s3 rm "s3://$BUCKET/$old" --endpoint-url "$ENDPOINT" --only-show-errors
+          done

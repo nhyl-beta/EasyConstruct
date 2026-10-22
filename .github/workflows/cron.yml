@@ -1,0 +1,71 @@
+name: Scheduled jobs
+
+# Calls the API's /api/cron/* routes now that the in-process scheduler is off on Render
+# (DISABLE_SCHEDULER=true). Needs two repository secrets: API_URL (origin only, no trailing slash, no /api)
+# and CRON_SECRET (the same value as the API's CRON_SECRET). GitHub cron runs in UTC and can start a few
+# minutes late; every job below is safe to run twice (see docs/architecture/deployment.md).
+on:
+  schedule:
+    - cron: "0 22 * * *"   # signals
+    - cron: "0 11 * * *"   # attendance-exceptions
+    - cron: "0 1 * * *"    # overdue (RFI/RFA, workflow stages, digest emails)
+    - cron: "30 * * * *"   # design-requests-sweep (hourly, as the in-process sweeper did)
+  workflow_dispatch:
+    inputs:
+      job:
+        description: Job to run now
+        type: choice
+        required: true
+        options:
+          - signals
+          - attendance-exceptions
+          - overdue
+          - design-requests-sweep
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cron-${{ github.event.schedule || inputs.job }}
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Pick the job
+        id: pick
+        env:
+          SCHEDULE: ${{ github.event.schedule }}
+          INPUT_JOB: ${{ inputs.job }}
+        run: |
+          if [ -n "$INPUT_JOB" ]; then
+            job="$INPUT_JOB"
+          else
+            case "$SCHEDULE" in
+              "0 22 * * *") job=signals ;;
+              "0 11 * * *") job=attendance-exceptions ;;
+              "0 1 * * *") job=overdue ;;
+              "30 * * * *") job=design-requests-sweep ;;
+              *) echo "Unknown schedule: $SCHEDULE"; exit 1 ;;
+            esac
+          fi
+          echo "job=$job" >> "$GITHUB_OUTPUT"
+          echo "Running $job"
+
+      - name: Call the API
+        env:
+          API_URL: ${{ secrets.API_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          JOB: ${{ steps.pick.outputs.job }}
+        run: |
+          if [ -z "$API_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "API_URL and CRON_SECRET repository secrets must be set"
+            exit 1
+          fi
+          # -f fails on HTTP errors; --retry covers a Render cold start. The secret is only sent as a header.
+          curl -fsS --max-time 120 --retry 3 --retry-delay 20 \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$API_URL/api/cron/$JOB"
+          echo

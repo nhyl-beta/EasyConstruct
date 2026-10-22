@@ -1,0 +1,11 @@
+node_modules
+**/node_modules
+.git
+**/dist
+.env*
+**/.env*
+**/uploads
+apps/api/backups
+apps/api/system-check-out
+*.log
+.claude
