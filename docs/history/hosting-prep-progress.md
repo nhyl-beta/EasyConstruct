@@ -76,7 +76,7 @@ Checked, no change needed:
 | Fake-S3 smoke script (real AWS SDK against a local HTTP stub) | `put`, `open`, `putFile`, `open` of the streamed file, `delete`, then 404: all passed |
 | API started locally (dummy DB URL, `TRUST_PROXY=1`, `DISABLE_SCHEDULER=true`) | `GET /api/health` 200 `{"ok":true}`; unauthenticated `GET /api/uploads/config` 401 |
 
-The one web failure is `config/pagination-exempt.test.ts`. It flags `components/responsive/responsive-table.tsx`, an **untracked** file that was already in the working tree (with `components/responsive/*` and `apps/web/scripts/`); it is not part of this work and was left alone and uncommitted. It will pass in CI, where the file does not exist, unless that file is committed first without a pagination exemption.
+The one web failure is `config/pagination-exempt.test.ts`. It flagged `components/responsive/responsive-table.tsx`, which was untracked at the time. **Correction:** the owner has since committed that file (`aec0453 deployment prep`), so the failure was no longer limited to the local tree and would have failed CI. Fixed in the follow-up pass below.
 
 The root `package-lock.json` was already modified (some `"dev": true` flags removed) when this work began. Those edits were committed together with the AWS SDK additions in the dependency commit; revert that part if it was unintended.
 
@@ -99,9 +99,26 @@ The root `package-lock.json` was already modified (some `"dev": true` flags remo
 
 ## Owner actions still needed
 
-1. Create the Filebase buckets `easyconstruct-files` and `easyconstruct-backups` (private) and a key for each.
+1. Create the one Filebase bucket (private) and a key. (Superseded: first pass assumed two buckets; see the follow-up pass.)
 2. Create the Render service (Docker, `infra/docker/api.Dockerfile`, repo-root context, health path `/api/health`, 1 instance) and set its environment variables, including `DISABLE_SCHEDULER=true`, `TRUST_PROXY=1`, and **no** `BLOB_READ_WRITE_TOKEN`.
 3. Create the Cloudflare Pages project (build command and output directory are in the guide) with `VITE_API_BASE` and `VITE_API_URL`; set `CORS_ORIGIN` and `APP_URL` on Render to the Pages URL.
 4. Add GitHub repository secrets: `API_URL`, `CRON_SECRET`, `DATABASE_URL`, `BACKUP_BUCKET`, `S3_ENDPOINT`, `S3_REGION`, `BACKUP_S3_ACCESS_KEY_ID`, `BACKUP_S3_SECRET_ACCESS_KEY`; then run both workflows once by hand.
 5. Optionally take a `pg_dump` before resetting the data, then reset and create the new example data (old Blob-backed records will show missing files until then).
 6. Apply pending migrations from a developer machine before the first deploy (command in the guide).
+
+## Follow-up pass (fix-ups before deployment)
+
+| # | Change | Files |
+| --- | --- | --- |
+| 1 | `responsive-table.tsx` added to the pagination exemptions. Its only text match is its own file: no page imports it yet, so the "caller paginates" reason is a rule for future callers, not something verified. `npm test --workspace=@easyconstruct/web` now passes. | `apps/web/src/config/pagination-exempt.ts` |
+| 2 | Mail that works on Render: new `MAIL_REQUIRE_TLS` (default false, passes `requireTLS: true`), 10 s connection/greeting/socket timeouts, From = `MAIL_FROM` when set (it already was; an empty value now also falls back correctly), generic error text. Gmail defaults unchanged (465, `secure` only on 465). Tests mock nodemailer: Gmail defaults, 2525 + `MAIL_REQUIRE_TLS=true` gives `secure:false, requireTLS:true`, From, `MAIL_SEND_FAILED`. No HTTP-API mail path (documented as the fallback). | `core/mail/mailer.ts`, `mailer.test.ts`, `core/config/env.ts`, `.env.example`, `deployment.md` |
+| 3 | `requestChecksumCalculation` and `responseChecksumValidation` set to `WHEN_REQUIRED` (installed `@aws-sdk/client-s3` is 3.1155.0, which supports both). `AWS_REQUEST_CHECKSUM_CALCULATION` / `AWS_RESPONSE_CHECKSUM_VALIDATION` set for the AWS CLI in `backup.yml` (workflow-level `env`, so every step) and documented. `forcePathStyle: true` kept; no endpoint or region hard-coded. | `s3.adapter.ts`, `backup.yml`, docs |
+| 4 | One bucket: app files under `easyconstruct/`, backups under `db/`, `BACKUP_BUCKET` = `S3_BUCKET`. Prune lists only `db/neon-*.dump` and keeps the newest 8. Endpoint/region examples now say to copy them from the Filebase dashboard. Free plan limits noted. | `backup.yml`, `.env.example`, `deployment.md`, README, this doc |
+| 5 | Removed the artifact upload of `neon.dump` (public repo). Added a final `if: always()` step that deletes the dump from the runner. No step prints the connection string. | `backup.yml`, docs |
+| 6 | `PG_MAJOR` stays a single commented variable; new "Check server version" step runs a read-only `SHOW server_version_num` and fails with a clear message on a mismatch (prints only version numbers). | `backup.yml` |
+| 7 | CORS: grep of `apps/web/src` found only GET, POST, PATCH, DELETE, the `Content-Type`, `Authorization` headers (and `X-Request-ID` allowed) and no PUT, `If-Match`, `Idempotency`, or `Range` request headers, so **no CORS change was needed**. Added preflight tests for each method and header, for a foreign origin (no `*`, no echo) and for exposed response headers. | `core/http/cors.test.ts` |
+| 8 | `cron.yml`: re-checked each schedule maps to its route (`0 22` signals, `0 11` attendance-exceptions, `0 1` overdue, `30 *` design-requests-sweep) and that `workflow_dispatch` takes the same four names; added the 60-day inactivity comment. `deployment.md`: optional `NODE_VERSION=22` and the apex domain / nameserver note. | `cron.yml`, `deployment.md` |
+
+### Verification of this pass
+
+See the table in the final report message; results are recorded below once run.

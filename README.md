@@ -65,7 +65,8 @@ MAIL_APP_PASSWORD=xxxx xxxx xxxx xxxx
 # disk (apps/api/uploads) in development if unset.
 BLOB_READ_WRITE_TOKEN=
 # Optional — S3-compatible storage (Filebase, MinIO). When all of these are set it wins over Blob.
-# S3_ENDPOINT=  S3_REGION=us-east-1  S3_BUCKET=  S3_ACCESS_KEY_ID=  S3_SECRET_ACCESS_KEY=
+# S3_ENDPOINT=  S3_REGION=  S3_BUCKET=  S3_ACCESS_KEY_ID=  S3_SECRET_ACCESS_KEY=   (one bucket; copy endpoint/region from the Filebase dashboard)
+# On Render use an SMTP provider on port 2525 (MAIL_HOST / MAIL_PORT / MAIL_REQUIRE_TLS); see docs/architecture/deployment.md.
 # Behind a reverse proxy (Render): TRUST_PROXY=1. Without a scheduler: DISABLE_SCHEDULER=true.
 # Decision-support layer (proposal validation, cost comparison, advisory
 # signals, suggested plans, task allocation advice, impact forecasts).
