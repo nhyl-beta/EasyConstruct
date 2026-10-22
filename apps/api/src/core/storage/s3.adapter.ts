@@ -46,6 +46,9 @@ const getClient = (): S3Client => {
     endpoint: env.S3_ENDPOINT,
     region: env.S3_REGION,
     forcePathStyle: true,
+    // Filebase and other S3-compatible stores reject the extra CRC32 checksums newer SDK versions send by default.
+    requestChecksumCalculation: "WHEN_REQUIRED",
+    responseChecksumValidation: "WHEN_REQUIRED",
     credentials: { accessKeyId: env.S3_ACCESS_KEY_ID ?? "", secretAccessKey: env.S3_SECRET_ACCESS_KEY ?? "" },
   });
   return client;
