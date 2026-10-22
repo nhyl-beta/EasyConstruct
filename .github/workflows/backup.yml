@@ -1,7 +1,9 @@
 name: Weekly database backup
 
-# Dumps the Neon database to the private Filebase bucket `easyconstruct-backups` (BACKUP_BUCKET) and keeps
-# the newest 8 dumps. Secrets used (names only): DATABASE_URL, BACKUP_BUCKET, S3_ENDPOINT, S3_REGION,
+# Dumps the Neon database to the private bucket (Filebase free allows ONE bucket, so BACKUP_BUCKET is the same
+# bucket as the API's S3_BUCKET): app files live under easyconstruct/, backups under db/. Keeps the newest 8
+# dumps. The repository is public, so the dump is NEVER uploaded as a workflow artifact and is deleted from the
+# runner at the end. Secrets used (names only): DATABASE_URL, BACKUP_BUCKET, S3_ENDPOINT, S3_REGION,
 # BACKUP_S3_ACCESS_KEY_ID, BACKUP_S3_SECRET_ACCESS_KEY.
 on:
   schedule:
@@ -16,10 +18,13 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  # pg_dump must be the same major version as the Neon server or newer. Set this to the Postgres version shown
-  # in the Neon console (Project > Settings) and update it when Neon is upgraded.
+  # ONE place to set the Postgres major version. It must equal the Neon server's major version (Neon console >
+  # Project > Settings). The "Check server version" step fails the run with a clear message if it does not.
   PG_MAJOR: "17"
   KEEP: "8"
+  # Filebase accepts only SHA-256 checksums; do not let the AWS CLI add CRC32 ones.
+  AWS_REQUEST_CHECKSUM_CALCULATION: WHEN_REQUIRED
+  AWS_RESPONSE_CHECKSUM_VALIDATION: WHEN_REQUIRED
 
 jobs:
   backup:
@@ -34,6 +39,21 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq "postgresql-client-${PG_MAJOR}"
           "/usr/lib/postgresql/${PG_MAJOR}/bin/pg_dump" --version
+
+      - name: Check server version
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          # Read-only query. Prints only the version numbers, never the connection string.
+          num=$("/usr/lib/postgresql/${PG_MAJOR}/bin/psql" "$DATABASE_URL" -X -A -t -c "SHOW server_version_num" 2>/dev/null | tr -d '[:space:]') || true
+          if [ -z "$num" ]; then
+            echo "Could not read the server version (check the DATABASE_URL secret)"; exit 1
+          fi
+          server_major=$((num / 10000))
+          echo "Neon server major: $server_major, PG_MAJOR: $PG_MAJOR"
+          if [ "$server_major" != "$PG_MAJOR" ]; then
+            echo "PG_MAJOR ($PG_MAJOR) does not match the Neon server ($server_major). Update PG_MAJOR in backup.yml."; exit 1
+          fi
 
       - name: Dump
         env:
@@ -66,13 +86,6 @@ jobs:
           aws s3 cp neon.dump "s3://$BUCKET/$key" --endpoint-url "$ENDPOINT" --only-show-errors
           echo "Uploaded $key"
 
-      - name: Keep a copy as a workflow artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: neon-dump
-          path: neon.dump
-          retention-days: 14
-
       - name: Prune old backups (keep newest ${{ env.KEEP }})
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.BACKUP_S3_ACCESS_KEY_ID }}
@@ -81,6 +94,7 @@ jobs:
           ENDPOINT: ${{ secrets.S3_ENDPOINT }}
           BUCKET: ${{ secrets.BACKUP_BUCKET }}
         run: |
+          # Only db/neon-*.dump keys are ever listed, so app files under easyconstruct/ are never touched.
           # Dump names carry the UTC date, so a reverse sort puts the newest first.
           aws s3api list-objects-v2 --bucket "$BUCKET" --prefix db/ --endpoint-url "$ENDPOINT" \
             --query 'Contents[].Key' --output text | tr '\t' '\n' | grep -E '^db/neon-.*\.dump$' | sort -r > keys.txt || true
@@ -89,3 +103,7 @@ jobs:
             echo "Deleting $old"
             aws s3 rm "s3://$BUCKET/$old" --endpoint-url "$ENDPOINT" --only-show-errors
           done
+
+      - name: Remove the dump from the runner
+        if: always()
+        run: rm -f neon.dump

@@ -3,7 +3,8 @@ name: Scheduled jobs
 # Calls the API's /api/cron/* routes now that the in-process scheduler is off on Render
 # (DISABLE_SCHEDULER=true). Needs two repository secrets: API_URL (origin only, no trailing slash, no /api)
 # and CRON_SECRET (the same value as the API's CRON_SECRET). GitHub cron runs in UTC and can start a few
-# minutes late; every job below is safe to run twice (see docs/architecture/deployment.md).
+# minutes late. GitHub disables scheduled workflows after 60 days without repository activity (re-enable them in
+# the Actions tab or push a commit); every job below is safe to run twice (see docs/architecture/deployment.md).
 on:
   schedule:
     - cron: "0 22 * * *"   # signals
