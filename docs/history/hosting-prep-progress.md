@@ -121,4 +121,13 @@ The root `package-lock.json` was already modified (some `"dev": true` flags remo
 
 ### Verification of this pass
 
-See the table in the final report message; results are recorded below once run.
+| Command | Result |
+| --- | --- |
+| `npm ci` | passed in a fresh clone under a temp directory (running it in the working tree would delete `node_modules`) |
+| lint api / web | 0 errors (63 / 36 warnings) |
+| `npm test` api | 953 passed, 0 failed |
+| `npm test` web | 333 passed, 0 failed (the pagination test now passes) |
+| `build:server`, `build:client`, web typecheck | passed |
+| API `tsc --noEmit` | 0 `error TS` (baseline 0) |
+
+Not verified: Docker image build (daemon unavailable earlier, not retried), a real Filebase upload, a real Brevo send, CORS from the real Pages origin, and the GitHub workflows (never run).
