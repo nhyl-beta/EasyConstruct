@@ -1,0 +1,109 @@
+name: Weekly database backup
+
+# Dumps the Neon database to the private bucket (Filebase free allows ONE bucket, so BACKUP_BUCKET is the same
+# bucket as the API's S3_BUCKET): app files live under easyconstruct/, backups under db/. Keeps the newest 8
+# dumps. The repository is public, so the dump is NEVER uploaded as a workflow artifact and is deleted from the
+# runner at the end. Secrets used (names only): DATABASE_URL, BACKUP_BUCKET, S3_ENDPOINT, S3_REGION,
+# BACKUP_S3_ACCESS_KEY_ID, BACKUP_S3_SECRET_ACCESS_KEY.
+on:
+  schedule:
+    - cron: "0 20 * * 0"   # Sundays 20:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: db-backup
+  cancel-in-progress: false
+
+env:
+  # ONE place to set the Postgres major version. It must equal the Neon server's major version (Neon console >
+  # Project > Settings). The "Check server version" step fails the run with a clear message if it does not.
+  PG_MAJOR: "17"
+  KEEP: "8"
+  # Filebase accepts only SHA-256 checksums; do not let the AWS CLI add CRC32 ones.
+  AWS_REQUEST_CHECKSUM_CALCULATION: WHEN_REQUIRED
+  AWS_RESPONSE_CHECKSUM_VALIDATION: WHEN_REQUIRED
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Install matching postgresql-client
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list > /dev/null
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq "postgresql-client-${PG_MAJOR}"
+          "/usr/lib/postgresql/${PG_MAJOR}/bin/pg_dump" --version
+
+      - name: Check server version
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          # Read-only query. Prints only the version numbers, never the connection string.
+          num=$("/usr/lib/postgresql/${PG_MAJOR}/bin/psql" "$DATABASE_URL" -X -A -t -c "SHOW server_version_num" 2>/dev/null | tr -d '[:space:]') || true
+          if [ -z "$num" ]; then
+            echo "Could not read the server version (check the DATABASE_URL secret)"; exit 1
+          fi
+          server_major=$((num / 10000))
+          echo "Neon server major: $server_major, PG_MAJOR: $PG_MAJOR"
+          if [ "$server_major" != "$PG_MAJOR" ]; then
+            echo "PG_MAJOR ($PG_MAJOR) does not match the Neon server ($server_major). Update PG_MAJOR in backup.yml."; exit 1
+          fi
+
+      - name: Dump
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          "/usr/lib/postgresql/${PG_MAJOR}/bin/pg_dump" "$DATABASE_URL" --no-owner --format=custom -f neon.dump
+          ls -l neon.dump
+
+      - name: Check the dump
+        run: |
+          size=$(stat -c %s neon.dump)
+          if [ "$size" -lt 10240 ]; then
+            echo "Dump is suspiciously small ($size bytes)"; exit 1
+          fi
+          tables=$("/usr/lib/postgresql/${PG_MAJOR}/bin/pg_restore" --list neon.dump | grep -c " TABLE " || true)
+          echo "Tables in dump: $tables"
+          if [ "$tables" -lt 1 ]; then
+            echo "pg_restore --list shows no tables"; exit 1
+          fi
+
+      - name: Upload to the backup bucket
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.BACKUP_S3_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.BACKUP_S3_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.S3_REGION }}
+          ENDPOINT: ${{ secrets.S3_ENDPOINT }}
+          BUCKET: ${{ secrets.BACKUP_BUCKET }}
+        run: |
+          key="db/neon-$(date -u +%Y-%m-%d).dump"
+          aws s3 cp neon.dump "s3://$BUCKET/$key" --endpoint-url "$ENDPOINT" --only-show-errors
+          echo "Uploaded $key"
+
+      - name: Prune old backups (keep newest ${{ env.KEEP }})
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.BACKUP_S3_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.BACKUP_S3_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.S3_REGION }}
+          ENDPOINT: ${{ secrets.S3_ENDPOINT }}
+          BUCKET: ${{ secrets.BACKUP_BUCKET }}
+        run: |
+          # Only db/neon-*.dump keys are ever listed, so app files under easyconstruct/ are never touched.
+          # Dump names carry the UTC date, so a reverse sort puts the newest first.
+          aws s3api list-objects-v2 --bucket "$BUCKET" --prefix db/ --endpoint-url "$ENDPOINT" \
+            --query 'Contents[].Key' --output text | tr '\t' '\n' | grep -E '^db/neon-.*\.dump$' | sort -r > keys.txt || true
+          echo "Backups present: $(wc -l < keys.txt)"
+          tail -n +$((KEEP + 1)) keys.txt | while read -r old; do
+            echo "Deleting $old"
+            aws s3 rm "s3://$BUCKET/$old" --endpoint-url "$ENDPOINT" --only-show-errors
+          done
+
+      - name: Remove the dump from the runner
+        if: always()
+        run: rm -f neon.dump
