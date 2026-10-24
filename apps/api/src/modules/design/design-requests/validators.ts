@@ -9,7 +9,7 @@ export const requestFileSchema = z.object({
     .min(1)
     .max(500)
     .refine(
-      (u) => u.startsWith("/uploads/") || /^https:\/\/[^/]+\.blob\.vercel-storage\.com\//.test(u),
+      (u) => u.startsWith("/uploads/") || u.startsWith("s3:easyconstruct/") || /^https:\/\/[^/]+\.blob\.vercel-storage\.com\//.test(u),
       "Attachment must be a file uploaded through the app",
     ),
   filename: z.string().min(1).max(255),

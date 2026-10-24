@@ -36,14 +36,6 @@ export const stream_ = (req: AuthedRequest, res: Response, next: NextFunction) =
     if (!req.authUser) throw new UnauthorizedError();
     const userId = req.authUser.id;
 
-    res.writeHead(200, {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
-      Connection: "keep-alive",
-    });
-    res.write(": connected\n\n");
-
-    stream.subscribe(userId, res);
-    req.on("close", () => stream.unsubscribe(userId, res));
+    stream.open(userId, res, req);
   } catch (err) { next(err); }
 };

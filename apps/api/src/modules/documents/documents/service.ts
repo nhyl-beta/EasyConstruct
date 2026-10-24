@@ -2,6 +2,8 @@ import * as repo from "./repository.js";
 import { documents as documentsTable } from "../../../core/db/schema/documents.js";
 import { orderByFor, paginate, type PageRequest } from "../../../core/utils/pagination.js";
 import { assertProjectWritable, refreshProjectProgress } from "../../projects/index.js";
+import { isS3Configured } from "../../../core/config/env.js";
+import { isS3Url, storage } from "../../../core/storage/index.js";
 import { deleteStoredFile } from "../uploads/service.js";
 import { NotFoundError } from "../../../core/utils/errors.js";
 import { resolveForNewDocument } from "../document-types/service.js";
@@ -95,8 +97,11 @@ export const upload = async ({
   const documentId =
     `ADV-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`.toUpperCase();
 
-  const fileUrl =
-    `/uploads/documents/${file.filename}`;
+  // With an S3 bucket configured the temp file is pushed there (the host's own disk is ephemeral);
+  // otherwise it stays where multer wrote it.
+  const fileUrl = isS3Configured()
+    ? (await storage.putFile(file.path, file.originalname, file.mimetype || "application/octet-stream")).url
+    : `/uploads/documents/${file.filename}`;
 
   const sizeInMb =
     file.size / (1024 * 1024);
@@ -109,19 +114,25 @@ export const upload = async ({
           Math.round(file.size / 1024),
         )} KB`;
 
-  const created = await repo.create({
-    documentId,
-    title,
-    project,
-    type,
-    version: version ?? "v1",
-    size,
-    uploadedBy,
-    fileUrl,
-    stage,
-    ...related,
-    ...resolveReportFields(type, reportPeriod, periodDate),
-  });
+  let created;
+  try {
+    created = await repo.create({
+      documentId,
+      title,
+      project,
+      type,
+      version: version ?? "v1",
+      size,
+      uploadedBy,
+      fileUrl,
+      stage,
+      ...related,
+      ...resolveReportFields(type, reportPeriod, periodDate),
+    });
+  } catch (err) {
+    if (isS3Url(fileUrl)) await deleteStoredFile(fileUrl);
+    throw err;
+  }
   await refreshProjectProgress(project);
   return created;
 };

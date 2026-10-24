@@ -6,7 +6,7 @@ EasyConstruct is a full-stack construction management platform built as a thesis
 
 **Frontend** — React 19, [Refine](https://refine.dev/) (`@refinedev/react-router`), React Router, Vite, TypeScript, Tailwind CSS, shadcn/ui, TanStack Table/Query (via Refine hooks), Recharts.
 
-**Backend** — Node.js, Express 5, Drizzle ORM, PostgreSQL ([Neon serverless driver](https://neon.tech/)), JWT auth, Multer + Vercel Blob for file uploads.
+**Backend** — Node.js, Express 5, Drizzle ORM, PostgreSQL ([Neon serverless driver](https://neon.tech/)), JWT auth, Multer for uploads, stored on an S3-compatible bucket (Filebase / MinIO), Vercel Blob, or local disk.
 
 ## Project structure
 
@@ -64,6 +64,10 @@ MAIL_APP_PASSWORD=xxxx xxxx xxxx xxxx
 # served through the authenticated GET /api/uploads/file route). Falls back to local
 # disk (apps/api/uploads) in development if unset.
 BLOB_READ_WRITE_TOKEN=
+# Optional — S3-compatible storage (Filebase, MinIO). When all of these are set it wins over Blob.
+# S3_ENDPOINT=  S3_REGION=  S3_BUCKET=  S3_ACCESS_KEY_ID=  S3_SECRET_ACCESS_KEY=   (one bucket; copy endpoint/region from the Filebase dashboard)
+# On Render use an SMTP provider on port 2525 (MAIL_HOST / MAIL_PORT / MAIL_REQUIRE_TLS); see docs/architecture/deployment.md.
+# Behind a reverse proxy (Render): TRUST_PROXY=1. Without a scheduler: DISABLE_SCHEDULER=true.
 # Decision-support layer (proposal validation, cost comparison, advisory
 # signals, suggested plans, task allocation advice, impact forecasts).
 # ON by default; set false to switch it all off. Rule-based advice only: a
@@ -74,6 +78,8 @@ CRON_SECRET=
 ```
 
 The client reads `VITE_API_BASE` to decide whether to talk to the real API or use mock data; set it in a `.env` file inside `apps/web/` (e.g. `VITE_API_BASE=http://localhost:8000` — **no `/api` suffix**: `apps/web/src/services/api.client.ts`'s `apiUrl()` always appends `/api` itself, so a value ending in `/api` here produces a double `/api/api/...` and every request 404s) once the server is running. Decision-support surfaces are on by default on the client too; set `VITE_FEATURE_AI=false` (separate flag, separate `.env`, same gate) together with the server's `FEATURE_AI=false` to hide them.
+
+For the hosted setup (Cloudflare Pages + Render + Filebase + GitHub Actions) — environment variable matrix, build settings, backups, restore and rollback — see [docs/architecture/deployment.md](docs/architecture/deployment.md). The web app also needs `VITE_API_BASE` (origin) and `VITE_API_URL` (origin + `/api`) there; see `apps/web/.env.example`.
 
 ### 3. Set up the database
 

@@ -1,0 +1,15 @@
+import { chromium } from "playwright";
+const [role, route, w, h, out] = process.argv.slice(2);
+const acct = { pm: "pm@easyconstruct.demo", admin: "admin1@easyconstruct.demo" }[role] ?? role;
+const b = await chromium.launch({ executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe" });
+const p = await b.newPage({ viewport: { width: +w, height: +h } });
+await p.goto("http://localhost:5173/login", { waitUntil: "domcontentloaded" });
+await p.fill("#email", acct); await p.fill("#password", "Demo@12345");
+await p.click("button[type=submit]");
+await p.waitForURL((u) => !u.pathname.startsWith("/login"), { timeout: 30000 });
+await p.goto("http://localhost:5173" + route, { waitUntil: "domcontentloaded" });
+await p.waitForLoadState("networkidle").catch(() => {});
+await p.waitForTimeout(1500);
+console.log(await p.evaluate(() => JSON.stringify({ sw: document.documentElement.scrollWidth, iw: innerWidth, cards: document.querySelectorAll("[data-slot=card]").length })));
+await p.screenshot({ path: out });
+await b.close();

@@ -1,5 +1,6 @@
 import { NextFunction, Response } from "express";
 import { unlink } from "node:fs/promises";
+import { isS3Url } from "../../../core/storage/index.js";
 
 import { HTTP } from "../../../core/config/http-status.js";
 import { MSG } from "../../../core/config/messages.js";
@@ -192,6 +193,8 @@ export const upload = async (
         contentType: req.file.mimetype || "application/octet-stream",
         uploadedByUserId: req.authUser?.id,
       });
+      // The bytes now live in the bucket; the temp file is no longer needed.
+      if (isS3Url(data.fileUrl)) await unlink(req.file.path).catch(() => undefined);
     }
 
     return res

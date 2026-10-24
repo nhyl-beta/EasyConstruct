@@ -14,7 +14,7 @@ import { env }     from "../config/env.js";
 // not hold database connections open.
 const poolMax = Math.max(1, parseInt(process.env.DB_POOL_MAX ?? "5", 10) || 5);
 
-const pool = new Pool({
+export const pool = new Pool({
   connectionString: env.DATABASE_URL,
   max: poolMax,
   idleTimeoutMillis: 10_000,

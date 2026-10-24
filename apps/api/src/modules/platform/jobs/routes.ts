@@ -10,6 +10,7 @@ import { NextFunction, Request, Response, Router } from "express";
 import { env } from "../../../core/config/env.js";
 import { formatSuccess } from "../../../core/utils/response.js";
 import { ForbiddenError, UnauthorizedError } from "../../../core/utils/errors.js";
+import { runOverdueSweepOnce } from "../../design/index.js";
 import { runSignalScan } from "../../insights/index.js";
 import { runAttendanceCheck } from "../../workforce/index.js";
 import { runOverdueJob } from "./overdue-service.js";
@@ -58,5 +59,12 @@ const OVERDUE_LOCK = 74_2026_08;
 const overdue = job("overdue", () => withJobLock(OVERDUE_LOCK, () => runOverdueJob()));
 router.get("/overdue", overdue);
 router.post("/overdue", overdue);
+
+// The hourly in-process RFI/RFA overdue sweep (design-requests/scheduler.ts), for hosts where the scheduler is
+// off (DISABLE_SCHEDULER=true). Safe to run twice: it takes an advisory lock and overdue_notified_at makes a
+// repeat sweep a no-op. /overdue above already runs the same sweep inside its daily digest.
+const designSweep = job("design-requests-sweep", () => runOverdueSweepOnce());
+router.get("/design-requests-sweep", designSweep);
+router.post("/design-requests-sweep", designSweep);
 
 export default router;

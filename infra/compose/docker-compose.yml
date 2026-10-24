@@ -27,6 +27,18 @@ services:
     volumes:
       - object_data:/data
 
+  # Local S3 testing: `docker compose --profile s3 up minio-init` creates the bucket, then run the API with
+  # S3_ENDPOINT=http://localhost:9000, S3_BUCKET=easyconstruct-files and the local-only MinIO credentials above
+  # (S3_ACCESS_KEY_ID=easyconstruct, S3_SECRET_ACCESS_KEY=easyconstruct-local).
+  minio-init:
+    profiles: ["s3"]
+    image: quay.io/minio/mc:latest
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "until mc alias set local http://minio:9000 easyconstruct easyconstruct-local; do sleep 1; done;
+      mc mb --ignore-existing local/easyconstruct-files"
+
 volumes:
   postgres_data:
   object_data:

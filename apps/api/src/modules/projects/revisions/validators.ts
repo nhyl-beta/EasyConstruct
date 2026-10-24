@@ -9,7 +9,7 @@ const storedFile = z.object({
     .min(1)
     .max(500)
     .refine(
-      (u) => u.startsWith("/uploads/") || /^https:\/\/[^/]+\.blob\.vercel-storage\.com\//.test(u),
+      (u) => u.startsWith("/uploads/") || u.startsWith("s3:easyconstruct/") || /^https:\/\/[^/]+\.blob\.vercel-storage\.com\//.test(u),
       "The file must be uploaded through the app",
     ),
   fileName: z.string().min(1, "File name is required").max(255),
