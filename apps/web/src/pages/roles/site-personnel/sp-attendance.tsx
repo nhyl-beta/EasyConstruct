@@ -1,10 +1,11 @@
 // apps/web/src/pages/roles/site-personnel/sp-attendance.tsx — NEW
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Camera, MapPin, CheckCircle2, AlertTriangle, Clock, WifiOff, RefreshCw } from "lucide-react";
 import { PageContainer } from "@/components/refine-ui/views/page-container";
 import { PageHeader } from "@/components/refine-ui/views/page-header";
 import { PageContent } from "@/components/refine-ui/views/page-content";
 import { SectionCard } from "@/components/ui/section-card";
+import { CameraCapture } from "@/components/shared/CameraCapture";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -125,7 +126,9 @@ export default function SPAttendancePage() {
   const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [queuedMessage, setQueuedMessage] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  // The verification photo comes from the live camera only (CameraCapture);
+  // there is no file or gallery picker on this page.
+  const [cameraOpen, setCameraOpen] = useState(false);
 
   const requestLocation = () => {
     if (!navigator.geolocation) {
@@ -143,9 +146,8 @@ export default function SPAttendancePage() {
     );
   };
 
-  const handlePhotoSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handlePhotoCaptured = (file: File) => {
+    setCameraOpen(false);
     setPhotoFile(file);
     const reader = new FileReader();
     reader.onload = () => setPhotoDataUrl(reader.result as string);
@@ -350,18 +352,15 @@ export default function SPAttendancePage() {
               </div>
 
               <div className="flex items-center gap-3">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  className="hidden"
-                  onChange={handlePhotoSelected}
+                <CameraCapture
+                  open={cameraOpen}
+                  title="Attendance verification photo"
+                  onCapture={handlePhotoCaptured}
+                  onCancel={() => setCameraOpen(false)}
                 />
                 <Button
                   variant={photoDataUrl ? "outline" : "default"}
-                 
-                  onClick={() => fileInputRef.current?.click()}
+                  onClick={() => setCameraOpen(true)}
                 >
                   <Camera className="mr-2 h-4 w-4" />
                   {photoDataUrl ? "Retake photo" : "Take verification photo"}

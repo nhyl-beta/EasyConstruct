@@ -11,13 +11,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-import { Upload, FileText } from "lucide-react";
+import { Camera, Upload, FileText } from "lucide-react";
+
+import { CameraCapture } from "@/components/shared/CameraCapture";
 
 import { DocumentTypeSelect } from "@/features/document-types/components/DocumentTypeSelect";
 import { useFieldDocuments } from "@/features/documents/hooks/use-field-documents";
 
 // Site Personnel file field documents only; the list comes from the API (category "Field").
 const FIELD_CATEGORIES = ["Field"];
+
+// Photo evidence is taken with the live camera, never picked from the gallery.
+// The file picker below stays for non-image documents (PDF etc.) and refuses
+// images, whatever the document type.
+const PHOTO_TYPES = ["Site Photo", "Progress Evidence"];
 
 export default function SPDocumentsPage() {
   const {
@@ -37,6 +44,9 @@ export default function SPDocumentsPage() {
   const [file, setFile] = useState<File | null>(null);
 
   const fileRef = useRef<HTMLInputElement>(null);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [fileError, setFileError] = useState<string | null>(null);
+  const isPhotoType = PHOTO_TYPES.includes(type);
 
   const handleUpload = async () => {
     if (!title.trim() || !project.trim() || !file) {
@@ -105,7 +115,16 @@ export default function SPDocumentsPage() {
                 Document type
               </Label>
 
-              <DocumentTypeSelect id="sp-type" value={type} onChange={setType} categories={FIELD_CATEGORIES} />
+              <DocumentTypeSelect
+                id="sp-type"
+                value={type}
+                onChange={(next) => {
+                  setType(next);
+                  // A camera photo only belongs to a photo type.
+                  if (!PHOTO_TYPES.includes(next) && file?.name.startsWith("capture-")) setFile(null);
+                }}
+                categories={FIELD_CATEGORIES}
+              />
             </div>
 
             <div className="space-y-1.5">
@@ -113,18 +132,48 @@ export default function SPDocumentsPage() {
                 File
               </Label>
 
+              {isPhotoType && (
+                <Button type="button" variant="outline" onClick={() => setCameraOpen(true)}>
+                  <Camera className="mr-2 h-4 w-4" />
+                  {file?.name.startsWith("capture-") ? "Retake photo" : "Take photo"}
+                </Button>
+              )}
+
               <Input
                 id="sp-file"
                 ref={fileRef}
                 type="file"
-                onChange={(event) =>
-                  setFile(
-                    event.target.files?.[0] ?? null,
-                  )
-                }
+                accept="application/pdf,.doc,.docx,.xls,.xlsx,.csv,.txt"
+                onChange={(event) => {
+                  const picked = event.target.files?.[0] ?? null;
+                  if (picked?.type.startsWith("image/")) {
+                    setFile(null);
+                    setFileError("Photos must be taken with the camera. Use Site Photo or Progress Evidence and “Take photo”.");
+                    event.target.value = "";
+                    return;
+                  }
+                  setFileError(null);
+                  setFile(picked);
+                }}
               />
+              {file?.name.startsWith("capture-") && (
+                <p className="text-xs text-muted-foreground">Photo ready: {file.name}</p>
+              )}
+              {fileError && <p role="alert" className="text-xs text-destructive-strong">{fileError}</p>}
             </div>
           </div>
+
+          <CameraCapture
+            open={cameraOpen}
+            title="Field photo"
+            onCancel={() => setCameraOpen(false)}
+            onCapture={(captured) => {
+              setCameraOpen(false);
+              setFileError(null);
+              if (fileRef.current) fileRef.current.value = "";
+              setFile(captured);
+            }}
+          />
 
           {error && (
             <p className="mt-3 text-sm text-destructive-strong">
