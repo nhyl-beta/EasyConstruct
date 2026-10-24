@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { ProjectRepository } from "@/features/projects/repositories/project.repository";
 import { ProjectMemberRepository, type ProjectMemberRole } from "@/features/project-members/repositories/project-member.repository";
 import { MilestoneRepository } from "@/features/milestones/repositories/milestone.repository";
+import { MILESTONE_DATE_PAST_MESSAGE, milestoneDateError, todayManilaIso } from "@/features/milestones/lib/milestone-date";
 import { LocationMapPicker } from "@/components/maps/location-map-picker";
 import { useGeocodeSearch, type GeocodeSuggestion } from "@/components/maps/use-geocode-search";
 import { useAuth } from "@/auth/auth-context";
@@ -150,7 +151,7 @@ const todayIso = () => {
  * time on later steps or at submit. Mirrors the server validator
  * (apps/api/src/validators/project-validator.ts), which stays the authority.
  */
-function validateStep(step: number, data: ProjectFormData, isSelfAssigned: boolean, team: TeamSelections): FieldErrors {
+function validateStep(step: number, data: ProjectFormData, isSelfAssigned: boolean, team: TeamSelections, milestones: MilestoneDraft[] = []): FieldErrors {
   const errors: FieldErrors = {};
   const required = (key: string, value: string, label: string) => {
     if (!value.trim()) errors[key] = `${label} is required`;
@@ -177,6 +178,14 @@ function validateStep(step: number, data: ProjectFormData, isSelfAssigned: boole
     else if (data.due < today) errors.due = "Due date cannot be in the past";
     else if (data.startDate && data.due < data.startDate) {
       errors.due = "Due date must be on or after the planned start date";
+    }
+  }
+
+  if (step === 2) {
+    // A draft added yesterday and left open past midnight can now be in the past.
+    const today = todayManilaIso();
+    if (milestones.some((m) => milestoneDateError(m.estimatedCompletionDate, today))) {
+      errors.milestones = `${MILESTONE_DATE_PAST_MESSAGE}. Remove or re-date the highlighted milestone.`;
     }
   }
 
@@ -244,7 +253,7 @@ export default function ProjectCreatePage() {
   // Validate the current step before moving on. Blocks progression and marks
   // every invalid field on the step at once.
   const handleNext = () => {
-    const errors = validateStep(step, data, isSelfAssigned, team);
+    const errors = validateStep(step, data, isSelfAssigned, team, milestones);
     setFieldErrors(errors);
     if (Object.keys(errors).length > 0) {
       setError("Please complete the highlighted fields before continuing.");
@@ -260,8 +269,8 @@ export default function ProjectCreatePage() {
     // Every step was validated on the way through; re-check them all here so
     // a step that was edited after passing (or skipped via the stepper) can't
     // slip through, and jump back to the first step that has a problem.
-    for (const s of [1, 4]) {
-      const errors = validateStep(s, data, isSelfAssigned, team);
+    for (const s of [1, 2, 4]) {
+      const errors = validateStep(s, data, isSelfAssigned, team, milestones);
       if (Object.keys(errors).length > 0) {
         setFieldErrors(errors);
         setStep(s);
@@ -381,7 +390,7 @@ export default function ProjectCreatePage() {
           canAddClient={["project-manager", "admin", "it_designer", "it-designer"].includes(user?.role ?? "")}
         />
       )}
-      {step === 2 && <StepScopeSchedule data={data} set={set} milestones={milestones} setMilestones={setMilestones} />}
+      {step === 2 && <StepScopeSchedule data={data} set={set} milestones={milestones} setMilestones={setMilestones} error={fieldErrors.milestones} />}
       {step === 3 && <StepBudget data={data} set={set} />}
       {step === 4 && (
         <StepTeam
@@ -797,6 +806,7 @@ function StepScopeSchedule({
   set,
   milestones,
   setMilestones,
+  error,
 }: {
   data: ProjectFormData;
   set: <K extends keyof ProjectFormData>(
@@ -805,12 +815,22 @@ function StepScopeSchedule({
   ) => void;
   milestones: MilestoneDraft[];
   setMilestones: (updater: (prev: MilestoneDraft[]) => MilestoneDraft[]) => void;
+  error?: string;
 }) {
   const [title, setTitle] = useState("");
   const [estimatedCompletionDate, setEstimatedCompletionDate] = useState("");
+  const [dateError, setDateError] = useState<string | null>(null);
+  const today = todayManilaIso();
 
   const addMilestone = () => {
     if (!title.trim()) return;
+    // The date picker refuses past days, but not every way of entering one.
+    const pastError = milestoneDateError(estimatedCompletionDate);
+    if (pastError) {
+      setDateError(pastError);
+      return;
+    }
+    setDateError(null);
     setMilestones((prev) => [...prev, { title: title.trim(), estimatedCompletionDate }]);
     setTitle("");
     setEstimatedCompletionDate("");
@@ -859,7 +879,9 @@ function StepScopeSchedule({
                 <div className="min-w-0">
                   <span className="font-medium">{m.title}</span>
                   {m.estimatedCompletionDate && (
-                    <span className="ml-2 text-xs text-muted-foreground">
+                    <span
+                      className={`ml-2 text-xs ${milestoneDateError(m.estimatedCompletionDate, today) ? "text-destructive-strong" : "text-muted-foreground"}`}
+                    >
                       Est. {m.estimatedCompletionDate}
                     </span>
                   )}
@@ -891,14 +913,25 @@ function StepScopeSchedule({
             <Label>Estimated date</Label>
             <DatePicker
               value={estimatedCompletionDate}
-              onChange={setEstimatedCompletionDate}
+              onChange={(v) => {
+                setEstimatedCompletionDate(v);
+                setDateError(null);
+              }}
               placeholder="Select date"
+              min={today}
+              invalid={!!dateError}
+              onRejected={() => setDateError(MILESTONE_DATE_PAST_MESSAGE)}
             />
           </div>
           <Button type="button" variant="outline" onClick={addMilestone} disabled={!title.trim()}>
             Add
           </Button>
         </div>
+        {(dateError || error) && (
+          <p role="alert" className="text-xs text-destructive-strong">
+            {dateError ?? error}
+          </p>
+        )}
       </div>
     </div>
   );

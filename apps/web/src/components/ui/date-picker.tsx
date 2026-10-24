@@ -65,6 +65,8 @@ interface DatePickerProps {
   min?: string;
   /** Latest selectable ISO date (inclusive). */
   max?: string;
+  /** Called with the ISO date when a typed date is refused for being outside min/max, so the form can say why. */
+  onRejected?: (isoDate: string) => void;
   /** Marks the field invalid (red border) — set by the owning form. */
   invalid?: boolean;
   className?: string;
@@ -79,6 +81,7 @@ export function DatePicker({
   clearable = true,
   min,
   max,
+  onRejected,
   invalid = false,
   className,
 }: DatePickerProps) {
@@ -111,6 +114,7 @@ export function DatePicker({
       // A typed date outside the allowed window is refused the same way the
       // calendar refuses to select it — snap back to the last valid value.
       setText(selected ? format(selected, DISPLAY_FORMAT) : "");
+      onRejected?.(format(parsed, "yyyy-MM-dd"));
     } else if (parsed) {
       onChange(format(parsed, "yyyy-MM-dd"));
     } else if (!text.trim()) {
