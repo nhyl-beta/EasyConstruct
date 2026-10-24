@@ -158,7 +158,13 @@ export const accept = async (
   if (item.kind === "milestone") {
     const p = item.payload as unknown as MilestonePayload;
     // Always a draft: the PM still activates it later (lifecycle rule C3).
-    const created = await milestonesService.create(milestoneInputFor(p, suggestion.projectCode), actor.name);
+    // Plan dates run from the Notice to Proceed, which can already be past;
+    // a milestone can't be created in the past, so such a date becomes today
+    // (the PM can move it afterwards).
+    const input = milestoneInputFor(p, suggestion.projectCode);
+    const today = todayManila();
+    if (input.estimatedCompletionDate < today) input.estimatedCompletionDate = today;
+    const created = await milestonesService.create(input, actor.name);
     createdRef = `milestone:${created.id}`;
   } else if (item.kind === "task") {
     const p = item.payload as unknown as TaskPayload;

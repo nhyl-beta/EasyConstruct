@@ -1,5 +1,5 @@
 // apps/api/src/milestones/service.ts — NEW
-import { ConflictError, ForbiddenError, NotFoundError } from "../../../core/utils/errors.js";
+import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "../../../core/utils/errors.js";
 import { notificationsService } from "../../platform/index.js";
 import { assertProjectWritable, refreshProjectProgress } from "../lifecycle/service.js";
 import * as repo from "./repository.js";
@@ -9,6 +9,7 @@ import * as projectMemberRepo from "../project-members/repository.js";
 import { assertEngineerMayUpdate, openLinkedTasks } from "./permissions.js";
 import * as tasksRepo from "../tasks/repository.js";
 import { resolveDueDateAgainstMilestone } from "../tasks/service.js";
+import { milestoneDateIssue, redateIssue } from "./validators.js";
 import type {
   CreateMilestoneInput,
   CreateMilestoneLinkInput,
@@ -55,6 +56,10 @@ export const getById = async (id: number) => {
  * through `update()`, a deliberate second step.
  */
 export const create = async (input: CreateMilestoneInput, createdBy: string) => {
+  if (input.estimatedCompletionDate !== undefined) {
+    const issue = milestoneDateIssue(input.estimatedCompletionDate);
+    if (issue) throw new ValidationError(issue);
+  }
   await assertProjectWritable(input.projectCode);
   const created = await repo.create({ ...input, createdBy, status: "draft" });
   if (!created) throw new Error("Failed to create milestone");
@@ -79,6 +84,11 @@ export const update = async (
     assertEngineerMayUpdate(input, existing.status, staffed.length > 0);
   }
   await assertProjectWritable(existing.projectCode);
+
+  // Only a date moving to a new past value is refused; a milestone whose stored
+  // date has already passed can still be renamed, completed or re-statused.
+  const redate = redateIssue(input.estimatedCompletionDate, existing.estimatedCompletionDate);
+  if (redate) throw new ValidationError(redate);
 
   // D2: completing records who and when, and is refused while any linked task
   // is still open (see milestones/permissions.ts openLinkedTasks).
