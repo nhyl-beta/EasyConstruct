@@ -72,7 +72,7 @@ Owner, Admin, IT Designer, Project Manager, Human Resources, Finance Manager, Ar
 │       └── scripts/      # ops/ (migrations, backups, verification) and demo/
 ├── packages/             # Shared role identifiers and TypeScript/ESLint config
 ├── infra/                # Dockerfiles and local PostgreSQL + MinIO Compose stack
-├── docs/                 # Architecture, ADRs, setup guides, history
+├── docs/                 # Architecture, ADRs, setup guides
 ├── .github/workflows/    # ci.yml, cron.yml, backup.yml
 └── scripts/dev.mjs       # Runs the web and API development servers together
 ```
@@ -248,10 +248,6 @@ The full procedure, environment matrix, backup, restore and rollback instruction
 | [`docs/architecture/PERFORMANCE.md`](docs/architecture/PERFORMANCE.md) | Performance notes |
 | [`docs/adr/`](docs/adr) | Architecture decision records |
 | [`docs/setup/`](docs/setup) | Server setup guide |
-| [`docs/DESIGN_SYSTEM.md`](docs/DESIGN_SYSTEM.md) | UI design system |
-| [`docs/PROCUREMENT_FLOW.md`](docs/PROCUREMENT_FLOW.md) | Procurement and reimbursement flow |
-| [`docs/EASYCONSTRUCT_ROLE_INTERACTIONS.md`](docs/EASYCONSTRUCT_ROLE_INTERACTIONS.md) | How roles interact |
-| [`CHANGES.md`](CHANGES.md) | Change history |
 
 ## 13. Project Information
 

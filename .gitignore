@@ -12,3 +12,17 @@ apps/api/src/modules/documents/uploads/documents/
 .claude/worktrees/
 
 apps/api/backups/
+
+# Personal notes and local scratch (kept on disk, not shared in the repo)
+.claude/
+CHANGES.md
+README.previous.md
+tempec-check*/
+refactor-notes/*
+!refactor-notes/baseline.md
+# Personal docs (architecture/, adr/, setup/ and TEST_ACCOUNTS.md stay tracked)
+docs/*
+!docs/architecture/
+!docs/adr/
+!docs/setup/
+!docs/TEST_ACCOUNTS.md
