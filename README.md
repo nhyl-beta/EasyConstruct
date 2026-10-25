@@ -239,23 +239,4 @@ The full procedure, environment matrix, backup, restore and rollback instruction
 - Demo seed and reset scripts are guarded against production use.
 - Review [`docs/architecture/SECURITY_CHECKLIST.md`](docs/architecture/SECURITY_CHECKLIST.md) before each release.
 
-## 12. Documentation
 
-| Document | Contents |
-| --- | --- |
-| [`docs/architecture/structure.md`](docs/architecture/structure.md) | Module layout and import rules |
-| [`docs/architecture/deployment.md`](docs/architecture/deployment.md) | Hosting, environment matrix, backups, rollback |
-| [`docs/architecture/PERFORMANCE.md`](docs/architecture/PERFORMANCE.md) | Performance notes |
-| [`docs/adr/`](docs/adr) | Architecture decision records |
-| [`docs/setup/`](docs/setup) | Server setup guide |
-
-## 13. Project Information
-
-- **Institution:** STI College San Jose del Monte
-- **Program:** Bachelor of Science in Information Technology
-- **Author:** Nhyl Cyrus J. Gervasio
-- **Repository:** https://github.com/nhyl-beta/construction-system-easyconstruct
-
-## 14. License
-
-No license has been specified for this project. All rights are reserved by the author unless a license is added.
