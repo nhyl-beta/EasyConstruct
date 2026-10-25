@@ -186,6 +186,7 @@ export default function TasksPage() {
       </PageContent>
 
       <CompleteTaskDialog
+        cameraOnly={user?.role === "site-personnel"}
         task={completing}
         onOpenChange={(open) => !open && setCompleting(null)}
         onConfirm={(task, completion) => advance(task, completion)}

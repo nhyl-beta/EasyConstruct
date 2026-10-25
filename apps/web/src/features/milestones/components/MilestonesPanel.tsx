@@ -17,6 +17,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
 import {
+  MILESTONE_DATE_PAST_MESSAGE,
+  milestoneDateError,
+  milestoneRedateError,
+  todayManilaIso,
+} from "@/features/milestones/lib/milestone-date";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -231,6 +237,18 @@ function EditMilestoneForm({
   const [estimatedCompletionDate, setEstimatedCompletionDate] = useState(
     milestone.estimatedCompletionDate ?? "",
   );
+  const [dateError, setDateError] = useState<string | null>(null);
+
+  const save = () => {
+    // Only a date moving to a new past value is refused; a stored past date
+    // can stay while the milestone is renamed or completed.
+    const pastError = milestoneRedateError(estimatedCompletionDate, milestone.estimatedCompletionDate);
+    if (pastError) {
+      setDateError(pastError);
+      return;
+    }
+    void onSave({ title: title.trim(), estimatedCompletionDate: estimatedCompletionDate || undefined, status });
+  };
 
   return (
     <DialogContent className="max-w-md">
@@ -247,9 +265,16 @@ function EditMilestoneForm({
           <DatePicker
             id="ms-edit-date"
             value={estimatedCompletionDate}
-            onChange={setEstimatedCompletionDate}
+            onChange={(v) => {
+              setEstimatedCompletionDate(v);
+              setDateError(null);
+            }}
             placeholder="Select an estimated date"
+            min={todayManilaIso()}
+            invalid={!!dateError}
+            onRejected={() => setDateError(MILESTONE_DATE_PAST_MESSAGE)}
           />
+          {dateError && <p role="alert" className="text-xs text-destructive-strong">{dateError}</p>}
         </div>
         <div className="grid gap-1.5">
           <Label htmlFor="ms-edit-status">Status</Label>
@@ -273,7 +298,7 @@ function EditMilestoneForm({
         </Button>
         <Button
           disabled={saving || !title.trim()}
-          onClick={() => void onSave({ title: title.trim(), estimatedCompletionDate: estimatedCompletionDate || undefined, status })}
+          onClick={save}
         >
           {saving ? "Saving…" : "Save"}
         </Button>
@@ -297,17 +322,24 @@ function NewMilestoneDialog({
   const [description, setDescription] = useState("");
   const [estimatedCompletionDate, setEstimatedCompletionDate] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
+  const [dateError, setDateError] = useState<string | null>(null);
 
   const reset = () => {
     setTitle("");
     setDescription("");
     setEstimatedCompletionDate("");
     setFormError(null);
+    setDateError(null);
   };
 
   const submit = async () => {
     if (!title.trim()) {
       setFormError("Give the milestone a title.");
+      return;
+    }
+    const pastError = milestoneDateError(estimatedCompletionDate);
+    if (pastError) {
+      setDateError(pastError);
       return;
     }
     const created = await onCreate({
@@ -356,9 +388,16 @@ function NewMilestoneDialog({
             <DatePicker
               id="ms-est"
               value={estimatedCompletionDate}
-              onChange={setEstimatedCompletionDate}
+              onChange={(v) => {
+                setEstimatedCompletionDate(v);
+                setDateError(null);
+              }}
               placeholder="Select an estimated date"
+              min={todayManilaIso()}
+              invalid={!!dateError}
+              onRejected={() => setDateError(MILESTONE_DATE_PAST_MESSAGE)}
             />
+            {dateError && <p role="alert" className="text-xs text-destructive-strong">{dateError}</p>}
           </div>
 
           <div className="grid gap-1.5">

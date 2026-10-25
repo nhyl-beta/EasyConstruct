@@ -6,7 +6,7 @@
 // required note and an optional photo/document, stored on the task itself
 // (tasks.completion_note / completion_file_url / completed_at).
 import { useEffect, useState } from "react";
-import { Paperclip, X } from "lucide-react";
+import { Camera, Paperclip, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -18,6 +18,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { CameraCapture } from "@/components/shared/CameraCapture";
 import { Textarea } from "@/components/ui/textarea";
 import { useUploadFile } from "@/features/uploads/hooks/use-upload-file";
 import type { TaskRecord } from "@/features/tasks/repositories/task.repository";
@@ -30,18 +31,26 @@ interface CompleteTaskDialogProps {
     task: TaskRecord,
     completion: { completionNote: string; completionFileUrl?: string },
   ) => Promise<unknown>;
+  /**
+   * Site Personnel: photo evidence must come from the live camera, so the
+   * picker only takes documents (PDF) and refuses images. Other roles keep the
+   * normal picker, gallery images included.
+   */
+  cameraOnly?: boolean;
 }
 
 export function CompleteTaskDialog({
   task,
   onOpenChange,
   onConfirm,
+  cameraOnly = false,
 }: CompleteTaskDialogProps) {
   const { uploadFile, uploading } = useUploadFile();
   const [note, setNote] = useState("");
   const [fileUrl, setFileUrl] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Reused across tasks, so the fields reseed each time it opens rather than
@@ -54,9 +63,13 @@ export function CompleteTaskDialog({
     setError(null);
   }, [task]);
 
-  const pickFile = async (file: File | undefined) => {
+  const pickFile = async (file: File | undefined, fromCamera = false) => {
     if (!file) return;
     setError(null);
+    if (cameraOnly && !fromCamera && file.type.startsWith("image/")) {
+      setError("Photos must be taken with the camera. Use “Take a photo”, or attach a PDF.");
+      return;
+    }
     try {
       const url = await uploadFile(file);
       setFileUrl(url);
@@ -138,18 +151,26 @@ export function CompleteTaskDialog({
                 </button>
               </div>
             ) : (
-              <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border px-3 py-2 text-sm text-muted-foreground hover:border-primary/40">
-                <Paperclip className="h-4 w-4" />
-                {uploading ? "Uploading…" : "Attach a photo or document"}
-                <input
-                  id="task-completion-file"
-                  type="file"
-                  className="hidden"
-                  accept="image/*,application/pdf"
-                  disabled={busy}
-                  onChange={(e) => void pickFile(e.target.files?.[0])}
-                />
-              </label>
+              <div className="flex flex-col gap-2">
+                {cameraOnly && (
+                  <Button type="button" variant="outline" disabled={busy} onClick={() => setCameraOpen(true)}>
+                    <Camera className="mr-2 h-4 w-4" />
+                    {uploading ? "Uploading…" : "Take a photo"}
+                  </Button>
+                )}
+                <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border px-3 py-2 text-sm text-muted-foreground hover:border-primary/40">
+                  <Paperclip className="h-4 w-4" />
+                  {uploading ? "Uploading…" : cameraOnly ? "Attach a PDF document" : "Attach a photo or document"}
+                  <input
+                    id="task-completion-file"
+                    type="file"
+                    className="hidden"
+                    accept={cameraOnly ? "application/pdf" : "image/*,application/pdf"}
+                    disabled={busy}
+                    onChange={(e) => void pickFile(e.target.files?.[0])}
+                  />
+                </label>
+              </div>
             )}
           </div>
         </div>
@@ -163,6 +184,17 @@ export function CompleteTaskDialog({
           </Button>
         </DialogFooter>
       </DialogContent>
+      {cameraOnly && (
+        <CameraCapture
+          open={cameraOpen}
+          title="Task completion photo"
+          onCancel={() => setCameraOpen(false)}
+          onCapture={(file) => {
+            setCameraOpen(false);
+            void pickFile(file, true);
+          }}
+        />
+      )}
     </Dialog>
   );
 }

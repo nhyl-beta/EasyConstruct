@@ -296,7 +296,12 @@ async function buildPreConstruction(c: Ctx, opts: { complete: boolean; taskCount
         projectCode: c.code,
         title: TASK_PLAN[m]!.milestone,
         description: `${TASK_PLAN[m]!.milestone} for ${c.p.subtitle}.`,
-        estimatedCompletionDate: addDays(c.p.plannedStartDate, Math.round((span * (m + 1)) / 4)),
+        // The API refuses a past milestone date, so a project that started
+        // earlier gets its milestones from today on instead.
+        estimatedCompletionDate: (() => {
+          const d = addDays(c.p.plannedStartDate, Math.round((span * (m + 1)) / 4));
+          return d < TODAY ? addDays(TODAY, 14 * (m + 1)) : d;
+        })(),
       },
     });
     await api(`/milestones/${ms.id}`, pm.token, { method: "PATCH", body: { status: "active" } });
