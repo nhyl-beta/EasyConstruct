@@ -72,7 +72,7 @@ Owner, Admin, IT Designer, Project Manager, Human Resources, Finance Manager, Ar
 │       └── scripts/      # ops/ (migrations, backups, verification) and demo/
 ├── packages/             # Shared role identifiers and TypeScript/ESLint config
 ├── infra/                # Dockerfiles and local PostgreSQL + MinIO Compose stack
-├── docs/                 # Architecture, ADRs, setup guides, history
+├── docs/                 # Architecture, ADRs, setup guides
 ├── .github/workflows/    # ci.yml, cron.yml, backup.yml
 └── scripts/dev.mjs       # Runs the web and API development servers together
 ```
