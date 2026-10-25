@@ -194,10 +194,20 @@ function App() {
                   <Route path="/ai-insights" element={<Navigate to="/dashboard" replace />} />
                   {/* Part B: a genuinely new route (never the resurrected
                       "AI Insights" one above), gated behind FEATURES.ai —
-                      not aiPlaceholders, since its content is entirely real. */}
+                      not aiPlaceholders, since its content is entirely real —
+                      and visible to the IT Designer only; every other role is
+                      sent to the dashboard. */}
                   <Route
                     path="/ai-validation-reference"
-                    element={FEATURES.ai ? <AiValidationReferencePage /> : <Navigate to="/dashboard" replace />}
+                    element={
+                      FEATURES.ai ? (
+                        <RequireRole allow={["it_designer"]} redirectTo="/dashboard">
+                          <AiValidationReferencePage />
+                        </RequireRole>
+                      ) : (
+                        <Navigate to="/dashboard" replace />
+                      )
+                    }
                   />
                   {DesignSystemShowcase && (
                     <Route

@@ -218,7 +218,6 @@ const INTERNAL_LINKS = [
   { to: "/approvals", label: "Approvals" },
   { to: "/workflows", label: "Workflows" },
   { to: "/documents", label: "Documents" },
-  { to: "/ai-validation-reference", label: "How the decision-support rules work" },
 ];
 
 const EXTERNAL_LINKS = [

@@ -20,11 +20,10 @@ const router = Router();
 router.use(authenticate);
 
 // Part B: the in-app "AI Validation Reference" page needs these real
-// constants at render time, not hand-copied prose that goes stale. Open to
-// any authenticated role (unlike the admin-only refresh/status routes
-// below) — this is read-only config plus a public-safe count/timestamp,
-// the same shape every role's Decision Support section already implies.
-router.get("/config", async (_req, res, next) => {
+// constants at render time, not hand-copied prose that goes stale. IT
+// Designer only (the page is, and this is its only caller); the admin-only
+// refresh/status routes below are unchanged.
+router.get("/config", requireRole("it-designer"), async (_req, res, next) => {
   try {
     const [totalRow] = await db.select({ value: count() }).from(referenceSnapshots);
     const [newest] = await db

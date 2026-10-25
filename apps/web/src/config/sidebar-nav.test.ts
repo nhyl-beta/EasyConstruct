@@ -55,6 +55,12 @@ describe("buildSidebarNav", () => {
         );
         expect(group).toBeUndefined();
       });
+
+      it("shows the AI reference to the IT Designer only", () => {
+        const shown = flatNames(entries).includes("ai-validation-reference");
+        expect(shown).toBe(role === "it_designer");
+        expect(ROLE_RESOURCE_ACCESS[role].includes("ai-validation-reference")).toBe(role === "it_designer");
+      });
     });
   }
 
@@ -64,6 +70,13 @@ describe("buildSidebarNav", () => {
       const entries = buildSidebarNav(role, registered);
       expect(entries.every((e) => e.kind === "item")).toBe(true);
       expect(flatNames(entries)).toEqual(granted(role));
+    }
+  });
+
+  it("lists the AI reference in the IT Designer nav and no other role's nav", () => {
+    for (const [role, entries] of Object.entries(SIDEBAR_NAV)) {
+      const listed = entries.some((e) => e.kind === "item" && e.resource === "ai-validation-reference");
+      expect(listed).toBe(role === "it_designer");
     }
   });
 

@@ -72,7 +72,6 @@ export const SIDEBAR_NAV: Record<string, SidebarNavConfigEntry[]> = {
       "admin-document-types",
     ]),
     item("admin-support"),
-    item("ai-validation-reference"),
   ],
   it_designer: [
     item("dashboard"),
@@ -117,7 +116,6 @@ export const SIDEBAR_NAV: Record<string, SidebarNavConfigEntry[]> = {
     // Not scope-tagged
     group("records-requests", "Records & Requests", Archive, RECORDS),
     item("resources"),
-    item("ai-validation-reference"),
   ],
   architect: [
     item("dashboard"),
@@ -136,7 +134,6 @@ export const SIDEBAR_NAV: Record<string, SidebarNavConfigEntry[]> = {
     item("approvals"),
     // Not scope-tagged
     group("records-requests", "Records & Requests", Network, RECORDS),
-    item("ai-validation-reference"),
   ],
 };
 
