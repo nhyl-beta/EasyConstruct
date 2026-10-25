@@ -1,40 +1,94 @@
 # EasyConstruct
 
-EasyConstruct is a full-stack construction management platform built as a thesis project. It coordinates projects, employees, HR operations, finance, engineering workflows, and documents for construction firms, with role-based dashboards for everyone from site engineers to owners.
+**A role-based construction workflow management system.**
 
-## Tech stack
+EasyConstruct is a full-stack web application that coordinates the project lifecycle of a construction firm: proposals, design and architectural review, scheduling and milestones, site operations, procurement, payroll, finance, and document control. Each stakeholder works in a dashboard tailored to their role.
 
-**Frontend** — React 19, [Refine](https://refine.dev/) (`@refinedev/react-router`), React Router, Vite, TypeScript, Tailwind CSS, shadcn/ui, TanStack Table/Query (via Refine hooks), Recharts.
+The system was developed as a thesis project at STI College San Jose del Monte (BS Information Technology).
 
-**Backend** — Node.js, Express 5, Drizzle ORM, PostgreSQL ([Neon serverless driver](https://neon.tech/)), JWT auth, Multer for uploads, stored on an S3-compatible bucket (Filebase / MinIO), Vercel Blob, or local disk.
+---
 
-## Project structure
+## Table of Contents
+
+1. [Features](#1-features)
+2. [Roles](#2-roles)
+3. [Technology Stack](#3-technology-stack)
+4. [Repository Structure](#4-repository-structure)
+5. [Prerequisites](#5-prerequisites)
+6. [Local Development Setup](#6-local-development-setup)
+7. [Environment Variables](#7-environment-variables)
+8. [Available Scripts](#8-available-scripts)
+9. [Testing and Continuous Integration](#9-testing-and-continuous-integration)
+10. [Deployment](#10-deployment)
+11. [Security Notes](#11-security-notes)
+12. [Documentation](#12-documentation)
+13. [Project Information](#13-project-information)
+14. [License](#14-license)
+
+---
+
+## 1. Features
+
+| Area | Capabilities |
+| --- | --- |
+| **Project lifecycle** | Staged project workflow with gate checks, milestones with date validation, tasks, and project member assignment. |
+| **Proposals and design** | Proposal intake and review, design requests, revisions, deliverables, transmittals, and architect documents. |
+| **Site operations** | Attendance with live camera capture for site personnel, issue and finding reports, RFI and RFA workflows. |
+| **Finance** | Cash-flow tracking, expense categories, procurement and reimbursement, payroll, payroll summaries, and reconciliation. |
+| **Human resources** | Employee records, roles, and attendance-linked payroll. |
+| **Documents** | Document types, versioned uploads, S3-compatible storage with integrity checks, and authenticated downloads. |
+| **Decision support** | Rule-based advisory signals (cost variance, change impact, burn versus progress, issue recurrence, stalled stage). Advisory only; a person always decides. Can be disabled with a feature flag. |
+| **Platform** | Role-based access control, audit logs, notifications, quick search, scheduled jobs, and account recovery by email. |
+
+## 2. Roles
+
+Ten roles are supported, each with its own dashboard and permissions:
+
+Owner, Admin, IT Designer, Project Manager, Human Resources, Finance Manager, Architect, Engineer, Site Personnel, and Consultant.
+
+## 3. Technology Stack
+
+| Layer | Technologies |
+| --- | --- |
+| **Frontend** | React 19, Refine, React Router, Vite, TypeScript, Tailwind CSS, shadcn/ui, TanStack Table and Query, Recharts |
+| **Backend** | Node.js, Express 5, TypeScript, Drizzle ORM, JWT authentication, Multer |
+| **Database** | PostgreSQL (Neon in production) |
+| **File storage** | S3-compatible object storage (Filebase in production, MinIO locally); local disk fallback in development |
+| **Email** | SMTP (Brevo in production, Gmail App Password for local use) |
+| **Optional cache** | Upstash Redis, with an in-memory fallback |
+| **Tooling** | npm workspaces, ESLint, Node test runner, Docker, GitHub Actions |
+
+## 4. Repository Structure
 
 ```
 .
 ├── apps/
-│   ├── web/          # React + Refine frontend (Vite)
-│   └── api/          # Express + Drizzle REST API
-│       ├── src/core/ # HTTP, auth, storage, database, jobs and shared plumbing
-│       ├── src/modules/ # API features and their public module indexes
-│       ├── drizzle/  # SQL migrations and schema snapshots
-│       └── scripts/{ops,demo}/
-├── packages/        # Shared role ids and TypeScript/ESLint configuration
-├── infra/           # Dockerfiles and local PostgreSQL/MinIO Compose stack
-├── docs/            # Architecture, ADRs, setup and history
-└── scripts/dev.mjs  # Runs the web and API development servers together
+│   ├── web/              # React + Refine frontend (Vite)
+│   └── api/              # Express + Drizzle REST API
+│       ├── src/core/     # HTTP, auth, storage, database, jobs, shared plumbing
+│       ├── src/modules/  # Feature modules (iam, documents, projects, design,
+│       │                 #   workflow, workforce, finance, insights, platform)
+│       ├── drizzle/      # SQL migrations and schema snapshots
+│       └── scripts/      # ops/ (migrations, backups, verification) and demo/
+├── packages/             # Shared role identifiers and TypeScript/ESLint config
+├── infra/                # Dockerfiles and local PostgreSQL + MinIO Compose stack
+├── docs/                 # Architecture, ADRs, setup guides, history
+├── .github/workflows/    # ci.yml, cron.yml, backup.yml
+└── scripts/dev.mjs       # Runs the web and API development servers together
 ```
 
-The API modules (IAM, documents, projects, design, workflow, workforce, finance, insights, and platform) use a consistent layering pattern: **schema → repository → service → controller → routes**. The frontend remains in its existing feature-folder structure. See [the architecture guide](docs/architecture/structure.md) for the complete tree and import rules.
+API modules follow a consistent layering: **schema, repository, service, controller, routes**. The full tree and import rules are in [`docs/architecture/structure.md`](docs/architecture/structure.md).
 
-## Prerequisites
+## 5. Prerequisites
 
-- Node.js 18+ (tested on Node 22)
-- A PostgreSQL database (the project is built against [Neon](https://neon.tech/), but any Postgres instance works)
+- Node.js 18 or later (tested on Node 22)
+- npm 9 or later
+- PostgreSQL 16 or later, local or hosted (the project targets Neon)
+- Docker (optional, for the local PostgreSQL and MinIO stack)
 
-## Getting started
+## 6. Local Development Setup
 
-### 1. Clone and install dependencies
+### 6.1 Clone and install
 
 ```bash
 git clone https://github.com/nhyl-beta/construction-system-easyconstruct.git
@@ -42,135 +96,170 @@ cd construction-system-easyconstruct
 npm ci
 ```
 
-### 2. Configure environment variables
-
-Create a `.env` file inside `apps/api/` with at least:
-
-```bash
-DATABASE_URL=postgresql://user:password@host/dbname
-PORT=8000
-JWT_SECRET=change-me-in-prod
-CORS_ORIGIN=http://localhost:5173
-# Origin the browser app is served from — used to build the link in recovery /
-# password-reset emails (CLIENT_URL is accepted too). Defaults to CORS_ORIGIN. The
-# link opens on the RECIPIENT's machine, so set the real public URL when deployed.
-APP_URL=http://localhost:5173
-# Email (Gmail SMTP) for Owner fail-safe recovery and forgot-password. Gmail needs
-# 2-Step Verification on the sending account plus an App Password — the normal
-# Gmail password does not work. Without these the API answers 503, never a fake "sent".
-MAIL_USER=your.sending.account@gmail.com
-MAIL_APP_PASSWORD=xxxx xxxx xxxx xxxx
-# Optional — enables Vercel Blob storage for uploads (the store is PRIVATE; files are
-# served through the authenticated GET /api/uploads/file route). Falls back to local
-# disk (apps/api/uploads) in development if unset.
-BLOB_READ_WRITE_TOKEN=
-# Optional — S3-compatible storage (Filebase, MinIO). When all of these are set it wins over Blob.
-# S3_ENDPOINT=  S3_REGION=  S3_BUCKET=  S3_ACCESS_KEY_ID=  S3_SECRET_ACCESS_KEY=   (one bucket; copy endpoint/region from the Filebase dashboard)
-# On Render use an SMTP provider on port 2525 (MAIL_HOST / MAIL_PORT / MAIL_REQUIRE_TLS); see docs/architecture/deployment.md.
-# Behind a reverse proxy (Render): TRUST_PROXY=1. Without a scheduler: DISABLE_SCHEDULER=true.
-# Decision-support layer (proposal validation, cost comparison, advisory
-# signals, suggested plans, task allocation advice, impact forecasts).
-# ON by default; set false to switch it all off. Rule-based advice only: a
-# person always decides.
-FEATURE_AI=true
-# Secret for scheduled jobs on Vercel (/api/cron/*). Leave empty locally.
-CRON_SECRET=
-```
-
-The client reads `VITE_API_BASE` to decide whether to talk to the real API or use mock data; set it in a `.env` file inside `apps/web/` (e.g. `VITE_API_BASE=http://localhost:8000` — **no `/api` suffix**: `apps/web/src/services/api.client.ts`'s `apiUrl()` always appends `/api` itself, so a value ending in `/api` here produces a double `/api/api/...` and every request 404s) once the server is running. Decision-support surfaces are on by default on the client too; set `VITE_FEATURE_AI=false` (separate flag, separate `.env`, same gate) together with the server's `FEATURE_AI=false` to hide them.
-
-For the hosted setup (Cloudflare Pages + Render + Filebase + GitHub Actions) — environment variable matrix, build settings, backups, restore and rollback — see [docs/architecture/deployment.md](docs/architecture/deployment.md). The web app also needs `VITE_API_BASE` (origin) and `VITE_API_URL` (origin + `/api`) there; see `apps/web/.env.example`.
-
-### 3. Set up the database
-
-For a local PostgreSQL 16 instance and S3-compatible MinIO service, start the provided Compose stack:
+### 6.2 Start local infrastructure (optional)
 
 ```bash
 docker compose -f infra/compose/docker-compose.yml up -d
 ```
 
-See [local infrastructure](infra/compose/README.md) for connection details. Demo seed/reset scripts refuse to run with `NODE_ENV=production` and require the configured local demo safeguards.
+This starts PostgreSQL 16 and an S3-compatible MinIO service. Connection details are in [`infra/compose/README.md`](infra/compose/README.md).
 
-From the repository root:
-
-```bash
-npm run db:generate --workspace=@easyconstruct/api   # generate Drizzle migrations from the schema (if needed)
-npm run db:migrate --workspace=@easyconstruct/api    # apply migrations to DATABASE_URL
-ALLOW_DEMO_RESET=true npm run db:seed    # guarded demo schema top-ups and demo accounts
-```
-
-The seed script prints a table of demo accounts on completion — one per role (admin, project manager, HR, finance, architect, engineer, site personnel, consultant, owner, IT designer), all sharing the password `Demo@12345`.
-
-### 4. Run the app
-
-From the repository root, run client and server together:
+### 6.3 Configure environment
 
 ```bash
-npm run dev
+cp apps/api/.env.example apps/api/.env
+cp apps/web/.env.example apps/web/.env
 ```
 
-Or run them individually:
+Edit both files; see [Environment Variables](#7-environment-variables).
+
+### 6.4 Prepare the database
 
 ```bash
-npm run dev:client   # Vite dev server, default http://localhost:5173
-npm run dev:server   # Express API with hot reload (tsx watch), default http://localhost:8000
+npm run db:migrate --workspace=@easyconstruct/api
+ALLOW_DEMO_RESET=true npm run db:seed
 ```
 
-## Available scripts
+The seed command creates demo accounts, one per role. Credentials are listed in [`docs/TEST_ACCOUNTS.md`](docs/TEST_ACCOUNTS.md) and are intended for local development only.
 
-**Root**
+### 6.5 Run the application
+
+```bash
+npm run dev            # web and API together
+npm run dev:client     # web only  (http://localhost:5173)
+npm run dev:server     # API only  (http://localhost:8000)
+```
+
+## 7. Environment Variables
+
+### 7.1 API (`apps/api/.env`)
+
+| Variable | Required | Description |
+| --- | --- | --- |
+| `DATABASE_URL` | Yes | PostgreSQL connection string. Use the direct (non-pooled) URL for migrations and backups. |
+| `JWT_SECRET` | Yes in production | Long random string used to sign tokens. |
+| `PORT` | No | API port. Defaults to `8000`. |
+| `CORS_ORIGIN` | Yes | The single browser origin allowed to call the API, for example `https://easyconstruct.online`. |
+| `APP_URL` | Yes | Public web URL used to build links in recovery and notification emails. |
+| `MAIL_HOST`, `MAIL_PORT`, `MAIL_USER`, `MAIL_APP_PASSWORD`, `MAIL_FROM`, `MAIL_REQUIRE_TLS` | For email | SMTP settings (`MAIL_APP_PASSWORD` holds the Gmail App Password or the Brevo SMTP key). Without them, email endpoints return 503 rather than reporting a false success. |
+| `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | For object storage | S3 storage is active only when **all** of endpoint, bucket, access key and secret are set. Otherwise uploads fall back to local disk, which is not persistent on most hosts. |
+| `AWS_REQUEST_CHECKSUM_CALCULATION`, `AWS_RESPONSE_CHECKSUM_VALIDATION` | With Filebase | Set both to `WHEN_REQUIRED`. |
+| `MAX_UPLOAD_MB` | No | Maximum upload size. Defaults to `100`. |
+| `CRON_SECRET` | In production | Bearer token protecting `/api/cron/*`. Must match the GitHub Actions secret. |
+| `TRUST_PROXY` | Behind a proxy | Set to `1` on Render. |
+| `DISABLE_SCHEDULER` | No | Set to `true` when jobs are triggered externally by GitHub Actions. |
+| `DB_POOL_MAX` | No | Database connection pool size. |
+| `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | No | Optional shared cache. Leave unset to use the in-memory cache. |
+| `FEATURE_AI` | No | Decision-support layer. Enabled unless set to exactly `false`. |
+
+### 7.2 Web (`apps/web/.env`)
+
+| Variable | Description |
+| --- | --- |
+| `VITE_API_BASE` | API origin only, for example `http://localhost:8000`. Do **not** add `/api`; the client appends it. |
+| `VITE_API_URL` | API origin plus `/api`, used in hosted builds. |
+| `VITE_FEATURE_AI` | Set to `false` together with the server flag to hide decision-support surfaces. |
+
+Never commit `.env` files or secrets to the repository.
+
+## 8. Available Scripts
+
+### Repository root
 
 | Script | Description |
 | --- | --- |
-| `npm run dev` | Runs both client and server dev servers concurrently |
-| `npm run dev:client` | Runs only the frontend dev server |
-| `npm run dev:server` | Runs only the backend dev server |
-| `npm run build:client` | Builds the frontend for production |
-| `npm run build:server` | Builds the backend for production |
-| `npm run db:seed` | Seeds demo accounts and roles (proxies to the API workspace) |
+| `npm run dev` | Runs the web and API development servers together. |
+| `npm run dev:client` / `dev:server` | Runs one side only. |
+| `npm run build:client` | Production build of the web app. |
+| `npm run build:server` | Compiles the API to `apps/api/dist`. |
+| `npm run db:seed` | Creates demo schema top-ups and demo accounts (guarded). |
 
-**API workspace (`apps/api/`)**
-
-Run these commands from `apps/api/` unless a workspace selector is shown.
+### API workspace (`@easyconstruct/api`)
 
 | Script | Description |
 | --- | --- |
-| `npm run dev` | Starts the API with hot reload |
-| `npm run build` | Compiles TypeScript to `dist/` |
-| `npm start` | Runs the compiled server |
-| `npm run db:generate` | Generates Drizzle migrations from the schema |
-| `npm run db:migrate` | Applies migrations to the database |
-| `npm run db:seed` | Seeds demo roles, employees, and user accounts |
-| `npm run db:backfill-employee-links` | Backfills employee ↔ user links |
-| `npm run ai:seed-references` | Pulls the EstimationPro.ai cost-reference catalog (idempotent upsert) |
-| `npm run demo:seed` | Creates `DEMO-STAGE-0`..`6`, one demo project per lifecycle phase, via real API calls against a running `npm run dev` server. Idempotent — deletes and rebuilds its own rows on every run. Run `ai:seed-references` first for a full cost-reference catalog (falls back to a single seeded reference row otherwise — see `apps/api/scripts/demo/demo-seed-stages.ts`'s header comment). |
-| `npm run demo:ai-signals` | The one bookmarkable place to see the AI-validation decision-support layer trip all five advisory signals at once (cost-variance, cumulative-change-impact, burn-vs-progress, issue-recurrence, stalled-stage) — see "AI-validation demo project" below. |
+| `db:generate` | Generates Drizzle migrations from the schema. |
+| `db:migrate` | Applies pending migrations. Supports `--dry-run` and `--baseline-through=<tag>`. |
+| `db:verify-schema` | Compares the database against the expected schema. |
+| `typecheck`, `lint` | Static checks. |
+| `test`, `test:db` | Unit tests, and database-backed tests. |
+| `demo:reset`, `demo:seed`, `demo:verify` | Demo data tools. They refuse to run in production and require explicit guards (`ALLOW_DEMO_RESET`, `DEMO_RESET_ALLOWED_HOSTS`). |
 
-**AI-validation demo project.** `npm run demo:ai-signals` builds a single project at the stable
-code **`AISIG-DEMO`** (overridable via `AISIG_PROJECT_CODE`), deliberately engineered to trip
-all five advisory signals, then asserts the live API's gate checks are byte-for-byte identical
-to a direct, signals-bypassing call — proving decision support never affects gating. The script
-is idempotent (it clears out any previous `AISIG-DEMO` run before rebuilding), so **the 7
-`DEMO-STAGE-0`..`6` projects from `demo:seed` deliberately don't carry this scenario
-themselves** — the script's own console output prints the project's numeric id and
-`/projects/:id` link on every run; open that link as Project Manager, Consultant, Finance
-Manager or Engineer (the five signals' `ownerRoles`) to see `DecisionSupportSection` under the
-gate checklist with all five signals live.
+**Warning:** `db:reset` truncates every table, including user accounts. Use it only on a disposable local database.
 
-**Web workspace (`apps/web/`)**
+## 9. Testing and Continuous Integration
 
-Run these commands from `apps/web/`.
+```bash
+npm test --workspace=@easyconstruct/api
+npm test --workspace=@easyconstruct/web
+npm run typecheck --workspace=@easyconstruct/web
+npm run typecheck --workspace=@easyconstruct/api
+```
 
-| Script | Description |
+The API test suite validates configuration on import, so `DATABASE_URL` and `JWT_SECRET` must be set (placeholder values are sufficient, for example `postgres://ci:ci@localhost:5432/ci_test` and `ci-test-secret`).
+
+GitHub Actions workflows:
+
+| Workflow | Purpose |
 | --- | --- |
-| `npm run dev` | Starts the Refine/Vite dev server |
-| `npm run build` | Type-checks and builds for production |
-| `npm start` | Serves a production build with Refine's static server |
+| `ci.yml` | Runs API and web tests, type checks, and compares API type errors against the recorded baseline in `refactor-notes/baseline.md`. |
+| `cron.yml` | Calls the protected `/api/cron/*` endpoints on a schedule (and on manual dispatch). |
+| `backup.yml` | Creates scheduled database backups and uploads them to object storage. |
 
-## Roles
+Scheduled workflows run only from the repository's default branch.
 
-The platform supports the following roles, each with its own dashboard and permissions: Admin, Owner, IT Designer, Human Resources, Finance Manager, Project Manager, Architect, Engineer, Site Personnel, and Consultant.
+## 10. Deployment
 
-## License
+The production deployment uses free-tier services:
 
-No license has been specified for this project.
+| Component | Service |
+| --- | --- |
+| Web application | Cloudflare Pages |
+| API | Render (Docker web service) |
+| Database | Neon PostgreSQL |
+| File storage and backups | Filebase (S3-compatible, single bucket) |
+| Transactional email | Brevo SMTP on port 2525 |
+| Scheduled jobs and backups | GitHub Actions |
+| Availability monitoring | UptimeRobot |
+| Domain and DNS | Cloudflare |
+
+Key points:
+
+- Render's free tier sleeps after inactivity and blocks outbound SMTP on ports 25, 465 and 587; use port 2525.
+- Run migrations against the **direct** Neon URL. Use the pooled URL only for the running API.
+- `CORS_ORIGIN` accepts exactly one origin and must match the public web URL.
+- The API does not run migrations on startup; apply them as a separate step.
+
+The full procedure, environment matrix, backup, restore and rollback instructions are in [`docs/architecture/deployment.md`](docs/architecture/deployment.md).
+
+## 11. Security Notes
+
+- Secrets (`JWT_SECRET`, `CRON_SECRET`, storage keys, SMTP keys, database URLs) belong in the hosting provider's environment settings and GitHub Actions secrets, never in source control.
+- Uploaded files are served through an authenticated route.
+- Demo seed and reset scripts are guarded against production use.
+- Review [`docs/architecture/SECURITY_CHECKLIST.md`](docs/architecture/SECURITY_CHECKLIST.md) before each release.
+
+## 12. Documentation
+
+| Document | Contents |
+| --- | --- |
+| [`docs/architecture/structure.md`](docs/architecture/structure.md) | Module layout and import rules |
+| [`docs/architecture/deployment.md`](docs/architecture/deployment.md) | Hosting, environment matrix, backups, rollback |
+| [`docs/architecture/PERFORMANCE.md`](docs/architecture/PERFORMANCE.md) | Performance notes |
+| [`docs/adr/`](docs/adr) | Architecture decision records |
+| [`docs/setup/`](docs/setup) | Server setup guide |
+| [`docs/DESIGN_SYSTEM.md`](docs/DESIGN_SYSTEM.md) | UI design system |
+| [`docs/PROCUREMENT_FLOW.md`](docs/PROCUREMENT_FLOW.md) | Procurement and reimbursement flow |
+| [`docs/EASYCONSTRUCT_ROLE_INTERACTIONS.md`](docs/EASYCONSTRUCT_ROLE_INTERACTIONS.md) | How roles interact |
+| [`CHANGES.md`](CHANGES.md) | Change history |
+
+## 13. Project Information
+
+- **Institution:** STI College San Jose del Monte
+- **Program:** Bachelor of Science in Information Technology
+- **Author:** Nhyl Cyrus J. Gervasio
+- **Repository:** https://github.com/nhyl-beta/construction-system-easyconstruct
+
+## 14. License
+
+No license has been specified for this project. All rights are reserved by the author unless a license is added.
