@@ -311,7 +311,7 @@ export function RequestDetailSheet({
                     </Link>
                   </Button>
                   {canClose && (
-                    <Button size="sm" variant="ghost" className="text-muted-foreground" disabled={busy} onClick={() => setClosing(true)}>
+                    <Button size="sm" variant="destructive" className="shadow-sm" disabled={busy} onClick={() => setClosing(true)}>
                       <XCircle className="h-4 w-4" /> Close
                     </Button>
                   )}

@@ -282,14 +282,14 @@ export function ApprovalQueuePanel({
           aria-label="From date"
           value={dateFrom}
           onChange={(e) => setDateFrom(e.target.value)}
-          className="h-9 w-36 text-xs"
+          className="h-9 w-41 text-xs"
         />
         <Input
           type="date"
           aria-label="To date"
           value={dateTo}
           onChange={(e) => setDateTo(e.target.value)}
-          className="h-9 w-36 text-xs"
+          className="h-9 w-41 text-xs"
         />
         <div className="relative w-full sm:w-56">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
