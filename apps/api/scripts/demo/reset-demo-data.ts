@@ -24,35 +24,10 @@ import path from "node:path";
 import pg from "pg";
 import { assertDemoDatabase } from "./demo-guard.js";
 import { buildRoster, upsertRoster } from "./demo-roster.js";
+import { ACCOUNT_TABLES, DELETE_ORDER, PRESERVE, unclassifiedTables } from "./reset-tables.js";
 
 const DRY = process.argv.includes("--dry-run");
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
-
-/** Never written. Checksummed before/after. */
-const ACCOUNT_TABLES = ["users", "password_reset_tokens", "roles"];
-/** Never deleted (config / reference / history). */
-const PRESERVE = [...ACCOUNT_TABLES, "workflow_templates", "reference_snapshots", "audit_logs", "expense_categories"];
-/** Handled specially. */
-const SPECIAL = ["notifications", "employees"];
-
-/** Delete order: children before parents (derived from the real FK map). */
-const DELETE_ORDER = [
-  "validation_results", "workflow_attachments", "workflow_line_items", "workflow_stages",
-  "plan_suggestion_items", "plan_suggestions", "signal_findings", "decision_support_events",
-  "proposals", "workflows",
-  "budget_adjustments", "budget_allocations", "budget_approval_steps", "budget_comments",
-  "budget_documents", "budget_history", "budgets",
-  // Purchasing first: purchase_requests.requirement_id references requirements.
-  "procurement_orders", "purchase_requests", "reimbursements",
-  "milestone_links", "milestones", "tasks", "issues", "requirements",
-  "architect_documents", "blueprints", "design_reviews", "design_revisions", "design_engineers", "designs",
-  "revisions", "engineering_reports", "documents", "expenses", "financial_risks", "cash_flow_entries",
-  "ai_insights", "approvals_queue",
-  "scheduled_reports", "payroll", "payroll_batch_decisions", "payroll_batch_acknowledgements", "payroll_batches", "attendance",
-  "transmittal_acknowledgements", "transmittal_items", "transmittals", "design_request_files", "design_requests",
-  "project_deliverables",
-  "project_phase_history", "project_members", "projects", "clients", "vendors",
-];
 
 async function checksums(c: pg.PoolClient) {
   const out: Record<string, string> = {};
@@ -93,8 +68,7 @@ async function main() {
   try {
     // Coverage check: every public table must be classified, otherwise abort.
     const tables = (await c.query(`SELECT tablename FROM pg_tables WHERE schemaname='public'`)).rows.map((r) => r.tablename as string);
-    const known = new Set([...PRESERVE, ...SPECIAL, ...DELETE_ORDER]);
-    const unknown = tables.filter((t) => !known.has(t) && !t.startsWith("__drizzle") && t !== "drizzle_migrations");
+    const unknown = unclassifiedTables(tables);
     if (unknown.length) throw new Error(`REFUSED: unclassified tables: ${unknown.join(", ")}`);
 
     const before = await checksums(c);
