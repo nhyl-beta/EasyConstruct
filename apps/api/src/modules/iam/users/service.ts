@@ -172,6 +172,14 @@ export const update = async (id: number, input: UpdateUserInput) => {
     await assertNotLastActiveOwner(id, "owner");
   }
 
+  // A linked account's name and email follow its employee record (HR edits them there and the account is
+  // updated with it), so changing them here would make the two disagree.
+  const changesIdentity =
+    (input.name !== undefined && input.name !== current.name) || (input.email !== undefined && input.email !== current.email);
+  if (changesIdentity && (await repo.findEmployeeByUserId(id))) {
+    throw new ValidationError("This account is linked to an employee record. Change the name or email on the employee record instead");
+  }
+
   if (input.email) {
     const owner = await repo.findByEmail(input.email);
     if (owner && owner.id !== id) {
