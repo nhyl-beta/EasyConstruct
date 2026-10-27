@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowDown, ArrowUp, ChevronsUpDown } from "lucide-react";
 
 import { selectedRowClass } from "@/components/detail-panel/DetailPanel";
+import { SortableHead, type SortDirection } from "@/components/ui/sortable-head";
 import { StatusBadge } from "@/components/ui/status-badge";
 import {
   Table,
@@ -14,7 +14,6 @@ import {
 import type { Proposal } from "../types/proposal.types";
 
 type SortKey = "proposalId" | "projectCode" | "submittedBy" | "status";
-type SortDirection = "asc" | "desc";
 
 interface ProposalsTableProps {
   proposals: Proposal[];
@@ -30,9 +29,9 @@ const COLUMNS: ReadonlyArray<{
   label: string;
   width: string;
 }> = [
-  { key: "proposalId", label: "Proposal", width: "w-[22%]" },
+  { key: "proposalId", label: "Proposal", width: "w-[20%]" },
   { key: "projectCode", label: "Project", width: "w-[12%]" },
-  { key: "submittedBy", label: "Submitted by", width: "w-[14%]" },
+  { key: "submittedBy", label: "Submitted by", width: "w-[16%]" },
   { key: "status", label: "Status", width: "w-[12%]" },
 ];
 
@@ -95,24 +94,18 @@ export function ProposalsTable({
         <TableHeader>
           <TableRow>
             {COLUMNS.map((column) => (
-              <TableHead key={column.key} className={column.width}>
-                <button
-                  type="button"
-                  onClick={() => toggle(column.key)}
-                  aria-label={`Sort by ${column.label}`}
-                  className="inline-flex items-center gap-1 hover:text-foreground"
-                >
-                  {column.label}
-                  <SortIcon
-                    active={sortKey === column.key}
-                    direction={direction}
-                  />
-                </button>
-              </TableHead>
+              <SortableHead
+                key={column.key}
+                label={column.label}
+                active={sortKey === column.key}
+                direction={direction}
+                onSort={() => toggle(column.key)}
+                className={column.width}
+              />
             ))}
-            <TableHead className="w-[12%]">Amount</TableHead>
-            <TableHead className="w-[14%]">Reviewer</TableHead>
-            <TableHead className="w-[14%]">Comment</TableHead>
+            <TableHead className="w-[10%] whitespace-nowrap">Amount</TableHead>
+            <TableHead className="w-[14%] whitespace-nowrap">Reviewer</TableHead>
+            <TableHead className="w-[16%] whitespace-nowrap">Comment</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -159,23 +152,6 @@ export function ProposalsTable({
         </TableBody>
       </Table>
     </div>
-  );
-}
-
-function SortIcon({
-  active,
-  direction,
-}: {
-  active: boolean;
-  direction: SortDirection;
-}) {
-  if (!active) {
-    return <ChevronsUpDown className="h-3 w-3 opacity-40" />;
-  }
-  return direction === "asc" ? (
-    <ArrowUp className="h-3 w-3" />
-  ) : (
-    <ArrowDown className="h-3 w-3" />
   );
 }
 
