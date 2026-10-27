@@ -8,6 +8,7 @@ import { PageContent } from "@/components/refine-ui/views/page-content";
 import { Card, CardContent } from "@/components/ui/card";
 import { KpiStrip } from "@/components/ui/kpi-strip";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { PriorityBadge } from "@/components/ui/priority-badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 
@@ -155,7 +156,7 @@ export default function TasksPage() {
                         </div>
                       </div>
                       <div className="flex shrink-0 items-center gap-2">
-                        <StatusBadge status={t.priority} />
+                        <PriorityBadge priority={t.priority} />
                         <StatusBadge status={t.status} />
                         {canAdvance && nextLabel && (
                           <Button

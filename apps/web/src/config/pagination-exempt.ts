@@ -29,7 +29,6 @@ export const PAGINATION_EXEMPT: PaginationExemption[] = [
   { file: "features/projects/components/ProjectsTable.tsx", reason: `${PARENT} (same three pages.)` },
   { file: "features/proposals/components/ProposalsTable.tsx", reason: `${PARENT} (ProposalsRegister renders DataTablePagination.)` },
   { file: "features/revisions/components/RevisionsTable.tsx", reason: `${PARENT} (architect-revisions pages on the server.)` },
-  { file: "pages/roles/architect/architect-revisions.tsx", reason: "Server-paged; has its own 'Showing X–Y of N' footer with previous/next." },
 
   // ── Generic building blocks
   { file: "components/responsive/responsive-table.tsx", reason: "Generic presentational table wrapper (scroll box, sticky column, stacked rows on small screens); it receives rows from its caller, which paginates. No page uses it yet." },

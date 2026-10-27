@@ -54,7 +54,7 @@ export function DetailPanel({ title, subtitle, badge, tabs, footer, onClose, hid
       </header>
 
       <Tabs defaultValue={defaultTab ?? tabs[0]?.value} className="flex min-h-0 flex-1 flex-col gap-0">
-        <TabsList className="mx-4 mt-3 h-9 w-auto justify-start overflow-x-auto">
+        <TabsList className="mx-4 mt-3 h-9 w-auto justify-start">
           {tabs.map((t) => (
             <TabsTrigger key={t.value} value={t.value}>
               {t.label}

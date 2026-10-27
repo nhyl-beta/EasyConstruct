@@ -1,10 +1,9 @@
 import { useState } from "react";
+import { DEFAULT_PAGE_SIZE } from "@/config/pagination";
 import { useServerList } from "@/hooks/use-server-list";
 import { qk } from "@/lib/query-keys";
 import { ProjectRepository } from "../repositories/project.repository";
 import type { Project, ProjectsKpi } from "../types/project.types";
-
-export const PAGE_SIZES = [10, 20, 50] as const;
 
 export interface ProjectFilterState {
   projectType: string;
@@ -59,7 +58,7 @@ export function useProjectsPaged({ kpis = "portfolio", archivedToggle = false, c
       return { items: page.items, total: page.total, pages: page.pages, extra: page.kpis };
     },
     filters: { ...filters, showArchived, completedOnly },
-    initialPageSize: PAGE_SIZES[0],
+    initialPageSize: DEFAULT_PAGE_SIZE,
   });
 
   const setFilter = (key: keyof ProjectFilterState, value: string) =>

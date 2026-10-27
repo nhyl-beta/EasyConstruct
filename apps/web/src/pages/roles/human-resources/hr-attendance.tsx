@@ -36,7 +36,8 @@ import {
   setAttendanceVerification,
   type AttendanceEntry,
 } from "@/features/hr/attendance-api";
-import { ATTENDANCE_PAGE_SIZES, useAttendancePaged } from "@/features/hr/hooks/use-attendance-paged";
+import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
+import { useAttendancePaged } from "@/features/hr/hooks/use-attendance-paged";
 import { AttendanceVerificationDialog } from "@/components/hr/attendance-verification-dialog";
 import { SavedFiltersBar } from "@/components/shared/SavedFiltersBar";
 import { AttendanceExceptionsPanel } from "@/features/hr/components/AttendanceExceptionsPanel";
@@ -45,8 +46,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Camera,
   CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
   Clock,
   FileSpreadsheet,
   MapPin,
@@ -119,8 +118,6 @@ export default function HRAttendancePage() {
     }
   };
 
-  const firstShown = a.total === 0 ? 0 : (a.page - 1) * a.pageSize + 1;
-  const lastShown = Math.min(a.page * a.pageSize, a.total);
   const heatmap = a.heatmap;
 
   return (
@@ -392,49 +389,15 @@ export default function HRAttendancePage() {
             </Table>
 
             {a.total > 0 && (
-              <div className="flex flex-wrap items-center justify-between gap-2 border-t px-4 pt-3 text-xs text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <span>
-                    Showing {firstShown}–{lastShown} of {a.total}
-                  </span>
-                  <Select value={String(a.pageSize)} onValueChange={(v) => a.setPageSize(Number(v))}>
-                    <SelectTrigger aria-label="Rows per page" className="h-7 w-24 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {ATTENDANCE_PAGE_SIZES.map((n) => (
-                        <SelectItem key={n} value={String(n)}>
-                          {n} / page
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-7 px-2"
-                    disabled={a.page <= 1}
-                    onClick={() => a.setPage(a.page - 1)}
-                    aria-label="Previous page"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <span className="tabular-nums">
-                    Page {a.page} of {a.pages}
-                  </span>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-7 px-2"
-                    disabled={a.page >= a.pages}
-                    onClick={() => a.setPage(a.page + 1)}
-                    aria-label="Next page"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
+              <div className="border-t px-2 pt-3">
+                <DataTablePagination
+                  currentPage={a.page}
+                  pageCount={a.pages}
+                  setCurrentPage={a.setPage}
+                  pageSize={a.pageSize}
+                  setPageSize={a.setPageSize}
+                  total={a.total}
+                />
               </div>
             )}
           </CardContent>

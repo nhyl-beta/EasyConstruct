@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -30,46 +29,16 @@ import type {
   ReportStatus,
 } from "@/features/engineering-reports/types/engineering-reports.types";
 import { REPORT_PRIORITIES } from "@/features/engineering-reports/types/engineering-reports.types";
+import { PriorityBadge } from "@/components/ui/priority-badge";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { ProjectPicker } from "@/components/shared/project-picker";
 
 const TODAY = () => new Date().toISOString().slice(0, 10);
 
-export const PRIORITY_TONE: Record<ReportPriority, string> = {
-  Low: "bg-muted text-muted-foreground border-border",
-  Medium: "bg-primary-soft/60 text-primary-strong border-primary/20",
-  High: "bg-warning/15 text-warning-strong border-warning/30",
-  Critical: "bg-destructive/10 text-destructive-strong border-destructive/20",
-};
-
-export const STATUS_TONE: Record<ReportStatus, string> = {
-  Draft: "bg-muted text-muted-foreground border-border",
-  Submitted: "bg-primary-soft/60 text-primary-strong border-primary/20",
-  "Under Review": "bg-warning/15 text-warning-strong border-warning/30",
-  Approved: "bg-success/10 text-success-strong border-success/20",
-  Rejected: "bg-destructive/10 text-destructive-strong border-destructive/20",
-  "Revision Required": "bg-warning/15 text-warning-strong border-warning/30",
-};
-
-export function PriorityBadge({ priority }: { priority: ReportPriority }) {
-  return (
-    <Badge
-      variant="outline"
-      className={`rounded-full px-2.5 py-0.5 text-overline font-medium ${PRIORITY_TONE[priority]}`}
-    >
-      {priority}
-    </Badge>
-  );
-}
+export { PriorityBadge };
 
 export function ReportStatusBadge({ status }: { status: ReportStatus }) {
-  return (
-    <Badge
-      variant="outline"
-      className={`rounded-full px-2.5 py-0.5 text-overline font-medium ${STATUS_TONE[status]}`}
-    >
-      {status}
-    </Badge>
-  );
+  return <StatusBadge status={status} />;
 }
 
 const DETAIL_TEXT_FIELDS: { label: string; key: keyof EngineeringReport }[] = [

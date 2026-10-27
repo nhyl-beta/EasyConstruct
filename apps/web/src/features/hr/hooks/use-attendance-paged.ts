@@ -1,3 +1,4 @@
+import { DEFAULT_PAGE_SIZE } from "@/config/pagination";
 import { useCallback, useEffect, useState } from "react";
 
 import {
@@ -8,7 +9,6 @@ import {
 } from "../attendance-api";
 import { listEmployees } from "../hr-api";
 
-export const ATTENDANCE_PAGE_SIZES = [10, 20, 50] as const;
 
 export interface AttendanceFilterState {
   /** Verification status: all | Verified | Pending | Flagged. */
@@ -36,7 +36,7 @@ export function useAttendancePaged(scope?: AttendanceScope) {
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState<AttendanceFilterState>(NO_FILTERS);
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState<number>(ATTENDANCE_PAGE_SIZES[0]);
+  const [pageSize, setPageSize] = useState<number>(DEFAULT_PAGE_SIZE);
 
   const [data, setData] = useState<AttendancePage | null>(null);
   const [heatmap, setHeatmap] = useState<AttendanceHeatmap | null>(null);
