@@ -2,6 +2,7 @@ import { and, eq, ilike, inArray, or, SQL } from "drizzle-orm";
 
 import { db } from "../../../core/db/connection.js";
 import { employees } from "../../../core/db/schema/employees.js";
+import { users } from "../../../core/db/schema/users.js";
 import { countRows, selectPage } from "../../../core/db/paged.js";
 
 import type {
@@ -140,6 +141,18 @@ export const findByEmail = async (email: string) => {
     .where(eq(employees.email, email));
 
   return employee ?? null;
+};
+
+/** The account (if any) that owns this email, for keeping a linked employee and its user in agreement. */
+export const findUserByEmail = async (email: string) => {
+  const [user] = await db.select({ id: users.id }).from(users).where(eq(users.email, email));
+  return user ?? null;
+};
+
+/** Mirrors an HR edit of a linked employee's name or email onto its account, so the two never disagree. */
+export const syncLinkedUser = async (userId: number, patch: { name?: string; email?: string }) => {
+  if (patch.name === undefined && patch.email === undefined) return;
+  await db.update(users).set({ ...patch, updatedAt: new Date() }).where(eq(users.id, userId));
 };
 
 export const create = async (

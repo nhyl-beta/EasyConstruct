@@ -33,14 +33,60 @@ export const create = async (
 ) => {
   try {
     const data = await service.create(req.body);
+    const actor = req.authUser?.name ?? "unknown";
     await logAudit({
       entityType: "user",
       entityId: String(data.id),
       action: "created",
-      actor: req.authUser?.name ?? "unknown",
-      summary: `Created account ${data.email} with role ${data.role}`,
+      actor,
+      summary: `Account created for employee ${data.employee.name} (${data.employee.employeeId}) by IT Designer ${actor}: ${data.email}, role ${data.role}`,
     });
     res.status(HTTP.CREATED).json(formatSuccess(data, "User created"));
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getLinkableEmployees = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const search = typeof req.query.search === "string" && req.query.search.trim() ? req.query.search.trim() : undefined;
+    res.json(formatSuccess(await service.getLinkableEmployees(search), "Employees without an account retrieved"));
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const linkEmployee = async (req: AuthedRequest, res: Response, next: NextFunction) => {
+  try {
+    const userId = parseIdParam(req.params.id, "id");
+    const { user, employee } = await service.linkToEmployee(userId, req.body.employeeId);
+    const actor = req.authUser?.name ?? "unknown";
+    await logAudit({
+      entityType: "user",
+      entityId: String(userId),
+      action: "linked",
+      actor,
+      summary: `Account ${user.email} linked to employee ${employee.name} (${employee.employeeId}) by IT Designer ${actor}`,
+    });
+    res.json(formatSuccess({ user, employee }, "Account linked to employee"));
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const createEmployeeFromAccount = async (req: AuthedRequest, res: Response, next: NextFunction) => {
+  try {
+    const userId = parseIdParam(req.params.id, "id");
+    const { user, employee } = await service.createEmployeeFromAccount(userId);
+    const actor = req.authUser?.name ?? "unknown";
+    await logAudit({
+      entityType: "user",
+      entityId: String(userId),
+      action: "linked",
+      actor,
+      summary: `Employee record ${employee.employeeId} created from account ${user.email} by IT Designer ${actor}; HR to complete pay rate, department and site`,
+    });
+    res.status(HTTP.CREATED).json(formatSuccess({ user, employee }, "Employee record created from the account"));
   } catch (err) {
     next(err);
   }

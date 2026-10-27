@@ -11,6 +11,7 @@
 // details" action the PM's had — the admin, deciding last, could see the least.
 // One component means a fix to what an approver can see before deciding lands
 // for every role at the same time.
+import { STATUS_TONES } from "@/config/status-tone";
 import { useEffect, useState } from "react";
 import {
   CheckCircle2,
@@ -58,9 +59,9 @@ const ALL = "all";
 // ink meant for text ON a filled bg-warning chip, not standalone text on a
 // translucent bg-warning/15 tint; its dark-mode value is nearly black.
 const SEVERITY_TONE: Record<string, string> = {
-  high: "bg-destructive/10 text-destructive-strong border-destructive/20",
-  medium: "bg-warning/15 text-warning-strong border-warning/30",
-  low: "bg-muted text-muted-foreground border-border",
+  high: STATUS_TONES.danger,
+  medium: STATUS_TONES.warning,
+  low: STATUS_TONES.info,
 };
 
 interface ApprovalQueuePanelProps {

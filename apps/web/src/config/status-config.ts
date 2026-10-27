@@ -60,9 +60,9 @@ export const STATUS_CONFIG: Record<string, StatusTone> = {
   // ==========================
   // Risk
   // ==========================
-  Low: "success",
-  Medium: "info",
-  High: "warning",
+  Low: "info",
+  Medium: "warning",
+  High: "danger",
   Critical: "danger",
 
   // ==========================
@@ -93,6 +93,7 @@ export const STATUS_CONFIG: Record<string, StatusTone> = {
   // ==========================
   // Site Personnel — Tasks, Issues, Attendance verification
   // ==========================
+  New: "info",
   Submitted: "info",
   "Under Review": "warning",
   Resolved: "success",
@@ -107,8 +108,8 @@ export const STATUS_CONFIG: Record<string, StatusTone> = {
  * "High" reads the same everywhere.
  */
 export const PRIORITY_CONFIG: Record<string, StatusTone> = {
-  Low: "success",
-  Medium: "info",
-  High: "warning",
+  Low: "info",
+  Medium: "warning",
+  High: "danger",
   Critical: "danger",
 };

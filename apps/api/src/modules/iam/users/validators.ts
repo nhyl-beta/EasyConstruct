@@ -6,8 +6,8 @@ import { z } from "zod";
 const passwordSchema = z.string().min(10, "Password must be at least 10 characters");
 
 export const createUserSchema = z.object({
-  name: z.string().min(1).max(255),
-  email: z.string().email().max(255),
+  // employees.id (not the EMP-xxx code). Name and email are taken from this record, never typed.
+  employeeId: z.number().int().positive(),
   password: passwordSchema,
   // Validated against the roles table in users/service.ts — `users.role` is a
   // plain varchar, so there is no enum to check against here.
@@ -23,6 +23,10 @@ export const updateUserSchema = z
   .refine((data) => Object.keys(data).length > 0, {
     message: "At least one field must be provided",
   });
+
+export const linkEmployeeSchema = z.object({
+  employeeId: z.number().int().positive(),
+});
 
 export const setUserStatusSchema = z.object({
   isActive: z.boolean(),

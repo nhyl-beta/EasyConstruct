@@ -2,10 +2,12 @@
 // on RISK_CLASS below; this is rendered inside an outline Badge (no filled
 // background), so the "-foreground" pairing (dark text for a light chip)
 // applies here too.
+import { STATUS_TONES } from "@/config/status-tone";
+
 export const STATUS_TONE_CLASS: Record<string, string> = {
-  success: "text-success-strong",
-  warning: "text-warning-strong",
-  destructive: "text-destructive-strong",
+  success: STATUS_TONES.success,
+  warning: STATUS_TONES.warning,
+  destructive: STATUS_TONES.danger,
   neutral: "text-foreground",
 };
 
@@ -22,7 +24,7 @@ export const STATUS_TONE_CLASS: Record<string, string> = {
 // background, which is dark-on-dark and exactly this bug, just reintroduced
 // by picking the wrong one of the pair.
 export const RISK_CLASS: Record<string, string> = {
-  low: "text-success-strong",
+  low: "text-info-strong",
   medium: "text-warning-strong",
   high: "text-destructive-strong",
 };

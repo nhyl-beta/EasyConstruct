@@ -4,6 +4,7 @@ import { authenticate, requireRole } from "../../../core/auth/middleware.js";
 import { validate } from "../../../core/http/validate.js";
 import {
   createUserSchema,
+  linkEmployeeSchema,
   setUserPasswordSchema,
   setUserStatusSchema,
   updateUserSchema,
@@ -24,7 +25,11 @@ router.get("/", controller.getAll);
 // read-only executive oversight, so it must not be able to mint accounts.
 const canManageAccounts = requireRole("admin", "it-designer");
 
+router.get("/linkable-employees", canManageAccounts, controller.getLinkableEmployees);
 router.post("/", canManageAccounts, validate(createUserSchema), controller.create);
+// Part 2: tie an account that predates the strict link to an employee record.
+router.post("/:id/link-employee", canManageAccounts, validate(linkEmployeeSchema), controller.linkEmployee);
+router.post("/:id/create-employee", canManageAccounts, controller.createEmployeeFromAccount);
 router.patch("/:id", canManageAccounts, validate(updateUserSchema), controller.update);
 router.patch(
   "/:id/status",

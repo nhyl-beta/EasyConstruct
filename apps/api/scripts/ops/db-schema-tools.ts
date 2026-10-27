@@ -6,13 +6,13 @@ import { fileURLToPath } from "node:url";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 
-const schemaDir = join(dirname(fileURLToPath(import.meta.url)), "..", "db", "schema");
+const schemaDir = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "src", "core", "db", "schema");
 
 /** Every schema file, as `drizzle-kit push` reads them (schema/index.ts only re-exports one of them). */
 async function loadSchemaModules(): Promise<Record<string, unknown>> {
   const all: Record<string, unknown> = {};
   for (const file of readdirSync(schemaDir).filter((f) => f.endsWith(".ts") && f !== "index.ts")) {
-    Object.assign(all, await import(`../db/schema/${file.replace(/\.ts$/, ".js")}`));
+    Object.assign(all, await import(`../../src/core/db/schema/${file.replace(/\.ts$/, ".js")}`));
   }
   return all;
 }

@@ -42,14 +42,15 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useMilestones } from "@/features/milestones/hooks/use-milestones";
 import type { Milestone, MilestoneStatus } from "@/features/milestones/repositories/milestone.repository";
+import { STATUS_TONES } from "@/config/status-tone";
 import { formatDue } from "@/features/projects/lib/project-format";
 
 const STATUS_TONE: Record<MilestoneStatus, string> = {
-  draft: "bg-muted text-muted-foreground border-border",
-  active: "bg-info/10 text-info-strong border-info/20",
-  "at-risk": "bg-warning/15 text-warning-strong border-warning/30",
-  completed: "bg-success/10 text-success-strong border-success/20",
-  cancelled: "bg-destructive/10 text-destructive-strong border-destructive/20",
+  draft: STATUS_TONES.neutral,
+  active: STATUS_TONES.info,
+  "at-risk": STATUS_TONES.warning,
+  completed: STATUS_TONES.success,
+  cancelled: STATUS_TONES.danger,
 };
 
 interface MilestonesPanelProps {

@@ -6,11 +6,25 @@ export interface PublicUser {
   email: string;
   role: string;
   isActive: boolean;
+  /** Accounts list only: the linked employee's code and status, null when the account is unlinked. */
+  employeeCode?: string | null;
+  employeeStatus?: string | null;
+  employeeName?: string | null;
 }
 
-export interface CreateUserInput {
+/** Active employee that has no account yet (the New account picker). */
+export interface LinkableEmployee {
+  id: number;
+  employeeId: string;
   name: string;
   email: string;
+  role: string;
+  department: string;
+}
+
+/** An account is created FROM an employee: its name and email come from that record. */
+export interface CreateUserInput {
+  employeeId: number;
   password: string;
   role: string;
 }
@@ -39,6 +53,20 @@ export const UserRepository = {
 
   async create(input: CreateUserInput): Promise<PublicUser> {
     return unwrap<PublicUser>(apiClient.post("/users", input));
+  },
+
+  async linkableEmployees(): Promise<LinkableEmployee[]> {
+    return unwrap<LinkableEmployee[]>(apiClient.get("/users/linkable-employees"));
+  },
+
+  /** Link an existing account to an employee that has none. */
+  async linkEmployee(id: number, employeeId: number): Promise<unknown> {
+    return unwrap<unknown>(apiClient.post(`/users/${id}/link-employee`, { employeeId }));
+  },
+
+  /** Make an employee record from an account that has none (HR completes pay rate, department and site). */
+  async createEmployeeFromAccount(id: number): Promise<unknown> {
+    return unwrap<unknown>(apiClient.post(`/users/${id}/create-employee`, {}));
   },
 
   async update(id: number, input: UpdateUserInput): Promise<PublicUser> {

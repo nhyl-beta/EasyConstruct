@@ -1,3 +1,4 @@
+import { STATUS_TONES } from "@/config/status-tone";
 import type { WorkflowStatus } from "@/features/workflows/types/workflow.types";
 
 interface WorkflowStatusBadgeProps {
@@ -12,14 +13,10 @@ const STATUS_LABELS: Record<WorkflowStatus, string> = {
 };
 
 const STATUS_CLASSES: Record<WorkflowStatus, string> = {
-  active:
-    "border-transparent bg-info-soft text-info-strong",
-  completed:
-    "border-transparent bg-success-soft text-success-strong",
-  rejected:
-    "border-transparent bg-destructive-soft text-destructive-strong",
-  cancelled:
-    "border-transparent bg-muted text-muted-foreground",
+  active: STATUS_TONES.info,
+  completed: STATUS_TONES.success,
+  rejected: STATUS_TONES.danger,
+  cancelled: STATUS_TONES.neutral,
 };
 
 export function WorkflowStatusBadge({

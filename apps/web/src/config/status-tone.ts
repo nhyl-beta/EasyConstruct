@@ -7,12 +7,17 @@ export type StatusTone =
   | "brand"
   | "neutral";
 
-/** Soft ground, strong text (>= 5.7:1 in both themes). The word carries the meaning. */
+/**
+ * The one badge colour scheme, taken from the Alerts severity badges
+ * (features/lifecycle/components/DecisionSupportSection.tsx): tinted ground,
+ * matching border, darker text of the same hue. Every status / priority /
+ * severity pill in the app takes its colours from here.
+ */
 export const STATUS_TONES: Record<StatusTone, string> = {
-  success: "bg-success-soft text-success-strong border-transparent",
-  warning: "bg-warning-soft text-warning-strong border-transparent",
-  danger: "bg-destructive-soft text-destructive-strong border-transparent",
-  info: "bg-info-soft text-info-strong border-transparent",
+  success: "border-success/30 bg-success/10 text-success-strong",
+  warning: "border-warning/30 bg-warning/10 text-warning-strong",
+  danger: "border-destructive/30 bg-destructive/10 text-destructive-strong",
+  info: "border-info/30 bg-info/10 text-info-strong",
   ai: "bg-ai-soft text-ai border-transparent",
   brand: "bg-primary-soft text-primary-strong border-transparent",
   neutral: "bg-muted text-muted-foreground border-transparent",

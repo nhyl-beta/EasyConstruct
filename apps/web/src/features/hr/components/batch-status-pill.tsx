@@ -1,11 +1,12 @@
 import { Badge } from "@/components/ui/badge";
+import { STATUS_TONES } from "@/config/status-tone";
 import { BATCH_STATUS_LABEL } from "@/features/hr/payroll-api";
 
 const TONE: Record<string, string> = {
-  draft: "bg-muted text-muted-foreground border-border",
-  pending: "bg-warning/15 text-warning-strong border-warning/30",
-  approved: "bg-success/10 text-success-strong border-success/20",
-  revision_required: "bg-destructive/10 text-destructive-strong border-destructive/20",
+  draft: STATUS_TONES.neutral,
+  pending: STATUS_TONES.warning,
+  approved: STATUS_TONES.success,
+  revision_required: STATUS_TONES.danger,
 };
 
 export function BatchStatusPill({ status }: { status: string }) {

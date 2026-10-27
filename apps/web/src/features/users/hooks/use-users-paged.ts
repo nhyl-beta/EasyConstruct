@@ -36,6 +36,8 @@ export function useUsersPaged(role: string | null) {
   const setPassword = useCallback((id: number, password: string) => UserRepository.setPassword(id, password), []);
   const setActive = useCallback((id: number, isActive: boolean) => UserRepository.setActive(id, isActive), []);
   const remove = useCallback((id: number) => UserRepository.remove(id), []);
+  const linkEmployee = useCallback((id: number, employeeId: number) => UserRepository.linkEmployee(id, employeeId), []);
+  const createEmployeeFromAccount = useCallback((id: number) => UserRepository.createEmployeeFromAccount(id), []);
 
-  return { list, create, update, setPassword, setActive, remove };
+  return { list, create, update, setPassword, setActive, remove, linkEmployee, createEmployeeFromAccount };
 }
