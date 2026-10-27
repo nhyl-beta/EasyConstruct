@@ -9,6 +9,7 @@ import { tasks } from "../../../core/db/schema/task.js";
 import * as roleRepo from "../roles/repository.js";
 import { ConflictError, NotFoundError, ValidationError } from "../../../core/utils/errors.js";
 import * as repo from "./repository.js";
+import { assertEmployeeLinkable, assertLinkEmailsMatch } from "./linking.js";
 import { invalidateSessionCache } from "../../../core/auth/middleware.js";
 import { users as usersTable } from "../../../core/db/schema/users.js";
 import { orderByFor, paginate, type PageRequest } from "../../../core/utils/pagination.js";
@@ -71,20 +72,93 @@ const assertNotLastActiveOwner = async (userId: number, role: string) => {
   }
 };
 
+/**
+ * Every account belongs to an employee. Name and email are copied from the employee record (so they cannot drift),
+ * and the user row and employees.user_id are written in one transaction.
+ */
 export const create = async (input: CreateUserInput) => {
+  const employee = await repo.findEmployeeById(input.employeeId);
+  const email = assertEmployeeLinkable(employee, input.employeeId);
   await assertRoleExists(input.role);
   if (input.role === "owner") await assertOwnerSlotAvailable();
 
-  if (await repo.findByEmail(input.email)) {
-    throw new ConflictError(`A user with email ${input.email} already exists`);
+  if (await repo.findByEmail(email)) {
+    throw new ConflictError(`A user with email ${email} already exists`);
   }
 
-  const created = await repo.create({
-    ...input,
-    password: await bcrypt.hash(input.password, PASSWORD_SALT_ROUNDS),
-  });
+  const created = await repo.createLinkedToEmployee(
+    {
+      name: employee!.name,
+      email,
+      password: await bcrypt.hash(input.password, PASSWORD_SALT_ROUNDS),
+      role: input.role,
+    },
+    employee!.id,
+  );
   if (!created) throw new ConflictError("Could not create the user account");
-  return created;
+  return { ...created, employee: { id: employee!.id, employeeId: employee!.employeeId, name: employee!.name } };
+};
+
+export const getLinkableEmployees = async (search?: string) => repo.findLinkableEmployees(search);
+
+/** Link an existing, unlinked account to an unlinked Active employee (same rules as creating one). */
+export const linkToEmployee = async (userId: number, employeeId: number) => {
+  const user = await getById(userId);
+  const existing = await repo.findEmployeeByUserId(userId);
+  if (existing) {
+    throw new ConflictError(`This account is already linked to ${existing.name} (${existing.employeeId})`);
+  }
+  const employee = await repo.findEmployeeById(employeeId);
+  const email = assertEmployeeLinkable(employee, employeeId);
+  assertLinkEmailsMatch(user.email, email, employee!);
+  const linked = await repo.linkEmployee(userId, employee!.id);
+  if (!linked) throw new ConflictError("That employee already has an account");
+  return { user, employee: linked };
+};
+
+// Employee ids made for accounts that had no record yet: EMP-U0042 for user 42 (unique per user).
+const employeeCodeFor = async (userId: number) => {
+  const base = `EMP-U${String(userId).padStart(4, "0")}`;
+  const taken = new Set((await repo.findEmployeeCodes(base)).map((r) => r.employeeId));
+  if (!taken.has(base)) return base;
+  let n = 2;
+  while (taken.has(`${base}-${n}`)) n++;
+  return `${base}-${n}`;
+};
+
+const initialsOf = (name: string) =>
+  name.trim().split(/\s+/).filter(Boolean).map((p) => p[0] ?? "").join("").slice(0, 2).toUpperCase() || "NA";
+
+/**
+ * "Create employee from this account": a starting record for someone who has an account but no employee yet. Name,
+ * email and role come from the account; HR completes pay rate, department and site afterwards.
+ */
+export const createEmployeeFromAccount = async (userId: number) => {
+  const user = await getById(userId);
+  const existing = await repo.findEmployeeByUserId(userId);
+  if (existing) {
+    throw new ConflictError(`This account is already linked to ${existing.name} (${existing.employeeId})`);
+  }
+  const sameEmail = await db.select().from(employees).where(eq(employees.email, user.email));
+  if (sameEmail.length > 0) {
+    throw new ConflictError(
+      `An employee record with email ${user.email} already exists (${sameEmail[0]!.employeeId}). Use "Link to employee" instead`,
+    );
+  }
+  const roleRow = await roleRepo.findByName(user.role);
+  const created = await repo.createEmployeeForUser({
+    employeeId: await employeeCodeFor(userId),
+    name: user.name,
+    initials: initialsOf(user.name),
+    role: roleRow?.label ?? user.role,
+    department: "Unassigned",
+    site: "Unassigned",
+    hiredOn: new Date().toISOString().slice(0, 10),
+    email: user.email,
+    userId,
+  });
+  if (!created) throw new ConflictError("Could not create the employee record");
+  return { user, employee: created };
 };
 
 export const update = async (id: number, input: UpdateUserInput) => {
@@ -184,7 +258,10 @@ export const remove = async (id: number, actingUserId: number) => {
     .select({ n: count() })
     .from(employees)
     .where(eq(employees.userId, id));
-  if ((employeeRef?.n ?? 0) > 0) blockers.push("an employee record");
+  if ((employeeRef?.n ?? 0) > 0) {
+    const linked = await repo.findEmployeeByUserId(id);
+    blockers.push(linked ? `the employee record of ${linked.name} (${linked.employeeId})` : "an employee record");
+  }
 
   const [memberRef] = await db
     .select({ n: count() })

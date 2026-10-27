@@ -1,4 +1,4 @@
-import { AppError, ConflictError, NotFoundError } from "../../../core/utils/errors.js";
+import { AppError, ConflictError, NotFoundError, ValidationError } from "../../../core/utils/errors.js";
 import { findNameMatches } from "../../platform/index.js";
 import * as repo from "./repository.js";
 import { asc } from "drizzle-orm";
@@ -124,8 +124,13 @@ export const getMyEmployeeRecord = async (userId: number, email: string) => {
 
   // Self-healing fallback: first time this user's record is looked up,
   // resolve it by email once and persist the FK so every future call is a
-  // direct, non-guessing lookup.
+  // direct, non-guessing lookup. Accounts are now created from an employee
+  // (users/service.ts create), so this only fires for accounts that predate the
+  // strict link and have not been through `npm run db:backfill-employee-links`.
   const byEmail = await repo.findByEmail(email);
+  if (byEmail) {
+    console.warn(`[employees] linked account ${userId} (${email}) to ${byEmail.employeeId} by email fallback; run db:backfill-employee-links`);
+  }
   if (!byEmail) {
     throw new NotFoundError(
       "Employee record",
@@ -167,6 +172,18 @@ export const update = async (
     }
   }
 
+  // A linked employee and its account share a name and an email. Block an edit that would break
+  // that (no email, or an email another account already uses) before anything is written.
+  if (existing.userId != null && input.email !== undefined && input.email !== existing.email) {
+    if (!input.email) {
+      throw new ValidationError("This employee has an account, so their email cannot be removed");
+    }
+    const owner = await repo.findUserByEmail(input.email);
+    if (owner && owner.id !== existing.userId) {
+      throw new ConflictError(`Email ${input.email} is already used by another account`);
+    }
+  }
+
   const patch: UpdateEmployeeInput & {
     initials?: string;
   } = {
@@ -181,6 +198,13 @@ export const update = async (
 
   if (!updated) {
     throw new NotFoundError("Employee", String(id));
+  }
+
+  if (existing.userId != null) {
+    await repo.syncLinkedUser(existing.userId, {
+      name: input.name && input.name !== existing.name ? input.name : undefined,
+      email: input.email && input.email !== existing.email ? input.email : undefined,
+    });
   }
 
   return updated;
