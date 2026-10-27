@@ -10,11 +10,13 @@ import { useState } from "react";
 import { useAuth } from "@/auth/auth-context";
 import { OverrideReasonDialog } from "@/components/shared/override-reason-dialog";
 
+import { STATUS_TONES } from "@/config/status-tone";
+
 const STATUS_TONE: Record<string, string> = {
-  Draft: "bg-muted text-muted-foreground border-border",
-  "Under Review": "bg-warning/15 text-warning-strong border-warning/30",
-  Approved: "bg-success/10 text-success-strong border-success/20",
-  Rejected: "bg-destructive/10 text-destructive-strong border-destructive/20",
+  Draft: STATUS_TONES.neutral,
+  "Under Review": STATUS_TONES.warning,
+  Approved: STATUS_TONES.success,
+  Rejected: STATUS_TONES.danger,
 };
 
 /**

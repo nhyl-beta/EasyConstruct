@@ -3,6 +3,7 @@ import { CheckCircle2, Flag } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
+import { STATUS_TONES } from "@/config/status-tone";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -10,9 +11,9 @@ import { useEngineerMilestones } from "../hooks/use-engineer-milestones";
 import type { Milestone } from "../repositories/milestone.repository";
 
 const STATUS_TONE: Record<string, string> = {
-  active: "bg-success/10 text-success-strong border-success/20",
-  "at-risk": "bg-warning/15 text-warning-strong border-warning/30",
-  completed: "bg-muted text-muted-foreground border-border",
+  active: STATUS_TONES.success,
+  "at-risk": STATUS_TONES.warning,
+  completed: STATUS_TONES.neutral,
 };
 
 /** Engineer Progress page: milestones on assigned projects, with "Mark completed". */
