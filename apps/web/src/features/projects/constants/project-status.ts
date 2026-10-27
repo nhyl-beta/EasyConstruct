@@ -27,4 +27,4 @@ export const RISK_CLASS: Record<string, string> = {
   high: "text-destructive-strong",
 };
 
-export const DEFAULT_PER_PAGE = 20;
+export const DEFAULT_PER_PAGE = 10;

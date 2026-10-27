@@ -1,6 +1,7 @@
 // Fairness report (objectives fix 2.6). Hours, overtime and task counts per
 // worker per project, and pay rates against the median of the same position.
 // Read-only: flags are for HR to look at and change nothing.
+import { DEFAULT_PAGE_SIZE } from "@/config/pagination";
 import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -12,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { formatCurrency } from "@/lib/format-currency";
 import { getFairness, type FairnessFlagKind, type FairnessPage } from "../fairness-api";
 
-const PAGE_SIZE = 15;
+const PAGE_SIZE = DEFAULT_PAGE_SIZE;
 const FLAG_LABEL: Record<FairnessFlagKind, string> = {
   hours_high: "Hours high",
   hours_low: "Hours low",

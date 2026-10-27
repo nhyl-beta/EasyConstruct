@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/refine-ui/views/page-header";
 import { PageContent } from "@/components/refine-ui/views/page-content";
 import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
 import { usePagination } from "@/hooks/use-pagination";
+import { DEFAULT_PAGE_SIZE } from "@/config/pagination";
 import { useAuditLogs } from "@/features/audit-logs/hooks/useAuditLogs";
 import { useSecurityOverview } from "@/features/audit-logs/hooks/useSecurityOverview";
 import { formatRelativeTime } from "@/lib/format-relative-time";
@@ -19,8 +20,7 @@ import { ReconciliationPanel } from "@/features/reconciliation/ReconciliationPan
 // (every download is recorded) is never loaded here.
 const SENSITIVE_ACTIONS = ["rejected", "deleted", "sensitive_download", "download_blocked", "integrity_failed"];
 
-const SIGNIN_PAGE_SIZE = 5;
-const SIGNIN_PAGE_SIZES = [5, 10, 20];
+const SIGNIN_PAGE_SIZE = DEFAULT_PAGE_SIZE;
 
 export default function AdminSecurityPage() {
   const { logs, loading, error } = useAuditLogs({ actions: SENSITIVE_ACTIONS });
@@ -143,7 +143,7 @@ export default function AdminSecurityPage() {
                 smallest page size rather than pageCount, so picking a larger
                 size can't make the controls vanish with no way back. */}
             {!security.loading && security.sessions.length > SIGNIN_PAGE_SIZE && (
-              <DataTablePagination {...sessionsPagination} compact pageSizeOptions={SIGNIN_PAGE_SIZES} />
+              <DataTablePagination {...sessionsPagination} compact />
             )}
           </div>
 
@@ -186,7 +186,7 @@ export default function AdminSecurityPage() {
               </div>
             ))}
             {!security.loading && security.failedLogins.length > SIGNIN_PAGE_SIZE && (
-              <DataTablePagination {...failedLoginsPagination} compact pageSizeOptions={SIGNIN_PAGE_SIZES} />
+              <DataTablePagination {...failedLoginsPagination} compact />
             )}
           </div>
         </div>

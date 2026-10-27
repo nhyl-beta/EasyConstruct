@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router";
-import { ChevronLeft, ChevronRight, Clock, GitBranch, Plus, Search, ShieldCheck, ThumbsUp, X } from "lucide-react";
+import { Clock, GitBranch, Plus, Search, ShieldCheck, ThumbsUp, X } from "lucide-react";
 
 import { PageHeader } from "@/components/refine-ui/views/page-header";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,8 @@ import { useProjects } from "@/features/projects/hooks/useProjects";
 import { CreateRevisionDialog } from "@/features/revisions/components/CreateRevisionDialog";
 import { RevisionsTable } from "@/features/revisions/components/RevisionsTable";
 import { VersionHistorySheet } from "@/features/revisions/components/VersionHistorySheet";
-import { REVISION_PAGE_SIZES, useRevisions } from "@/features/revisions/hooks/useRevisions";
+import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
+import { useRevisions } from "@/features/revisions/hooks/useRevisions";
 import {
   ITEM_TYPE_LABEL,
   REVISION_ITEM_TYPES,
@@ -57,8 +58,6 @@ export default function ArchitectRevisions() {
     }
   };
 
-  const firstShown = r.total === 0 ? 0 : (r.page - 1) * r.pageSize + 1;
-  const lastShown = Math.min(r.page * r.pageSize, r.total);
   const s = r.summary;
 
   return (
@@ -189,35 +188,15 @@ export default function ArchitectRevisions() {
           <div className="[&_[data-slot=table-container]]:overflow-x-hidden">
             <RevisionsTable rows={r.rows} onOpen={(row) => setOpenItem({ itemType: row.itemType, itemId: row.itemId })} />
           </div>
-          <div className="flex flex-wrap items-center justify-between gap-2 border-t px-4 py-3 text-xs text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <span>
-                Showing {firstShown}–{lastShown} of {r.total}
-              </span>
-              <Select value={String(r.pageSize)} onValueChange={(v) => r.setPageSize(Number(v))}>
-                <SelectTrigger aria-label="Rows per page" className="h-7 w-24 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {REVISION_PAGE_SIZES.map((n) => (
-                    <SelectItem key={n} value={String(n)}>
-                      {n} / page
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button size="sm" variant="outline" className="h-7 px-2" disabled={r.page <= 1} onClick={() => r.setPage(r.page - 1)} aria-label="Previous page">
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <span className="tabular-nums">
-                Page {r.page} of {r.pages}
-              </span>
-              <Button size="sm" variant="outline" className="h-7 px-2" disabled={r.page >= r.pages} onClick={() => r.setPage(r.page + 1)} aria-label="Next page">
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
+          <div className="border-t px-2 py-3">
+            <DataTablePagination
+              currentPage={r.page}
+              pageCount={r.pages}
+              setCurrentPage={r.setPage}
+              pageSize={r.pageSize}
+              setPageSize={r.setPageSize}
+              total={r.total}
+            />
           </div>
         </div>
       )}

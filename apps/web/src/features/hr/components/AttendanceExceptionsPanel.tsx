@@ -2,6 +2,7 @@
 // look and people with no record who are likely absent. The system records
 // nothing by itself: a likely absence only becomes a record when HR presses
 // "Mark absent".
+import { DEFAULT_PAGE_SIZE } from "@/config/pagination";
 import { useCallback, useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
@@ -22,7 +23,7 @@ import {
   type ExceptionKind,
 } from "../attendance-api";
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = DEFAULT_PAGE_SIZE;
 const KINDS = Object.keys(EXCEPTION_LABELS) as ExceptionKind[];
 
 const TONE: Record<ExceptionKind, string> = {

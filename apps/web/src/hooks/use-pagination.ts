@@ -11,6 +11,8 @@
 // <TablePagination {...pagination} /> below the table.
 import { useEffect, useMemo, useState } from "react";
 
+import { DEFAULT_PAGE_SIZE } from "@/config/pagination";
+
 export interface Pagination<T> {
   /** The slice of `items` belonging to the current page — render this. */
   pageItems: T[];
@@ -29,7 +31,7 @@ export interface Pagination<T> {
  */
 export function usePagination<T>(
   items: T[],
-  initialPageSize = 10,
+  initialPageSize: number = DEFAULT_PAGE_SIZE,
   resetKey?: string | number | null,
 ): Pagination<T> {
   const [currentPage, setCurrentPage] = useState(1);

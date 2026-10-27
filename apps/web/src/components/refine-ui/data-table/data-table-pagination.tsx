@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { PAGE_SIZE_OPTIONS } from "@/config/pagination";
 import { cn } from "@/lib/utils";
 
 type DataTablePaginationProps = {
@@ -30,8 +31,8 @@ type DataTablePaginationProps = {
    * selector, no first/last buttons, and wrapping rows instead of one wide one.
    */
   compact?: boolean;
-  /** Page sizes offered; defaults to 10–50. */
-  pageSizeOptions?: number[];
+  /** Page sizes offered; defaults to 10, 20, 30, 40, 50. */
+  pageSizeOptions?: readonly number[];
 };
 
 export function DataTablePagination({
@@ -45,7 +46,7 @@ export function DataTablePagination({
   pageSizeOptions: pageSizeOptionsProp,
 }: DataTablePaginationProps) {
   const pageSizeOptions = useMemo(() => {
-    const baseOptions = pageSizeOptionsProp ?? [10, 20, 30, 40, 50];
+    const baseOptions = pageSizeOptionsProp ?? PAGE_SIZE_OPTIONS;
     const optionsSet = new Set(baseOptions);
 
     if (!optionsSet.has(pageSize)) {

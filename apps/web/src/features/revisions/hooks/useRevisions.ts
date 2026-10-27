@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
+import { DEFAULT_PAGE_SIZE } from "@/config/pagination";
 import { RevisionRepository } from "../repositories/revision.repository";
 import type { RevisionFilters, RevisionPage, RevisionSummary } from "../types/revision.types";
 
-export const REVISION_PAGE_SIZES = [10, 20, 50] as const;
 
 export interface RevisionFilterState {
   project: string;
@@ -24,7 +24,7 @@ export function useRevisions() {
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState<RevisionFilterState>(NO_FILTERS);
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState<number>(REVISION_PAGE_SIZES[0]);
+  const [pageSize, setPageSize] = useState<number>(DEFAULT_PAGE_SIZE);
 
   const [data, setData] = useState<RevisionPage | null>(null);
   const [summary, setSummary] = useState<RevisionSummary | null>(null);
