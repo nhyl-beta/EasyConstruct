@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { Pencil, Plus, Search, Trash2, UserCheck, UserX, UsersRound } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link2, Pencil, Plus, Search, Trash2, UserCheck, UserPlus, UserX, UsersRound } from "lucide-react";
 import { useSearchParams } from "react-router";
 
 import { Badge } from "@/components/ui/badge";
@@ -9,16 +9,19 @@ import { PageContainer } from "@/components/refine-ui/views/page-container";
 import { PageContent } from "@/components/refine-ui/views/page-content";
 import { PageHeader } from "@/components/refine-ui/views/page-header";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { UserAccountDialog } from "@/components/users/user-account-dialog";
+import { LinkEmployeeDialog } from "@/components/users/link-employee-dialog";
 import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
 import { useRoles } from "@/features/roles/hooks/useRoles";
 import { useUsersPaged } from "@/features/users/hooks/use-users-paged";
 import { StaffingGapsCard } from "@/features/project-members/components/StaffingGapsCard";
-import type { PublicUser } from "@/features/users/repositories/user.repository";
+import { accountLinkWarning, employeeBadge, isLinked } from "@/features/users/lib/account-link";
+import { UserRepository, type LinkableEmployee, type PublicUser } from "@/features/users/repositories/user.repository";
 
 export default function ITDesignerUsersPage() {
   const [roleFilter, setRoleFilter] = useState<string | null>(null);
-  const { list, create, update, setPassword, setActive, remove } = useUsersPaged(roleFilter);
+  const { list, create, update, setPassword, setActive, remove, linkEmployee, createEmployeeFromAccount } = useUsersPaged(roleFilter);
   const { roles } = useRoles();
   const { loading, error: loadError, searchInput: search, setSearchInput: setSearch } = list;
   const error = loadError;
@@ -30,6 +33,23 @@ export default function ITDesignerUsersPage() {
   // so it is always a second, deliberate step after access has been revoked.
   const [deleting, setDeleting] = useState<PublicUser | null>(null);
   const [removing, setRemoving] = useState(false);
+  // Active employees without an account: the New account and Link to employee pickers.
+  const [linkable, setLinkable] = useState<LinkableEmployee[]>([]);
+  const [linkableLoading, setLinkableLoading] = useState(false);
+  const [linking, setLinking] = useState<PublicUser | null>(null);
+  const [makingEmployee, setMakingEmployee] = useState<PublicUser | null>(null);
+  const [makingBusy, setMakingBusy] = useState(false);
+
+  const loadLinkable = useCallback(async () => {
+    setLinkableLoading(true);
+    try {
+      setLinkable(await UserRepository.linkableEmployees());
+    } catch {
+      setLinkable([]);
+    } finally {
+      setLinkableLoading(false);
+    }
+  }, []);
 
   // The header's global "New User" button is a plain <Link> (see header.tsx)
   // — it can only navigate, not call a function on this page. It lands here
@@ -41,12 +61,13 @@ export default function ITDesignerUsersPage() {
     if (searchParams.get("new") !== "1") return;
     setEditing(null);
     setDialogOpen(true);
+    void loadLinkable();
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
       next.delete("new");
       return next;
     }, { replace: true });
-  }, [searchParams, setSearchParams]);
+  }, [searchParams, setSearchParams, loadLinkable]);
 
   const roleLabels = useMemo(() => {
     const map = new Map<string, string>();
@@ -60,6 +81,27 @@ export default function ITDesignerUsersPage() {
   const openCreate = () => {
     setEditing(null);
     setDialogOpen(true);
+    void loadLinkable();
+  };
+
+  const openLink = (user: PublicUser) => {
+    setLinking(user);
+    void loadLinkable();
+  };
+
+  const confirmMakeEmployee = async () => {
+    if (!makingEmployee) return;
+    setMakingBusy(true);
+    setStatusError(null);
+    try {
+      await createEmployeeFromAccount(makingEmployee.id);
+      setMakingEmployee(null);
+    } catch (err) {
+      setStatusError(err instanceof Error ? err.message : "Couldn't create the employee record");
+      setMakingEmployee(null);
+    } finally {
+      setMakingBusy(false);
+    }
   };
 
   const openEdit = (user: PublicUser) => {
@@ -168,6 +210,7 @@ export default function ITDesignerUsersPage() {
                   <th className="px-5 py-2.5">Name</th>
                   <th className="px-3 py-2.5">Email</th>
                   <th className="px-3 py-2.5">Role</th>
+                  <th className="px-3 py-2.5">Employee record</th>
                   <th className="px-3 py-2.5">Status</th>
                   <th className="px-5 py-2.5 text-right">Actions</th>
                 </tr>
@@ -181,6 +224,18 @@ export default function ITDesignerUsersPage() {
                       <Badge variant="outline" className="rounded-full text-overline">
                         {roleLabels.get(user.role) ?? user.role}
                       </Badge>
+                    </td>
+                    <td className="px-3 py-3.5">
+                      {(() => {
+                        const badge = employeeBadge(user);
+                        const warning = accountLinkWarning(user);
+                        return (
+                          <div className="space-y-1">
+                            <StatusBadge status={badge.label} tone={badge.tone} />
+                            {warning && <p className="max-w-[16rem] text-xs text-warning-strong">{warning}</p>}
+                          </div>
+                        );
+                      })()}
                     </td>
                     <td className="px-3 py-3.5">
                       {user.isActive ? (
@@ -197,6 +252,18 @@ export default function ITDesignerUsersPage() {
                     </td>
                     <td className="px-5 py-3.5">
                       <div className="flex items-center justify-end gap-2">
+                        {!isLinked(user) && (
+                          <>
+                            <Button variant="outline" size="sm" className="text-xs" onClick={() => openLink(user)}>
+                              <Link2 className="mr-1 h-3.5 w-3.5" />
+                              Link to employee
+                            </Button>
+                            <Button variant="outline" size="sm" className="text-xs" onClick={() => setMakingEmployee(user)}>
+                              <UserPlus className="mr-1 h-3.5 w-3.5" />
+                              Create employee
+                            </Button>
+                          </>
+                        )}
                         <Button
                           variant="ghost"
                           size="sm"
@@ -245,19 +312,43 @@ export default function ITDesignerUsersPage() {
         open={deleting !== null}
         onOpenChange={(open) => !open && setDeleting(null)}
         title={`Permanently delete ${deleting?.name ?? "this account"}?`}
-        description="The sign-in and its details are removed for good. The audit trail of what this person did is kept. If the account still has an employee record, project assignment, or an assigned task, the delete is refused and the account stays deactivated."
+        description="The sign-in and its details are removed for good. The audit trail of what this person did is kept. If the account is still linked to an employee record, or has a project assignment or an assigned task, the delete is refused (the message names the employee) and the account stays deactivated."
         confirmLabel="Delete account"
         destructive
         loading={removing}
         onConfirm={() => void confirmDelete()}
       />
 
+      <ConfirmDialog
+        open={makingEmployee !== null}
+        onOpenChange={(open) => !open && setMakingEmployee(null)}
+        title={`Create an employee record for ${makingEmployee?.name ?? "this account"}?`}
+        description="Name, email and role are copied from the account. HR completes the pay rate, department and site afterwards."
+        confirmLabel="Create employee"
+        loading={makingBusy}
+        onConfirm={() => void confirmMakeEmployee()}
+      />
+
+      <LinkEmployeeDialog
+        user={linking}
+        employees={linkable}
+        employeesLoading={linkableLoading}
+        onOpenChange={(open) => !open && setLinking(null)}
+        onLink={linkEmployee}
+      />
+
       <UserAccountDialog
         open={dialogOpen}
         user={editing}
         roles={roles}
+        employees={linkable}
+        employeesLoading={linkableLoading}
         onOpenChange={setDialogOpen}
-        onCreate={create}
+        onCreate={async (input) => {
+          const created = await create(input);
+          void loadLinkable();
+          return created;
+        }}
         onUpdate={update}
         onSetPassword={setPassword}
       />
