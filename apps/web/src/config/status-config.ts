@@ -22,6 +22,10 @@ export const STATUS_CONFIG: Record<string, StatusTone> = {
   Approved: "success",
   Rejected: "danger",
   Verified: "success",
+  Draft: "neutral",
+  // Proposals use "Revision Requested", engineering reports "Revision Required".
+  "Revision Requested": "danger",
+  "Revision Required": "danger",
 
   // ==========================
   // Employee
@@ -95,4 +99,16 @@ export const STATUS_CONFIG: Record<string, StatusTone> = {
   Inside: "success",
   Outside: "danger",
   Edge: "warning",
+};
+
+/**
+ * Priority scale shared by every screen that shows Low / Medium / High / Critical
+ * (engineering reports, site tasks). Same tones as the risk entries above, so a
+ * "High" reads the same everywhere.
+ */
+export const PRIORITY_CONFIG: Record<string, StatusTone> = {
+  Low: "success",
+  Medium: "info",
+  High: "warning",
+  Critical: "danger",
 };
