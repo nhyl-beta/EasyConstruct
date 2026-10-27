@@ -4,8 +4,10 @@ import {
   pgTable,
   serial,
   timestamp,
+  uniqueIndex,
   varchar,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { users } from "./users.js";
 
 export const employees = pgTable("employees", {
@@ -28,7 +30,10 @@ export const employees = pgTable("employees", {
   userId: integer("user_id").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (t) => [
+  // One account maps to at most one employee (migration 0041). Partial: roster-only employees have no account.
+  uniqueIndex("employees_user_id_uq").on(t.userId).where(sql`${t.userId} is not null`),
+]);
 
 export type Employee = typeof employees.$inferSelect;
 export type NewEmployee = typeof employees.$inferInsert;
