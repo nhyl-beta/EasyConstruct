@@ -251,12 +251,13 @@ ${draft.description}` : draft.description);
       <DialogTrigger asChild>
         <Button>New requirement</Button>
       </DialogTrigger>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md">
+      <DialogContent className="max-h-[90vh] overflow-y-auto overflow-x-hidden sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>Draft a requirement</DialogTitle>
         </DialogHeader>
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          <div className="space-y-1.5">
+        <form className="min-w-0 space-y-4" onSubmit={handleSubmit}>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="min-w-0 space-y-1.5">
             <Label htmlFor="req-title">Title</Label>
             <Input
               id="req-title"
@@ -266,12 +267,11 @@ ${draft.description}` : draft.description);
               required
             />
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
+            <div className="min-w-0 space-y-1.5">
               <Label>Project</Label>
               <ProjectPicker value={project} onChange={setProject} className="w-full" allowedCodes={allowedProjectCodes} />
             </div>
-            <div className="space-y-1.5">
+            <div className="min-w-0 space-y-1.5">
               <Label>Category</Label>
               <Select
                 value={category}
@@ -290,11 +290,11 @@ ${draft.description}` : draft.description);
               </Select>
             </div>
           </div>
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0 space-y-1.5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <Label htmlFor="req-description">Description</Label>
               {FEATURES.ai && canStructure && (
-                <div className="flex items-center gap-1">
+                <div className="flex flex-wrap items-center gap-1">
                   {before && (
                     <Button type="button" variant="ghost" size="sm" className="h-7 gap-1 px-2 text-xs" onClick={undoStructuring}>
                       <Undo2 className="h-3 w-3" /> Undo structuring
@@ -329,7 +329,8 @@ ${draft.description}` : draft.description);
               id="req-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              rows={before ? 10 : 4}
+              rows={before ? 8 : 5}
+              className="[overflow-wrap:anywhere]"
               required
             />
             {structureError && (
@@ -338,12 +339,12 @@ ${draft.description}` : draft.description);
               </p>
             )}
             {FEATURES.ai && canStructure && draftBasis.length > 0 && (
-              <div className="space-y-1 rounded-lg border border-border bg-muted/30 p-3 text-xs">
+              <div className="min-w-0 space-y-1 break-words rounded-lg border border-border bg-muted/30 p-3 text-xs [overflow-wrap:anywhere]">
                 <p className="flex flex-wrap items-center gap-2 text-muted-foreground">
                   <DecisionSupportLabel />
                   Draft from templates. Edit the [specify] blanks; nothing was saved.
                 </p>
-                <ul className="list-inside list-disc text-muted-foreground">
+                <ul className="list-inside list-disc break-words text-muted-foreground [overflow-wrap:anywhere]">
                   {draftBasis.map((b) => (
                     <li key={b}>{b}</li>
                   ))}
@@ -351,7 +352,7 @@ ${draft.description}` : draft.description);
               </div>
             )}
             {FEATURES.ai && canStructure && before && (
-              <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-3 text-xs">
+              <div className="min-w-0 space-y-2 break-words rounded-lg border border-border bg-muted/30 p-3 text-xs [overflow-wrap:anywhere]">
                 <p className="flex flex-wrap items-center gap-2 text-muted-foreground">
                   <DecisionSupportLabel />
                   Rule-based structuring. Review the text above; nothing was saved.
@@ -360,7 +361,7 @@ ${draft.description}` : draft.description);
                   <ul className="space-y-1">
                     {rewrites.map((r) => (
                       <li key={r.from} className="flex items-start justify-between gap-2">
-                        <span>
+                        <span className="min-w-0 break-words [overflow-wrap:anywhere]">
                           Reworded: <span className="font-medium">{r.from}</span> → {r.to}
                         </span>
                         <button type="button" className="shrink-0 text-primary-strong hover:underline" onClick={() => undoOneRewrite(r)}>
@@ -387,7 +388,7 @@ ${draft.description}` : draft.description);
                             })
                           }
                         />
-                        <span>
+                        <span className="min-w-0 break-words [overflow-wrap:anywhere]">
                           {s.text}
                           <span className="block text-muted-foreground">
                             {s.section} · {s.reason}
@@ -405,7 +406,7 @@ ${draft.description}` : draft.description);
               </div>
             )}
           </div>
-          <div className="space-y-1.5">
+          <div className="min-w-0 space-y-1.5">
             <Label>
               Supporting file <span className="text-destructive-strong">*</span>
             </Label>
