@@ -125,7 +125,7 @@ export default function SharedReportsPage() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="h-7 text-xs"
+                          className="h-7 text-xs text-destructive-strong hover:bg-destructive/10 hover:text-destructive-strong"
                           disabled={deciding === r.dbId}
                           onClick={() => void decide(r.dbId, "Revision Required")}
                         >

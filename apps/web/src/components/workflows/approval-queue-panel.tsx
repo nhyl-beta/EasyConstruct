@@ -516,7 +516,7 @@ export function ApprovalQueuePanel({
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-8"
+                          className="h-8 text-destructive-strong hover:bg-destructive/10 hover:text-destructive-strong"
                           disabled={deciding === a.stageId}
                           title="Send back to the submitter for revision"
                           onClick={() => void decideWithToast(a, "revise")}
