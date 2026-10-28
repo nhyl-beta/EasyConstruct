@@ -139,6 +139,11 @@ export function UserAccountDialog({
               : "Create a sign-in for an employee and assign the role that governs what they can reach."}
           </DialogDescription>
         </DialogHeader>
+        {isEdit && user.role === "owner" && (
+          <p role="note" className="rounded-xl border border-warning/30 bg-warning/10 px-3 py-2 text-sm text-warning-strong">
+            Changes to the Owner account need the Owner's approval by email. Nothing changes until the Owner approves it.
+          </p>
+        )}
 
         <div className="space-y-4 py-2">
           {error && (

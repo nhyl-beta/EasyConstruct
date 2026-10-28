@@ -1,4 +1,5 @@
 import { apiClient } from "@/services/api.client";
+import type { PendingApproval } from "@/features/owner-approvals/repositories/owner-approvals.repository";
 
 export interface PublicUser {
   id: number;
@@ -69,24 +70,26 @@ export const UserRepository = {
     return unwrap<unknown>(apiClient.post(`/users/${id}/create-employee`, {}));
   },
 
-  async update(id: number, input: UpdateUserInput): Promise<PublicUser> {
-    return unwrap<PublicUser>(apiClient.patch(`/users/${id}`, input));
+  // Updates, password resets, (de)activation and deletion of the OWNER account are held for the Owner's approval by
+  // email: the server answers 202 with a PendingApproval instead of the changed account, and nothing has changed yet.
+  async update(id: number, input: UpdateUserInput): Promise<PublicUser | PendingApproval> {
+    return unwrap<PublicUser | PendingApproval>(apiClient.patch(`/users/${id}`, input));
   },
 
   // Administrative reset — IT Designer sets a new password without needing
   // the current one. The account holder's own path stays the sign-in page's
   // "Forgot password" link (POST /auth/forgot-password).
-  async setPassword(id: number, password: string): Promise<PublicUser> {
-    return unwrap<PublicUser>(apiClient.patch(`/users/${id}/password`, { password }));
+  async setPassword(id: number, password: string): Promise<PublicUser | PendingApproval> {
+    return unwrap<PublicUser | PendingApproval>(apiClient.patch(`/users/${id}/password`, { password }));
   },
 
-  async setActive(id: number, isActive: boolean): Promise<PublicUser> {
-    return unwrap<PublicUser>(apiClient.patch(`/users/${id}/status`, { isActive }));
+  async setActive(id: number, isActive: boolean): Promise<PublicUser | PendingApproval> {
+    return unwrap<PublicUser | PendingApproval>(apiClient.patch(`/users/${id}/status`, { isActive }));
   },
 
   // Permanent. The API refuses unless the account is already deactivated and
   // nothing references it — see apps/api/src/users/service.ts remove().
-  async remove(id: number): Promise<PublicUser> {
-    return unwrap<PublicUser>(apiClient.del(`/users/${id}`));
+  async remove(id: number): Promise<PublicUser | PendingApproval> {
+    return unwrap<PublicUser | PendingApproval>(apiClient.del(`/users/${id}`));
   },
 };

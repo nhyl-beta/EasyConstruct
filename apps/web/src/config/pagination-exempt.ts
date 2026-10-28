@@ -33,6 +33,9 @@ export const PAGINATION_EXEMPT: PaginationExemption[] = [
   // ── Generic building blocks
   { file: "components/responsive/responsive-table.tsx", reason: "Generic presentational table wrapper (scroll box, sticky column, stacked rows on small screens); it receives rows from its caller, which paginates. No page uses it yet." },
 
+  { file: "features/owner-approvals/components/OwnerApprovalStatus.tsx", reason: "Requests for the one Owner account, shown next to its row: at most a few at a time (one pending per action, three requests an hour)." },
+  { file: "features/owner-approvals/components/OwnerPendingApprovalsCard.tsx", reason: "Dashboard widget: the Owner's pending requests (at most one per action) and the last five answered." },
+
   // ── Forms, dialogs and per-item detail
   { file: "components/workflows/WorkflowCard.tsx", reason: "Stages of one workflow; a fixed short pipeline." },
   { file: "components/workflows/workflow-stage-pipeline.tsx", reason: "Stages of one workflow; a fixed short pipeline." },

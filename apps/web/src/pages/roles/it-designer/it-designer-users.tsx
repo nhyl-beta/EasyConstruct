@@ -18,6 +18,9 @@ import { useUsersPaged } from "@/features/users/hooks/use-users-paged";
 import { StaffingGapsCard } from "@/features/project-members/components/StaffingGapsCard";
 import { accountLinkWarning, employeeBadge, isLinked } from "@/features/users/lib/account-link";
 import { UserRepository, type LinkableEmployee, type PublicUser } from "@/features/users/repositories/user.repository";
+import { isPendingApproval, pendingApprovalNotice } from "@/features/owner-approvals/repositories/owner-approvals.repository";
+import { useOwnerApprovals } from "@/features/owner-approvals/hooks/use-owner-approvals";
+import { OwnerApprovalStatus } from "@/features/owner-approvals/components/OwnerApprovalStatus";
 
 export default function ITDesignerUsersPage() {
   const [roleFilter, setRoleFilter] = useState<string | null>(null);
@@ -29,6 +32,16 @@ export default function ITDesignerUsersPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<PublicUser | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
+  // A change to the Owner account is held for the Owner's approval by email; this says so instead of "Saved".
+  const [notice, setNotice] = useState<string | null>(null);
+  const approvals = useOwnerApprovals();
+  const noteIfHeld = (result: unknown) => {
+    if (isPendingApproval(result)) {
+      setNotice(pendingApprovalNotice(result));
+      void approvals.refresh();
+    }
+    return result;
+  };
   // Deletion is permanent and only offered once an account is deactivated,
   // so it is always a second, deliberate step after access has been revoked.
   const [deleting, setDeleting] = useState<PublicUser | null>(null);
@@ -112,7 +125,8 @@ export default function ITDesignerUsersPage() {
   const toggleActive = async (user: PublicUser) => {
     setStatusError(null);
     try {
-      await setActive(user.id, !user.isActive);
+      setNotice(null);
+      noteIfHeld(await setActive(user.id, !user.isActive));
     } catch (err) {
       // Most likely the server refusing a self-deactivation.
       setStatusError(err instanceof Error ? err.message : "Couldn't update the account");
@@ -124,7 +138,8 @@ export default function ITDesignerUsersPage() {
     setRemoving(true);
     setStatusError(null);
     try {
-      await remove(deleting.id);
+      setNotice(null);
+      noteIfHeld(await remove(deleting.id));
       setDeleting(null);
     } catch (err) {
       // Surfaces the API's reason: still referenced, still active, or self.
@@ -182,6 +197,12 @@ export default function ITDesignerUsersPage() {
           </div>
         </div>
 
+        {notice && (
+          <p role="status" className="mb-4 rounded-xl border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-warning-strong">
+            {notice}
+          </p>
+        )}
+
         {statusError && (
           <p role="alert" className="mb-4 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive-strong">
             {statusError}
@@ -224,6 +245,12 @@ export default function ITDesignerUsersPage() {
                       <Badge variant="outline" className="rounded-full text-overline">
                         {roleLabels.get(user.role) ?? user.role}
                       </Badge>
+                      {user.role === "owner" && (
+                        <OwnerApprovalStatus
+                          requests={approvals.requests.filter((r) => r.targetUserId === user.id)}
+                          onCancel={approvals.cancel}
+                        />
+                      )}
                     </td>
                     <td className="px-3 py-3.5">
                       {(() => {
@@ -349,8 +376,8 @@ export default function ITDesignerUsersPage() {
           void loadLinkable();
           return created;
         }}
-        onUpdate={update}
-        onSetPassword={setPassword}
+        onUpdate={async (id, input) => noteIfHeld(await update(id, input))}
+        onSetPassword={async (id, password) => noteIfHeld(await setPassword(id, password))}
       />
     </PageContainer>
   );
