@@ -27,6 +27,11 @@ const envSchema = z.object({
   MAIL_PORT: integerFromEnv(465).pipe(z.number().positive()),
   MAIL_REQUIRE_TLS: z.preprocess((v) => String(v ?? "").trim().toLowerCase() === "true", z.boolean()),
   BLOB_READ_WRITE_TOKEN: z.string().optional(),
+  // Minutes an emailed Owner-approval link stays valid (1 to 1440); anything else falls back to 60.
+  OWNER_APPROVAL_TTL_MINUTES: z.preprocess((v) => {
+    const n = Number(v);
+    return Number.isInteger(n) && n >= 1 && n <= 1440 ? n : 60;
+  }, z.number().int()),
   S3_ENDPOINT: z.string().optional(),
   S3_REGION: z.string().default("us-east-1"),
   S3_BUCKET: z.string().optional(),
@@ -70,6 +75,7 @@ export const env = {
   MAIL_PORT: values.MAIL_PORT,
   MAIL_REQUIRE_TLS: values.MAIL_REQUIRE_TLS,
   BLOB_READ_WRITE_TOKEN: values.BLOB_READ_WRITE_TOKEN,
+  OWNER_APPROVAL_TTL_MINUTES: values.OWNER_APPROVAL_TTL_MINUTES,
   S3_ENDPOINT: values.S3_ENDPOINT || undefined,
   S3_REGION: values.S3_REGION || "us-east-1",
   S3_BUCKET: values.S3_BUCKET || undefined,
