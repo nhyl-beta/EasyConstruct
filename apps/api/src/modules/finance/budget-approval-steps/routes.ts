@@ -9,7 +9,7 @@ export const budgetApprovalStepsRoutes = Router();
 budgetApprovalStepsRoutes.get("/", controller.getAll);
 budgetApprovalStepsRoutes.post(
   "/decide",
-  requireRole("finance-manager", "admin"),
+  requireRole("finance-manager"),
   validate(decideBudgetApprovalSchema),
   controller.decide,
 );

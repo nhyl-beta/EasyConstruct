@@ -14,18 +14,18 @@ budgetAdjustmentsRoutes.get("/:id", controller.getById);
 
 budgetAdjustmentsRoutes.post(
   "/",
-  requireRole("finance-manager", "admin"),
+  requireRole("finance-manager"),
   validate(createBudgetAdjustmentSchema),
   controller.create,
 );
 budgetAdjustmentsRoutes.patch(
   "/:id",
-  requireRole("finance-manager", "admin"),
+  requireRole("finance-manager"),
   validate(updateBudgetAdjustmentSchema),
   controller.update,
 );
 budgetAdjustmentsRoutes.delete(
   "/:id",
-  requireRole("finance-manager", "admin"),
+  requireRole("finance-manager"),
   controller.remove,
 );

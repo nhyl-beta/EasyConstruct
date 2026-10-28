@@ -21,6 +21,6 @@ purchaseRequestsRouter.patch("/:id", requireRole("engineer", "project-manager", 
 
 purchaseRequestsRouter.post("/:id/endorse", requireRole("project-manager", "admin"), c.endorse);
 // The PM rejects while it waits for them (a "reject" at the endorsement step); Finance afterwards.
-purchaseRequestsRouter.post("/:id/approve", requireRole("finance-manager", "admin"), validate(decisionSchema), c.approve);
-purchaseRequestsRouter.post("/:id/reject", requireRole("finance-manager", "admin", "project-manager"), validate(decisionSchema), c.reject);
+purchaseRequestsRouter.post("/:id/approve", requireRole("finance-manager"), validate(decisionSchema), c.approve);
+purchaseRequestsRouter.post("/:id/reject", requireRole("finance-manager", "project-manager"), validate(decisionSchema), c.reject);
 purchaseRequestsRouter.post("/:id/cancel", requireRole("engineer", "project-manager", "finance-manager", "admin"), c.cancel);

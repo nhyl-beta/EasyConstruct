@@ -16,9 +16,9 @@ const readers = requireRole("finance-manager", "admin", "project-manager", "engi
 procurementRouter.get("/", readers, c.list);
 procurementRouter.get("/:id", readers, c.get);
 
-procurementRouter.post("/", requireRole("finance-manager", "admin"), validate(createOrderSchema), c.create);
-procurementRouter.post("/:id/ship", requireRole("finance-manager", "admin"), validate(shipOrderSchema), c.ship);
+procurementRouter.post("/", requireRole("finance-manager"), validate(createOrderSchema), c.create);
+procurementRouter.post("/:id/ship", requireRole("finance-manager"), validate(shipOrderSchema), c.ship);
 // Receiving: people on the project (checked in the service), never the order creator.
 procurementRouter.post("/:id/deliver", requireRole("engineer", "site-personnel", "project-manager", "admin"), validate(deliverOrderSchema), c.deliver);
-procurementRouter.post("/:id/pay", requireRole("finance-manager", "admin"), validate(payOrderSchema), c.pay);
-procurementRouter.post("/:id/cancel", requireRole("finance-manager", "admin"), c.cancel);
+procurementRouter.post("/:id/pay", requireRole("finance-manager"), validate(payOrderSchema), c.pay);
+procurementRouter.post("/:id/cancel", requireRole("finance-manager"), c.cancel);

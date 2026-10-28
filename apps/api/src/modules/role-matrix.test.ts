@@ -10,6 +10,14 @@ import payrollRoutes from "./workforce/payroll/routes.js";
 import attendanceRoutes from "./workforce/attendance/routes.js";
 import userRoutes from "./iam/users/routes.js";
 import roleRoutes from "./iam/roles/routes.js";
+import { budgetsRoutes } from "./finance/budget/routes.js";
+import { budgetAdjustmentsRoutes } from "./finance/budget-adjustments/routes.js";
+import { budgetApprovalStepsRoutes } from "./finance/budget-approval-steps/routes.js";
+import { categoriesRouter } from "./finance/categories/routes.js";
+import { expensesRouter } from "./finance/expenses/routes.js";
+import { procurementRouter } from "./finance/procurement/routes.js";
+import { purchaseRequestsRouter } from "./finance/purchase-requests/routes.js";
+import payrollReviewRoutes from "./finance/payroll-review/routes.js";
 
 const ROLES = [
   "admin",
@@ -78,7 +86,33 @@ const payroll = (method: Method, path: string, allowed: readonly Role[]): Case =
 const attendance = (method: Method, path: string, allowed: readonly Role[]): Case => ({ name: `/api/attendance`, router: attendanceRoutes, method, path, allowed });
 const users = (method: Method, path: string, allowed: readonly Role[]): Case => ({ name: `/api/users`, router: userRoutes, method, path, allowed });
 
+const FM: Role[] = ["finance-manager"];
+const fin = (name: string, router: Router, method: Method, path: string, allowed: readonly Role[]): Case => ({ name, router, method, path, allowed });
+
 const WRITES: Case[] = [
+  // finance writes: Finance Manager only (Admin is read-only)
+  fin("/api/finance/budgets", budgetsRoutes, "post", "/", FM),
+  fin("/api/finance/budgets", budgetsRoutes, "patch", "/5", FM),
+  fin("/api/finance/budgets", budgetsRoutes, "delete", "/5", FM),
+  fin("/api/finance/budget-adjustments", budgetAdjustmentsRoutes, "post", "/", FM),
+  fin("/api/finance/budget-adjustments", budgetAdjustmentsRoutes, "patch", "/5", FM),
+  fin("/api/finance/budget-adjustments", budgetAdjustmentsRoutes, "delete", "/5", FM),
+  fin("/api/finance/budget-approval-steps", budgetApprovalStepsRoutes, "post", "/decide", FM),
+  fin("/api/finance/categories", categoriesRouter, "post", "/", FM),
+  fin("/api/finance/categories", categoriesRouter, "patch", "/5", FM),
+  fin("/api/finance/categories", categoriesRouter, "post", "/5/retire", FM),
+  fin("/api/finance/categories", categoriesRouter, "post", "/5/restore", FM),
+  fin("/api/finance/expenses", expensesRouter, "post", "/", FM),
+  fin("/api/finance/expenses", expensesRouter, "post", "/rescore", FM),
+  fin("/api/finance/expenses", expensesRouter, "patch", "/5/approve", FM),
+  fin("/api/finance/expenses", expensesRouter, "patch", "/5/reject", FM),
+  fin("/api/finance/procurement", procurementRouter, "post", "/", FM),
+  fin("/api/finance/procurement", procurementRouter, "post", "/5/ship", FM),
+  fin("/api/finance/procurement", procurementRouter, "post", "/5/pay", FM),
+  fin("/api/finance/procurement", procurementRouter, "post", "/5/cancel", FM),
+  fin("/api/finance/purchase-requests", purchaseRequestsRouter, "post", "/5/approve", FM),
+  fin("/api/finance/purchase-requests", purchaseRequestsRouter, "post", "/5/reject", ["finance-manager", "project-manager"]),
+  fin("/api/finance/payroll-review", payrollReviewRoutes, "post", "/5/decide", ["finance-manager", "it-designer"]),
   // employees: HR only (these were open to every signed-in role)
   employees("post", "/", HR),
   employees("patch", "/5", HR),
@@ -117,6 +151,8 @@ const WRITES: Case[] = [
 ];
 
 const READS: Case[] = [
+  fin("/api/finance/purchase-requests", purchaseRequestsRouter, "get", "/", ["finance-manager", "admin", "project-manager", "engineer", "site-personnel"]),
+  fin("/api/finance/procurement", procurementRouter, "get", "/", ["finance-manager", "admin", "project-manager", "engineer", "site-personnel"]),
   employees("get", "/", READ_EMPLOYEES),
   employees("get", "/5", READ_EMPLOYEES),
   employees("get", "/me", ANYONE),
@@ -160,6 +196,10 @@ test("Admin gets 403 on every write route in the matrix, and 200-class on the re
     [payrollRoutes, "get", "/batches/5/validation"],
     [attendanceRoutes, "get", "/"],
     [attendanceRoutes, "get", "/exceptions"],
+    [purchaseRequestsRouter, "get", "/"],
+    [procurementRouter, "get", "/"],
+    [expensesRouter, "get", "/"],
+    [budgetsRoutes, "get", "/"],
     [roleRoutes, "get", "/"],
     [userRoutes, "get", "/"],
   ] as [Router, Method, string][]) {
