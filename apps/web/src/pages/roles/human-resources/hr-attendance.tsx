@@ -162,8 +162,8 @@ export default function HRAttendancePage() {
           <TabsTrigger value="exceptions">Exceptions</TabsTrigger>
         </TabsList>
         <TabsContent value="log">
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-        <Card className="min-w-0 xl:col-span-2">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-4">
+        <Card className="min-w-0 xl:col-span-3">
           <CardHeader className="flex flex-row items-center justify-between space-y-0">
             <div>
               <CardTitle className="text-base">Attendance log</CardTitle>
@@ -265,15 +265,15 @@ export default function HRAttendancePage() {
             <Table className="table-fixed">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[18%]">Employee</TableHead>
-                  <TableHead className="w-[12%]">Site</TableHead>
-                  <TableHead className="w-[10%]">Clock in</TableHead>
-                  <TableHead className="w-[10%]">Clock out</TableHead>
-                  <TableHead className="w-[8%] text-right">Hours</TableHead>
+                  <TableHead className="w-[17%]">Employee</TableHead>
+                  <TableHead className="w-[11%]">Site</TableHead>
+                  <TableHead className="w-[9%]">Clock in</TableHead>
+                  <TableHead className="w-[9%]">Clock out</TableHead>
+                  <TableHead className="w-[7%] text-right">Hours</TableHead>
                   <TableHead className="w-[14%]">Geofence</TableHead>
-                  <TableHead className="w-[12%]">Photo</TableHead>
+                  <TableHead className="w-[11%]">Photo</TableHead>
                   <TableHead className="w-[10%]">Attendance</TableHead>
-                  <TableHead className="w-[6%] text-right">Check</TableHead>
+                  <TableHead className="w-[12%] min-w-[88px] text-right">Check</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -382,9 +382,9 @@ export default function HRAttendancePage() {
                     <TableCell>
                       <StatusBadge status={l.attendanceStatus} />
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="min-w-[88px] text-right">
                       {!readOnly && (
-                        <Button size="sm" variant="outline" onClick={() => setReviewing(l)}>
+                        <Button size="sm" variant="outline" className="whitespace-nowrap" onClick={() => setReviewing(l)}>
                           Verify
                         </Button>
                       )}
