@@ -87,7 +87,7 @@ export function FileListPicker({
               key={`${file.name}-${index}`}
               className="flex items-center justify-between gap-2 rounded-lg bg-muted/40 px-2.5 py-1.5 text-xs"
             >
-              <span className="truncate">{file.name}</span>
+              <span className="min-w-0 truncate">{file.name}</span>
               <button
                 type="button"
                 className="shrink-0 text-muted-foreground hover:text-destructive-strong"

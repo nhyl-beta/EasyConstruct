@@ -28,6 +28,7 @@ import LoginPage from "@/pages/auth/login";
 import ForgotPasswordPage from "@/pages/auth/forgot-password";
 import ResetPasswordPage from "@/pages/auth/reset-password";
 import RfiReplyPage from "@/pages/public/rfi-reply";
+import OwnerApprovalPage from "@/pages/public/owner-approval";
 import SettingsPage from "@/pages/settings";
 
 
@@ -171,6 +172,8 @@ function App() {
                   <Route path="/reset-password" element={<ResetPasswordPage />} />
                   {/* RFI/RFA reply link from an email: public, outside the app shell, decided by its token. */}
                   <Route path="/reply/:token" element={<RfiReplyPage />} />
+                  {/* Owner approval link from an email: public, outside the app shell, decided by its token. */}
+                  <Route path="/owner-approval/:token" element={<OwnerApprovalPage />} />
 
                   <Route element={<ProtectedRoutes />}>
                     {/* Printable RFI/RFA and transmittal forms: signed-in, but outside the
@@ -261,19 +264,19 @@ function App() {
                   <Route path="/employees" element={<RequireRole allow={["human_resources","admin","it_designer"]}><HREmployees /></RequireRole>} />
                   <Route
                     path="/employees/create"
-                    element={<RequireRole allow={["human_resources","admin","it_designer"]}><EmployeeCreatePage /></RequireRole>}
+                    element={<RequireRole allow={["human_resources"]}><EmployeeCreatePage /></RequireRole>}
                   />
                   <Route
                     path="/employees/edit/:id"
-                    element={<RequireRole allow={["human_resources","admin","it_designer"]}><EmployeeCreatePage /></RequireRole>}
+                    element={<RequireRole allow={["human_resources"]}><EmployeeCreatePage /></RequireRole>}
                   />
                   <Route
                     path="/employees/new"
-                    element={<RequireRole allow={["human_resources","admin","it_designer"]}><EmployeeCreatePage /></RequireRole>}
+                    element={<RequireRole allow={["human_resources"]}><EmployeeCreatePage /></RequireRole>}
                   />
                   <Route
                     path="/employees/:id/edit"
-                    element={<RequireRole allow={["human_resources","admin","it_designer"]}><EmployeeCreatePage /></RequireRole>}
+                    element={<RequireRole allow={["human_resources"]}><EmployeeCreatePage /></RequireRole>}
                   />
                   <Route path="/attendance" element={<AttendanceRouter />} />
                   <Route path="/payroll" element={<RequireRole allow={["human_resources","admin","it_designer"]}><HRPayroll /></RequireRole>} />

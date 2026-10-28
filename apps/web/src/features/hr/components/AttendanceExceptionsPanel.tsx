@@ -2,6 +2,7 @@
 // look and people with no record who are likely absent. The system records
 // nothing by itself: a likely absence only becomes a record when HR presses
 // "Mark absent".
+import { useIsReadOnlyAdmin } from "@/hooks/use-read-only-admin";
 import { DEFAULT_PAGE_SIZE } from "@/config/pagination";
 import { useCallback, useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -37,6 +38,7 @@ const TONE: Record<ExceptionKind, string> = {
 };
 
 export function AttendanceExceptionsPanel({ onChanged }: { onChanged?: () => void }) {
+  const readOnly = useIsReadOnlyAdmin();
   const [kind, setKind] = useState("all");
   const [page, setPage] = useState(1);
   const [data, setData] = useState<AttendanceExceptionPage | null>(null);
@@ -167,7 +169,7 @@ export function AttendanceExceptionsPanel({ onChanged }: { onChanged?: () => voi
                 </TableCell>
                 <TableCell className="whitespace-normal text-xs text-muted-foreground">{i.message}</TableCell>
                 <TableCell className="text-right">
-                  {i.kind === "likely_absent" && i.projectCode && (
+                  {!readOnly && i.kind === "likely_absent" && i.projectCode && (
                     <Button size="sm" variant="outline" onClick={() => setConfirming(i)}>
                       Mark absent
                     </Button>

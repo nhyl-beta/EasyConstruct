@@ -6,15 +6,15 @@ import { expensesController } from "./controller.js";
 export const expensesRouter = Router();
 
 expensesRouter.get("/", requireRole(...FINANCE_PROJECT_READERS), expensesController.list);
-expensesRouter.post("/", requireRole("finance-manager", "admin"), expensesController.create);
-expensesRouter.post("/rescore", requireRole("finance-manager", "admin"), expensesController.rescore);
+expensesRouter.post("/", requireRole("finance-manager"), expensesController.create);
+expensesRouter.post("/rescore", requireRole("finance-manager"), expensesController.rescore);
 expensesRouter.patch(
   "/:id/approve",
-  requireRole("finance-manager", "admin"),
+  requireRole("finance-manager"),
   expensesController.approve,
 );
 expensesRouter.patch(
   "/:id/reject",
-  requireRole("finance-manager", "admin"),
+  requireRole("finance-manager"),
   expensesController.reject,
 );

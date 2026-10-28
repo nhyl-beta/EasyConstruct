@@ -8,6 +8,14 @@ import type { UserFilters } from "./types.js";
 import { parsePageRequest, sendPaged } from "../../../core/utils/pagination.js";
 import { USER_SORT_COLUMNS } from "./repository.js";
 import { parseIdParam } from "../../../core/utils/params.js";
+import { isPendingApproval, type PendingApproval } from "../owner-approvals/service.js";
+
+/** 202: the change is for the Owner account and waits for the Owner's approval by email. Nothing has changed yet. */
+const heldForOwner = (res: Response, data: unknown): data is PendingApproval => {
+  if (!isPendingApproval(data)) return false;
+  res.status(HTTP.ACCEPTED).json(formatSuccess(data, "Waiting for the Owner's approval. Nothing has changed yet."));
+  return true;
+};
 
 export const getAll = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -98,7 +106,8 @@ export const update = async (
   next: NextFunction,
 ) => {
   try {
-    const data = await service.update(parseIdParam(req.params.id, "id"), req.body);
+    const data = await service.update(parseIdParam(req.params.id, "id"), req.body, req.authUser!);
+    if (heldForOwner(res, data)) return;
     await logAudit({
       entityType: "user",
       entityId: String(req.params.id),
@@ -122,8 +131,9 @@ export const setStatus = async (
     const data = await service.setActive(
       parseIdParam(req.params.id, "id"),
       isActive,
-      req.authUser!.id,
+      req.authUser!,
     );
+    if (heldForOwner(res, data)) return;
     await logAudit({
       entityType: "user",
       entityId: String(req.params.id),
@@ -146,7 +156,8 @@ export const setPassword = async (
 ) => {
   try {
     const { password } = req.body as { password: string };
-    const data = await service.setPassword(parseIdParam(req.params.id, "id"), password);
+    const data = await service.setPassword(parseIdParam(req.params.id, "id"), password, req.authUser!);
+    if (heldForOwner(res, data)) return;
     await logAudit({
       entityType: "user",
       entityId: String(req.params.id),
@@ -169,8 +180,9 @@ export const remove = async (
   try {
     const data = await service.remove(
       parseIdParam(req.params.id, "id"),
-      req.authUser!.id,
+      req.authUser!,
     );
+    if (heldForOwner(res, data)) return;
     await logAudit({
       entityType: "user",
       entityId: String(req.params.id),

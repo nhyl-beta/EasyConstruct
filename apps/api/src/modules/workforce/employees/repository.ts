@@ -149,6 +149,12 @@ export const findUserByEmail = async (email: string) => {
   return user ?? null;
 };
 
+/** The account an employee record is linked to (its role decides whether an identity change needs the Owner's approval). */
+export const findLinkedUser = async (userId: number) => {
+  const [user] = await db.select({ id: users.id, role: users.role, name: users.name, email: users.email }).from(users).where(eq(users.id, userId));
+  return user ?? null;
+};
+
 /** Mirrors an HR edit of a linked employee's name or email onto its account, so the two never disagree. */
 export const syncLinkedUser = async (userId: number, patch: { name?: string; email?: string }) => {
   if (patch.name === undefined && patch.email === undefined) return;

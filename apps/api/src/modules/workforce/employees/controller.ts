@@ -10,6 +10,7 @@ import { parsePageRequest, sendPaged } from "../../../core/utils/pagination.js";
 import { cached } from "../../../core/cache/index.js";
 import { EMPLOYEE_SORT_COLUMNS } from "./repository.js";
 import { parseIdParam } from "../../../core/utils/params.js";
+import { isPendingApproval } from "../../iam/index.js";
 
 export const getAll = async (
   req: Request,
@@ -94,7 +95,11 @@ export const update = async (
   next: NextFunction,
 ) => {
   try {
-    const data = await service.update(parseIdParam(req.params.id, "id"), req.body);
+    const data = await service.update(parseIdParam(req.params.id, "id"), req.body, req.authUser!);
+    if (isPendingApproval(data)) {
+      res.status(202).json(formatSuccess(data, "Waiting for the Owner's approval. Nothing has changed yet."));
+      return;
+    }
     await logAudit({
       entityType: "employee",
       entityId: String(req.params.id),

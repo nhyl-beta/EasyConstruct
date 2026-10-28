@@ -40,7 +40,8 @@ const find = (routes: Route[], method: string, path: string) => {
 
 const rolesAllowed = (route: Route) => ALL_ROLES.filter((r) => allows(route, r)).sort();
 
-const FINANCE = ["admin", "finance-manager"];
+// Admin reads finance but no longer writes it (finance-manager only).
+const FINANCE = ["finance-manager"];
 const READERS = ["admin", "engineer", "finance-manager", "project-manager", "site-personnel"];
 
 describe("purchase request routes", async () => {
@@ -54,7 +55,7 @@ describe("purchase request routes", async () => {
     ["patch", "/:id", ["admin", "engineer", "project-manager"]],
     ["post", "/:id/endorse", ["admin", "project-manager"]],
     ["post", "/:id/approve", FINANCE],
-    ["post", "/:id/reject", ["admin", "finance-manager", "project-manager"]],
+    ["post", "/:id/reject", ["finance-manager", "project-manager"]],
     ["post", "/:id/cancel", ["admin", "engineer", "finance-manager", "project-manager"]],
   ];
   for (const [method, path, roles] of expected) {
@@ -91,7 +92,7 @@ describe("procurement routes", async () => {
     });
   }
 
-  test("only Finance / Admin can create, ship, pay or cancel an order", () => {
+  test("only Finance Manager can create, ship, pay or cancel an order (Admin is read-only)", () => {
     for (const path of ["/", "/:id/ship", "/:id/pay", "/:id/cancel"]) {
       for (const role of ["project-manager", "engineer", "site-personnel"]) {
         assert.equal(allows(find(routes, "post", path), role), false, `${role} ${path}`);

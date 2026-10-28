@@ -1,3 +1,4 @@
+import { useIsReadOnlyAdmin } from "@/hooks/use-read-only-admin";
 import { Download, Filter, MoreHorizontal, Plus, Search } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router";
@@ -54,6 +55,7 @@ function EmployeeRow({
   onArchive: (e: Employee) => void;
   onDelete: (e: Employee) => void;
 }) {
+  const readOnly = useIsReadOnlyAdmin();
   return (
     <TableRow className="hover:bg-muted/40">
       <TableCell>
@@ -106,23 +108,29 @@ function EmployeeRow({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem asChild>
-              <Link to={`/employees/${e.dbId}/edit`}>Edit record</Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem>Employment history</DropdownMenuItem>
-            <DropdownMenuItem>Documents</DropdownMenuItem>
-            <DropdownMenuSeparator />
-            {e.status !== "Archived" && (
-              <DropdownMenuItem onSelect={() => onArchive(e)}>
-                Archive
+            {!readOnly && (
+              <DropdownMenuItem asChild>
+                <Link to={`/employees/${e.dbId}/edit`}>Edit record</Link>
               </DropdownMenuItem>
             )}
-            <DropdownMenuItem
-              className="text-destructive-strong"
-              onSelect={() => onDelete(e)}
-            >
-              Delete
-            </DropdownMenuItem>
+            <DropdownMenuItem>Employment history</DropdownMenuItem>
+            <DropdownMenuItem>Documents</DropdownMenuItem>
+            {!readOnly && (
+              <>
+                <DropdownMenuSeparator />
+                {e.status !== "Archived" && (
+                  <DropdownMenuItem onSelect={() => onArchive(e)}>
+                    Archive
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem
+                  className="text-destructive-strong"
+                  onSelect={() => onDelete(e)}
+                >
+                  Delete
+                </DropdownMenuItem>
+              </>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       </TableCell>
@@ -131,6 +139,7 @@ function EmployeeRow({
 }
 
 export default function HREmployeesPage() {
+  const readOnly = useIsReadOnlyAdmin();
   const [dept, setDept] = useState("all");
   const [status, setStatus] = useState("all");
   // Search (debounced), the two filters and paging all go to the server; the
@@ -188,11 +197,13 @@ export default function HREmployeesPage() {
             <Button variant="outline" size="sm" onClick={handleExportCsv} disabled={pagination.total === 0}>
               <Download className="h-4 w-4" /> Export
             </Button>
-            <Button size="sm" asChild>
-              <Link to="/employees/create">
-                <Plus className="h-4 w-4" /> Add employee
-              </Link>
-            </Button>
+            {!readOnly && (
+              <Button size="sm" asChild>
+                <Link to="/employees/create">
+                  <Plus className="h-4 w-4" /> Add employee
+                </Link>
+              </Button>
+            )}
           </>
         }
       />

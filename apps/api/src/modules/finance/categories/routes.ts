@@ -14,7 +14,7 @@ categoriesRouter.get(
   c.list,
 );
 
-categoriesRouter.post("/", requireRole("finance-manager", "admin"), validate(createCategorySchema), c.create);
-categoriesRouter.patch("/:id", requireRole("finance-manager", "admin"), validate(updateCategorySchema), c.update);
-categoriesRouter.post("/:id/retire", requireRole("finance-manager", "admin"), c.retire);
-categoriesRouter.post("/:id/restore", requireRole("finance-manager", "admin"), c.restore);
+categoriesRouter.post("/", requireRole("finance-manager"), validate(createCategorySchema), c.create);
+categoriesRouter.patch("/:id", requireRole("finance-manager"), validate(updateCategorySchema), c.update);
+categoriesRouter.post("/:id/retire", requireRole("finance-manager"), c.retire);
+categoriesRouter.post("/:id/restore", requireRole("finance-manager"), c.restore);

@@ -19,11 +19,12 @@ router.use(authenticate);
 router.get("/", controller.getAll);
 
 // Account management is IT Designer's core scope in the capstone
-// ("create/edit/deactivate accounts, assign permissions"). Admin and Super
-// Admin are included because every other administrative write route in this
-// codebase includes them. Owner is deliberately absent — its scope is
+// ("create/edit/deactivate accounts, assign permissions"). Admin runs the project
+// portfolio but does not manage accounts: it keeps the open read above (the user
+// picker) and nothing else here. Owner is deliberately absent too — its scope is
 // read-only executive oversight, so it must not be able to mint accounts.
-const canManageAccounts = requireRole("admin", "it-designer");
+// canReadUsers is the unrestricted GET above (any signed-in role).
+const canManageAccounts = requireRole("it-designer");
 
 router.get("/linkable-employees", canManageAccounts, controller.getLinkableEmployees);
 router.post("/", canManageAccounts, validate(createUserSchema), controller.create);

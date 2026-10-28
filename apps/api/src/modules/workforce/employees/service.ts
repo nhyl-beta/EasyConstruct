@@ -1,5 +1,6 @@
 import { AppError, ConflictError, NotFoundError, ValidationError } from "../../../core/utils/errors.js";
 import { findNameMatches } from "../../platform/index.js";
+import { needsOwnerApproval, registerExecutor, requestOwnerApproval } from "../../iam/index.js";
 import * as repo from "./repository.js";
 import { asc } from "drizzle-orm";
 import { employees } from "../../../core/db/schema/employees.js";
@@ -140,10 +141,15 @@ export const getMyEmployeeRecord = async (userId: number, email: string) => {
   return repo.update(byEmail.id, { userId } as any);
 };
 
-export const update = async (
-  id: number,
-  input: UpdateEmployeeInput,
-) => {
+/** Who is making the edit. Changing the name or email of the Owner's record needs the Owner's approval by email. */
+export interface Actor {
+  id: number;
+  name: string;
+  role: string;
+}
+
+/** Every check an employee edit must pass, then the patch to write. No gate here. */
+const plan = async (id: number, input: UpdateEmployeeInput) => {
   const existing = await getById(id);
 
   if (
@@ -194,6 +200,14 @@ export const update = async (
     patch.initials = initialsFrom(input.name);
   }
 
+  return { existing, patch };
+};
+
+const commit = async (
+  id: number,
+  input: UpdateEmployeeInput,
+  { existing, patch }: Awaited<ReturnType<typeof plan>>,
+) => {
   const updated = await repo.update(id, patch);
 
   if (!updated) {
@@ -210,6 +224,43 @@ export const update = async (
   return updated;
 };
 
+/** The edit with no approval gate. Only this module and the approval executor call it. */
+const applyUpdate = async (id: number, input: UpdateEmployeeInput) => commit(id, input, await plan(id, input));
+
+export const update = async (id: number, input: UpdateEmployeeInput, actor: Actor) => {
+  const planned = await plan(id, input);
+  const { existing } = planned;
+
+  // The HR edit of a linked record copies its name and email onto the login account. For the Owner's record that
+  // would change the Owner's login and the address approval emails go to, so it waits for the Owner's approval.
+  const nameChange = input.name !== undefined && input.name !== existing.name;
+  const emailChange = input.email !== undefined && input.email !== existing.email;
+  if (existing.userId != null && (nameChange || emailChange)) {
+    const linked = await repo.findLinkedUser(existing.userId);
+    if (linked && needsOwnerApproval(linked, actor)) {
+      return requestOwnerApproval({
+        targetUserId: linked.id,
+        action: "change_identity",
+        payload: {
+          employeeId: id,
+          ...(nameChange ? { name: input.name } : {}),
+          ...(emailChange ? { email: input.email } : {}),
+          from: { name: linked.name, email: linked.email },
+        },
+        requester: actor,
+      });
+    }
+  }
+
+  return commit(id, input, planned);
+};
+
+registerExecutor("employee_identity", async (r) => {
+  const p = (r.payload ?? {}) as { employeeId?: number; name?: string; email?: string };
+  if (p.employeeId == null) throw new Error("The stored request has no employee record");
+  await applyUpdate(p.employeeId, { ...(p.name !== undefined ? { name: p.name } : {}), ...(p.email !== undefined ? { email: p.email } : {}) });
+});
+
 export const remove = async (id: number) => {
   await getById(id);
 
@@ -225,7 +276,8 @@ export const remove = async (id: number) => {
 // "Deactivate" per the spec is a soft delete: flips status to Archived
 // rather than removing the row, so attendance/payroll history stays intact.
 export const deactivate = async (id: number) => {
-  return update(id, {
+  // Status only: no name or email changes, so there is nothing for the Owner to approve.
+  return applyUpdate(id, {
     status: "Archived",
   });
 };

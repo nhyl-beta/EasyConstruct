@@ -2,12 +2,13 @@
 // runs the reset when imported) so reset-tables.test.ts can check it against the Drizzle schema: a new table that is
 // not classified here fails that test instead of surfacing when someone runs the reset.
 //
+// owner_action_requests is account history (it hangs off users, which the reset never touches), so it is kept.
 // document_types is reference data: its system rows are read by name (lifecycle/gates.ts, the report types), so it is kept.
 
 /** Never written. Checksummed before/after. */
 export const ACCOUNT_TABLES = ["users", "password_reset_tokens", "roles"];
 /** Never deleted (config / reference / history). */
-export const PRESERVE = [...ACCOUNT_TABLES, "workflow_templates", "reference_snapshots", "audit_logs", "expense_categories", "document_types"];
+export const PRESERVE = [...ACCOUNT_TABLES, "workflow_templates", "reference_snapshots", "audit_logs", "expense_categories", "document_types", "owner_action_requests"];
 /** Handled specially. */
 export const SPECIAL = ["notifications", "employees"];
 

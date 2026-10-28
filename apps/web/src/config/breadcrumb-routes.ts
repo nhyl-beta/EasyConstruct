@@ -35,6 +35,7 @@ export const BREADCRUMB_EXCEPTIONS: string[] = [
   "/forgot-password",
   "/reset-password",
   "/reply/:token",
+  "/owner-approval/:token",
   "/requests/:id/print",
   "/transmittals/:id/print",
   "/ai-insights",

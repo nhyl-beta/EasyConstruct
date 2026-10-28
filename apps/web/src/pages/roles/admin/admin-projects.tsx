@@ -61,7 +61,7 @@ export default function AdminProjectsPage() {
       ) : ctrl.loading && ctrl.projects.length === 0 ? (
         <ProjectLoadingState />
       ) : ctrl.projects.length === 0 ? (
-        <ProjectEmptyState />
+        <ProjectEmptyState canCreate={canCreate} />
       ) : (
         <div className={ctrl.loading ? "opacity-60 transition-opacity" : "transition-opacity"}>
           {ctrl.view === "table" ? (

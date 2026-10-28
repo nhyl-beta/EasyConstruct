@@ -1,3 +1,4 @@
+import { useIsReadOnlyAdmin } from "@/hooks/use-read-only-admin";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -58,6 +59,7 @@ const VERIFICATION_OPTIONS = ["Pending", "Verified", "Flagged"];
 const DAY_STATUS_OPTIONS = ["Present", "Late", "Absent", "On Leave", "Half Day"];
 
 export default function HRAttendancePage() {
+  const readOnly = useIsReadOnlyAdmin();
   // An "outside the site radius" alert links here with ?highlight=<record id>: show just that person's
   // clock-in for that day, highlighted, with a way back to the whole log.
   const [params, setParams] = useSearchParams();
@@ -160,8 +162,8 @@ export default function HRAttendancePage() {
           <TabsTrigger value="exceptions">Exceptions</TabsTrigger>
         </TabsList>
         <TabsContent value="log">
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-        <Card className="min-w-0 xl:col-span-2">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-4">
+        <Card className="min-w-0 xl:col-span-3">
           <CardHeader className="flex flex-row items-center justify-between space-y-0">
             <div>
               <CardTitle className="text-base">Attendance log</CardTitle>
@@ -170,6 +172,7 @@ export default function HRAttendancePage() {
               </p>
             </div>
             <div className="flex items-center gap-2">
+              {!readOnly && (<>
               <Button
                 size="sm"
                 variant="outline"
@@ -187,6 +190,7 @@ export default function HRAttendancePage() {
               <Button size="sm">
                 <ShieldCheck className="h-4 w-4" /> Resolve flags
               </Button>
+              </>)}
             </div>
           </CardHeader>
 
@@ -261,15 +265,15 @@ export default function HRAttendancePage() {
             <Table className="table-fixed">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[18%]">Employee</TableHead>
-                  <TableHead className="w-[12%]">Site</TableHead>
-                  <TableHead className="w-[10%]">Clock in</TableHead>
-                  <TableHead className="w-[10%]">Clock out</TableHead>
-                  <TableHead className="w-[8%] text-right">Hours</TableHead>
+                  <TableHead className="w-[17%]">Employee</TableHead>
+                  <TableHead className="w-[11%]">Site</TableHead>
+                  <TableHead className="w-[9%]">Clock in</TableHead>
+                  <TableHead className="w-[9%]">Clock out</TableHead>
+                  <TableHead className="w-[7%] text-right">Hours</TableHead>
                   <TableHead className="w-[14%]">Geofence</TableHead>
-                  <TableHead className="w-[12%]">Photo</TableHead>
+                  <TableHead className="w-[11%]">Photo</TableHead>
                   <TableHead className="w-[10%]">Attendance</TableHead>
-                  <TableHead className="w-[6%] text-right">Check</TableHead>
+                  <TableHead className="w-[12%] min-w-[88px] text-right">Check</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -378,10 +382,12 @@ export default function HRAttendancePage() {
                     <TableCell>
                       <StatusBadge status={l.attendanceStatus} />
                     </TableCell>
-                    <TableCell className="text-right">
-                      <Button size="sm" variant="outline" onClick={() => setReviewing(l)}>
-                        Verify
-                      </Button>
+                    <TableCell className="min-w-[88px] text-right">
+                      {!readOnly && (
+                        <Button size="sm" variant="outline" className="whitespace-nowrap" onClick={() => setReviewing(l)}>
+                          Verify
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}

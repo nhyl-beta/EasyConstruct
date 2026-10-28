@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
+import { useIsReadOnlyAdmin } from "@/hooks/use-read-only-admin";
 import { usePagination } from "@/hooks/use-pagination";
 import { useServerList } from "@/hooks/use-server-list";
 import { qk } from "@/lib/query-keys";
@@ -47,6 +48,7 @@ function Figure({ label, value, strong }: { label: string; value: string; strong
 }
 
 export default function FinancePayrollReviewPage() {
+  const readOnly = useIsReadOnlyAdmin();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<BatchDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -415,6 +417,7 @@ export default function FinancePayrollReviewPage() {
                         className="mt-1 min-h-20 w-full rounded-md border bg-background p-3 text-sm outline-none focus:ring-2 disabled:opacity-50"
                       />
                     </div>
+                    {!readOnly && (
                     <div className="flex gap-2">
                       <button
                         type="button"
@@ -435,6 +438,7 @@ export default function FinancePayrollReviewPage() {
                         Approve Payroll
                       </button>
                     </div>
+                    )}
                   </div>
                 </div>
               </>

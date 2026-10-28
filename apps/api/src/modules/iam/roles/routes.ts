@@ -4,8 +4,9 @@ import { authenticate, requireRole } from "../../../core/auth/middleware.js";
 
 const router = Router();
 
-// GET-only router (the roles catalogue is seeded, never edited over HTTP; permissions are enforced
-// by requireRole() on each route and the client resource map, not by a table).
+// GET-only router: Admin and Owner monitor, and nobody writes over HTTP (the roles catalogue is seeded,
+// never edited over HTTP; permissions are enforced by requireRole() on each route and the client resource
+// map, not by a table). Any role changes would belong to IT Designer only, never Admin.
 // IT Designer needs it to pick a role when creating/editing an account;
 // Owner needs it for the read-only "who can do what" side of oversight.
 router.use(authenticate, requireRole("admin", "owner", "it-designer"));
