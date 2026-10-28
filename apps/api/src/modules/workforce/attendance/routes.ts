@@ -29,23 +29,23 @@ router.use(authenticate);
 
 // Site attendance by spreadsheet. Declared before "/:id" so "import" isn't
 // taken for an id. Site Personnel upload for the projects they are staffed
-// on; Admin may upload for any.
-const canImportSheets = requireRole("site-personnel", "admin");
-router.get("/import/template", canImportSheets, controller.importTemplate);
+// on. Admin may fetch the template (read) but no longer imports.
+const canImportSheets = requireRole("site-personnel");
+router.get("/import/template", requireRole("site-personnel", "admin"), controller.importTemplate);
 router.post("/import/preview", canImportSheets, sheetUpload.single("file"), controller.importPreview);
 router.post("/import/commit", canImportSheets, sheetUpload.single("file"), controller.importCommit);
 
 router.get("/", controller.getAll);
 // E1: declared before "/:id" so these are not read as ids.
 router.get("/heatmap", controller.heatmap);
-router.post("/bulk-verify", requireRole("human-resources", "admin"), controller.bulkVerify);
+router.post("/bulk-verify", requireRole("human-resources"), controller.bulkVerify);
 // Fix 2.3: exception flags and the one-click "Mark absent". Before "/:id".
 router.get("/exceptions", requireRole("human-resources", "admin"), controller.exceptions);
-router.post("/mark-absent", requireRole("human-resources", "admin"), validate(markAbsentSchema), controller.markAbsent);
+router.post("/mark-absent", requireRole("human-resources"), validate(markAbsentSchema), controller.markAbsent);
 router.get("/:id", controller.getById);
 router.post(
   "/",
-  requireRole("site-personnel", "admin", "it-designer"),
+  requireRole("site-personnel", "it-designer"),
   validate(createAttendanceSchema),
   controller.create,
 );
@@ -62,7 +62,6 @@ router.patch(
     "site-personnel",
     "project-manager",
     "human-resources",
-    "admin",
     "it-designer",
   ),
   validate(updateAttendanceSchema),
@@ -70,7 +69,7 @@ router.patch(
 );
 router.delete(
   "/:id",
-  requireRole("human-resources", "admin", "it-designer"),
+  requireRole("human-resources", "it-designer"),
   controller.remove,
 );
 

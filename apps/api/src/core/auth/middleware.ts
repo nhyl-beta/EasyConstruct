@@ -131,7 +131,8 @@ export async function authenticate(
 }
 
 export function requireRole(...roles: string[]) {
-  return (
+  // `requiredRoles` lets a test read a route's guard without a database (see role-matrix.test.ts).
+  return Object.assign((
     req: AuthedRequest,
     _res: Response,
     next: NextFunction,
@@ -149,5 +150,5 @@ export function requireRole(...roles: string[]) {
     }
 
     next();
-  };
+  }, { requiredRoles: roles });
 }
