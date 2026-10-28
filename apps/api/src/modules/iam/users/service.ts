@@ -11,6 +11,9 @@ import { ConflictError, NotFoundError, ValidationError } from "../../../core/uti
 import * as repo from "./repository.js";
 import { assertEmployeeLinkable, assertLinkEmailsMatch } from "./linking.js";
 import { invalidateSessionCache } from "../../../core/auth/middleware.js";
+import { registerExecutor } from "../owner-approvals/executors.js";
+import { needsOwnerApproval } from "../owner-approvals/rules.js";
+import * as ownerApprovals from "../owner-approvals/service.js";
 import { users as usersTable } from "../../../core/db/schema/users.js";
 import { orderByFor, paginate, type PageRequest } from "../../../core/utils/pagination.js";
 import type {
@@ -20,6 +23,16 @@ import type {
 } from "./types.js";
 
 const PASSWORD_SALT_ROUNDS = 10;
+
+/** Who is making the change. A change to the Owner account by anyone but the Owner is held for the Owner's approval. */
+export interface Actor {
+  id: number;
+  name: string;
+  role: string;
+}
+
+/** What a gated change returns instead of the updated account (the controller answers 202). */
+export type GatedResult<T> = T | ownerApprovals.PendingApproval;
 
 export const getAll = async (filters: UserFilters) => repo.findAll(filters);
 
@@ -161,9 +174,8 @@ export const createEmployeeFromAccount = async (userId: number) => {
   return { user, employee: created };
 };
 
-export const update = async (id: number, input: UpdateUserInput) => {
-  const current = await getById(id);
-
+/** All the checks an account update must pass. Run again at approval time, so a stale approval cannot slip a bad change through. */
+const validateUpdate = async (id: number, input: UpdateUserInput, current: Awaited<ReturnType<typeof getById>>) => {
   if (input.role) await assertRoleExists(input.role);
   if (input.role === "owner" && current.role !== "owner") {
     await assertOwnerSlotAvailable(id);
@@ -186,10 +198,52 @@ export const update = async (id: number, input: UpdateUserInput) => {
       throw new ConflictError(`A user with email ${input.email} already exists`);
     }
   }
+};
 
+/** The update itself, with no approval gate. Only this module and the approval executors call it. */
+const applyUpdate = async (id: number, input: UpdateUserInput) => {
+  const current = await getById(id);
+  await validateUpdate(id, input, current);
   const updated = await repo.update(id, input);
   if (!updated) throw new NotFoundError("User", String(id));
   return updated;
+};
+
+export const update = async (id: number, input: UpdateUserInput, actor: Actor) => {
+  const current = await getById(id);
+
+  if (needsOwnerApproval(current, actor)) {
+    await validateUpdate(id, input, current);
+    const roleChange = input.role !== undefined && input.role !== current.role;
+    const nameChange = input.name !== undefined && input.name !== current.name;
+    const emailChange = input.email !== undefined && input.email !== current.email;
+    if (roleChange && (nameChange || emailChange)) {
+      throw new ValidationError("Change the Owner's role and the Owner's name or email in separate requests");
+    }
+    if (roleChange) {
+      return ownerApprovals.request({
+        targetUserId: id,
+        action: "change_role",
+        payload: { role: input.role, fromRole: current.role },
+        requester: actor,
+      });
+    }
+    if (nameChange || emailChange) {
+      return ownerApprovals.request({
+        targetUserId: id,
+        action: "change_identity",
+        payload: {
+          ...(nameChange ? { name: input.name } : {}),
+          ...(emailChange ? { email: input.email } : {}),
+          from: { name: current.name, email: current.email },
+        },
+        requester: actor,
+      });
+    }
+    // Nothing about the Owner would change, so there is nothing to approve.
+  }
+
+  return applyUpdate(id, input);
 };
 
 /**
@@ -200,28 +254,25 @@ export const update = async (id: number, input: UpdateUserInput) => {
  *
  * The plaintext never leaves this call — it is hashed here and the repository
  * only ever returns the public columns, so no hash is echoed back either.
+ * For the Owner account the hash (never the plaintext) waits for the Owner's approval.
  */
-export const setPassword = async (id: number, password: string) => {
-  await getById(id);
-  const updated = await repo.setPassword(
-    id,
-    await bcrypt.hash(password, PASSWORD_SALT_ROUNDS),
-  );
+export const setPassword = async (id: number, password: string, actor: Actor) => {
+  const current = await getById(id);
+  const passwordHash = await bcrypt.hash(password, PASSWORD_SALT_ROUNDS);
+  if (needsOwnerApproval(current, actor)) {
+    return ownerApprovals.request({ targetUserId: id, action: "password_reset", payload: { passwordHash }, requester: actor });
+  }
+  return applySetPassword(id, passwordHash);
+};
+
+const applySetPassword = async (id: number, passwordHash: string) => {
+  const updated = await repo.setPassword(id, passwordHash);
   if (!updated) throw new NotFoundError("User", String(id));
+  invalidateSessionCache(id);
   return updated;
 };
 
-export const setActive = async (
-  id: number,
-  isActive: boolean,
-  actingUserId: number,
-) => {
-  // Deactivating yourself would lock the only account that can reverse it out
-  // of the system — the same fail-safe reasoning behind Owner's recovery flow.
-  if (!isActive && id === actingUserId) {
-    throw new ValidationError("You cannot deactivate your own account");
-  }
-
+const applySetActive = async (id: number, isActive: boolean) => {
   const user = await getById(id);
   if (!isActive) await assertNotLastActiveOwner(id, user.role);
 
@@ -232,26 +283,23 @@ export const setActive = async (
   return updated;
 };
 
-/**
- * Permanently delete an account.
- *
- * Deliberately narrow, because this is the one irreversible action on this
- * module:
- *  - only an already-deactivated account can be removed, so deletion is
- *    always a second, separate decision after access has been revoked;
- *  - it refuses while anything still references the row (employee record,
- *    project membership, assigned task) rather than cascading, so removing a
- *    user can never silently destroy HR or project history;
- *  - you cannot delete yourself.
- *
- * Audit-log entries survive: audit_logs stores an actor *name*, not a user
- * FK, so the trail of what this person did remains intact.
- */
-export const remove = async (id: number, actingUserId: number) => {
-  if (id === actingUserId) {
-    throw new ValidationError("You cannot delete your own account");
+export const setActive = async (id: number, isActive: boolean, actor: Actor) => {
+  // Deactivating yourself would lock the only account that can reverse it out
+  // of the system — the same fail-safe reasoning behind Owner's recovery flow.
+  if (!isActive && id === actor.id) {
+    throw new ValidationError("You cannot deactivate your own account");
   }
 
+  const user = await getById(id);
+  if (needsOwnerApproval(user, actor)) {
+    if (!isActive) await assertNotLastActiveOwner(id, user.role);
+    return ownerApprovals.request({ targetUserId: id, action: isActive ? "reactivate" : "deactivate", requester: actor });
+  }
+  return applySetActive(id, isActive);
+};
+
+/** Refuses unless the account may be deleted now (deactivated, nothing still pointing at it). */
+const assertRemovable = async (id: number) => {
   const user = await getById(id);
 
   if (user.isActive) {
@@ -288,8 +336,61 @@ export const remove = async (id: number, actingUserId: number) => {
       `This account still has ${blockers.join(", ")}. Reassign or remove those first — the account stays deactivated in the meantime.`,
     );
   }
+  return user;
+};
 
+const applyRemove = async (id: number) => {
+  await assertRemovable(id);
   const deleted = await repo.remove(id);
   if (!deleted) throw new NotFoundError("User", String(id));
   return deleted;
 };
+
+/**
+ * Permanently delete an account.
+ *
+ * Deliberately narrow, because this is the one irreversible action on this
+ * module:
+ *  - only an already-deactivated account can be removed, so deletion is
+ *    always a second, separate decision after access has been revoked;
+ *  - it refuses while anything still references the row (employee record,
+ *    project membership, assigned task) rather than cascading, so removing a
+ *    user can never silently destroy HR or project history;
+ *  - you cannot delete yourself;
+ *  - the Owner account needs the Owner's approval by email first.
+ *
+ * Audit-log entries survive: audit_logs stores an actor *name*, not a user
+ * FK, so the trail of what this person did remains intact.
+ */
+export const remove = async (id: number, actor: Actor) => {
+  if (id === actor.id) {
+    throw new ValidationError("You cannot delete your own account");
+  }
+
+  const user = await getById(id);
+  if (needsOwnerApproval(user, actor)) {
+    await assertRemovable(id);
+    return ownerApprovals.request({ targetUserId: id, action: "delete", requester: actor });
+  }
+  return applyRemove(id);
+};
+
+// What runs when the Owner approves. These are the ungated functions above, so every guard (last owner, unique email,
+// removable account) and the session invalidation still apply at the moment of execution.
+registerExecutor("deactivate", async (r) => void (await applySetActive(r.targetUserId, false)));
+registerExecutor("reactivate", async (r) => void (await applySetActive(r.targetUserId, true)));
+registerExecutor("password_reset", async (r) => {
+  const hash = (r.payload as { passwordHash?: string } | null)?.passwordHash;
+  if (!hash) throw new Error("The stored request has no password");
+  await applySetPassword(r.targetUserId, hash);
+});
+registerExecutor("change_role", async (r) => {
+  const role = (r.payload as { role?: string } | null)?.role;
+  if (!role) throw new Error("The stored request has no role");
+  await applyUpdate(r.targetUserId, { role });
+});
+registerExecutor("change_identity", async (r) => {
+  const p = (r.payload ?? {}) as { name?: string; email?: string };
+  await applyUpdate(r.targetUserId, { ...(p.name !== undefined ? { name: p.name } : {}), ...(p.email !== undefined ? { email: p.email } : {}) });
+});
+registerExecutor("delete", async (r) => void (await applyRemove(r.targetUserId)));
