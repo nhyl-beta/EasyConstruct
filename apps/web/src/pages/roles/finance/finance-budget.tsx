@@ -302,7 +302,9 @@ export default function FinanceBudget() {
             >
               <Download className="mr-1 h-3.5 w-3.5" /> Export
             </Button>
-            <NewBudgetDialog creating={c.creating} error={c.error} onCreate={c.createBudget} />
+            {user?.role === "finance-manager" && (
+              <NewBudgetDialog creating={c.creating} error={c.error} onCreate={c.createBudget} />
+            )}
           </>
         }
       />
@@ -796,6 +798,7 @@ export default function FinanceBudget() {
                     placeholder="Provide context for your decision…"
                   />
                 </div>
+                {user?.role === "finance-manager" && (
                 <div className="grid grid-cols-3 gap-2">
                   <Button
                     size="sm"
@@ -829,6 +832,7 @@ export default function FinanceBudget() {
                     Reject
                   </Button>
                 </div>
+                )}
                 <div className="rounded-xl border bg-muted/40 p-3 text-overline text-muted-foreground">
                   Every decision is signed, timestamped, and written to the
                   immutable audit log.

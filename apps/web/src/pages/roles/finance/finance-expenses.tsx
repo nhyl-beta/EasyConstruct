@@ -156,7 +156,8 @@ export default function FinanceExpensesPage() {
   const procurement = useProcurement();
   const { user } = useAuth();
   // The server enforces this too (403); the buttons are simply not offered to other roles.
-  const canDecide = user?.role === "finance-manager" || user?.role === "admin";
+  // Admin reads the ledger; recording, approving and paying are Finance Manager only (the API refuses Admin).
+  const canDecide = user?.role === "finance-manager";
   const pagination = c.pagination;
   const { categories } = useExpenseCategories();
   // The Tracking filter lists every category (active and retired) plus any value on the rows shown,
@@ -200,7 +201,7 @@ export default function FinanceExpensesPage() {
         actions={
           <>
             {canManageCategories && <ManageCategoriesDialog />}
-            <RecordExpenseDialog creating={c.creating} error={c.createError} onCreate={c.createExpense} />
+            {canDecide && <RecordExpenseDialog creating={c.creating} error={c.createError} onCreate={c.createExpense} />}
           </>
         }
       />
