@@ -1,3 +1,4 @@
+import { useIsReadOnlyAdmin } from "@/hooks/use-read-only-admin";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -58,6 +59,7 @@ const VERIFICATION_OPTIONS = ["Pending", "Verified", "Flagged"];
 const DAY_STATUS_OPTIONS = ["Present", "Late", "Absent", "On Leave", "Half Day"];
 
 export default function HRAttendancePage() {
+  const readOnly = useIsReadOnlyAdmin();
   // An "outside the site radius" alert links here with ?highlight=<record id>: show just that person's
   // clock-in for that day, highlighted, with a way back to the whole log.
   const [params, setParams] = useSearchParams();
@@ -170,6 +172,7 @@ export default function HRAttendancePage() {
               </p>
             </div>
             <div className="flex items-center gap-2">
+              {!readOnly && (<>
               <Button
                 size="sm"
                 variant="outline"
@@ -187,6 +190,7 @@ export default function HRAttendancePage() {
               <Button size="sm">
                 <ShieldCheck className="h-4 w-4" /> Resolve flags
               </Button>
+              </>)}
             </div>
           </CardHeader>
 
@@ -379,9 +383,11 @@ export default function HRAttendancePage() {
                       <StatusBadge status={l.attendanceStatus} />
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button size="sm" variant="outline" onClick={() => setReviewing(l)}>
-                        Verify
-                      </Button>
+                      {!readOnly && (
+                        <Button size="sm" variant="outline" onClick={() => setReviewing(l)}>
+                          Verify
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}

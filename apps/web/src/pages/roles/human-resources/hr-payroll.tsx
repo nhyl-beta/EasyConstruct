@@ -37,6 +37,7 @@ import { PayslipDialog } from "@/features/hr/components/payslip-dialog";
 import { PayslipButton } from "@/features/hr/components/payslip-button";
 import { PayrollRulesNotice } from "@/features/hr/components/PayrollRulesNotice";
 import { PayrollTraceButton, PayrollTraceSheet } from "@/features/hr/components/PayrollTraceSheet";
+import { useIsReadOnlyAdmin } from "@/hooks/use-read-only-admin";
 import { AlertTriangle, ArrowUpRight, Building2, CheckCircle2, Download, FileText, RefreshCw, Wallet } from "lucide-react";
 import { downloadCsv } from "@/lib/export-csv";
 import { formatCompactCurrency, formatCurrency } from "@/lib/format-currency";
@@ -57,6 +58,7 @@ const AGENCIES: Array<{ key: Agency; label: string }> = [
 ];
 
 export default function HRPayrollPage() {
+  const readOnly = useIsReadOnlyAdmin();
   const [error, setError] = useState<string | null>(null);
   const [wizardOpen, setWizardOpen] = useState(false);
   useOpenOnAction("generate-payroll", () => setWizardOpen(true));
@@ -201,9 +203,11 @@ export default function HRPayrollPage() {
             >
               <Download className="h-4 w-4" /> Export
             </Button>
-            <Button size="sm" onClick={() => openWizard(null)}>
-              Generate Payroll <ArrowUpRight className="h-4 w-4" />
-            </Button>
+            {!readOnly && (
+              <Button size="sm" onClick={() => openWizard(null)}>
+                Generate Payroll <ArrowUpRight className="h-4 w-4" />
+              </Button>
+            )}
           </>
         }
       />
@@ -232,9 +236,11 @@ export default function HRPayrollPage() {
                 {why?.comment ? ` — ${why.comment}` : ""}
               </div>
             </div>
-            <Button size="sm" onClick={() => openWizard(b.id)}>
-              Fix and resubmit
-            </Button>
+            {!readOnly && (
+              <Button size="sm" onClick={() => openWizard(b.id)}>
+                Fix and resubmit
+              </Button>
+            )}
           </div>
         );
       })}
@@ -293,7 +299,7 @@ export default function HRPayrollPage() {
                     <BatchStatusPill status={b.status} />
                   </TableCell>
                   <TableCell className="text-right">
-                    {(b.status === "draft" || b.status === "revision_required") && (
+                    {!readOnly && (b.status === "draft" || b.status === "revision_required") && (
                       <Button size="sm" variant="outline" onClick={() => openWizard(b.id)}>
                         {b.status === "draft" ? "Continue" : "Fix and resubmit"}
                       </Button>

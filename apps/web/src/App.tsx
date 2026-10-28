@@ -261,19 +261,19 @@ function App() {
                   <Route path="/employees" element={<RequireRole allow={["human_resources","admin","it_designer"]}><HREmployees /></RequireRole>} />
                   <Route
                     path="/employees/create"
-                    element={<RequireRole allow={["human_resources","admin","it_designer"]}><EmployeeCreatePage /></RequireRole>}
+                    element={<RequireRole allow={["human_resources"]}><EmployeeCreatePage /></RequireRole>}
                   />
                   <Route
                     path="/employees/edit/:id"
-                    element={<RequireRole allow={["human_resources","admin","it_designer"]}><EmployeeCreatePage /></RequireRole>}
+                    element={<RequireRole allow={["human_resources"]}><EmployeeCreatePage /></RequireRole>}
                   />
                   <Route
                     path="/employees/new"
-                    element={<RequireRole allow={["human_resources","admin","it_designer"]}><EmployeeCreatePage /></RequireRole>}
+                    element={<RequireRole allow={["human_resources"]}><EmployeeCreatePage /></RequireRole>}
                   />
                   <Route
                     path="/employees/:id/edit"
-                    element={<RequireRole allow={["human_resources","admin","it_designer"]}><EmployeeCreatePage /></RequireRole>}
+                    element={<RequireRole allow={["human_resources"]}><EmployeeCreatePage /></RequireRole>}
                   />
                   <Route path="/attendance" element={<AttendanceRouter />} />
                   <Route path="/payroll" element={<RequireRole allow={["human_resources","admin","it_designer"]}><HRPayroll /></RequireRole>} />

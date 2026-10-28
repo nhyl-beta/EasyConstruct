@@ -309,7 +309,7 @@ export const ACTIONS: QuickEntry[] = [
     route: "/employees/new",
     roles: ["human_resources"],
     resource: "employees",
-    changesData: true, // route guard: App.tsx RequireRole human_resources/admin/it_designer (server has no role guard on POST /employees)
+    changesData: true, // route guard: App.tsx RequireRole human_resources; the server also restricts POST /employees to HR
   },
   {
     id: "hr:generate-payroll",
