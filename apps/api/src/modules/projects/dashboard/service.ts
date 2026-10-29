@@ -79,16 +79,15 @@ const auditBlock = async (opts: { recent: number; actors?: number }) => {
 // ── Per role ────────────────────────────────────────────────────────────────
 
 const executive = async (actor: SummaryActor, recentAudit: number) => {
-  const [projects, activeWorkflows, approvals, proposals, audit] = await Promise.all([
+  const [projects, workflowRows, approvals, proposals, audit] = await Promise.all([
     projectsBlock(actor),
-    repo.activeWorkflowCount(null),
+    repo.workflowStatusCounts(null),
     approvalsBlock(actor),
     proposalsBlock(null),
     auditBlock({ recent: recentAudit, actors: 5 }),
   ]);
-  // GET /workflows returns only active workflows, so the dashboards' "completed"
-  // count (workflows filtered by status) has always been 0.
-  const workflows = aggregates.workflowCounts([{ status: "active", n: activeWorkflows }]);
+  // Org-wide, grouped by status: "completed" is only status = 'completed' (rejected ones are not counted).
+  const workflows = aggregates.workflowCounts(workflowRows);
   const { codes: _codes, ...projectsOut } = projects;
   return { projects: projectsOut, workflows, approvals, proposals, audit };
 };
