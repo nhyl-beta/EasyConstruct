@@ -45,6 +45,7 @@ import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
 import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
 import { useAuth } from "@/auth/auth-context";
+import { ApprovalStatCards } from "@/components/workflows/approval-stats-strip";
 import { WorkflowDetailDialog } from "@/components/workflows/workflow-detail-dialog";
 import { WorkflowInitiationActions } from "@/components/workflows/workflow-initiation-actions";
 import { useApprovalsPaged } from "@/features/workflows/hooks/useWorkflows";
@@ -69,11 +70,17 @@ interface ApprovalQueuePanelProps {
   emptyPendingMessage?: string;
   /** Admin's oversight page has its own "New workflow" button above. */
   showInitiationActions?: boolean;
+  /**
+   * The four status cards at the top of the queue. The /approvals page shows them itself, above its other
+   * sections (ApprovalStatsStrip), and turns this off so they are not shown twice.
+   */
+  showStats?: boolean;
 }
 
 export function ApprovalQueuePanel({
   emptyPendingMessage = "Nothing pending your decision.",
   showInitiationActions = true,
+  showStats = true,
 }: ApprovalQueuePanelProps) {
   const { user } = useAuth();
   const [tab, setTab] = useState<ApprovalScope>("pending");
@@ -204,19 +211,6 @@ export function ApprovalQueuePanel({
     if (failed.length > 0) toast.error(`${failed.length} could not be approved. ${failed.slice(0, 3).join(" | ")}`);
   };
 
-  const statCards = stats
-    ? [
-        { label: "Pending", value: `${stats.pending}`, tone: "text-foreground" },
-        {
-          label: "Overdue",
-          value: `${stats.overdue}`,
-          tone: stats.overdue > 0 ? "text-destructive-strong" : "text-foreground",
-        },
-        { label: "Avg cycle", value: `${stats.avgCycleDays}d`, tone: "text-foreground" },
-        { label: "This week", value: `${stats.thisWeek}`, tone: "text-foreground" },
-      ]
-    : [];
-
   return (
     <div className="space-y-5">
       {/* Roles that own a stage in a template can also start the chain that
@@ -226,18 +220,7 @@ export function ApprovalQueuePanel({
         <WorkflowInitiationActions role={user?.role ?? ""} onCreated={() => void reload()} />
       )}
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        {statCards.map((s) => (
-          <Card key={s.label}>
-            <CardContent className="space-y-1 p-4">
-              <div className="text-xs uppercase tracking-wider text-muted-foreground">
-                {s.label}
-              </div>
-              <div className={`text-2xl font-semibold tabular-nums ${s.tone}`}>{s.value}</div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {showStats && stats && <ApprovalStatCards stats={stats} />}
 
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <Tabs value={tab} onValueChange={(v) => setTab(v as ApprovalScope)}>

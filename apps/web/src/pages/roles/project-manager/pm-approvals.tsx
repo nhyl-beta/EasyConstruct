@@ -11,6 +11,7 @@
 // gap — an approver could not see what they were approving — so the fix
 // lives in one component rather than being applied twice and drifting.
 import { ApprovalQueuePanel } from "@/components/workflows/approval-queue-panel";
+import { ApprovalStatsStrip } from "@/components/workflows/approval-stats-strip";
 import { RequirementApprovalsPanel } from "@/features/requirements/components/RequirementApprovalsPanel";
 import { PmPurchasingPanel } from "@/features/finance/components/PmPurchasingPanel";
 import { useAuth } from "@/auth/auth-context";
@@ -25,10 +26,12 @@ export default function ApprovalsPage() {
   return (
     <div className="flex-1 space-y-6 p-4 md:p-8">
       <PageHeader title="Approvals" />
+      {/* The totals come first; the strip and the queue below share one stats query. */}
+      <ApprovalStatsStrip />
       {decidesRequirements && <RequirementApprovalsPanel />}
       {/* Purchasing is the Project Manager's sub-feature; Admin has no UI for it (the server allows Admin). */}
       {user?.role === "project-manager" && <PmPurchasingPanel />}
-      <ApprovalQueuePanel />
+      <ApprovalQueuePanel showStats={false} />
     </div>
   );
 }

@@ -219,6 +219,24 @@ export function useApprovalsPendingCount(): number {
   return query.data?.pending ?? 0;
 }
 
+/**
+ * The approval status cards' numbers. Same query key as the queue hooks and the sidebar badge, so one request
+ * feeds all of them and a decision (which invalidates the workflows domain) refreshes them together.
+ */
+export function useApprovalStats() {
+  const query = useQuery({
+    queryKey: qk.approvals.stats,
+    queryFn: () => WorkflowRepository.getApprovalStats(),
+    staleTime: STALE.badge,
+    retry: false,
+  });
+  return {
+    stats: (query.data ?? null) as ApprovalStats | null,
+    loading: query.isLoading,
+    failed: query.isError,
+  };
+}
+
 /** `limit` fetches only the first N queue items (cards that show a few rows). */
 export function useApprovals(scope: ApprovalScope, limit?: number) {
   const queue = useQuery({
