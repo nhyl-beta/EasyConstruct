@@ -54,14 +54,13 @@ export const projectsByCodes = async (codes: string[]) => {
 
 // ── Workflows / proposals / designs ─────────────────────────────────────────
 
-/** Active workflows (the only ones GET /workflows returns), optionally limited to project codes. */
-export const activeWorkflowCount = async (codes: Codes): Promise<number> => {
-  const [row] = await db
-    .select({ n: count() })
+/** Workflows grouped by status (active, completed, rejected, ...), optionally limited to project codes. */
+export const workflowStatusCounts = async (codes: Codes): Promise<{ status: string; n: number }[]> =>
+  db
+    .select({ status: workflows.status, n: count() })
     .from(workflows)
-    .where(and(eq(workflows.status, "active"), scoped(workflows.projectCode, codes)));
-  return row?.n ?? 0;
-};
+    .where(scoped(workflows.projectCode, codes))
+    .groupBy(workflows.status);
 
 export const proposalGroups = async (codes: Codes) =>
   db

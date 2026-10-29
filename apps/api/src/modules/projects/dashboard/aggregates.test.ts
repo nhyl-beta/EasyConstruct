@@ -255,3 +255,25 @@ describe("dashboard aggregates equal the browser-side logic", () => {
     assert.deepEqual(agg.taskWorkload(tasks, ["P-1", "P-2", "P-3"]), out);
   });
 });
+
+describe("workflowCounts", () => {
+  test("counts active and completed apart; rejected and cancelled are neither", () => {
+    const rows = [
+      { status: "active", n: 4 },
+      { status: "completed", n: 3 },
+      { status: "rejected", n: 2 },
+      { status: "cancelled", n: 1 },
+    ];
+    assert.deepEqual(agg.workflowCounts(rows), { active: 4, completed: 3 });
+  });
+
+  test("single rows (n omitted) count one each, and the same result comes from a GROUP BY", () => {
+    const single = [{ status: "active" }, { status: "completed" }, { status: "completed" }, { status: "rejected" }];
+    assert.deepEqual(agg.workflowCounts(single), { active: 1, completed: 2 });
+    assert.deepEqual(agg.workflowCounts(grouped(single, ["status"])), { active: 1, completed: 2 });
+  });
+
+  test("no workflows at all gives zeros", () => {
+    assert.deepEqual(agg.workflowCounts([]), { active: 0, completed: 0 });
+  });
+});
