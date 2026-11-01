@@ -1,16 +1,21 @@
 // Playwright reporter: writes qa/results/<run-timestamp>/ with one CSV per spec file, in the columns of the
-// "IT Designer Module" sheet, plus summary.csv and manual-queue.csv.
+// "IT Designer Module" test sheet, plus summary.csv and manual-queue.csv.
 //
-// Mapping from tests to spec rows is by title:
-//   CK-OWN-0001 ...            -> file 03 row with that Check ID
-//   LC-100 step 3 ...          -> file 02 row (case LC-100, step 3)   (a test.step title, or a test title)
-// Tags in the title: "@known:Bug-006" (stays Failed, does not fail the run) and "@pending-feature"
-// (skipped => Not Executed, "feature not on this branch").
+// Tests are tied to spec rows by title tokens:
+//   CK-OWN-0001          -> file 03 row (Check ID)               MX-OWN-03 -> file 01 cell (page x role)
+//   LC-100 step 3        -> file 02 row (a test.step title)
+//   [api] / [ui]         -> which part of a check this test covers. A check is Passed only when every part it
+//                           needs has run and passed (DENIED / READ-ONLY need api + ui; NAVIGATE / CONTENT need ui;
+//                           ACTION-* need api). A failed part always makes the check Failed.
+//   @known:Bug-006       -> stays Failed in the CSV, does not fail the run
+//   @pending-feature     -> skipped => Not Executed, "feature not on this branch"
+// A test can add `{ type: "remark", description }` annotations; they land in Remarks.
 import type { FullConfig, FullResult, Reporter, Suite, TestCase, TestResult, TestStep } from "@playwright/test/reporter";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadChecks, loadSteps, type Check, type Step } from "../spec.js";
+import { loadChecks, loadMatrix, loadSteps, type Check, type Step } from "../spec.js";
+import { mxId, ROLES } from "../roles.js";
 
 const QA_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 export const RESULTS_ROOT = join(QA_DIR, "results");
@@ -22,22 +27,32 @@ export const COLUMNS = [
 type Col = (typeof COLUMNS)[number];
 type Row = Record<Col, string>;
 type Status = "Passed" | "Failed" | "Not Executed";
+type PartStatus = "Passed" | "Failed" | "Skipped";
 
-interface Outcome { status: Status; actual: string; remarks: string; known?: string; pending?: boolean }
+interface Part { status: PartStatus; actual: string }
+interface Outcome { parts: Map<string, Part>; remarks: Set<string>; known?: string; pending: boolean }
 
 const csvCell = (v: string) => (/[",\r\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
 export const toCsv = (rows: Row[]) => [COLUMNS.join(","), ...rows.map((r) => COLUMNS.map((c) => csvCell(r[c] ?? "")).join(","))].join("\r\n") + "\r\n";
 const mdy = (d: Date) => `${d.getMonth() + 1}/${d.getDate()}/${d.getFullYear()}`;
 const stamp = (d: Date) => d.toISOString().replace(/[:.]/g, "-").slice(0, 19);
-const firstLine = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, "").split("\n").filter((l) => l.trim()).slice(0, 2).join(" ").slice(0, 300);
+const clean = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, "");
+const firstLine = (s: string) => clean(s).split("\n").filter((l) => l.trim()).slice(0, 2).join(" ").slice(0, 300);
 
 export function tagsOf(title: string): { known?: string; pending: boolean } {
   const k = title.match(/@known(?::([\w-]+))?/i);
   return { known: k ? (k[1] ?? "known") : undefined, pending: /@pending-feature/i.test(title) };
 }
 
+/** Parts a check needs before it can be called Passed. */
+export function requiredParts(type: string): string[] {
+  if (type === "DENIED" || type === "READ-ONLY") return ["api", "ui"];
+  if (type.startsWith("ACTION")) return ["api"];
+  return ["ui"];
+}
+
 class CsvReporter implements Reporter {
-  private outcomes = new Map<string, Outcome>(); // key: CK-id or "LC-100#3"
+  private outcomes = new Map<string, Outcome>(); // CK-id | MX-id | "LC-100#3"
   private started = new Date();
   private dir = "";
   private hardFailures = 0;
@@ -49,47 +64,48 @@ class CsvReporter implements Reporter {
   }
 
   private evidence(r: TestResult): string {
-    const files = r.attachments.filter((a) => a.path && /screenshot|trace/i.test(a.name + a.path)).map((a) => relative(QA_DIR, a.path!));
-    return files.join("; ");
+    return r.attachments.filter((a) => a.path && /screenshot|trace/i.test(a.name + a.path)).map((a) => relative(QA_DIR, a.path!)).join("; ");
   }
 
-  private record(key: string, t: TestCase, status: Status, actual: string, r: TestResult) {
+  private record(key: string, part: string, t: TestCase, status: PartStatus, actual: string, r: TestResult) {
     const title = t.titlePath().join(" ");
     const { known, pending } = tagsOf(title);
-    const prev = this.outcomes.get(key);
-    if (prev?.status === "Failed" && status === "Passed") return; // a failure is never overwritten by a later pass
-    let remarks = status === "Failed" ? this.evidence(r) : "";
-    if (known) remarks = [known, remarks].filter(Boolean).join("; ");
-    if (pending && status === "Not Executed") { actual = "Feature not on this branch"; remarks = "feature not on this branch"; }
-    this.outcomes.set(key, { status, actual: status === "Passed" ? "As expected" : actual, remarks, known, pending });
+    const o: Outcome = this.outcomes.get(key) ?? { parts: new Map(), remarks: new Set<string>(), pending };
+    this.outcomes.set(key, o);
+    if (known) o.known = known;
+    if (pending) o.pending = true;
+    const prev = o.parts.get(part);
+    if (prev?.status === "Failed") return;
+    o.parts.set(part, { status, actual });
+    if (status === "Failed") { const ev = this.evidence(r); if (ev) o.remarks.add(ev); }
+    for (const a of t.annotations) if (a.type === "remark" && a.description) o.remarks.add(a.description);
+    if (status === "Skipped" && actual) o.remarks.add(actual);
   }
 
   private walkSteps(steps: TestStep[], t: TestCase, r: TestResult) {
     for (const s of steps) {
       const m = s.title.match(/^(LC-\d+) step (\d+)/);
-      if (m) this.record(`${m[1]}#${m[2]}`, t, s.error ? "Failed" : "Passed", s.error ? firstLine(s.error.message ?? "") : "", r);
+      if (m) this.record(`${m[1]}#${m[2]}`, "main", t, s.error ? "Failed" : "Passed", s.error ? firstLine(s.error.message ?? "") : "", r);
       this.walkSteps(s.steps, t, r);
     }
   }
 
   onTestEnd(t: TestCase, r: TestResult) {
     const title = t.titlePath().join(" ");
-    const ck = title.match(/\bCK-[A-Z]{2,4}-\d{4}\b/);
-    const status: Status = r.status === "passed" ? "Passed" : r.status === "skipped" ? "Not Executed" : "Failed";
+    const part = title.match(/\[(api|ui)\]/)?.[1] ?? "main";
+    const status: PartStatus = r.status === "passed" ? "Passed" : r.status === "skipped" ? "Skipped" : "Failed";
     const err = r.error ? firstLine(r.error.message ?? "") : r.status === "skipped" ? (t.annotations.find((a) => a.type === "skip")?.description ?? "skipped") : "";
-    if (ck) this.record(ck[0], t, status, err, r);
+    const ids = [...title.matchAll(/\b(?:CK-[A-Z]{2,4}-\d{4}|MX-[A-Z]{2,4}-\d{2,3})\b/g)].map((m) => m[0]);
+    for (const id of ids) this.record(id, part, t, status, err, r);
     this.walkSteps(r.steps, t, r);
-    // A failing lifecycle test whose failure happened outside a titled step: mark every step of that case that has no outcome yet.
     const lc = title.match(/\b(LC-\d+)\b/);
     if (lc && status === "Failed") {
       for (const s of loadSteps().filter((x) => x.id === lc[1])) {
         const key = `${s.id}#${s.step}`;
-        if (!this.outcomes.has(key) && s.automation === "Auto") this.record(key, t, "Failed", err || "test failed before this step", r);
+        if (!this.outcomes.has(key) && s.automation === "Auto") this.record(key, "main", t, "Failed", err || "test failed before this step", r);
       }
     }
-    if (status === "Failed") {
-      if (tagsOf(title).known) this.knownFailures++; else this.hardFailures++;
-    }
+    if (status === "Failed") { if (tagsOf(title).known) this.knownFailures++; else this.hardFailures++; }
   }
 
   private baseRow(over: Partial<Row>): Row {
@@ -98,12 +114,29 @@ class CsvReporter implements Reporter {
     return Object.assign(row, over);
   }
 
-  private apply(row: Row, o: Outcome | undefined, auto: string) {
+  private apply(row: Row, o: Outcome | undefined, need: string[]) {
     if (!o) return row;
-    row["Status"] = o.status;
-    row["Actual Results"] = o.actual;
-    row["Remarks"] = o.remarks;
-    if (o.status !== "Not Executed") { row["Executed by"] = "Automated (Playwright)"; row["Executed Date"] = mdy(this.started); }
+    const parts = [...o.parts.entries()];
+    const failed = parts.filter(([, p]) => p.status === "Failed");
+    const okSet = new Set(parts.filter(([, p]) => p.status === "Passed").map(([k]) => k));
+    const satisfied = okSet.has("main") || need.every((n) => okSet.has(n));
+    const remarks = [...(o.known ? [o.known] : []), ...o.remarks];
+    if (failed.length) {
+      row["Status"] = "Failed";
+      row["Actual Results"] = failed.map(([k, p]) => (need.length > 1 || k !== "main" ? `[${k}] ` : "") + p.actual).join(" | ");
+    } else if (satisfied) {
+      row["Status"] = "Passed";
+      row["Actual Results"] = "As expected";
+    } else if (parts.some(([, p]) => p.status === "Passed")) {
+      row["Status"] = "Not Executed";
+      row["Actual Results"] = "";
+      remarks.push(`partly run: ${[...okSet].join("+")} passed; still needs ${need.filter((n) => !okSet.has(n)).join("+")}`);
+    } else {
+      row["Status"] = "Not Executed"; // every part skipped
+    }
+    if (o.pending && row["Status"] === "Not Executed") { row["Actual Results"] = "Feature not on this branch"; remarks.length = 0; remarks.push("feature not on this branch"); }
+    row["Remarks"] = remarks.join("; ");
+    if (row["Status"] !== "Not Executed") { row["Executed by"] = "Automated (Playwright)"; row["Executed Date"] = mdy(this.started); }
     return row;
   }
 
@@ -111,12 +144,27 @@ class CsvReporter implements Reporter {
     mkdirSync(this.dir, { recursive: true });
     const checks = loadChecks();
     const steps = loadSteps();
+    const matrix = loadMatrix();
 
     const rows03: Row[] = checks.map((c: Check) =>
       this.apply(this.baseRow({
         "Test Case ID": c.id, Objective: `${c.page} — ${c.type}`, "Test Procedure": c.procedure, "Expected Results": c.expected,
         Automation: c.automation, Role: c.role,
-      }), this.outcomes.get(c.id), c.automation));
+      }), this.outcomes.get(c.id), requiredParts(c.type)));
+
+    const rows01: Row[] = [];
+    matrix.forEach((m, i) => {
+      for (const r of ROLES) {
+        const level = m.byRole[r.label];
+        if (!level) continue;
+        rows01.push(this.apply(this.baseRow({
+          "Test Case ID": mxId(r.code, i + 1), Objective: m.page, "Test Data": m.notes,
+          "Test Procedure": m.isAction ? `Call the action's API as ${r.label}` : `Call the page's API as ${r.label} (read, write probe, and with no token)`,
+          "Expected Results": `${level}${m.isAction ? "" : level === "Full" ? ": read 2xx, write allowed" : level === "View only" ? ": read 2xx, write 403" : ": 403; no token 401"}`,
+          Automation: m.automation, Role: r.label,
+        }), this.outcomes.get(mxId(r.code, i + 1)), ["api"]));
+      }
+    });
 
     const manual: Row[] = [];
     const rows02: Row[] = steps.map((s: Step) => {
@@ -124,7 +172,7 @@ class CsvReporter implements Reporter {
         "Test Case ID": s.id, Objective: s.objective, Precondition: s.precondition, "Test Data": s.testData, Steps: String(s.step),
         "Test Procedure": s.procedure, "Expected Results": s.expected, Automation: s.automation, Role: s.actor,
       });
-      this.apply(row, this.outcomes.get(`${s.id}#${s.step}`), s.automation);
+      this.apply(row, this.outcomes.get(`${s.id}#${s.step}`), []);
       if (s.automation !== "Auto" && row["Status"] === "Not Executed") {
         row["Remarks"] = `${s.automation}: human must check — ${s.expected}`;
         manual.push({ ...row });
@@ -132,34 +180,32 @@ class CsvReporter implements Reporter {
       return row;
     });
 
-    writeFileSync(join(this.dir, "03_role_page_checks.csv"), toCsv(rows03));
+    writeFileSync(join(this.dir, "01_access_matrix.csv"), toCsv(rows01));
     writeFileSync(join(this.dir, "02_lifecycle_test_cases.csv"), toCsv(rows02));
+    writeFileSync(join(this.dir, "03_role_page_checks.csv"), toCsv(rows03));
     writeFileSync(join(this.dir, "manual-queue.csv"), toCsv(manual));
-    writeFileSync(join(this.dir, "summary.csv"), this.summary(rows03, rows02, steps));
-    // Keep a stable pointer to the latest run for qa:findings.
+    writeFileSync(join(this.dir, "summary.csv"), this.summary(rows01, rows02, rows03, steps));
     mkdirSync(RESULTS_ROOT, { recursive: true });
     writeFileSync(join(RESULTS_ROOT, "latest.txt"), this.dir + "\n");
-    console.log(`\nQA results: ${relative(process.cwd(), this.dir) || this.dir}  (hard failures: ${this.hardFailures}, known: ${this.knownFailures})`);
-
-    // Tests tagged @known stay Failed in the CSV but must not break the exit code.
+    console.log(`\nQA results: ${this.dir}  (hard failures: ${this.hardFailures}, known: ${this.knownFailures})`);
     if (this.hardFailures === 0 && this.knownFailures > 0) return { status: "passed" as const };
     return undefined;
   }
 
-  private summary(rows03: Row[], rows02: Row[], steps: Step[]): string {
+  private summary(rows01: Row[], rows02: Row[], rows03: Row[], steps: Step[]): string {
     type Tally = { Passed: number; Failed: number; "Not Executed": number; Known: number; "Pending-feature": number };
     const mk = (): Tally => ({ Passed: 0, Failed: 0, "Not Executed": 0, Known: 0, "Pending-feature": 0 });
     const groups = new Map<string, Tally>();
     const add = (g: string, row: Row) => {
       const t = groups.get(g) ?? mk(); groups.set(g, t);
-      const remarks = row["Remarks"].toLowerCase();
       if (row["Status"] === "Failed" && /(^|; )(bug-?\d+|known)/i.test(row["Remarks"])) t.Known++;
-      else if (row["Status"] === "Not Executed" && remarks.includes("feature not on this branch")) t["Pending-feature"]++;
+      else if (row["Status"] === "Not Executed" && row["Remarks"].toLowerCase().includes("feature not on this branch")) t["Pending-feature"]++;
       else t[row["Status"] as Status]++;
     };
     const stageOf = new Map(steps.map((s) => [s.id, s.stage]));
     for (const r of rows02) { add(`stage: ${stageOf.get(r["Test Case ID"]) ?? "?"}`, r); add(`role: ${r["Role"]}`, r); }
     for (const r of rows03) { add("stage: Role-page checks (file 03)", r); add(`role: ${r["Role"]}`, r); }
+    for (const r of rows01) { add("stage: Access matrix (file 01)", r); add(`role: ${r["Role"]}`, r); }
     const lines = ["Group,Passed,Failed,Not Executed,Known,Pending-feature"];
     for (const [g, t] of [...groups].sort()) lines.push([csvCell(g), t.Passed, t.Failed, t["Not Executed"], t.Known, t["Pending-feature"]].join(","));
     return lines.join("\r\n") + "\r\n";

@@ -7,6 +7,7 @@ const cfg = guardOrExit();
 export default defineConfig({
   testDir: "./tests",
   outputDir: "./results/playwright-artifacts",
+  globalSetup: "./src/global-setup.ts",
   timeout: 60_000,
   fullyParallel: true,
   workers: process.env.CI ? 2 : 4,
@@ -16,7 +17,10 @@ export default defineConfig({
     baseURL: cfg.baseUrl,
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
-    launchOptions: { executablePath: process.env.QA_CHROMIUM_PATH || undefined },
+    launchOptions: { executablePath: process.env.QA_CHROMIUM_PATH || undefined, args: ["--no-sandbox"] },
   },
-  projects: [{ name: "chromium", use: { browserName: "chromium" } }],
+  projects: [
+    { name: "api", testMatch: /api\/.*\.spec\.ts/ },
+    { name: "ui-access", testMatch: /ui\/access\.spec\.ts/, use: { browserName: "chromium" } },
+  ],
 });

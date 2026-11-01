@@ -25,3 +25,6 @@ export const roleByLabel = (label: string): RoleDef => {
   if (!r) throw new Error(`Unknown role "${label}"`);
   return r;
 };
+
+/** Id of a file-01 cell (page row number x role). */
+export const mxId = (roleCode: string, rowNo: number) => `MX-${roleCode}-${String(rowNo).padStart(2, "0")}`;
