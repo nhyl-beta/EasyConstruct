@@ -34,19 +34,28 @@ export { expect };
 
 export interface SidebarItem { text: string; href: string }
 
-/** Expands every collapsed group, then lists the sidebar links. */
+const SIDEBAR = "[data-slot='sidebar']";
+
+/** Expands every collapsed group, then lists the page buttons (groups themselves are not pages). The sidebar uses
+ *  buttons, not links, and appends a count badge to some labels ("Approvals1"), which is stripped. */
 export async function sidebarItems(page: Page): Promise<SidebarItem[]> {
-  const nav = page.locator("aside, [data-sidebar='sidebar'], nav").first();
-  await nav.waitFor({ state: "visible", timeout: 15_000 });
+  const sb = page.locator(SIDEBAR);
+  await sb.first().waitFor({ state: "attached", timeout: 15_000 });
+  await page.locator(`${SIDEBAR} [data-sidebar='menu-button']`).first().waitFor({ state: "visible", timeout: 15_000 });
   for (let i = 0; i < 4; i++) {
-    const closed = nav.locator("[aria-expanded='false']");
+    const closed = sb.locator("[data-sidebar='menu-button'][aria-expanded='false']");
     const n = await closed.count();
     if (!n) break;
-    for (let k = 0; k < n; k++) await closed.nth(k).click({ timeout: 2000 }).catch(() => {});
-    await page.waitForTimeout(150);
+    for (let k = 0; k < n; k++) await closed.nth(0).click({ timeout: 2000 }).catch(() => {});
+    await page.waitForTimeout(200);
   }
-  return nav.locator("a").evaluateAll((as) => as.map((a) => ({ text: (a.textContent ?? "").replace(/\s+/g, " ").trim(), href: a.getAttribute("href") ?? "" })).filter((x) => x.text));
+  return sb.locator("[data-sidebar='menu-button']:not([aria-expanded]), [data-sidebar='menu-sub-button']").evaluateAll((els) =>
+    els.map((e) => ({ text: (e.textContent ?? "").replace(/\s+/g, " ").trim().replace(/\s*\d+$/, ""), href: "" })).filter((x) => x.text));
 }
+
+export const sidebarButton = (page: Page, label: string) =>
+  page.locator(`${SIDEBAR} [data-sidebar='menu-button']:not([aria-expanded]), ${SIDEBAR} [data-sidebar='menu-sub-button']`)
+    .filter({ hasText: new RegExp(`^\\s*${label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*\\d*\\s*$`) }).first();
 
 export const norm = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
 export const findItem = (items: SidebarItem[], labels: string[]) => items.find((i) => labels.some((l) => norm(i.text) === norm(l)));

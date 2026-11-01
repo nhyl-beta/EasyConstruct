@@ -4,7 +4,7 @@ import { statePath } from "../../src/global-setup.js";
 import { PAGE_ROUTES, PAGE_UI } from "../../src/page-map.js";
 import { ROLES } from "../../src/roles.js";
 import { loadChecks, loadMatrix } from "../../src/spec.js";
-import { DENIED_TEXT, expect, findItem, settle, sidebarItems, test } from "./fixtures.js";
+import { DENIED_TEXT, expect, findItem, settle, sidebarButton, sidebarItems, test } from "./fixtures.js";
 
 const checks = loadChecks().filter((c) => ["NAVIGATE", "CONTENT", "DENIED", "READ-ONLY"].includes(c.type));
 const matrix = loadMatrix();
@@ -51,7 +51,7 @@ for (const role of ROLES) {
         // NAVIGATE / CONTENT / READ-ONLY: the page must be reachable from the sidebar.
         expect(item, `sidebar item '${ui!.labels.join("' / '")}' not found (sidebar has: ${items.map((i) => i.text).join(", ")})`).toBeTruthy();
         const before = health.failedRequests.length;
-        await page.locator(`aside a, nav a`).filter({ hasText: new RegExp(`^\\s*${item!.text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*$`) }).first().click();
+        await sidebarButton(page, item!.text).click();
         await settle(page);
         expect(page.url(), "navigation ended on the login page").not.toContain("/login");
         const body = (await page.locator("main, body").first().innerText()) ?? "";
