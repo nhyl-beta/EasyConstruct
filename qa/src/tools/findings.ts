@@ -33,7 +33,7 @@ if (existsSync(clsFile)) { const [h, ...rs] = parseCsv(readFileSync(clsFile, "ut
 
 type Item = { id: string; who: string; what: string; detail: string };
 const groups: Record<"a" | "b" | "c" | "d" | "e", Item[]> = { a: [], b: [], c: [], d: [], e: [] };
-const KNOWN = /(bug[- ]?\d+|known defect|@known|Projects-pagination|UserAccounts)/i;
+const KNOWN = /(bug[- ]?\d+|known defect|@known|role-check-fix-pending|Projects-pagination|UserAccounts)/i;
 const clean = (s: string) => s.replace(/\s+/g, " ").replace(/^\[(api|ui)\] ?/, "").replace(/ expect\(received\).*$/, "").slice(0, 190);
 
 for (const r of m01) if (r["Status"] === "Failed") (KNOWN.test(r["Remarks"]!) ? groups.e : groups.a).push({ id: r["Test Case ID"]!, who: r["Role"]!, what: r["Objective"]!, detail: clean(r["Actual Results"]!) });
