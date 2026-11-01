@@ -19,9 +19,16 @@ export const ROLES: RoleDef[] = [
   { label: "Consultant", slug: "consultant", backend: "consultant", email: "consultant@easyconstruct.demo", code: "CON" },
 ];
 
+/** Extra seeded accounts used by lifecycle tests (not one of the 10 spec roles). */
+export const EXTRA_ACCOUNTS: RoleDef[] = [
+  { label: "Project Manager (other)", slug: "project-manager-2", backend: "project-manager", email: "projectmanager1@easyconstruct.demo", code: "PM2" },
+  { label: "Engineer (other)", slug: "engineer-2", backend: "engineer", email: "engineer1@easyconstruct.demo", code: "EN2" },
+  { label: "Site Personnel (other)", slug: "site-personnel-2", backend: "site-personnel", email: "sitepersonnel1@easyconstruct.demo", code: "SI2" },
+];
+
 export type RoleLabel = (typeof ROLES)[number]["label"];
 export const roleByLabel = (label: string): RoleDef => {
-  const r = ROLES.find((x) => x.label.toLowerCase() === label.trim().toLowerCase());
+  const r = [...ROLES, ...EXTRA_ACCOUNTS].find((x) => x.label.toLowerCase() === label.trim().toLowerCase());
   if (!r) throw new Error(`Unknown role "${label}"`);
   return r;
 };

@@ -8,6 +8,7 @@ import { assertQaEnvironment, assertResetAllowed, GuardError, type QaConfig } fr
 import { ROLES } from "../roles.js";
 import { API_DIR, apiPort, qaChildEnv } from "./env.js";
 import { startStandIn } from "./estimationpro-standin.js";
+import { renameProjectCodes } from "./rename.js";
 
 const STAGES: { code: string; phase: string; pct: number }[] = [
   { code: "DEMO-STAGE-0", phase: "Proposal", pct: 8 }, { code: "DEMO-STAGE-1", phase: "Design", pct: 25 },
@@ -94,9 +95,9 @@ async function main() {
 
   const c2 = new pg.Client({ connectionString: cfg.databaseUrl });
   await c2.connect();
-  for (let i = 1; i <= 7; i++) {
-    await c2.query("UPDATE projects SET code = $1 WHERE code = $2", [`DEMO-STAGE-${i - 1}`, `DEMO-S${i}`]);
-  }
+  const map = Object.fromEntries(Array.from({ length: 7 }, (_, i) => [`DEMO-S${i + 1}`, `DEMO-STAGE-${i}`]));
+  const touched = await renameProjectCodes(c2, map);
+  console.log("renamed project codes in:", Object.entries(touched).map(([k, n]) => `${k}(${n})`).join(", "));
   const have = await c2.query("SELECT code, status, progress FROM projects WHERE code LIKE 'DEMO-STAGE-%' ORDER BY code");
   console.log("\nDemo projects (documented vs actual):");
   const mismatches: string[] = [];

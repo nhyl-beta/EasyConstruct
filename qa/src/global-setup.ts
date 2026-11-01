@@ -13,7 +13,7 @@ export default async function globalSetup() {
   const cfg = assertQaEnvironment();
   mkdirSync(AUTH_DIR, { recursive: true });
   // Fingerprint: the QA Owner exists only in the QA seed, so a successful login proves the API serves the QA database.
-  const sessions = await loadSessions(ROLES.map((r) => r.label), true);
+  const sessions = await loadSessions(ROLES.map((r) => r.label));
   const origin = new URL(cfg.baseUrl).origin;
   for (const r of ROLES) {
     const s = sessions[r.label]!;

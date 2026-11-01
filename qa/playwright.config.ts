@@ -13,7 +13,10 @@ export default defineConfig({
   workers: process.env.CI ? 2 : 4,
   retries: 0,
   reporter: [["list"], ["html", { outputFolder: "playwright-report", open: "never" }], ["./src/reporter/csv-reporter.ts"]],
+  expect: { timeout: 6_000 },
   use: {
+    actionTimeout: 8_000,
+    navigationTimeout: 20_000,
     baseURL: cfg.baseUrl,
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
@@ -21,6 +24,8 @@ export default defineConfig({
   },
   projects: [
     { name: "api", testMatch: /api\/.*\.spec\.ts/ },
+    { name: "lifecycle", testMatch: /lifecycle\/.*\.spec\.ts/, fullyParallel: false },
+    { name: "functional", testMatch: /ui\/functional\..*\.spec\.ts/, fullyParallel: false, use: { browserName: "chromium" } },
     { name: "ui-access", testMatch: /ui\/access\..*\.spec\.ts/, fullyParallel: false, use: { browserName: "chromium" } },
   ],
 });

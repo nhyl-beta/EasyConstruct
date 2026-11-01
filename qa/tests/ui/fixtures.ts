@@ -95,3 +95,22 @@ export async function openRolePage(browser: import("@playwright/test").Browser, 
   });
   return { page, context, health, items: null };
 }
+
+/** Opens a page through the sidebar like a person would; throws a readable message if it cannot be reached. */
+export async function openViaSidebar(rp: RolePage, labels: string[]) {
+  const { page } = rp;
+  if (!rp.items || !(await page.locator("[data-slot='sidebar'] [data-sidebar='menu-button']").first().isVisible().catch(() => false))) {
+    await page.goto("/dashboard");
+    await settle(page);
+    if (page.url().includes("/login")) throw new Error("session was not accepted by the web app (redirected to login)");
+    rp.items = await sidebarItems(page);
+  }
+  const item = findItem(rp.items, labels);
+  if (!item) throw new Error(`sidebar item '${labels.join("' / '")}' not found (sidebar has: ${rp.items.map((i) => i.text).join(", ")})`);
+  rp.health.consoleErrors.length = 0;
+  await sidebarButton(page, item.text).click();
+  await settle(page);
+  const body = (await page.locator("body").innerText().catch(() => "")) ?? "";
+  if (DENIED_TEXT.test(body)) throw new Error("page shows an access-denied / not-found screen");
+  return item;
+}

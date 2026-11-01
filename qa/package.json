@@ -10,7 +10,9 @@
     "serve": "tsx src/reset/serve.ts",
     "api": "tsx src/run.ts --project=api",
     "ui:access": "tsx src/run.ts --project=ui-access",
-    "pw": "tsx src/run.ts"
+    "pw": "tsx src/run.ts",
+    "functional": "tsx src/run.ts --project=functional",
+    "lifecycle": "tsx src/run.ts --project=lifecycle"
   },
   "devDependencies": {
     "@playwright/test": "^1.49.0",

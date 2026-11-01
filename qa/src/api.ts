@@ -37,7 +37,9 @@ export async function loadSessions(labels: string[], refresh = false): Promise<R
   let cache: Record<string, Session> = {};
   if (!refresh && existsSync(TOKENS_FILE)) cache = JSON.parse(readFileSync(TOKENS_FILE, "utf8"));
   let dirty = false;
-  for (const l of labels) if (!cache[l]) { cache[l] = await loginAs(l); dirty = true; }
+  // Sign-in is rate limited, so a cached token is reused while it has more than 15 minutes left (and it still works).
+  const fresh = (t: string) => { try { const exp = JSON.parse(Buffer.from(t.split(".")[1]!, "base64url").toString()).exp; return typeof exp === "number" && exp * 1000 > Date.now() + 15 * 60_000; } catch { return false; } };
+  for (const l of labels) if (!cache[l] || !fresh(cache[l]!.token)) { cache[l] = await loginAs(l); dirty = true; }
   if (dirty) { mkdirSync(AUTH_DIR, { recursive: true }); writeFileSync(TOKENS_FILE, JSON.stringify(cache, null, 2)); }
   return cache;
 }
@@ -71,6 +73,10 @@ export interface CreateProjectOptions {
   name?: string;
   contractValue?: number;
   siteLatitude?: number; siteLongitude?: number; geofenceRadiusM?: number;
+  /** Role that creates the project (default Admin; the PM may also create). */
+  creator?: string;
+  /** Leave the site latitude/longitude unset (gate C5 then needs them). */
+  noSite?: boolean;
 }
 export interface QaProject { id: number; code: string; name: string; phase: string; deliveryType: string; raw: any }
 
@@ -91,10 +97,10 @@ export async function createProject(opts: CreateProjectOptions = {}): Promise<Qa
     due: plusDays(120), plannedStartDate: plusDays(1), projectType: "Commercial", risk: "Low",
     client: "QA Client", location: "Quezon City", currency: "PHP", description: "Created by the QA suite",
     contractValue: opts.contractValue ?? 1_000_000, deliveryType,
-    siteLatitude: opts.siteLatitude ?? 14.6, siteLongitude: opts.siteLongitude ?? 121.0, geofenceRadiusM: opts.geofenceRadiusM ?? 300,
+    ...(opts.noSite ? {} : { siteLatitude: opts.siteLatitude ?? 14.6, siteLongitude: opts.siteLongitude ?? 121.0, geofenceRadiusM: opts.geofenceRadiusM ?? 300 }),
     ...(deliveryType === "Design" ? { designDisciplines: ["Architectural"] } : {}),
   };
-  const created = await callOk("Admin", "POST", "/projects", body);
+  const created = await callOk(opts.creator ?? "Admin", "POST", "/projects", body);
   const id: number = created.data.id;
   const read = async () => (await callOk("Admin", "GET", `/projects/${id}`)).data;
   let proj = await read();
