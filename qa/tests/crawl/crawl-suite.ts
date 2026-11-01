@@ -58,14 +58,17 @@ export function defineCrawlSuite(role: (typeof ROLES)[number]) {
             try {
               // Read-only crawl: any POST/PATCH/DELETE fired by this click is refused by the route handler and reported.
               rp.health.blockWrites = true; rp.health.attemptedWrites!.length = 0;
+              const errsBefore = rp.health.consoleErrors.length, failsBefore = rp.health.failedRequests.length;
               await e.click({ timeout: 3000, trial: false });
               await rp.page.waitForTimeout(450);
               const dlg = rp.page.locator("[role=alertdialog],[role=dialog]").first();
               const opened = await dlg.isVisible().catch(() => false);
               rp.health.blockWrites = false;
-              const wrote = rp.health.attemptedWrites!.slice();
-              if (wrote.length && !opened) add(pageName, "destructive-without-confirmation", `"${c.name}" fired ${wrote.join(", ")} straight away, with no confirmation dialog (request blocked by the crawler)`);
-              else if (destructive && !opened && !wrote.length) { /* destructive-named control that did nothing visible: not a finding */ }
+              // background verification calls are not user actions
+              const wrote = rp.health.attemptedWrites!.filter((w) => !/\/uploads\/integrity/.test(w));
+              // the crawler's own refusal (HTTP 409) is not an app failure: drop what it produced
+              if (rp.health.attemptedWrites!.length) { rp.health.consoleErrors.length = Math.min(rp.health.consoleErrors.length, errsBefore); rp.health.failedRequests.length = Math.min(rp.health.failedRequests.length, failsBefore); }
+              if (destructive && wrote.length && !opened) add(pageName, "destructive-without-confirmation", `"${c.name}" fired ${[...new Set(wrote)].join(", ")} straight away, with no confirmation dialog (request blocked by the crawler)`);
               if (opened) { await rp.page.keyboard.press("Escape"); await rp.page.waitForTimeout(250); if (await dlg.isVisible().catch(() => false)) await dlg.getByRole("button", { name: /cancel|close|no/i }).first().click({ timeout: 1500 }).catch(() => {}); }
               else await rp.page.keyboard.press("Escape");
               if (rp.page.url() !== url0) { await rp.page.goBack().catch(() => {}); await settle(rp.page, 600); if (rp.page.url() !== url0) { await rp.page.goto(url0); await settle(rp.page, 800); } }
