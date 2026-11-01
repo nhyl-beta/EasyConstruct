@@ -95,7 +95,7 @@ class CsvReporter implements Reporter {
 
   onTestEnd(t: TestCase, r: TestResult) {
     const title = t.titlePath().join(" ");
-    const part = title.match(/\[(api|ui)\]/)?.[1] ?? "main";
+    const part = title.match(/\[(api-w|api|ui)\]/)?.[1] ?? "main";
     const status: PartStatus = r.status === "passed" ? "Passed" : r.status === "skipped" ? "Skipped" : "Failed";
     const err = r.error ? firstLine(r.error.message ?? "") : r.status === "skipped" ? (t.annotations.find((a) => a.type === "skip")?.description ?? "skipped") : "";
     const ids = [...title.matchAll(/\b(?:CK-[A-Z]{2,4}-\d{4}|MX-[A-Z]{2,4}-\d{2,3})\b/g)].map((m) => m[0]);

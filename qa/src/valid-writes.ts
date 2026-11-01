@@ -66,6 +66,30 @@ export const WRITE: Record<string, Fixture> = {
     await api("Project Manager", "PATCH", `/milestones/${m.id}`, { status: "active" });
     return (role) => status(role, "PATCH", `/milestones/${m.id}`, { status: "completed" });
   },
+  "tasks.create": async () => {
+    const p = await withProject("Construction"); const site = await session("Site Personnel");
+    return (role) => status(role, "POST", "/tasks", { taskCode: `TSK-${uid()}`.slice(0, 20), projectCode: p.code, title: "Write probe task", description: "QA", priority: "Low", status: "Pending", progress: 0, dueDate: plus(20), assignedToUserId: site.userId, assignedToName: site.name });
+  },
+  "issues.create": async () => {
+    const p = await withProject("Construction");
+    return async (role) => status(role, "POST", "/issues", { issueCode: `ISS-${uid()}`.slice(0, 20), projectCode: p.code, category: "Quality", severity: "Low", title: "Write probe issue", description: "Valid write probe issue description.", reportedByName: (await session(role)).name });
+  },
+  "requirements.create": async () => {
+    const p = await withProject("Construction"); const f = await upload("Engineer", "probe.pdf");
+    return async (role) => status(role, "POST", "/requirements", { title: "Write probe requirement", project: p.code, category: "Materials", description: "Valid write probe requirement description.", attachments: [{ url: f.url, filename: f.filename, contentType: f.contentType, sizeBytes: f.sizeBytes ?? 100 }], createdBy: (await session(role)).name });
+  },
+  "engineering-reports.create": async () => {
+    const p = await withProject("Construction");
+    return async (role) => status(role, "POST", "/engineering-reports", { title: "Write probe report", type: "Site Inspection", project: p.code, location: "QC", date: plus(0), engineer: (await session(role)).name, description: "Valid write probe report description.", findings: "Valid write probe findings text.", recommendations: "Valid write probe recommendations." });
+  },
+  "designs.create": async () => {
+    const p = await withProject("Design"); const arch = await session("Architect");
+    const a = await upload("Architect", `${p.code}-a.png`, "png"), b = await upload("Architect", `${p.code}-b.pdf`);
+    return (role) => status(role, "POST", "/designs", { code: `DSN-${uid()}`, name: `${p.code} probe`, projectCode: p.code, discipline: "Structural", category: "Structural", leadArchitect: arch.name, fileUrls: [{ name: a.filename, url: a.url }, { name: b.filename, url: b.url }] });
+  },
+  "architect-documents.create": async () => {
+    return async (role) => status(role, "POST", "/architect-documents", { title: "Write probe document", category: "Advisory", version: "1.0", owner: (await session(role)).name, fileType: "PDF", sizeKb: 1, status: "Draft" });
+  },
   "payroll.submit": async () => {
     const id = await batch(false);
     return (role) => status(role, "POST", `/payroll/batches/${id}/submit`, {});
