@@ -103,11 +103,12 @@ class CsvReporter implements Reporter {
     this.walkSteps(r.steps, t, r);
     const lc = title.match(/\b(LC-\d+)\b/);
     if (lc && status === "Skipped" && tagsOf(title).pending) this.pendingCases.add(lc[1]!);
+    // A test that fails outside any titled step (setup crash) fails every Auto step of its case. A test that ran its steps
+    // keeps per-step results, and steps it never ran stay "not written yet".
     if (lc && status === "Failed") {
-      for (const s of loadSteps().filter((x) => x.id === lc[1])) {
-        const key = `${s.id}#${s.step}`;
-        if (!this.outcomes.has(key) && s.automation === "Auto") this.record(key, "main", t, "Failed", err || "test failed before this step", r);
-      }
+      const steps = loadSteps().filter((x) => x.id === lc[1]);
+      const ranSome = steps.some((x) => this.outcomes.has(`${x.id}#${x.step}`));
+      if (!ranSome) for (const s of steps) if (s.automation === "Auto") this.record(`${s.id}#${s.step}`, "main", t, "Failed", err || "test failed before any step ran", r);
     }
     if (status === "Failed") { if (tagsOf(title).known) this.knownFailures++; else this.hardFailures++; }
     this.flush();
