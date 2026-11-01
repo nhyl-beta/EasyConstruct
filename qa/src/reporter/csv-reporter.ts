@@ -51,6 +51,9 @@ export function requiredParts(type: string): string[] {
   return ["ui"];
 }
 
+/** Steps the team already tracks as defects (shown in Remarks; the step itself is judged normally). */
+const KNOWN_STEPS: Record<string, string> = { "LC-204#2": "Bug 007 (document preview/download routing)", "LC-202#2": "Bug 006 (workflow dashboard not updating live)", "LC-202#1": "Bug 006 (workflow dashboard not updating live)" };
+
 class CsvReporter implements Reporter {
   private outcomes = new Map<string, Outcome>(); // CK-id | MX-id | "LC-100#3"
   private started = new Date();
@@ -99,6 +102,7 @@ class CsvReporter implements Reporter {
     for (const id of ids) this.record(id, part, t, status, err, r);
     this.walkSteps(r.steps, t, r);
     const lc = title.match(/\b(LC-\d+)\b/);
+    if (lc && status === "Skipped" && tagsOf(title).pending) this.pendingCases.add(lc[1]!);
     if (lc && status === "Failed") {
       for (const s of loadSteps().filter((x) => x.id === lc[1])) {
         const key = `${s.id}#${s.step}`;
@@ -141,6 +145,7 @@ class CsvReporter implements Reporter {
     return row;
   }
 
+  private pendingCases = new Set<string>();
   private lastFlush = 0;
   /** Results are written as the run goes, so an interrupted or very long run keeps what it has. */
   private flush(final = false) {
@@ -182,6 +187,10 @@ class CsvReporter implements Reporter {
         "Test Procedure": s.procedure, "Expected Results": s.expected, Automation: s.automation, Role: s.actor,
       });
       this.apply(row, this.outcomes.get(`${s.id}#${s.step}`), []);
+      if (this.pendingCases.has(s.id) && s.automation === "Auto" && row["Status"] === "Not Executed") { row["Actual Results"] = "Feature not on this branch"; row["Remarks"] = "feature not on this branch"; }
+      const bug = KNOWN_STEPS[`${s.id}#${s.step}`];
+      if (bug) row["Remarks"] = [row["Remarks"], `known defect ${bug}`].filter(Boolean).join("; ");
+      if (s.automation === "Auto" && !this.outcomes.has(`${s.id}#${s.step}`) && row["Status"] === "Not Executed") row["Remarks"] = "automation not written yet";
       if (s.automation !== "Auto" && row["Status"] === "Not Executed") {
         row["Remarks"] = `${s.automation}: human must check — ${s.expected}`;
         manual.push({ ...row });

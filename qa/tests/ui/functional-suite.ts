@@ -17,12 +17,14 @@ const SPECIAL = ["'", "%", "<script>alert(1)</script>", "😀"];
 const NO_MATCH = "zzz-no-such-value-QA9f3";
 
 const rowsOf = (rp: RolePage) => rp.page.locator("main table tbody tr");
-const searchBox = (rp: RolePage) => rp.page.locator("main").getByPlaceholder(/^search(?! or jump)/i).first();
+const searchBox = (rp: RolePage) => rp.page.locator("main").getByPlaceholder(/^(?!.*jump)(?=.*(search|filter))/i).first();
 
 async function firstCellText(rp: RolePage): Promise<string> {
   const cells = await rowsOf(rp).first().locator("td").allInnerTexts();
-  const pick = cells.map((c) => c.replace(/\s+/g, " ").trim()).find((c) => c.length >= 3 && !/^\d+([.,]\d+)?%?$/.test(c));
-  return (pick ?? "").slice(0, 40);
+  // First line of the first cell that has real text (a cell may stack a name over a code).
+  const lines = cells.flatMap((c) => c.split("\n").map((l) => l.replace(/\s+/g, " ").trim()));
+  const pick = lines.find((l) => l.length >= 3 && !/^\d+([.,]\d+)?%?$/.test(l));
+  return (pick ?? "").slice(0, 25);
 }
 
 async function searchCheck(rp: RolePage) {
@@ -39,7 +41,7 @@ async function searchCheck(rp: RolePage) {
   expect((await hit.first().innerText()).toLowerCase(), "first result does not contain the searched value").toContain(known.toLowerCase());
   await box.fill(NO_MATCH); await rp.page.waitForTimeout(700);
   const n = await rowsOf(rp).count();
-  const body = (await rp.page.locator("main").innerText()).toLowerCase();
+  const body = (await rp.page.locator("body").innerText()).toLowerCase();
   expect(n === 0 || (n === 1 && /no .*(found|result|match|data)|nothing|empty/.test(body)), `non-existent value still shows ${n} row(s) and no empty state`).toBe(true);
   const before = rp.health.failedRequests.length; rp.health.consoleErrors.length = 0;
   for (const s of SPECIAL) {
@@ -86,13 +88,15 @@ async function formCheck(rp: RolePage) {
   const submit = scope.getByRole("button", { name: /^(create|save|submit|add|upload|send|post)\b/i }).last();
   if (!(await submit.count())) throw new Error("submit control not found in the form");
   const invalidSignals = async () => (await scope.locator("[aria-invalid='true']").count()) + (await scope.getByText(/required|invalid|must|please|cannot be empty|at least|enter a/i).count());
-  await submit.click(); await page.waitForTimeout(700);
-  expect(await invalidSignals(), "blank submit shows no validation warning").toBeGreaterThan(0);
+  // A submit button that stays disabled until the form is valid is itself a block on blank input.
+  const blocked = async () => (await submit.isDisabled().catch(() => false)) || (await invalidSignals()) > 0;
+  if (!(await submit.isDisabled().catch(() => false))) { await submit.click(); await page.waitForTimeout(700); }
+  expect(await blocked(), "blank submit is neither blocked (disabled button) nor flagged with a validation message").toBe(true);
   const email = scope.locator("input[type=email]").first();
   const text = scope.locator("input[type=text], input:not([type]), textarea").first();
   if (await email.count()) await email.fill("not-an-email"); else if (await text.count()) await text.fill("   ");
-  await submit.click(); await page.waitForTimeout(700);
-  expect(await invalidSignals(), "invalid values were not flagged").toBeGreaterThan(0);
+  if (!(await submit.isDisabled().catch(() => false))) { await submit.click(); await page.waitForTimeout(700); }
+  expect(await blocked(), "invalid values are neither blocked nor flagged").toBe(true);
   await page.keyboard.press("Escape");
   test.info().annotations.push({ type: "remark", description: "blank and invalid values were blocked; the valid-save step needs page-specific data and is not automated" });
   test.skip(true, "blank and invalid blocked; valid-save step is not automated for this form");

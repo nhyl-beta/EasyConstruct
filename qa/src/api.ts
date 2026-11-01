@@ -77,6 +77,10 @@ export interface CreateProjectOptions {
   creator?: string;
   /** Leave the site latitude/longitude unset (gate C5 then needs them). */
   noSite?: boolean;
+  /** Design projects: the plan-set disciplines (default Architectural only). */
+  disciplines?: string[];
+  /** Role whose seeded account is named as the project's PM (default Project Manager). */
+  pmRole?: string;
 }
 export interface QaProject { id: number; code: string; name: string; phase: string; deliveryType: string; raw: any }
 
@@ -86,10 +90,27 @@ export interface QaProject { id: number; code: string; name: string; phase: stri
  * never depends on a shared DEMO project. The override is recorded in phase history; tests that exercise a gate
  * must not use this shortcut for the gate under test and should build real state instead.
  */
+/** Moves an existing project to `phase` with the documented Admin override (no gates satisfied). */
+export async function fastForward(id: number, phase: TargetPhase, deliveryType: "Construction" | "Design" = "Construction"): Promise<void> {
+  const read = async () => (await callOk("Admin", "GET", `/projects/${id}`)).data;
+  const walk = phase === "Archived" ? "Completed" : phase === "On Hold" ? "Design" : phase;
+  let proj = await read();
+  if (ORDER.includes(walk as TargetPhase)) {
+    for (let i = 0; i < 8 && proj.status !== walk; i++) {
+      const r = await call("Admin", "POST", `/projects/${id}/lifecycle/advance`, { override: true, reason: `QA fast-forward to ${walk}` });
+      if (!r.ok) throw new Error(`fastForward: advance from ${proj.status} failed: ${r.status} ${r.body?.message}`);
+      proj = await read();
+    }
+  }
+  if (phase === "Archived") await callOk("Admin", "POST", `/projects/${id}/lifecycle/archive`, {});
+  if (phase === "On Hold") await callOk("Admin", "POST", `/projects/${id}/lifecycle/hold`, { reason: "QA hold for lock tests" });
+  if (phase === "Cancelled") await callOk("Admin", "POST", `/projects/${id}/lifecycle/cancel`, { reason: "QA cancel for lock tests" });
+}
+
 export async function createProject(opts: CreateProjectOptions = {}): Promise<QaProject> {
   const phase = opts.phase ?? "Proposal";
   const deliveryType = opts.deliveryType ?? "Construction";
-  const pm = await session("Project Manager");
+  const pm = await session(opts.pmRole ?? "Project Manager");
   const code = `QA-${Date.now().toString(36).slice(-6).toUpperCase()}${(seq++ % 1296).toString(36).toUpperCase().padStart(2, "0")}`;
   const body: Record<string, unknown> = {
     confirmSimilar: true, // names are generated, similarity warning is not under test
@@ -98,7 +119,7 @@ export async function createProject(opts: CreateProjectOptions = {}): Promise<Qa
     client: "QA Client", location: "Quezon City", currency: "PHP", description: "Created by the QA suite",
     contractValue: opts.contractValue ?? 1_000_000, deliveryType,
     ...(opts.noSite ? {} : { siteLatitude: opts.siteLatitude ?? 14.6, siteLongitude: opts.siteLongitude ?? 121.0, geofenceRadiusM: opts.geofenceRadiusM ?? 300 }),
-    ...(deliveryType === "Design" ? { designDisciplines: ["Architectural"] } : {}),
+    ...(deliveryType === "Design" ? { designDisciplines: opts.disciplines ?? ["Architectural"] } : {}),
   };
   const created = await callOk(opts.creator ?? "Admin", "POST", "/projects", body);
   const id: number = created.data.id;

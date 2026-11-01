@@ -1,9 +1,9 @@
 // Helpers for lifecycle tests: thin wrappers over the real API so each gate can be built with the same calls the UI makes.
-import { call, callOk, createProject, session, type ApiResult, type CreateProjectOptions, type QaProject } from "./api.js";
+import { call, callOk, createProject, fastForward, session, type ApiResult, type CreateProjectOptions, type QaProject } from "./api.js";
 import { assertQaEnvironment } from "./guard.js";
 import { expect, test } from "@playwright/test";
 
-export { createProject, type QaProject };
+export { createProject, fastForward, type QaProject };
 export const PM = "Project Manager", ADMIN = "Admin", ARCH = "Architect", CONS = "Consultant", ENG = "Engineer", SITE = "Site Personnel",
   FIN = "Finance Manager", HR = "Human Resources", OWNER = "Owner", IT = "IT Designer";
 
@@ -43,7 +43,7 @@ export async function staff(p: QaProject, roleLabel: string, memberRole: string)
 }
 
 // ── files ────────────────────────────────────────────────────────────────────────────────────────
-const pdfBytes = (title: string) => {
+export const pdfBytes = (title: string) => {
   const stream = `BT /F1 16 Tf 50 740 Td (${title.replace(/[()\\]/g, "-")}) Tj ET`;
   const objs = ["<< /Type /Catalog /Pages 2 0 R >>", "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
     "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>",
@@ -101,3 +101,14 @@ export function steps(caseId: string) {
 
 export const cfg = () => assertQaEnvironment();
 export { expect, test };
+
+/** Raises an RFI/RFA through the API. `from` is the raising role, `to` the role that must answer. */
+export async function createRfi(p: QaProject, from: string, to: string, over: Record<string, unknown> = {}) {
+  const target = await session(to);
+  return raw(from, "POST", "/design-requests", { kind: "RFI", projectCode: p.code, discipline: "AR", subject: `QA clarification ${uid()}`, requestText: "Please clarify the detail on sheet A-101.",
+    costImpact: "none", timeImpact: "none", assignedToUserId: target.userId, dueDays: 3, ...over });
+}
+export async function employeeIdOf(role: string): Promise<string> {
+  const me = await api<any>(role, "GET", "/employees/me");
+  return String(me.employeeId ?? me.employee_id ?? me.id);
+}

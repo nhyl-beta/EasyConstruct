@@ -12,7 +12,8 @@
     "ui:access": "tsx src/run.ts --project=ui-access",
     "pw": "tsx src/run.ts",
     "functional": "tsx src/run.ts --project=functional",
-    "lifecycle": "tsx src/run.ts --project=lifecycle"
+    "lifecycle": "tsx src/run.ts --project=lifecycle",
+    "full": "tsx src/run.ts"
   },
   "devDependencies": {
     "@playwright/test": "^1.49.0",
