@@ -19,7 +19,9 @@ const NO_MATCH = "zzz-no-such-value-QA9f3";
 const content = (rp: RolePage) => rp.page.locator("main:not(:has(main))").first();
 const rowsOf = (rp: RolePage) => content(rp).locator("table tbody tr");
 /** What the page currently shows, for comparing before/after Next (works for tables and card lists alike). */
-const signature = async (rp: RolePage) => ((await content(rp).innerText().catch(() => "")) ?? "").replace(/\s+/g, " ").trim();
+const signature = async (rp: RolePage) => ((await content(rp).innerText().catch(() => "")) ?? "")
+  .replace(/\b(just now|\d+\s*(?:s|m|h|d|w|mo|y|min|sec|hours?|days?)\s*ago)\b/gi, "") // relative times tick between the two reads
+  .replace(/\s+/g, " ").trim();
 const searchBox = (rp: RolePage) => content(rp).getByPlaceholder(/^(?!.*jump)(?=.*(search|filter))/i).first();
 
 async function firstCellText(rp: RolePage): Promise<string> {
