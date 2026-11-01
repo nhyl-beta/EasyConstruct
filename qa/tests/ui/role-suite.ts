@@ -71,6 +71,7 @@ export function defineRoleSuite(role: (typeof ROLES)[number]) {
         expect(item, `sidebar item '${ui!.labels.join("' / '")}' not found (sidebar has: ${items.map((i) => i.text).join(", ")})`).toBeTruthy();
         const before = health.failedRequests.length;
         health.consoleErrors.length = 0;
+        await sidebarItems(page); // a page reload collapses the sidebar groups: expand them again before clicking a sub-item
         await sidebarButton(page, item!.text).click();
         await settle(page);
         expect(page.url(), "navigation ended on the login page").not.toContain("/login");

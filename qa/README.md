@@ -115,3 +115,26 @@ shows one row: a failure in either part makes it Failed and the Actual Results t
 A parallel `qa:full` loads the machine heavily. A failure that comes from the harness (a worker collision, a timeout in a long browser flow) can be re-run on its own
 (`npx playwright test --project=lifecycle --project=lifecycle-ui`, no `--reporter` flag) and `qa:findings` accepts several run folders:
 `npm run qa:findings -- results/<full-run> results/<re-run>`. For every row, the last folder in which it was executed wins.
+
+## Matrix values (owner decisions of 2026-11-01)
+
+`spec/01_access_matrix.csv` carries one value per role and page / action / function. Changes made on the owner's instruction are recorded in the Notes
+column as "owner decision 2026-11-01 (...)".
+
+| Value | What the API test asserts |
+|---|---|
+| Full | read 2xx; the page's write succeeds |
+| View only | read 2xx; the write is refused with 403 (unless an ACTION row grants that role the write, for example Admin submits proposals) |
+| Scoped | read 2xx; every returned row belongs to a project the user is assigned to (rows of other projects fail); write refused |
+| Reference read | shared lookup data (document types, workflow templates): read 2xx for every signed-in role; write refused |
+| Names only | read 2xx and rows carry only `id` and `name` |
+| Directory only | read 2xx and rows carry only `id`, `employeeId`, `name`, `email`, `hasAccount` / `userId` |
+| Deny | read 403; write 403 |
+| Allowed (actions, functions) | a valid-payload request succeeds (2xx); for Deny it is refused (403) |
+
+Operational roles (Project Manager, Architect, Engineer, Consultant, Site Personnel) are also scope-checked on any project data they may read.
+Confirmed bugs awaiting a role-check fix are listed in `src/known.ts`; their tests carry `@known:role-check-fix-pending` (they stay Failed and do not fail the run).
+Manual app findings live in `spec/app-findings.csv` and are merged into `qa/results/findings.md`.
+
+**The API suite writes data.** Its write checks send valid payloads (on a fresh project each time) so that a 403 or a 2xx is conclusive; they create projects,
+documents, proposals and similar rows in the QA database only. Run `npm run qa:reset` (or restore a dump) before a run that must start clean.

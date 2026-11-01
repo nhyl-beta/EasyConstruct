@@ -44,20 +44,30 @@ test("LC-130 Attendance works only in Construction or Closeout (geofence)", asyn
   await S.run(4, "Site Personnel imports an attendance sheet -> the rows are Pending until HR verifies them", async () => {
     const ExcelJS = (await import("exceljs")).default;
     const wb = new ExcelJS.Workbook(); const ws = wb.addWorksheet("Attendance");
-    const date = plus(-(10 + Math.floor(Math.random() * 70)));          // the importer accepts the last 90 days
-    ws.addRow(["Worker ID", "Date", "Time In", "Time Out", "Status", "Remarks"]);
-    ws.addRow([emp, date, "08:00", "17:00", "Present", "QA sheet import"]);
-    const buffer = Buffer.from(await wb.xlsx.writeBuffer());
-    const send = async (path: string) => {
+    // The importer rejects dates already recorded for the worker, so preview candidate days (last 90 days) until one is free.
+    const send = async (buffer: Buffer, path: string) => {
       const fd = new FormData();
-      fd.set("file", new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), "attendance.xlsx");
+      fd.set("file", new Blob([new Uint8Array(buffer)], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), "attendance.xlsx");
       fd.set("projectCode", con.code);
       const r = await fetch(`${assertQaEnvironment().apiUrl}${path}`, { method: "POST", headers: { Authorization: `Bearer ${(await session(SITE)).token}` }, body: fd });
       return { status: r.status, body: (await r.json().catch(() => null)) as any };
     };
-    const preview = await send("/attendance/import/preview");
-    expect(preview.status, `preview: ${preview.status} ${preview.body?.message}`).toBe(200);
-    const commit = await send("/attendance/import/commit");
+    const sheetFor = async (date: string) => {
+      const wb = new ExcelJS.Workbook(); const ws = wb.addWorksheet("Attendance");
+      ws.addRow(["Worker ID", "Date", "Time In", "Time Out", "Status", "Remarks"]);
+      ws.addRow([emp, date, "08:00", "17:00", "Present", "QA sheet import"]);
+      return Buffer.from(await wb.xlsx.writeBuffer());
+    };
+    let date = "", buffer!: Buffer;
+    for (let tries = 0; tries < 40 && !date; tries++) {
+      const candidate = plus(-(3 + Math.floor(Math.random() * 85)));
+      const b = await sheetFor(candidate);
+      const pv = await send(b, "/attendance/import/preview");
+      expect(pv.status, `preview: ${pv.status} ${pv.body?.message}`).toBe(200);
+      if (pv.body?.data?.validRows === 1) { date = candidate; buffer = b; }
+    }
+    expect(date, "no free day in the last 90 days for this worker (every candidate was rejected by the preview)").not.toBe("");
+    const commit = await send(buffer, "/attendance/import/commit");
     expect(commit.status, `commit: ${commit.status} ${commit.body?.message}`).toBe(201);
     expect(JSON.stringify(commit.body?.data), "no row was imported").toMatch(/"imported":\s*1/);
     const mine = (await api<any[]>(HR, "GET", "/hr/attendance")).filter((x) => x.projectCode === con.code && String(x.logDate ?? x.date ?? "").startsWith(date));
