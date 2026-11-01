@@ -42,7 +42,11 @@ test("LC-100 [ui] (UI) Proposal gates P1-P5, then Advance to Design", async ({ b
     p = { id: found.id, code };
     const v = await pv();
     expect(v.phase).toBe("Proposal");
-    expect(v.progress, `new project starts at ${v.progress}% (P1 and P2 already pass because the wizard requires an architect and consultant)`).toBe(0);
+    // Owner decision 2026-11-01: a project created in the wizard has an Architect and a Consultant staffed (the wizard requires both), so P1 and P2
+    // already pass and the Proposal band (0-10, five gates, 2% each) starts at 2 x passed gates = 4%, not 0%.
+    const passed = v.checks.filter((c) => c.passed).length;
+    expect(passed, "the wizard-created project should already pass exactly P1 and P2").toBe(2);
+    expect(v.progress, `new project shows ${v.progress}%, expected 2% x ${passed} passed gates = ${2 * passed}%`).toBe(2 * passed);
   });
 
   await S.run(2, "Advance is not possible yet: button disabled and the failing checks are listed", async () => {

@@ -1,0 +1,7 @@
+ID,Role,Group,Area,Observed,Matches crawl entry,Source
+APP-001,IT Designer,b,User Accounts: Deactivate,"Clicking Deactivate fires PATCH /api/users/:id/status straight away; no confirmation dialog opens.",IT Designer / User Accounts,Owner finding 2026-11-01 (crawler)
+APP-002,Project Manager,b,Approvals: Reject (requirements),"Clicking Reject on a requirement fires PATCH /api/requirements/:id straight away; no confirmation dialog opens.",Project Manager / Approvals,Owner finding 2026-11-01 (crawler)
+APP-003,Owner,b,Account Recovery: Send recovery email,"Clicking Send recovery email fires POST /api/auth/owner-recovery/initiate straight away; no confirmation dialog opens.",Owner / Account Recovery,Owner finding 2026-11-01 (crawler)
+APP-004,Project Manager,d,Resources page,"The Resources page renders blank (no heading or content).",Project Manager / Resources,Owner finding 2026-11-01 (crawler)
+APP-005,Human Resources,b,Employees: Add Employee wizard,"Next is accepted on a blank first step (Personal information); the wizard advances to Employment details without validating the required fields.",,Owner finding 2026-11-01 (LC-001 UI run)
+APP-006,Architect,c,Dashboard: Waiting on you,"A newly submitted proposal's project does not appear in the Architect's 'Waiting on you' list even though /api/lifecycle/my-actions returns it (LC-100 step 3, UI run).",,Owner finding 2026-11-01 (LC-100 UI run)

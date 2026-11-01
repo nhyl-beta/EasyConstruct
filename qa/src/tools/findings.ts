@@ -64,6 +64,11 @@ for (const f of crawl.filter((x) => x.kind !== "external-host")) {
 for (const it of seen.values()) groups.d.push({ ...it, detail: it.n > 1 ? `${it.detail} (x${it.n})` : it.detail });
 
 const external = [...new Set(crawl.filter((x) => x.kind === "external-host").map((x) => String(x.detail).split(" ")[3]))];
+// Manual app findings (spec/app-findings.csv): listed once, and the crawler entries they correspond to are dropped.
+const manual = existsSync(join(import.meta.dirname, "..", "..", "spec", "app-findings.csv")) ? (() => { const [h, ...rs] = parseCsv(readFileSync(join(import.meta.dirname, "..", "..", "spec", "app-findings.csv"), "utf8")); return rs.map((r) => Object.fromEntries(h!.map((k, i) => [k, r[i] ?? ""]))); })() : [];
+const covered = new Set(manual.map((m) => m["Matches crawl entry"]).filter(Boolean));
+groups.d = groups.d.filter((i) => ![...covered].some((c) => i.id === `CRAWL ${c}`));
+for (const m of manual) (groups[(m["Group"] as keyof typeof groups) ?? "c"] ?? groups.c).push({ id: m["ID"]!, who: m["Role"]!, what: m["Area"]!, detail: m["Observed"]! });
 const titles: Record<keyof typeof groups, string> = { a: "(a) Matrix disagreements", b: "(b) Missing or non-working controls", c: "(c) Wrong data / behaviour differs from the spec", d: "(d) Crashes, console errors, failed requests", e: "(e) Known defects (tagged, stay Failed)" };
 const lines = [`# QA findings`, ``, `Run: \`${dir}\`  `, `Failed rows: ${Object.values(groups).reduce((n, g) => n + g.length, 0)} (a ${groups.a.length}, b ${groups.b.length}, c ${groups.c.length}, d ${groups.d.length}, e ${groups.e.length})`, ``];
 for (const k of ["a", "b", "c", "d", "e"] as const) {

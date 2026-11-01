@@ -45,6 +45,18 @@ test("LC-150 Closeout gates X1-X5 then Completed", async () => {
     const again = await startWorkflow(ENG, "Project Closeout", p);
     expect(again.ok, "a second Closeout workflow was allowed").toBe(false);
   });
+  await S.run(8, "Finance cannot sign off the Closeout stage while an expense is pending; after clearing it, it can", async () => {
+    const cats = await api<any[]>(FIN, "GET", "/finance/categories");
+    const category = (Array.isArray(cats) ? cats : []).find((c) => !c.retired && c.active !== false)?.name ?? "Materials";
+    const exp = await raw(FIN, "POST", "/finance/expenses", { vendor: "QA Vendor", project: p.code, category, amount: 1234 });
+    expect(exp.ok, `expense create: ${exp.status} ${exp.body?.message}`).toBe(true);
+    const blocked = await decide(wf, "finance-manager", FIN);
+    expect(blocked.ok, "Finance approved the Closeout stage with a pending expense").toBe(false);
+    expect(blocked.status, `blocked with ${blocked.status}`).toBe(409);
+    expect(String(blocked.body?.message), "the refusal does not mention the pending expense").toMatch(/pending expense/i);
+    const clear = await raw(FIN, "POST", `/finance/expenses/${exp.data.id}/approve`, {});
+    expect(clear.ok, `clearing the expense: ${clear.status} ${clear.body?.message}`).toBe(true);
+  });
   await S.run(9, "Finance approves its stage -> moves to PM", async () => {
     const r = await decide(wf, "finance-manager", FIN);
     expect(r.ok, `${r.status} ${r.body?.message}`).toBe(true);

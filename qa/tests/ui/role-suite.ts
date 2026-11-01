@@ -3,7 +3,7 @@
 import { statePath } from "../../src/global-setup.js";
 import { PAGE_ROUTES, PAGE_UI } from "../../src/page-map.js";
 import { ROLES } from "../../src/roles.js";
-import { loadChecks, loadMatrix } from "../../src/spec.js";
+import { levelOf, loadChecks, loadMatrix } from "../../src/spec.js";
 import { DENIED_TEXT, expect, findItem, openRolePage, settle, sidebarButton, sidebarItems, test, type RolePage } from "./fixtures.js";
 
 const checks = loadChecks().filter((c) => ["NAVIGATE", "CONTENT", "DENIED", "READ-ONLY"].includes(c.type));
@@ -31,6 +31,9 @@ export function defineRoleSuite(role: (typeof ROLES)[number]) {
     for (const c of checks.filter((x) => x.role === role.label)) {
       test(`${c.id} [ui] ${c.type}: ${c.page} as ${role.label}`, async () => {
         const { page, health } = rp;
+        const lvl = levelOf(role.label, c.page);
+        const superseded = (c.type === "DENIED" && lvl !== "Deny") || (c.type === "READ-ONLY" && ["Deny", "Full", "Allowed"].includes(lvl)) || ((c.type === "NAVIGATE" || c.type === "CONTENT") && lvl === "Deny");
+        test.skip(superseded, `superseded by owner decision 2026-11-01: the matrix now says '${lvl}' for this role and page`);
         const ui = PAGE_UI[c.page];
         test.skip(!ui, `no UI mapping for '${c.page}' (page not identified in the web app's resources)`);
         if (ui!.approx) test.info().annotations.push({ type: "remark", description: `sidebar label '${ui!.labels.join(" / ")}' is an approximation of '${c.page}'` });

@@ -38,7 +38,12 @@ export const ACCESS_FILE = "01_access_matrix.csv";
 export const LIFECYCLE_FILE = "02_lifecycle_test_cases.csv";
 export const CHECKS_FILE = "03_role_page_checks.csv";
 
-export type Access = "Full" | "View only" | "Deny" | "Allowed";
+/** Matrix values. "Scoped", "Reference read", "Names only" and "Directory only" were added by the owner decisions of 2026-11-01. */
+export type Access = "Full" | "View only" | "Deny" | "Allowed" | "Scoped" | "Reference read" | "Names only" | "Directory only";
+/** Values that allow the read of a page's endpoint. */
+export const READS_ALLOWED: Access[] = ["Full", "View only", "Scoped", "Reference read", "Names only", "Directory only"];
+/** Values that allow a write through the page's endpoint. */
+export const WRITES_ALLOWED: Access[] = ["Full"];
 export interface MatrixRow { page: string; isAction: boolean; byRole: Record<string, Access>; notes: string; automation: string }
 export interface Check { id: string; role: string; page: string; type: string; procedure: string; expected: string; automation: string }
 export interface Step {
@@ -79,3 +84,10 @@ export function loadSteps(): Step[] {
 }
 
 export const checksFor = (types: string[]) => loadChecks().filter((c) => types.includes(c.type));
+
+let matrixCache: MatrixRow[] | null = null;
+/** The access value for a role on a page / function row ("Deny" when the row does not exist). */
+export function levelOf(roleLabel: string, page: string): Access {
+  matrixCache ??= loadMatrix();
+  return (matrixCache.find((m) => m.page === page)?.byRole[roleLabel] as Access | undefined) ?? "Deny";
+}

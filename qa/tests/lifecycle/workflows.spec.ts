@@ -3,6 +3,7 @@
 import { createProject, api, raw, view, gateState, staff, upload, decide, startWorkflow, createRfi, employeeIdOf, steps, expect, test,
   PM, ADMIN, ARCH, CONS, ENG, SITE, FIN, HR, today, plus, uid, type QaProject } from "../../src/kit.js";
 import { session } from "../../src/api.js";
+import { assertQaEnvironment } from "../../src/guard.js";
 
 async function approvedBudget(p: QaProject, category = "Materials", planned = 1_000_000) {
   const fin = await session(FIN);
@@ -39,11 +40,41 @@ test("LC-130 Attendance works only in Construction or Closeout (geofence)", asyn
     const flagged = !r.ok || /flag|outside/i.test(JSON.stringify(r.data));
     expect(flagged, `outside-geofence clock-in was accepted unflagged: ${r.status} ${JSON.stringify(r.data ?? r.body).slice(0, 160)}`).toBe(true);
   });
+  let importedId = 0;
+  await S.run(4, "Site Personnel imports an attendance sheet -> the rows are Pending until HR verifies them", async () => {
+    const ExcelJS = (await import("exceljs")).default;
+    const wb = new ExcelJS.Workbook(); const ws = wb.addWorksheet("Attendance");
+    const date = plus(-(10 + Math.floor(Math.random() * 70)));          // the importer accepts the last 90 days
+    ws.addRow(["Worker ID", "Date", "Time In", "Time Out", "Status", "Remarks"]);
+    ws.addRow([emp, date, "08:00", "17:00", "Present", "QA sheet import"]);
+    const buffer = Buffer.from(await wb.xlsx.writeBuffer());
+    const send = async (path: string) => {
+      const fd = new FormData();
+      fd.set("file", new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), "attendance.xlsx");
+      fd.set("projectCode", con.code);
+      const r = await fetch(`${assertQaEnvironment().apiUrl}${path}`, { method: "POST", headers: { Authorization: `Bearer ${(await session(SITE)).token}` }, body: fd });
+      return { status: r.status, body: (await r.json().catch(() => null)) as any };
+    };
+    const preview = await send("/attendance/import/preview");
+    expect(preview.status, `preview: ${preview.status} ${preview.body?.message}`).toBe(200);
+    const commit = await send("/attendance/import/commit");
+    expect(commit.status, `commit: ${commit.status} ${commit.body?.message}`).toBe(201);
+    expect(JSON.stringify(commit.body?.data), "no row was imported").toMatch(/"imported":\s*1/);
+    const mine = (await api<any[]>(HR, "GET", "/hr/attendance")).filter((x) => x.projectCode === con.code && String(x.logDate ?? x.date ?? "").startsWith(date));
+    expect(mine.length, "the imported row is not in HR's attendance list").toBeGreaterThan(0);
+    importedId = mine[0].id;
+    expect(String(mine[0].status), "imported rows should be Pending until HR verifies them").toBe("Pending");
+  });
   await S.run(5, "HR verifies the records -> verified rows leave Pending", async () => {
     const r = await raw(HR, "PATCH", `/attendance/${insideId}`, { status: "Verified" });
     expect(r.ok, `verify: ${r.status} ${r.body?.message}`).toBe(true);
     const rows = await api<any[]>(HR, "GET", "/hr/attendance");
     expect(rows.find((x) => x.id === insideId)?.status, "record is still not Verified").toBe("Verified");
+    if (importedId) {
+      const v = await raw(HR, "PATCH", `/attendance/${importedId}`, { status: "Verified" });
+      expect(v.ok, `verify imported row: ${v.status} ${v.body?.message}`).toBe(true);
+      expect((await api<any[]>(HR, "GET", "/hr/attendance")).find((x) => x.id === importedId)?.status, "imported row did not leave Pending").toBe("Verified");
+    }
   });
   S.done();
 });

@@ -4,7 +4,7 @@
 import { statePath } from "../../src/global-setup.js";
 import { PAGE_UI } from "../../src/page-map.js";
 import { ROLES } from "../../src/roles.js";
-import { loadChecks } from "../../src/spec.js";
+import { levelOf, loadChecks } from "../../src/spec.js";
 import { expect, openRolePage, openViaSidebar, test, type RolePage } from "./fixtures.js";
 
 const TYPES = ["SEARCH / FILTER", "PAGINATION", "FORM VALIDATION"];
@@ -127,6 +127,8 @@ export function defineFunctionalSuite(role: (typeof ROLES)[number]) {
     for (const c of mine) {
       const tag = KNOWN[`${c.page}|${c.type}`] ?? "";
       test(`${c.id} [ui] ${c.type}: ${c.page} as ${role.label} ${tag}`.trim(), async () => {
+        const lvl = levelOf(role.label, c.page);
+        test.skip(lvl === "Deny", `superseded by owner decision 2026-11-01: the matrix now says 'Deny' for this role and page`);
         const ui = PAGE_UI[c.page];
         test.skip(!ui, `no UI mapping for '${c.page}'`);
         await openViaSidebar(rp, ui!.labels);

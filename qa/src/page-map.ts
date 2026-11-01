@@ -4,53 +4,59 @@
 // `shared: true` = the page has no endpoint of its own (it reuses one that other pages also read), so a "Deny"
 // can legitimately differ; such results carry a remark so a reviewer can tell mapping noise from a real gap.
 
-export interface Probe { method: "POST" | "PATCH" | "PUT" | "DELETE"; path: string; body?: unknown }
-export interface PageApi { read: string | null; write?: Probe | null; shared?: boolean; note?: string }
+export interface Probe { method: "POST" | "PATCH" | "PUT" | "DELETE"; path: string; body?: unknown; /** key in src/valid-writes.ts: a valid payload on a fresh fixture */ valid?: string }
+export interface PageApi {
+  read: string | null; write?: Probe | null; shared?: boolean; note?: string;
+  /** rows carry a project reference: operational roles must only get assigned projects (owner decision 2026-11-01, item e) */
+  projectData?: boolean;
+  /** matrix ACTION row that grants named roles a write on this View-only page (for example Admin submits proposals) */
+  writeAction?: string;
+}
 
 export const PAGE_API: Record<string, PageApi> = {
   "Dashboard": { read: "/dashboard/summary", write: null },
   "User Accounts": { read: "/users", write: { method: "POST", path: "/users", body: {} } },
   "Roles & Permissions": { read: "/roles", write: null, note: "no write endpoint exists" },
-  "Projects": { read: "/projects", write: { method: "POST", path: "/projects", body: {} } },
-  "Portfolio": { read: "/projects", write: null, shared: true, note: "Portfolio page reuses /projects" },
-  "Workflows": { read: "/workflows", write: { method: "POST", path: "/workflows", body: {} } },
+  "Projects": { read: "/projects", write: { method: "POST", path: "/projects", body: {} }, projectData: true },
+  "Portfolio": { read: null, write: null, note: "UI-only page that reads /projects; it has no endpoint of its own, so no API check" },
+  "Workflows": { read: "/workflows", write: { method: "POST", path: "/workflows", body: {} }, projectData: true },
   "Workflow Configuration": { read: "/workflows/templates", write: { method: "POST", path: "/workflows/templates", body: {} } },
   "Approval Hierarchy": { read: "/workflows/templates", write: null, shared: true, note: "reads the same templates endpoint as Workflow Configuration" },
   "Approvals (milestone and workflow)": { read: "/workflows/approvals", write: null },
-  "Documents": { read: "/documents", write: { method: "POST", path: "/documents/upload", body: {} } },
+  "Documents": { read: "/documents", write: null, projectData: true, note: "uploads are judged by function (FUNCTION: Upload a document)" },
   "Document Types": { read: "/reference/document-types", write: null, shared: true, note: "reference list is readable by every signed-in user" },
-  "Proposals": { read: "/proposals", write: { method: "POST", path: "/proposals/submit", body: {} } },
+  "Proposals": { read: "/proposals", write: { method: "POST", path: "/proposals/submit", valid: "proposals.submit" }, projectData: true, writeAction: "ACTION: Submit a proposal" },
   "Activity Logs / Audit Trail": { read: "/audit-logs", write: null },
   "Security Monitoring / System Oversight": { read: "/audit-logs/security-overview", write: null },
   "User Support": { read: null, note: "no support endpoint found in the API" },
-  "Reports": { read: "/engineering-reports", write: null, shared: true, note: "mapped to /engineering-reports (no standalone reports endpoint)" },
-  "Tasks": { read: "/tasks", write: { method: "POST", path: "/tasks", body: {} } },
-  "Issues": { read: "/issues", write: { method: "POST", path: "/issues", body: {} } },
-  "RFI / RFA": { read: "/design-requests", write: { method: "POST", path: "/design-requests", body: {} } },
+  "Reports": { read: "/engineering-reports", write: null, shared: true, projectData: true, note: "mapped to /engineering-reports (no standalone reports endpoint)" },
+  "Tasks": { read: "/tasks", write: { method: "POST", path: "/tasks", body: {} }, projectData: true },
+  "Issues": { read: "/issues", write: { method: "POST", path: "/issues", body: {} }, projectData: true },
+  "RFI / RFA": { read: "/design-requests", write: { method: "POST", path: "/design-requests", valid: "design-requests.create" }, projectData: true, writeAction: "ACTION: Create an RFI/RFA" },
   "Materials and Purchase Requests": { read: "/finance/purchase-requests", write: { method: "POST", path: "/finance/purchase-requests", body: {} } },
   "Employees": { read: "/hr/employees", write: { method: "POST", path: "/hr/employees", body: {} } },
   "Attendance Monitoring": { read: "/hr/attendance", write: null },
-  "Attendance Clock-in": { read: null, write: { method: "POST", path: "/attendance", body: {} }, note: "clock-in is a write; probed with an empty body" },
+  "Attendance Clock-in": { read: null, write: { method: "POST", path: "/attendance", valid: "attendance" }, note: "clock-in is a write; probed with a valid payload" },
   "Payroll": { read: "/payroll/batches/all", write: { method: "POST", path: "/payroll/generate", body: {} } },
   "Workforce Reports": { read: "/hr/reports/workforce", write: null },
   "Budget": { read: "/finance/budgets", write: { method: "POST", path: "/finance/budgets", body: {} } },
   "Expenses and Vendor Payments": { read: "/finance/expenses", write: { method: "POST", path: "/finance/expenses", body: {} } },
   "Impact Awareness": { read: "/lifecycle/impact", write: null, shared: true },
-  "Design Submission": { read: "/designs", write: { method: "POST", path: "/designs", body: {} } },
-  "Design Proposal Approval": { read: "/proposals", write: { method: "POST", path: "/proposals/review", body: {} }, shared: true },
-  "Revisions": { read: "/design-revisions", write: { method: "POST", path: "/design-revisions", body: {} } },
-  "Blueprints": { read: "/blueprints", write: { method: "POST", path: "/blueprints", body: {} } },
-  "Progress Reports": { read: "/engineering-reports", write: { method: "POST", path: "/engineering-reports", body: {} } },
-  "Requirements": { read: "/requirements", write: { method: "POST", path: "/requirements", body: {} } },
-  "Field Documentation": { read: "/documents", write: { method: "POST", path: "/documents/upload", body: {} }, shared: true, note: "field documents are stored in /documents" },
-  "Design Repository": { read: "/designs", write: null, shared: true, note: "Consultant 'Designs' screen reads /designs" },
-  "Advisory Documents": { read: "/architect-documents", write: { method: "POST", path: "/architect-documents", body: {} }, shared: true },
+  "Design Submission": { read: "/designs", write: { method: "POST", path: "/designs", body: {} }, projectData: true },
+  "Design Proposal Approval": { read: "/proposals", write: null, shared: true, projectData: true, note: "reads the shared /proposals endpoint" },
+  "Revisions": { read: "/design-revisions", write: { method: "POST", path: "/design-revisions", body: {} }, projectData: true },
+  "Blueprints": { read: "/blueprints", write: { method: "POST", path: "/blueprints", valid: "blueprints" }, projectData: true },
+  "Progress Reports": { read: "/engineering-reports", write: { method: "POST", path: "/engineering-reports", body: {} }, projectData: true },
+  "Requirements": { read: "/requirements", write: { method: "POST", path: "/requirements", body: {} }, projectData: true },
+  "Field Documentation": { read: "/documents", write: null, shared: true, projectData: true, note: "field documents are stored in /documents; uploads are judged by function" },
+  "Design Repository": { read: "/designs", write: null, shared: true, projectData: true, note: "Consultant 'Designs' screen reads /designs" },
+  "Advisory Documents": { read: "/architect-documents", write: { method: "POST", path: "/architect-documents", body: {} }, shared: true, projectData: true },
   "Resources and Tools": { read: null, note: "UI-only page, no API" },
   "Account Recovery (fail-safe)": { read: null, note: "public recovery flow (/auth/owner-recovery/initiate); not role-gated by token" },
 };
 
 /** Lifecycle/workflow actions (the ACTION: rows). `state` = the project the probe runs against. */
-export interface ActionProbe { state: "Proposal" | "Design" | "none"; method: "POST" | "PATCH"; path: (projectId: number) => string; body?: unknown; note: string }
+export interface ActionProbe { state: "Proposal" | "Design" | "none"; method: "POST" | "PATCH"; path: (projectId: number) => string; body?: unknown; note: string; /** valid-payload probe(s) from src/valid-writes.ts: every one must be 2xx (Allowed) or 403 (Deny) */ valid?: string[] }
 
 export const ACTION_API: Record<string, ActionProbe | null> = {
   "ACTION: Advance phase (gate must pass)": { state: "Proposal", method: "POST", path: (id) => `/projects/${id}/lifecycle/advance`, body: {}, note: "blocked advance expected (409) for authorised roles" },
@@ -59,12 +65,15 @@ export const ACTION_API: Record<string, ActionProbe | null> = {
   "ACTION: Cancel project at Proposal": { state: "Proposal", method: "POST", path: (id) => `/projects/${id}/lifecycle/cancel`, body: {}, note: "no reason sent so the project is never cancelled" },
   "ACTION: Cancel project after Proposal": { state: "Design", method: "POST", path: (id) => `/projects/${id}/lifecycle/cancel`, body: {}, note: "no reason sent so the project is never cancelled" },
   "ACTION: Archive project": { state: "Proposal", method: "POST", path: (id) => `/projects/${id}/lifecycle/archive`, body: {}, note: "project is not Completed, so authorised roles get 409" },
-  "ACTION: Start Project Closeout workflow": { state: "none", method: "POST", path: () => `/workflows`, body: {}, note: "empty body: proves role gate only, if validation runs before the role check every role looks authorised" },
-  "ACTION: Send Engineer's RFI/RFA draft (countersign)": { state: "none", method: "POST", path: () => `/design-requests/999999/send`, body: {}, note: "non-existent id: authorised roles get 404" },
-  "ACTION: Answer RFI/RFA": { state: "none", method: "POST", path: () => `/design-requests/999999/respond`, body: {}, note: "non-existent id: authorised roles get 404" },
-  "ACTION: Mark milestone completed": { state: "none", method: "PATCH", path: () => `/milestones/999999`, body: { status: "completed" }, note: "non-existent id: authorised roles get 404" },
-  "ACTION: Build and submit payroll batch": { state: "none", method: "POST", path: () => `/payroll/batches/999999/submit`, body: {}, note: "non-existent id: authorised roles get 404" },
-  "ACTION: Approve or return payroll batch": { state: "none", method: "POST", path: () => `/finance/payroll-review/999999/decide`, body: {}, note: "non-existent id / empty body" },
+  "ACTION: Start Project Closeout workflow": { state: "none", method: "POST", path: () => "", note: "valid payload on a Closeout project", valid: ["workflows.closeout"] },
+  "ACTION: Send Engineer's RFI/RFA draft (countersign)": { state: "none", method: "POST", path: () => "", note: "valid payload on an Engineer draft", valid: ["design-requests.send"] },
+  "ACTION: Answer RFI/RFA": { state: "none", method: "POST", path: () => "", note: "valid payload on an open RFI", valid: ["design-requests.respond"] },
+  "ACTION: Mark milestone completed": { state: "none", method: "POST", path: () => "", note: "valid payload on an active milestone", valid: ["milestones.complete"] },
+  "ACTION: Build and submit payroll batch": { state: "none", method: "POST", path: () => "", note: "valid payload on a draft batch", valid: ["payroll.submit"] },
+  "ACTION: Approve or return payroll batch": { state: "none", method: "POST", path: () => "", note: "valid payload on a pending batch", valid: ["payroll.decide"] },
+  "ACTION: Submit a proposal": { state: "none", method: "POST", path: () => "", note: "valid payload on a Proposal-phase project", valid: ["proposals.submit"] },
+  "ACTION: Create an RFI/RFA": { state: "none", method: "POST", path: () => "", note: "valid payload on a Construction project", valid: ["design-requests.create"] },
+  "FUNCTION: Upload a document": { state: "none", method: "POST", path: () => "", note: "valid multipart upload and valid JSON create on a Construction project", valid: ["documents.upload", "documents.json"] },
   "ACTION: Move plan set to for_review": null, // needs a Design-type project with plan sets: covered by LC-171 in Phase C
   "ACTION: Move plan set to approved": null,
 };

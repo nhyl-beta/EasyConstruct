@@ -14,7 +14,7 @@ import type { FullConfig, FullResult, Reporter, Suite, TestCase, TestResult, Tes
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadChecks, loadMatrix, loadSteps, type Check, type Step } from "../spec.js";
+import { levelOf, loadChecks, loadMatrix, loadSteps, type Check, type Step } from "../spec.js";
 import { mxId, ROLES } from "../roles.js";
 
 const QA_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -168,11 +168,17 @@ class CsvReporter implements Reporter {
     const steps = loadSteps();
     const matrix = loadMatrix();
 
-    const rows03: Row[] = checks.map((c: Check) =>
-      this.apply(this.baseRow({
+    const rows03: Row[] = checks.map((c: Check) => {
+      const row = this.apply(this.baseRow({
         "Test Case ID": c.id, Objective: `${c.page} — ${c.type}`, "Test Procedure": c.procedure, "Expected Results": c.expected,
         Automation: c.automation, Role: c.role,
-      }), this.outcomes.get(c.id), requiredParts(c.type)));
+      }), this.outcomes.get(c.id), requiredParts(c.type));
+      // A check written for the draft matrix can contradict the owner's decisions of 2026-11-01: say so instead of leaving it blank.
+      const lvl = levelOf(c.role, c.page);
+      const superseded = (c.type === "DENIED" && lvl !== "Deny") || (c.type === "READ-ONLY" && ["Deny", "Full", "Allowed"].includes(lvl)) || ((c.type === "NAVIGATE" || c.type === "CONTENT") && lvl === "Deny");
+      if (superseded && row["Status"] === "Not Executed") row["Remarks"] = [row["Remarks"], `superseded by owner decision 2026-11-01: the matrix now says '${lvl}' for this role and page`].filter(Boolean).join("; ");
+      return row;
+    });
 
     const rows01: Row[] = [];
     matrix.forEach((m, i) => {
