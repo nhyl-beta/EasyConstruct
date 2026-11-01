@@ -1,0 +1,54 @@
+﻿Page / Function,Owner,Admin,IT Designer,Project Manager,Human Resources,Finance Manager,Architect,Engineer,Site Personnel,Consultant,Automation,Notes,Confirmation
+Dashboard,Full,Full,Full,Full,Full,Full,Full,Full,Full,Full,Auto (API + UI),,Draft - confirm against final scope
+User Accounts,Deny,View only,Full,Deny,Deny,Deny,Deny,Deny,Deny,Deny,Auto (API + UI),,Draft - confirm against final scope
+Roles & Permissions,Deny,View only,View only,Deny,Deny,Deny,Deny,Deny,Deny,Deny,Auto (API + UI),,Draft - confirm against final scope
+Projects,View only,Full,View only,Full,Deny,Deny,View only,View only,Deny,View only,Auto (API + UI),,Draft - confirm against final scope
+Portfolio,View only,Deny,Deny,Deny,Deny,Deny,Deny,Deny,Deny,Deny,Auto (API + UI),,Draft - confirm against final scope
+Workflows,Deny,Full,Full,Deny,Deny,Deny,Deny,Deny,Deny,Deny,Auto (API + UI),,Draft - confirm against final scope
+Workflow Configuration,Deny,Full,View only,Deny,Deny,Deny,Deny,Deny,Deny,Deny,Auto (API + UI),,Draft - confirm against final scope
+Approval Hierarchy,Deny,Full,View only,Deny,Deny,Deny,Deny,Deny,Deny,Deny,Auto (API + UI),,Draft - confirm against final scope
+Approvals (milestone and workflow),Deny,Deny,Deny,Full,Full,Full,Full,Full,Deny,Deny,Auto (API + UI),,Draft - confirm against final scope
+Documents,Deny,Full,Full,Full,Deny,Deny,Full,View only,View only,View only,Auto (API + UI),,Draft - confirm against final scope
+Document Types,Deny,Full,Full,Deny,Deny,Deny,Deny,Deny,Deny,Deny,Auto (API + UI),,Draft - confirm against final scope
+Proposals,View only,View only,View only,View only,Deny,Deny,Full,Deny,Deny,Full,Auto (API + UI),,Draft - confirm against final scope
+Activity Logs / Audit Trail,View only,View only,View only,Deny,Deny,Deny,Deny,Deny,Deny,Deny,Auto (API + UI),,Draft - confirm against final scope
+Security Monitoring / System Oversight,View only,View only,View only,Deny,Deny,Deny,Deny,Deny,Deny,Deny,Auto (API + UI),,Draft - confirm against final scope
+User Support,Deny,Full,Full,Deny,Deny,Deny,Deny,Deny,Deny,Deny,Auto (API + UI),,Draft - confirm against final scope
+Reports,View only,View only,View only,View only,View only,View only,Deny,Deny,Deny,Deny,Auto (API + UI),,Draft - confirm against final scope
+Tasks,Deny,Deny,Deny,Full,Deny,Deny,Deny,Full,Full,Deny,Auto (API + UI),,Draft - confirm against final scope
+Issues,Deny,Deny,Deny,Full,Deny,Deny,Deny,Full,Full,Deny,Auto (API + UI),,Draft - confirm against final scope
+RFI / RFA,Deny,View only,Deny,Full,Deny,Deny,Full,Full,Deny,Full,Auto (API + UI),,Draft - confirm against final scope
+Materials and Purchase Requests,Deny,Deny,Deny,Full,Deny,View only,Deny,Full,Full,Deny,Auto (API + UI),,Draft - confirm against final scope
+Employees,Deny,View only,Deny,Deny,Full,Deny,Deny,Deny,Deny,Deny,Auto (API + UI),,Draft - confirm against final scope
+Attendance Monitoring,Deny,View only,Deny,Deny,Full,Deny,Deny,Deny,Deny,Deny,Auto (API + UI),,Draft - confirm against final scope
+Attendance Clock-in,Deny,Deny,Deny,Deny,Deny,Deny,Deny,Deny,Full,Deny,Auto (API + UI),,Draft - confirm against final scope
+Payroll,Deny,Deny,Deny,Deny,Full,Full,Deny,Deny,Deny,Deny,Auto (API + UI),,Draft - confirm against final scope
+Workforce Reports,Deny,Deny,Deny,Deny,Full,Deny,Deny,Deny,Deny,Deny,Auto (API + UI),,Draft - confirm against final scope
+Budget,View only,Deny,Deny,View only,Deny,Full,Deny,Deny,Deny,Deny,Auto (API + UI),,Draft - confirm against final scope
+Expenses and Vendor Payments,Deny,Deny,Deny,Deny,Deny,Full,Deny,Deny,Deny,Deny,Auto (API + UI),,Draft - confirm against final scope
+Impact Awareness,View only,Deny,View only,Deny,Deny,Full,View only,Deny,Deny,Deny,Auto (API + UI),,Draft - confirm against final scope
+Design Submission,Deny,Deny,Deny,Deny,Deny,Deny,Full,Deny,Deny,Deny,Auto (API + UI),,Draft - confirm against final scope
+Design Proposal Approval,Deny,Deny,Deny,Deny,Deny,Deny,Full,Deny,Deny,Full,Auto (API + UI),,Draft - confirm against final scope
+Revisions,Deny,Deny,Deny,Deny,Deny,Deny,Full,Deny,Deny,Deny,Auto (API + UI),,Draft - confirm against final scope
+Blueprints,Deny,Deny,Deny,View only,Deny,Deny,Full,Deny,Deny,View only,Auto (API + UI),,Draft - confirm against final scope
+Progress Reports,Deny,Deny,Deny,View only,Deny,Deny,Deny,Full,Deny,Deny,Auto (API + UI),,Draft - confirm against final scope
+Requirements,Deny,Deny,Deny,View only,Deny,Deny,Deny,Full,Full,Deny,Auto (API + UI),,Draft - confirm against final scope
+Field Documentation,Deny,Deny,Deny,View only,Deny,Deny,Deny,View only,Full,Deny,Auto (API + UI),,Draft - confirm against final scope
+Design Repository,Deny,Deny,Deny,Deny,Deny,Deny,Deny,Deny,Deny,Full,Auto (API + UI),,Draft - confirm against final scope
+Advisory Documents,Deny,Deny,Deny,Deny,Deny,Deny,Deny,Deny,Deny,Full,Auto (API + UI),,Draft - confirm against final scope
+Resources and Tools,Deny,Deny,Deny,Full,Deny,Deny,Deny,Deny,Deny,Deny,Auto (API + UI),,Draft - confirm against final scope
+Account Recovery (fail-safe),Full,Deny,Deny,Deny,Deny,Deny,Deny,Deny,Deny,Deny,Auto (API + UI),,Draft - confirm against final scope
+ACTION: Advance phase (gate must pass),Deny,Allowed,Deny,Allowed,Deny,Deny,Deny,Deny,Deny,Deny,Auto (API),"Admin, or the project's own PM only. Blocked advance returns 409 with failing checks",From lifecycle doc (staging d4d8a54)
+ACTION: Override a failed gate (reason 10+ chars),Deny,Allowed,Deny,Deny,Deny,Deny,Deny,Deny,Deny,Deny,Auto (API),Stored in phase history (override=true) and audit log,From lifecycle doc (staging d4d8a54)
+ACTION: Hold / Resume project,Deny,Allowed,Deny,Allowed,Deny,Deny,Deny,Deny,Deny,Deny,Auto (API),"Hold only from Design, Pre-Construction, Construction. Reason required",From lifecycle doc (staging d4d8a54)
+ACTION: Cancel project at Proposal,Deny,Allowed,Deny,Allowed,Deny,Deny,Deny,Deny,Deny,Deny,Auto (API),Reason required,From lifecycle doc (staging d4d8a54)
+ACTION: Cancel project after Proposal,Deny,Allowed,Deny,Deny,Deny,Deny,Deny,Deny,Deny,Deny,Auto (API),Admin only,From lifecycle doc (staging d4d8a54)
+ACTION: Archive project,Deny,Allowed,Deny,Deny,Deny,Deny,Deny,Deny,Deny,Deny,Auto (API),Only from Completed,From lifecycle doc (staging d4d8a54)
+ACTION: Start Project Closeout workflow,Deny,Allowed,Deny,Deny,Deny,Deny,Deny,Allowed,Deny,Deny,Auto (API),Only in Closeout; one at a time,From lifecycle doc (staging d4d8a54)
+ACTION: Send Engineer's RFI/RFA draft (countersign),Deny,Deny,Deny,Allowed,Deny,Deny,Deny,Deny,Deny,Deny,Auto (API),Engineer draft needs PM send,From lifecycle doc (staging d4d8a54)
+ACTION: Answer RFI/RFA,Deny,Deny,Deny,Deny,Deny,Deny,Allowed,Deny,Deny,Allowed,Auto (API),,From lifecycle doc (staging d4d8a54)
+ACTION: Mark milestone completed,Deny,Deny,Deny,Allowed,Deny,Deny,Deny,Allowed,Deny,Deny,Auto (API),Engineer allowed by decision,From lifecycle doc (staging d4d8a54)
+ACTION: Build and submit payroll batch,Deny,Deny,Deny,Deny,Allowed,Deny,Deny,Deny,Deny,Deny,Auto (API),,From lifecycle doc (staging d4d8a54)
+ACTION: Approve or return payroll batch,Deny,Deny,Deny,Deny,Deny,Allowed,Deny,Deny,Deny,Deny,Auto (API),,From lifecycle doc (staging d4d8a54)
+ACTION: Move plan set to for_review,Deny,Allowed,Deny,Allowed,Deny,Deny,Allowed,Deny,Deny,Deny,Auto (API),Design projects,From lifecycle doc (staging d4d8a54)
+ACTION: Move plan set to approved,Deny,Allowed,Deny,Allowed,Deny,Deny,Deny,Deny,Deny,Allowed,Auto (API),Architect must NOT be able to approve,From lifecycle doc (staging d4d8a54)

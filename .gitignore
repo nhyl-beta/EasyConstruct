@@ -26,3 +26,11 @@ docs/*
 !docs/adr/
 !docs/setup/
 !docs/TEST_ACCOUNTS.md
+
+# QA suite local output (qa/ code and qa/spec/*.csv are tracked)
+qa/results/
+qa/.auth/
+qa/node_modules/
+qa/.no-such-env
+playwright-report/
+test-results/

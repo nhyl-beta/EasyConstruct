@@ -12,6 +12,16 @@
     "build:client": "npm run build --workspace=@easyconstruct/web",
     "build:server": "npm run build --workspace=@easyconstruct/api",
     "db:seed": "npm run db:seed --workspace=@easyconstruct/api",
-    "db:reset": "npm run db:reset --workspace=@easyconstruct/api"
+    "db:reset": "npm run db:reset --workspace=@easyconstruct/api",
+    "qa:guard": "npm run guard --prefix qa",
+    "qa:reset": "npm run reset --prefix qa",
+    "qa:smoke": "npm run smoke --prefix qa",
+    "qa:api": "npm run api --prefix qa",
+    "qa:ui:access": "npm run ui:access --prefix qa",
+    "qa:functional": "npm run functional --prefix qa",
+    "qa:lifecycle": "npm run lifecycle --prefix qa",
+    "qa:crawl": "npm run crawl --prefix qa",
+    "qa:full": "npm run full --prefix qa",
+    "qa:findings": "npm run findings --prefix qa"
   }
 }

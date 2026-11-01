@@ -1,0 +1,20 @@
+{
+  "name": "@easyconstruct/qa",
+  "private": true,
+  "type": "module",
+  "description": "Automated QA suite for EasyConstruct. Not an npm workspace of the app; own dependencies, dev-only.",
+  "scripts": {
+    "guard": "tsx src/guard-cli.ts",
+    "test:guard": "node --import tsx --test src/guard.test.ts",
+    "reset": "tsx src/reset/index.ts",
+    "serve": "tsx src/reset/serve.ts"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "@types/node": "^22.10.0",
+    "@types/pg": "^8.11.10",
+    "pg": "^8.13.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

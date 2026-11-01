@@ -1,0 +1,13 @@
+﻿Lifecycle Stage,Cases,Steps,Auto steps,Semi steps,Manual steps,% Auto,Manual minutes now (2.0 min/step incl. logging),"Minutes after (Semi 0.75, Manual 2.0, Auto 0)",Minutes saved,Steps by Owner,Steps by Admin,Steps by IT Designer,Steps by Project Manager,Steps by Human Resources,Steps by Finance Manager,Steps by Architect,Steps by Engineer,Steps by Site Personnel,Steps by Consultant
+0 Setup & Access,4,18,16,2,0,89,36.0,1.5,34.5,2,2,11,0,1,0,0,0,0,0
+1 Proposal (P1-P5),2,15,15,0,0,100,30.0,0.0,30.0,1,2,0,7,0,0,3,1,0,1
+2 Design (D1-D3),1,7,7,0,0,100,14.0,0.0,14.0,0,0,0,2,0,0,2,1,0,2
+3 Pre-Construction (C1-C5),1,10,10,0,0,100,20.0,0.0,20.0,0,0,1,5,1,1,0,1,1,0
+4 Construction (K1-K4),7,43,40,1,2,93,86.0,4.75,81.25,1,3,0,15,6,4,1,6,6,1
+5 Closeout and Completion (X1-X5),3,23,21,0,2,91,46.0,4.0,42.0,1,5,0,9,1,4,1,2,0,0
+"6 Design-type path (DP, T)",3,21,21,0,0,100,42.0,0.0,42.0,0,1,0,10,0,0,7,0,0,3
+"7 Hold, Cancel, Archive, Locks",2,11,11,0,0,100,22.0,0.0,22.0,0,1,0,8,1,0,0,1,0,0
+8 Cross-module and Monitoring,8,33,22,9,2,67,66.0,10.75,55.25,5,8,3,8,2,1,1,4,1,0
+9 Security and Quality,4,10,9,0,1,90,20.0,2.0,18.0,0,5,0,2,0,0,0,0,0,2
+Role-page and action checks (file 03),,901,901,0,0,100,1802.0,0,1802.0,86,107,99,110,75,78,89,93,80,84
+TOTAL,35,1092,1073,12,7,98,2184.0,23.0,2161.0,96,134,114,176,87,88,104,109,88,93
