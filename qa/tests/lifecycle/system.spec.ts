@@ -68,7 +68,10 @@ test("LC-203 Every state change is logged; phase history is complete", async () 
     expect(bad.length, `${bad.length} of the latest 100 entries lack an actor, action or time`).toBe(0);
   });
   await S.run(2, "Owner Audit Trail shows the same entries", async () => {
-    expect((await logs(OWNER)).slice(0, 20).map((l) => l.id)).toEqual((await logs(IT)).slice(0, 20).map((l) => l.id));
+    // the log keeps growing while other tests write: compare entries that are not the very newest
+    const it = (await logs(IT)).slice(10, 40).map((l) => l.id), owner = new Set((await logs(OWNER)).map((l) => l.id));
+    const missing = it.filter((id) => !owner.has(id));
+    expect(missing, `the Owner's Audit Trail lacks ${missing.length} entries that IT's Activity Logs shows`).toEqual([]);
   });
   await S.run(3, "Phase history lists every Advance, Hold, Cancel and Archive with a gate snapshot", async () => {
     const a = await createProject({ phase: "Design", creator: PM, name: `QA hist ${uid()}` });

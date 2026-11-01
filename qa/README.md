@@ -109,3 +109,9 @@ shows one row: a failure in either part makes it Failed and the Actual Results t
 * A new lifecycle case: add a test in `tests/lifecycle/` titled with the case id and wrap each CSV step in `S.run(n, "...", ...)` from
   `src/kit.ts`; for a UI-driven run add it to `tests/lifecycle-ui/` with `[ui]` in the test title.
 * Tags in a test title: `@known:Bug-006` (stays Failed, does not fail the run), `@pending-feature` (reported Not Executed).
+
+## Flaky runs and merging results
+
+A parallel `qa:full` loads the machine heavily. A failure that comes from the harness (a worker collision, a timeout in a long browser flow) can be re-run on its own
+(`npx playwright test --project=lifecycle --project=lifecycle-ui`, no `--reporter` flag) and `qa:findings` accepts several run folders:
+`npm run qa:findings -- results/<full-run> results/<re-run>`. For every row, the last folder in which it was executed wins.
