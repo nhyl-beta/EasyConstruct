@@ -15,6 +15,8 @@ Automated checks that replace most of the manual test round. Results are written
 
 ## Setup
 
+Put `QA_DATABASE_URL=...` (and optionally `QA_BASE_URL`, `QA_API_URL`) in `qa/.env.qa`. It is git-ignored and only `QA_*` keys are read; a real environment variable overrides the file.
+
 ```bash
 npm ci --workspace=@easyconstruct/api          # API dependencies, once
 npm install --prefix qa                        # QA dependencies

@@ -95,6 +95,20 @@ export function checkQaEnvironment(
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
+/** QA_* variables from qa/.env.qa (git-ignored), so the connection string never has to be typed or pasted. Real
+ *  environment variables win over the file. Only QA_* keys are read; anything else in the file is ignored. */
+export function qaEnv(root = repoRoot, base: Record<string, string | undefined> = process.env): Record<string, string | undefined> {
+  const file = join(root, "qa", ".env.qa");
+  const fromFile: Record<string, string> = {};
+  if (existsSync(file)) {
+    for (const line of readFileSync(file, "utf8").split(/\r?\n/)) {
+      const m = line.match(/^\s*(?:export\s+)?(QA_[A-Z_]+)\s*=\s*(.*?)\s*$/);
+      if (m) fromFile[m[1]!] = m[2]!.replace(/^["']|["']$/g, "");
+    }
+  }
+  return { ...fromFile, ...base };
+}
+
 /** DATABASE_URL values from every .env* file (not *.example) under the repo, plus the live environment. */
 export function collectOtherDatabaseUrls(root = repoRoot, env: Record<string, string | undefined> = process.env): { source: string; url: string }[] {
   const found: { source: string; url: string }[] = [];
@@ -114,7 +128,7 @@ export function collectOtherDatabaseUrls(root = repoRoot, env: Record<string, st
 }
 
 /** Call first, from every entry point. Throws GuardError; use guardOrExit() in CLIs. */
-export function assertQaEnvironment(env: Record<string, string | undefined> = process.env, root = repoRoot): QaConfig {
+export function assertQaEnvironment(env: Record<string, string | undefined> = qaEnv(), root = repoRoot): QaConfig {
   const { problems, config } = checkQaEnvironment(env, collectOtherDatabaseUrls(root, env));
   if (problems.length > 0 || !config) throw new GuardError(problems);
   return config;

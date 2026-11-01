@@ -34,3 +34,5 @@ qa/node_modules/
 qa/.no-such-env
 playwright-report/
 test-results/
+qa/.env.qa
+qa/.env*.local

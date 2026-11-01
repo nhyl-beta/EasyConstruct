@@ -1,9 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { assertQaEnvironment, assertResetAllowed, checkQaEnvironment, collectOtherDatabaseUrls, GuardError } from "./guard.js";
+import { qaEnv, assertQaEnvironment, assertResetAllowed, checkQaEnvironment, collectOtherDatabaseUrls, GuardError } from "./guard.js";
 
 const LOCAL = "postgres://qa:qa@localhost:5432/easyconstruct_qa";
 const emptyRoot = () => mkdtempSync(join(tmpdir(), "qa-guard-"));
@@ -66,4 +66,14 @@ test("reset needs a local host or a qa/test database name", () => {
   assert.doesNotThrow(() => assertResetAllowed(cfg(LOCAL), {}));
   assert.doesNotThrow(() => assertResetAllowed(cfg("postgres://u:p@ep-x.neon.tech/ec_qa"), {}));
   assert.throws(() => assertResetAllowed(cfg("postgres://u:p@ep-x.neon.tech/neondb"), {}), GuardError);
+});
+
+test("qa/.env.qa supplies QA_* values; the real environment wins; other keys are ignored", () => {
+  const root = emptyRoot();
+  mkdirSync(join(root, "qa"));
+  writeFileSync(join(root, "qa", ".env.qa"), `QA_DATABASE_URL="${LOCAL}"\nQA_BASE_URL=http://localhost:5999\nDATABASE_URL=postgres://prod/should-be-ignored\n`);
+  const env = qaEnv(root, { QA_BASE_URL: "http://localhost:5173" });
+  assert.equal(env.QA_DATABASE_URL, LOCAL);
+  assert.equal(env.QA_BASE_URL, "http://localhost:5173");
+  assert.equal(env.DATABASE_URL, undefined);
 });
