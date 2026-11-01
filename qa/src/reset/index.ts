@@ -16,11 +16,11 @@ const STAGES: { code: string; phase: string; pct: number }[] = [
   { code: "DEMO-STAGE-6", phase: "Archived", pct: 100 },
 ];
 
-function run(cfg: QaConfig, label: string, args: string[], optional = false, extraEnv: NodeJS.ProcessEnv = {}): Promise<void> {
+function run(cfg: QaConfig, label: string, args: string[], optional = false, extraEnv: NodeJS.ProcessEnv = {}, cmd = "npm"): Promise<void> {
   console.log(`\n▶ ${label}`);
   // Async (not spawnSync) so the in-process price stand-in can answer while the child runs.
   return new Promise((resolve, reject) => {
-    const child = spawn("npm", ["run", ...args], { cwd: API_DIR, env: { ...qaChildEnv(cfg), ...extraEnv }, stdio: "inherit" });
+    const child = spawn(cmd, cmd === "npm" ? ["run", ...args] : args, { cwd: API_DIR, env: { ...qaChildEnv(cfg), ...extraEnv }, stdio: "inherit" });
     child.on("exit", (code) => {
       if (code === 0) return resolve();
       if (optional) { console.warn(`⚠ ${label} failed (exit ${code}); continuing.`); return resolve(); }
@@ -54,27 +54,41 @@ async function main() {
   await run(cfg, "bootstrap schema + reference data (empty database only)", ["db:bootstrap", "--", "--yes"]);
   await run(cfg, "seed accounts + employees + workflow templates", ["db:seed"]);
 
-  // The seeders sign in as many accounts; the API limits sign-ins (40 / 15 min / address). Every seeder is
-  // idempotent and a restart clears the limiter, so on a limiter failure restart the API and run the chain again.
+  // The seeders sign in as many accounts, and the API limits sign-ins (40 / 15 min / address). Each seeder is
+  // idempotent and an API restart clears the limiter, so the chain (same order as `npm run demo:seed`) is run one
+  // script at a time; when one stops, the API is restarted and only that script is retried.
+  const chain = ["demo-seed-stages", "demo-seed-roles", "demo-seed-revisions", "demo-revisions", "demo-seed-requests", "demo-seed-design", "demo-seed-owner-payroll", "demo-seed-procurement"];
+  await run(cfg, "demo employees roster", ["demo-employees"].map((x) => `scripts/demo/${x}.ts`).flatMap((f) => ["tsx", f]), false, {}, "npx");
   const standIn = await startStandIn(8124);
+  let api: ChildProcess | null = null;
+  const startApi = async () => {
+    api = spawn("npx", ["tsx", "src/main.ts"], { cwd: API_DIR, env: { ...qaChildEnv(cfg), PORT: apiPort(cfg) }, stdio: ["ignore", "inherit", "inherit"], detached: true });
+    await waitForApi(cfg, api);
+  };
+  const stopApi = async () => {
+    if (api?.pid) { try { process.kill(-api.pid, "SIGTERM"); } catch { /* gone */ } }
+    api = null;
+    await new Promise((r) => setTimeout(r, 2000));
+  };
   try {
-    for (let attempt = 1; attempt <= 4; attempt++) {
-      console.log(`\n▶ starting API on ${cfg.apiUrl} (attempt ${attempt})`);
-      const api = spawn("npx", ["tsx", "src/main.ts"], { cwd: API_DIR, env: { ...qaChildEnv(cfg), PORT: apiPort(cfg) }, stdio: ["ignore", "inherit", "inherit"], detached: true });
-      try {
-        await waitForApi(cfg, api);
-        if (attempt === 1) await run(cfg, "reference prices (local stand-in)", ["ai:seed-references"], false, { ESTIMATIONPRO_BASE_URL: "http://127.0.0.1:8124/api/v1" });
-        await run(cfg, "demo projects + role data", ["demo:seed"]);
-        break;
-      } catch (e) {
-        if (attempt === 4) throw e;
-        console.warn(`⚠ seed chain stopped (${(e as Error).message}); restarting the API and running it again`);
-      } finally {
-        try { process.kill(-api.pid!, "SIGTERM"); } catch { /* already gone */ }
-        await new Promise((r) => setTimeout(r, 2000));
+    console.log(`\n▶ starting API on ${cfg.apiUrl}`);
+    await startApi();
+    await run(cfg, "reference prices (local stand-in)", ["ai:seed-references"], false, { ESTIMATIONPRO_BASE_URL: "http://127.0.0.1:8124/api/v1" });
+    for (const script of chain) {
+      for (let attempt = 1; ; attempt++) {
+        try {
+          await run(cfg, script, ["tsx", `scripts/demo/${script}.ts`], false, {}, "npx");
+          break;
+        } catch (e) {
+          if (attempt >= 3) throw e;
+          console.warn(`⚠ ${script} stopped; restarting the API (clears the sign-in limiter) and retrying it`);
+          await stopApi();
+          await startApi();
+        }
       }
     }
   } finally {
+    await stopApi();
     standIn.close();
   }
 
