@@ -102,7 +102,11 @@ class CsvReporter implements Reporter {
     for (const id of ids) this.record(id, part, t, status, err, r);
     this.walkSteps(r.steps, t, r);
     const lc = title.match(/\b(LC-\d+)\b/);
-    if (lc && status === "Skipped" && tagsOf(title).pending) this.pendingCases.add(lc[1]!);
+    if (lc && status === "Skipped") {
+      if (tagsOf(title).pending) this.pendingCases.add(lc[1]!);
+      const stepNo = title.match(/\bLC-\d+ step (\d+)/)?.[1];
+      this.skipReasons.set(stepNo ? `${lc[1]}#${stepNo}` : lc[1]!, tagsOf(title).pending ? "feature not on this branch" : err);
+    }
     // A test that fails outside any titled step (setup crash) fails every Auto step of its case. A test that ran its steps
     // keeps per-step results, and steps it never ran stay "not written yet".
     if (lc && status === "Failed") {
@@ -147,6 +151,7 @@ class CsvReporter implements Reporter {
   }
 
   private pendingCases = new Set<string>();
+  private skipReasons = new Map<string, string>();
   private lastFlush = 0;
   /** Results are written as the run goes, so an interrupted or very long run keeps what it has. */
   private flush(final = false) {
@@ -188,10 +193,13 @@ class CsvReporter implements Reporter {
         "Test Procedure": s.procedure, "Expected Results": s.expected, Automation: s.automation, Role: s.actor,
       });
       this.apply(row, this.outcomes.get(`${s.id}#${s.step}`), []);
-      if (this.pendingCases.has(s.id) && s.automation === "Auto" && row["Status"] === "Not Executed") { row["Actual Results"] = "Feature not on this branch"; row["Remarks"] = "feature not on this branch"; }
       const bug = KNOWN_STEPS[`${s.id}#${s.step}`];
       if (bug) row["Remarks"] = [row["Remarks"], `known defect ${bug}`].filter(Boolean).join("; ");
-      if (s.automation === "Auto" && !this.outcomes.has(`${s.id}#${s.step}`) && row["Status"] === "Not Executed") row["Remarks"] = "automation not written yet";
+      if (s.automation === "Auto" && !this.outcomes.has(`${s.id}#${s.step}`) && row["Status"] === "Not Executed") {
+        const why = this.skipReasons.get(`${s.id}#${s.step}`) ?? this.skipReasons.get(s.id);
+        row["Remarks"] = why ?? "automation not written yet";
+        if (this.pendingCases.has(s.id) && why === "feature not on this branch") row["Actual Results"] = "Feature not on this branch";
+      }
       if (s.automation !== "Auto" && row["Status"] === "Not Executed") {
         row["Remarks"] = `${s.automation}: human must check — ${s.expected}`;
         manual.push({ ...row });
