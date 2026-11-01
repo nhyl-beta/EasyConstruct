@@ -4,7 +4,7 @@ import { statePath } from "../../src/global-setup.js";
 import { PAGE_ROUTES, PAGE_UI } from "../../src/page-map.js";
 import { ROLES } from "../../src/roles.js";
 import { loadChecks, loadMatrix } from "../../src/spec.js";
-import { DENIED_TEXT, expect, findItem, sidebarItems, test } from "./fixtures.js";
+import { DENIED_TEXT, expect, findItem, settle, sidebarItems, test } from "./fixtures.js";
 
 const checks = loadChecks().filter((c) => ["NAVIGATE", "CONTENT", "DENIED", "READ-ONLY"].includes(c.type));
 const matrix = loadMatrix();
@@ -25,7 +25,7 @@ for (const role of ROLES) {
         if (ui!.approx) test.info().annotations.push({ type: "remark", description: `sidebar label '${ui!.labels.join(" / ")}' is an approximation of '${c.page}'` });
 
         await page.goto("/dashboard");
-        await page.waitForLoadState("networkidle").catch(() => {});
+        await settle(page);
         expect(page.url(), "session was not accepted by the web app (redirected to login)").not.toContain("/login");
         const items = await sidebarItems(page);
         const item = findItem(items, ui!.labels);
@@ -38,7 +38,7 @@ for (const role of ROLES) {
           if (!routes.length && !(item && !sharedLabel)) test.skip(true, "every route of this page is shared with an allowed page; direct-URL check inconclusive");
           for (const route of routes) {
             await page.goto(route);
-            await page.waitForLoadState("networkidle").catch(() => {});
+            await settle(page);
             const url = new URL(page.url());
             const body = (await page.locator("body").innerText().catch(() => "")) ?? "";
             const blocked = url.pathname !== route || DENIED_TEXT.test(body);
@@ -52,7 +52,7 @@ for (const role of ROLES) {
         expect(item, `sidebar item '${ui!.labels.join("' / '")}' not found (sidebar has: ${items.map((i) => i.text).join(", ")})`).toBeTruthy();
         const before = health.failedRequests.length;
         await page.locator(`aside a, nav a`).filter({ hasText: new RegExp(`^\\s*${item!.text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*$`) }).first().click();
-        await page.waitForLoadState("networkidle").catch(() => {});
+        await settle(page);
         expect(page.url(), "navigation ended on the login page").not.toContain("/login");
         const body = (await page.locator("main, body").first().innerText()) ?? "";
 

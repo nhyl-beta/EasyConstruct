@@ -52,3 +52,9 @@ export const norm = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
 export const findItem = (items: SidebarItem[], labels: string[]) => items.find((i) => labels.some((l) => norm(i.text) === norm(l)));
 
 export const DENIED_TEXT = /access denied|page not found|don't have permission|not authorized|restricted/i;
+
+/** The app keeps a live notification stream open, so "networkidle" never fires. Wait for load, then a short settle. */
+export async function settle(page: Page) {
+  await page.waitForLoadState("load").catch(() => {});
+  await page.waitForTimeout(700);
+}
