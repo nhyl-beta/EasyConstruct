@@ -106,6 +106,7 @@ class CsvReporter implements Reporter {
       }
     }
     if (status === "Failed") { if (tagsOf(title).known) this.knownFailures++; else this.hardFailures++; }
+    this.flush();
   }
 
   private baseRow(over: Partial<Row>): Row {
@@ -140,7 +141,15 @@ class CsvReporter implements Reporter {
     return row;
   }
 
-  async onEnd(_r: FullResult) {
+  private lastFlush = 0;
+  /** Results are written as the run goes, so an interrupted or very long run keeps what it has. */
+  private flush(final = false) {
+    if (!final && Date.now() - this.lastFlush < 20_000) return;
+    this.lastFlush = Date.now();
+    this.write();
+  }
+
+  private write() {
     mkdirSync(this.dir, { recursive: true });
     const checks = loadChecks();
     const steps = loadSteps();
@@ -187,10 +196,16 @@ class CsvReporter implements Reporter {
     writeFileSync(join(this.dir, "summary.csv"), this.summary(rows01, rows02, rows03, steps));
     mkdirSync(RESULTS_ROOT, { recursive: true });
     writeFileSync(join(RESULTS_ROOT, "latest.txt"), this.dir + "\n");
+  }
+
+  async onEnd(_r: FullResult) {
+    this.flush(true);
     console.log(`\nQA results: ${this.dir}  (hard failures: ${this.hardFailures}, known: ${this.knownFailures})`);
     if (this.hardFailures === 0 && this.knownFailures > 0) return { status: "passed" as const };
     return undefined;
   }
+
+  async onExit() { this.flush(true); }
 
   private summary(rows01: Row[], rows02: Row[], rows03: Row[], steps: Step[]): string {
     type Tally = { Passed: number; Failed: number; "Not Executed": number; Known: number; "Pending-feature": number };

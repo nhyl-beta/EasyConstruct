@@ -35,10 +35,13 @@ export function defineRoleSuite(role: (typeof ROLES)[number]) {
         test.skip(!ui, `no UI mapping for '${c.page}' (page not identified in the web app's resources)`);
         if (ui!.approx) test.info().annotations.push({ type: "remark", description: `sidebar label '${ui!.labels.join(" / ")}' is an approximation of '${c.page}'` });
 
-        await page.goto("/dashboard");
-        await settle(page);
-        expect(page.url(), "session was not accepted by the web app (redirected to login)").not.toContain("/login");
-        rp.items ??= await sidebarItems(page);
+        // The sidebar persists across pages, so only (re)load the dashboard when it is not on screen.
+        if (!rp.items || !(await page.locator("[data-slot='sidebar'] [data-sidebar='menu-button']").first().isVisible().catch(() => false))) {
+          await page.goto("/dashboard");
+          await settle(page);
+          expect(page.url(), "session was not accepted by the web app (redirected to login)").not.toContain("/login");
+          rp.items = await sidebarItems(page);
+        }
         const items = rp.items;
         const item = findItem(items, ui!.labels);
 
