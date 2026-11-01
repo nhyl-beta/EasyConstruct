@@ -26,6 +26,7 @@ const is2xx = (s: number) => s >= 200 && s < 300;
 const FIELDS: Partial<Record<Access, Set<string>>> = {
   "Names only": new Set(["id", "name"]),
   "Directory only": new Set(["id", "employeeId", "name", "email", "hasAccount", "userId"]),
+  "Basic list": new Set(["id", "name", "code"]),
 };
 const rowCount = (data: unknown) => `${rowsOf(data).length} rows returned`;
 

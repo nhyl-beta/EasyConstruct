@@ -56,9 +56,24 @@ export const WRITE: Record<string, Fixture> = {
     return (role) => status(role, "POST", `/design-requests/${draft.data.id}/send`, { dueDays: 3 });
   },
   "design-requests.respond": async () => {
-    const p = await withProject("Construction"); const rfi = await createRfi(p, "Project Manager", "Architect");
-    if (!rfi.ok) throw new Error(`RFI not created: ${rfi.status}`);
-    return (role) => status(role, "POST", `/design-requests/${rfi.data.id}/respond`, { responseText: "Valid write probe answer." });
+    // The RFI is addressed to the role that answers it (Consultant for a Consultant, Architect for everyone else), so a refusal is about
+    // the role, not about being the wrong recipient.
+    const p = await withProject("Construction");
+    return async (role) => {
+      const rfi = await createRfi(p, "Project Manager", role === "Consultant" ? "Consultant" : "Architect");
+      if (!rfi.ok) throw new Error(`RFI not created: ${rfi.status}`);
+      return status(role, "POST", `/design-requests/${rfi.data.id}/respond`, { responseText: "Valid write probe answer." });
+    };
+  },
+  "tasks.update": async () => {
+    const p = await withProject("Construction"); const site = await session("Site Personnel");
+    const t = await api<{ id: number }>("Project Manager", "POST", "/tasks", { taskCode: `TSK-${uid()}`.slice(0, 20), projectCode: p.code, title: "Write probe task", description: "QA", priority: "Low", status: "Pending", progress: 0, dueDate: plus(20), assignedToUserId: site.userId, assignedToName: site.name });
+    return (role) => status(role, "PATCH", `/tasks/${t.id}/status`, { status: "In Progress" });
+  },
+  "issues.resolve": async () => {
+    const p = await withProject("Construction");
+    const i = await api<{ id: number }>("Engineer", "POST", "/issues", { issueCode: `ISS-${uid()}`.slice(0, 20), projectCode: p.code, category: "Quality", severity: "Low", title: "Write probe issue", description: "Valid write probe issue description.", reportedByName: "Paolo Mendoza" });
+    return (role) => status(role, "PATCH", `/issues/${i.id}/status`, { status: "Resolved", resolutionNotes: "Valid write probe resolution." });
   },
   "milestones.complete": async () => {
     const p = await withProject("Construction");

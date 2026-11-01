@@ -39,9 +39,9 @@ export const LIFECYCLE_FILE = "02_lifecycle_test_cases.csv";
 export const CHECKS_FILE = "03_role_page_checks.csv";
 
 /** Matrix values. "Scoped", "Reference read", "Names only" and "Directory only" were added by the owner decisions of 2026-11-01. */
-export type Access = "Full" | "View only" | "Deny" | "Allowed" | "Scoped" | "Reference read" | "Names only" | "Directory only";
+export type Access = "Full" | "View only" | "Deny" | "Allowed" | "Scoped" | "Reference read" | "Names only" | "Directory only" | "Basic list";
 /** Values that allow the read of a page's endpoint. */
-export const READS_ALLOWED: Access[] = ["Full", "View only", "Scoped", "Reference read", "Names only", "Directory only"];
+export const READS_ALLOWED: Access[] = ["Full", "View only", "Scoped", "Reference read", "Names only", "Directory only", "Basic list"];
 /** Values that allow a write through the page's endpoint. */
 export const WRITES_ALLOWED: Access[] = ["Full"];
 export interface MatrixRow { page: string; isAction: boolean; byRole: Record<string, Access>; notes: string; automation: string }
