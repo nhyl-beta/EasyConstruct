@@ -2,7 +2,7 @@
 //   1. drop + recreate the public/drizzle schemas, 2. db:bootstrap (schema + reference data + migration journal), 3. seed accounts/employees/document types,
 //   4. start a throwaway API on the QA port, 5. build the demo projects through the real API,
 //   6. rename DEMO-S1..S7 to DEMO-STAGE-0..6, 7. verify what exists and report.
-import { spawn, spawnSync, type ChildProcess } from "node:child_process";
+import { spawn, type ChildProcess } from "node:child_process";
 import pg from "pg";
 import { assertQaEnvironment, assertResetAllowed, GuardError, type QaConfig } from "../guard.js";
 import { ROLES } from "../roles.js";
@@ -16,13 +16,17 @@ const STAGES: { code: string; phase: string; pct: number }[] = [
   { code: "DEMO-STAGE-6", phase: "Archived", pct: 100 },
 ];
 
-function run(cfg: QaConfig, label: string, args: string[], optional = false, extraEnv: NodeJS.ProcessEnv = {}) {
+function run(cfg: QaConfig, label: string, args: string[], optional = false, extraEnv: NodeJS.ProcessEnv = {}): Promise<void> {
   console.log(`\n▶ ${label}`);
-  const r = spawnSync("npm", ["run", ...args], { cwd: API_DIR, env: { ...qaChildEnv(cfg), ...extraEnv }, stdio: "inherit" });
-  if (r.status !== 0) {
-    if (optional) { console.warn(`⚠ ${label} failed (exit ${r.status}); continuing. Recorded as a reset warning.`); return; }
-    throw new Error(`${label} failed (exit ${r.status})`);
-  }
+  // Async (not spawnSync) so the in-process price stand-in can answer while the child runs.
+  return new Promise((resolve, reject) => {
+    const child = spawn("npm", ["run", ...args], { cwd: API_DIR, env: { ...qaChildEnv(cfg), ...extraEnv }, stdio: "inherit" });
+    child.on("exit", (code) => {
+      if (code === 0) return resolve();
+      if (optional) { console.warn(`⚠ ${label} failed (exit ${code}); continuing.`); return resolve(); }
+      reject(new Error(`${label} failed (exit ${code})`));
+    });
+  });
 }
 
 async function waitForApi(cfg: QaConfig, child: ChildProcess) {
@@ -47,21 +51,31 @@ async function main() {
   await client.end();
   console.log("✔ schemas dropped and recreated");
 
-  run(cfg, "bootstrap schema + reference data (empty database only)", ["db:bootstrap", "--", "--yes"]);
-  run(cfg, "seed accounts + employees + workflow templates", ["db:seed"]);
+  await run(cfg, "bootstrap schema + reference data (empty database only)", ["db:bootstrap", "--", "--yes"]);
+  await run(cfg, "seed accounts + employees + workflow templates", ["db:seed"]);
 
-  console.log("\n▶ starting API on " + cfg.apiUrl);
-  const api = spawn("npx", ["tsx", "src/main.ts"], { cwd: API_DIR, env: { ...qaChildEnv(cfg), PORT: apiPort(cfg) }, stdio: ["ignore", "inherit", "inherit"], detached: true });
+  // The seeders sign in as many accounts; the API limits sign-ins (40 / 15 min / address). Every seeder is
+  // idempotent and a restart clears the limiter, so on a limiter failure restart the API and run the chain again.
+  const standIn = await startStandIn(8124);
   try {
-    await waitForApi(cfg, api);
-    // Reference prices come from a local stand-in, never the external EstimationPro.ai service.
-    const standIn = await startStandIn(8124);
-    try {
-      run(cfg, "reference prices (local stand-in)", ["ai:seed-references"], false, { ESTIMATIONPRO_BASE_URL: "http://127.0.0.1:8124/api/v1" });
-    } finally { standIn.close(); }
-    run(cfg, "demo projects + role data", ["demo:seed"]);
+    for (let attempt = 1; attempt <= 4; attempt++) {
+      console.log(`\n▶ starting API on ${cfg.apiUrl} (attempt ${attempt})`);
+      const api = spawn("npx", ["tsx", "src/main.ts"], { cwd: API_DIR, env: { ...qaChildEnv(cfg), PORT: apiPort(cfg) }, stdio: ["ignore", "inherit", "inherit"], detached: true });
+      try {
+        await waitForApi(cfg, api);
+        if (attempt === 1) await run(cfg, "reference prices (local stand-in)", ["ai:seed-references"], false, { ESTIMATIONPRO_BASE_URL: "http://127.0.0.1:8124/api/v1" });
+        await run(cfg, "demo projects + role data", ["demo:seed"]);
+        break;
+      } catch (e) {
+        if (attempt === 4) throw e;
+        console.warn(`⚠ seed chain stopped (${(e as Error).message}); restarting the API and running it again`);
+      } finally {
+        try { process.kill(-api.pid!, "SIGTERM"); } catch { /* already gone */ }
+        await new Promise((r) => setTimeout(r, 2000));
+      }
+    }
   } finally {
-    try { process.kill(-api.pid!, "SIGTERM"); } catch { /* already gone */ }
+    standIn.close();
   }
 
   const c2 = new pg.Client({ connectionString: cfg.databaseUrl });
