@@ -21,7 +21,7 @@ for (const role of ROLES) {
 }
 
 const KEY: [string, string][] = [["Project Manager", "Projects"], ["Project Manager", "Tasks"], ["Project Manager", "Documents"], ["Admin", "Workflows"], ["IT Designer", "User Accounts"],
-  ["Human Resources", "Employees"], ["Finance Manager", "Budget"], ["Architect", "Designs"], ["Engineer", "Requirements"], ["Owner", "Portfolio"]];
+  ["Human Resources", "Employees"], ["Finance Manager", "Budget"], ["Architect", "Design Submission"], ["Engineer", "Requirements"], ["Owner", "Portfolio"]];
 for (const [roleLabel, page] of KEY) {
   test(`SMOKE [ui] key page ${page} as ${roleLabel}`, async ({ browser }) => {
     const rp = await openRolePage(browser, statePath(roleByLabel(roleLabel).slug));
