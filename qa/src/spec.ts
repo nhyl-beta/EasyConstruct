@@ -56,7 +56,7 @@ export function loadMatrix(): MatrixRow[] {
     const page = r["Page / Function"]!;
     const byRole: Record<string, Access> = {};
     for (const k of Object.keys(r)) if (!["Page / Function", "Automation", "Notes", "Confirmation"].includes(k)) byRole[k] = r[k] as Access;
-    return { page, isAction: page.startsWith("ACTION:"), byRole, notes: r["Notes"] ?? "", automation: r["Automation"] ?? "" };
+    return { page, isAction: page.startsWith("ACTION:") || page.startsWith("FUNCTION:"), byRole, notes: r["Notes"] ?? "", automation: r["Automation"] ?? "" };
   });
 }
 

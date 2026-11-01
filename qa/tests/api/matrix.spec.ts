@@ -68,7 +68,7 @@ matrix.forEach((row, i) => {
             }
           }
         });
-        const w = api!.write;
+        const w = api?.write;
         if (w) {
           // Writes are a second test ([api-w]) so an inconclusive write probe never hides the read result.
           test(`${id} ${ck} [api-w] ${row.page} write as ${role.label} (${level})${tag}`, async () => {
