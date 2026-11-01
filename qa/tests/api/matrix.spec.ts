@@ -18,6 +18,12 @@ const projectFor = (state: "Proposal" | "Design") => {
 };
 
 const authorised = (s: number) => s !== 401 && s !== 403;
+/** How many records a response carries, so a Deny that returns 200 can be told apart: rows>0 is data exposure, rows=0 is an empty scoped list. */
+const rowCount = (data: unknown): string => {
+  const find = (d: any): number | null => Array.isArray(d) ? d.length : d && typeof d === "object" ? (["items", "rows", "data", "results"].map((k) => find(d[k])).find((n) => n !== null) ?? null) : null;
+  const n = find(data);
+  return n === null ? "non-list body" : `${n} rows returned`;
+};
 const is2xx = (s: number) => s >= 200 && s < 300;
 
 matrix.forEach((row, i) => {
@@ -42,7 +48,7 @@ matrix.forEach((row, i) => {
               expect(r.status, `GET ${api!.read} without a token`).toBe(401);
             });
             const r = await call(role.label, "GET", api!.read);
-            if (level === "Deny") expect(r.status, `GET ${api!.read} as ${role.label} should be 403`).toBe(403);
+            if (level === "Deny") expect(r.status, `GET ${api!.read} as ${role.label} should be 403, got ${r.status}${is2xx(r.status) ? ` (${rowCount(r.data)})` : ""}`).toBe(403);
             else expect(is2xx(r.status), `GET ${api!.read} as ${role.label} should be 2xx, got ${r.status}`).toBe(true);
           }
           if (probe) {
