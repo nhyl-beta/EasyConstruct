@@ -86,6 +86,7 @@ export async function createProject(opts: CreateProjectOptions = {}): Promise<Qa
   const pm = await session("Project Manager");
   const code = `QA-${Date.now().toString(36).slice(-6).toUpperCase()}${(seq++ % 1296).toString(36).toUpperCase().padStart(2, "0")}`;
   const body: Record<string, unknown> = {
+    confirmSimilar: true, // names are generated, similarity warning is not under test
     name: opts.name ?? `QA project ${code}`, code, pm: pm.name ?? "Miguel Santos",
     due: plusDays(120), plannedStartDate: plusDays(1), projectType: "Commercial", risk: "Low",
     client: "QA Client", location: "Quezon City", currency: "PHP", description: "Created by the QA suite",
