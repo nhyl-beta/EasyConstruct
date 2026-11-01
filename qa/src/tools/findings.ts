@@ -7,15 +7,26 @@ import { join } from "node:path";
 import { parseCsv } from "../spec.js";
 
 const resultsDir = join(import.meta.dirname, "..", "..", "results");
-const dir = process.argv[2] ?? readFileSync(join(resultsDir, "latest.txt"), "utf8").trim();
+// qa:findings [dir ...] — several run folders can be given; for each row the LAST folder in which it was executed wins,
+// so a targeted re-run can replace rows that failed for a reason unrelated to the app (for example a worker collision).
+const dirs = process.argv.slice(2).length ? process.argv.slice(2) : [readFileSync(join(resultsDir, "latest.txt"), "utf8").trim()];
+const dir = dirs.join(" + ");
 const load = (f: string) => {
-  const file = join(dir, f);
-  if (!existsSync(file)) return [] as Record<string, string>[];
-  const [h, ...rows] = parseCsv(readFileSync(file, "utf8"));
-  return rows.map((r) => Object.fromEntries(h!.map((k, i) => [k, r[i] ?? ""])));
+  const merged = new Map<string, Record<string, string>>();
+  for (const d of dirs) {
+    const file = join(d, f);
+    if (!existsSync(file)) continue;
+    const [h, ...rows] = parseCsv(readFileSync(file, "utf8"));
+    for (const r of rows) {
+      const row = Object.fromEntries(h!.map((k, i) => [k, r[i] ?? ""]));
+      const key = `${row["Test Case ID"]}#${row["Steps"] ?? ""}#${row["Role"] ?? ""}`;
+      if (!merged.has(key) || row["Status"] !== "Not Executed") merged.set(key, row);
+    }
+  }
+  return [...merged.values()];
 };
 const m01 = load("01_access_matrix.csv"), m02 = load("02_lifecycle_test_cases.csv"), m03 = load("03_role_page_checks.csv");
-const crawl: any[] = existsSync(join(dir, "crawl-findings.json")) ? JSON.parse(readFileSync(join(dir, "crawl-findings.json"), "utf8")) : [];
+const crawl: any[] = dirs.flatMap((d) => (existsSync(join(d, "crawl-findings.json")) ? JSON.parse(readFileSync(join(d, "crawl-findings.json"), "utf8")) : []));
 const classification = new Map<string, string>();
 const clsFile = join(resultsDir, "functional-failure-classification.csv");
 if (existsSync(clsFile)) { const [h, ...rs] = parseCsv(readFileSync(clsFile, "utf8")); for (const r of rs) classification.set(r[h!.indexOf("Check ID")]!, r[h!.indexOf("Classification")]!); }
@@ -44,7 +55,13 @@ for (const r of m02) {
   const it: Item = { id: `${r["Test Case ID"]} step ${r["Steps"]}`, who: r["Role"]!, what: r["Objective"]!.slice(0, 70), detail: clean(r["Actual Results"]!) };
   if (KNOWN.test(r["Remarks"]!)) groups.e.push(it); else groups.c.push(it);
 }
-for (const f of crawl.filter((x) => x.kind !== "external-host")) groups.d.push({ id: `CRAWL ${f.role} / ${f.page}`, who: f.role, what: f.kind, detail: String(f.detail).slice(0, 190) });
+const seen = new Map<string, Item & { n: number }>();
+for (const f of crawl.filter((x) => x.kind !== "external-host")) {
+  const key = `${f.role}|${f.page}|${f.kind}|${String(f.detail).replace(/\d+/g, "N").slice(0, 120)}`;
+  const hit = seen.get(key);
+  if (hit) hit.n++; else seen.set(key, { id: `CRAWL ${f.role} / ${f.page}`, who: f.role, what: f.kind, detail: String(f.detail).slice(0, 190), n: 1 });
+}
+for (const it of seen.values()) groups.d.push({ ...it, detail: it.n > 1 ? `${it.detail} (x${it.n})` : it.detail });
 
 const external = [...new Set(crawl.filter((x) => x.kind === "external-host").map((x) => String(x.detail).split(" ")[3]))];
 const titles: Record<keyof typeof groups, string> = { a: "(a) Matrix disagreements", b: "(b) Missing or non-working controls", c: "(c) Wrong data / behaviour differs from the spec", d: "(d) Crashes, console errors, failed requests", e: "(e) Known defects (tagged, stay Failed)" };

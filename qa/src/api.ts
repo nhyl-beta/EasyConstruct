@@ -111,7 +111,8 @@ export async function createProject(opts: CreateProjectOptions = {}): Promise<Qa
   const phase = opts.phase ?? "Proposal";
   const deliveryType = opts.deliveryType ?? "Construction";
   const pm = await session(opts.pmRole ?? "Project Manager");
-  const code = `QA-${Date.now().toString(36).slice(-6).toUpperCase()}${(seq++ % 1296).toString(36).toUpperCase().padStart(2, "0")}`;
+  // unique across parallel workers: time + process id + counter + random
+  const code = `QA-${Date.now().toString(36).slice(-5)}${process.pid.toString(36).slice(-2)}${(seq++ % 36).toString(36)}${Math.floor(Math.random() * 36).toString(36)}`.toUpperCase();
   const body: Record<string, unknown> = {
     confirmSimilar: true, // names are generated, similarity warning is not under test
     name: opts.name ?? `QA project ${code}`, code, pm: pm.name ?? "Miguel Santos",

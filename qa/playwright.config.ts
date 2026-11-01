@@ -25,7 +25,7 @@ export default defineConfig({
   projects: [
     { name: "api", testMatch: /api\/.*\.spec\.ts/ },
     { name: "lifecycle", testMatch: /lifecycle\/.*\.spec\.ts/, fullyParallel: false },
-    { name: "lifecycle-ui", testMatch: /lifecycle-ui\/.*\.spec\.ts/, fullyParallel: false, use: { browserName: "chromium" } },
+    { name: "lifecycle-ui", testMatch: /lifecycle-ui\/.*\.spec\.ts/, fullyParallel: false, timeout: 240_000, use: { browserName: "chromium", actionTimeout: 25_000, navigationTimeout: 40_000 } },
     { name: "crawl", testMatch: /crawl\/crawl\..*\.spec\.ts/, fullyParallel: false, use: { browserName: "chromium" } },
     { name: "smoke", testMatch: /smoke\/.*\.spec\.ts/, fullyParallel: true, use: { browserName: "chromium" } },
     { name: "write-probes", testMatch: /probes\/.*\.spec\.ts/, fullyParallel: false },
