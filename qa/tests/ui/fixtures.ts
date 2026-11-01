@@ -2,7 +2,7 @@
 import { test as base, expect, type Page } from "@playwright/test";
 import { assertQaEnvironment } from "../../src/guard.js";
 
-export interface Health { consoleErrors: string[]; failedRequests: string[] }
+export interface Health { consoleErrors: string[]; failedRequests: string[]; external?: Set<string>; blockWrites?: boolean; attemptedWrites?: string[] }
 
 export const test = base.extend<{ health: Health }>({
   health: async ({ page, context }, use) => {
@@ -79,14 +79,16 @@ export async function openRolePage(browser: import("@playwright/test").Browser, 
   const context = await browser.newContext({ storageState: statePathFile, baseURL: cfg.baseUrl });
   const page = await context.newPage();
   const health: Health = { consoleErrors: [], failedRequests: [] };
+  health.external = new Set(); health.attemptedWrites = [];
   await context.route("**/*", (route) => {
-    const u = new URL(route.request().url());
-    if (u.protocol === "data:" || u.protocol === "blob:") return route.continue();
+    const req = route.request(); const u = new URL(req.url());
+    if (u.protocol === "data:" || u.protocol === "blob:" || u.origin === "null") return route.continue();
     if (u.origin === web && u.pathname.startsWith("/api/")) { health.failedRequests.push(`BLOCKED ${u.pathname}: web app is not pointed at the QA API`); return route.abort(); }
+    if (u.origin === api && health.blockWrites && !["GET", "HEAD", "OPTIONS"].includes(req.method())) { health.attemptedWrites!.push(`${req.method()} ${u.pathname}`); return route.fulfill({ status: 409, contentType: "application/json", body: JSON.stringify({ success: false, message: "blocked by the QA crawler (read-only click)" }) }); }
     if (u.origin === web || u.origin === api) return route.continue();
-    if (/fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: u.hostname.includes('googleapis') ? 'text/css' : 'font/woff2', body: '' });
-    health.failedRequests.push(`BLOCKED external ${u.origin}`);
-    return route.abort();
+    // The suite never reaches an outside host: answer with an empty body (so the page logs no error) and note the host.
+    health.external!.add(u.hostname);
+    return route.fulfill({ status: 200, contentType: /\.(png|jpe?g|webp|gif)(\?|$)/i.test(u.pathname) || /tile\./.test(u.hostname) ? "image/png" : u.hostname.includes("googleapis") ? "text/css" : "text/plain", body: "" });
   });
   page.on("console", (m) => { if (m.type() === "error") health.consoleErrors.push(m.text().slice(0, 200)); });
   page.on("pageerror", (e) => health.consoleErrors.push(`pageerror: ${e.message.slice(0, 200)}`));

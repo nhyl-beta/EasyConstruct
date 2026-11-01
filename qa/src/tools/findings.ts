@@ -44,8 +44,9 @@ for (const r of m02) {
   const it: Item = { id: `${r["Test Case ID"]} step ${r["Steps"]}`, who: r["Role"]!, what: r["Objective"]!.slice(0, 70), detail: clean(r["Actual Results"]!) };
   if (KNOWN.test(r["Remarks"]!)) groups.e.push(it); else groups.c.push(it);
 }
-for (const f of crawl) groups.d.push({ id: `CRAWL ${f.role} / ${f.page}`, who: f.role, what: f.kind, detail: String(f.detail).slice(0, 190) });
+for (const f of crawl.filter((x) => x.kind !== "external-host")) groups.d.push({ id: `CRAWL ${f.role} / ${f.page}`, who: f.role, what: f.kind, detail: String(f.detail).slice(0, 190) });
 
+const external = [...new Set(crawl.filter((x) => x.kind === "external-host").map((x) => String(x.detail).split(" ")[3]))];
 const titles: Record<keyof typeof groups, string> = { a: "(a) Matrix disagreements", b: "(b) Missing or non-working controls", c: "(c) Wrong data / behaviour differs from the spec", d: "(d) Crashes, console errors, failed requests", e: "(e) Known defects (tagged, stay Failed)" };
 const lines = [`# QA findings`, ``, `Run: \`${dir}\`  `, `Failed rows: ${Object.values(groups).reduce((n, g) => n + g.length, 0)} (a ${groups.a.length}, b ${groups.b.length}, c ${groups.c.length}, d ${groups.d.length}, e ${groups.e.length})`, ``];
 for (const k of ["a", "b", "c", "d", "e"] as const) {
@@ -55,5 +56,6 @@ for (const k of ["a", "b", "c", "d", "e"] as const) {
   for (const i of groups[k]) lines.push(`| ${i.id} | ${i.who} | ${i.what.replace(/\|/g, "/")} | ${i.detail.replace(/\|/g, "/")} |`);
   lines.push("");
 }
+if (external.length) lines.push("## Outside hosts the app tries to reach (information)", "", ...external.map((h) => `- ${h}`), "");
 writeFileSync(join(resultsDir, "findings.md"), lines.join("\n"));
 console.log(`findings.md written: a ${groups.a.length}, b ${groups.b.length}, c ${groups.c.length}, d ${groups.d.length}, e ${groups.e.length}`);

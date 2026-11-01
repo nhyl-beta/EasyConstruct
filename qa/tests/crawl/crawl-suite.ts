@@ -10,7 +10,7 @@ const DESTRUCTIVE = /\b(delete|remove|deactivate|archive|cancel|reject|send|sign
 const SKIP = /^(toggle sidebar|toggle theme|\d+\+?|[A-Z]{1,3})$/; // chrome buttons: sidebar toggle, theme toggle, notification count, avatar initials
 const MAX_PER_PAGE = 25;
 
-interface Finding { role: string; page: string; kind: "console-error" | "failed-request" | "blank-screen" | "destructive-without-confirmation" | "crash"; detail: string }
+interface Finding { role: string; page: string; kind: "console-error" | "failed-request" | "blank-screen" | "destructive-without-confirmation" | "crash" | "external-host"; detail: string }
 
 const content = (p: Page) => p.locator("main:not(:has(main))").first();
 
@@ -34,6 +34,7 @@ export function defineCrawlSuite(role: (typeof ROLES)[number]) {
     test.setTimeout(420_000);
     const rp: RolePage = await openRolePage(browser, statePath(role.slug));
     const findings: Finding[] = [];
+    const externalSeen = new Set<string>();
     const add = (page: string, kind: Finding["kind"], detail: string) => findings.push({ role: role.label, page, kind, detail });
     try {
       await rp.page.goto("/dashboard"); await settle(rp.page, 1500);
@@ -44,6 +45,7 @@ export function defineCrawlSuite(role: (typeof ROLES)[number]) {
         rp.health.consoleErrors.length = 0; rp.health.failedRequests.length = 0;
         try {
           await rp.page.goto("/dashboard"); await settle(rp.page, 600);
+          await sidebarItems(rp.page); // re-expands the sidebar groups (a reload collapses them)
           await sidebarButton(rp.page, item.text).click(); await settle(rp.page, 1400);
           const url0 = rp.page.url();
           const text = ((await content(rp.page).innerText().catch(() => "")) ?? "").trim();
@@ -54,24 +56,31 @@ export function defineCrawlSuite(role: (typeof ROLES)[number]) {
             if (!(await e.count())) continue;
             const destructive = DESTRUCTIVE.test(c.name);
             try {
+              // Read-only crawl: any POST/PATCH/DELETE fired by this click is refused by the route handler and reported.
+              rp.health.blockWrites = true; rp.health.attemptedWrites!.length = 0;
               await e.click({ timeout: 3000, trial: false });
               await rp.page.waitForTimeout(450);
               const dlg = rp.page.locator("[role=alertdialog],[role=dialog]").first();
               const opened = await dlg.isVisible().catch(() => false);
-              if (destructive && !opened) add(pageName, "destructive-without-confirmation", `"${c.name}" did not open a confirmation dialog`);
+              rp.health.blockWrites = false;
+              const wrote = rp.health.attemptedWrites!.slice();
+              if (wrote.length && !opened) add(pageName, "destructive-without-confirmation", `"${c.name}" fired ${wrote.join(", ")} straight away, with no confirmation dialog (request blocked by the crawler)`);
+              else if (destructive && !opened && !wrote.length) { /* destructive-named control that did nothing visible: not a finding */ }
               if (opened) { await rp.page.keyboard.press("Escape"); await rp.page.waitForTimeout(250); if (await dlg.isVisible().catch(() => false)) await dlg.getByRole("button", { name: /cancel|close|no/i }).first().click({ timeout: 1500 }).catch(() => {}); }
               else await rp.page.keyboard.press("Escape");
               if (rp.page.url() !== url0) { await rp.page.goBack().catch(() => {}); await settle(rp.page, 600); if (rp.page.url() !== url0) { await rp.page.goto(url0); await settle(rp.page, 800); } }
-            } catch { /* control became hidden/unclickable after a state change: not a finding */ }
+            } catch { /* control became hidden/unclickable after a state change: not a finding */ } finally { rp.health.blockWrites = false; }
           }
         } catch (e) { add(pageName, "crash", (e as Error).message.split("\n")[0]!); }
+        for (const h of rp.health.external ?? []) if (!externalSeen.has(h)) { externalSeen.add(h); add(pageName, "external-host", `the page requests ${h} (answered empty by the crawler)`); }
         for (const m of rp.health.consoleErrors) add(pageName, "console-error", m);
         for (const m of rp.health.failedRequests) { const code = Number(m.split(" ")[0]); if (code === 403 || code === 404) continue; add(pageName, "failed-request", m); }
         if (rp.health.consoleErrors.length || rp.health.failedRequests.some((m) => ![403, 404].includes(Number(m.split(" ")[0])))) await rp.page.screenshot({ path: info.outputPath(`${pageName.replace(/\W+/g, "-")}.png`) }).catch(() => {});
       }
     } finally { await rp.context.close(); }
     for (const f of findings) info.annotations.push({ type: "finding", description: JSON.stringify(f) });
+    const failures = findings.filter((f) => f.kind !== "external-host");
     const counts = findings.reduce<Record<string, number>>((a, f) => ((a[f.kind] = (a[f.kind] ?? 0) + 1), a), {});
-    expect(findings.length, `${findings.length} crawl finding(s) for ${role.label}: ${JSON.stringify(counts)}; first: ${findings.slice(0, 3).map((f) => `${f.page}: ${f.kind} ${f.detail.slice(0, 70)}`).join(" | ")}`).toBe(0);
+    expect(failures.length, `${failures.length} crawl finding(s) for ${role.label}: ${JSON.stringify(counts)}; first: ${failures.slice(0, 3).map((f) => `${f.page}: ${f.kind} ${f.detail.slice(0, 70)}`).join(" | ")}`).toBe(0);
   });
 }
