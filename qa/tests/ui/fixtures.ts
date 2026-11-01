@@ -17,7 +17,7 @@ export const test = base.extend<{ health: Health }>({
       if (u.protocol === "data:" || u.protocol === "blob:") return route.continue();
       if (u.origin === web && u.pathname.startsWith("/api/")) { h.failedRequests.push(`BLOCKED ${u.pathname}: web app is not pointed at the QA API`); return route.abort(); }
       if (u.origin === web || u.origin === api) return route.continue();
-      if (/fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)) return route.abort(); // cosmetic, never needed
+      if (/fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: u.hostname.includes('googleapis') ? 'text/css' : 'font/woff2', body: '' }); // never reach Google; answer empty so no console error
       h.failedRequests.push(`BLOCKED external ${u.origin}`);
       return route.abort();
     });
@@ -84,7 +84,7 @@ export async function openRolePage(browser: import("@playwright/test").Browser, 
     if (u.protocol === "data:" || u.protocol === "blob:") return route.continue();
     if (u.origin === web && u.pathname.startsWith("/api/")) { health.failedRequests.push(`BLOCKED ${u.pathname}: web app is not pointed at the QA API`); return route.abort(); }
     if (u.origin === web || u.origin === api) return route.continue();
-    if (/fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)) return route.abort();
+    if (/fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: u.hostname.includes('googleapis') ? 'text/css' : 'font/woff2', body: '' });
     health.failedRequests.push(`BLOCKED external ${u.origin}`);
     return route.abort();
   });
