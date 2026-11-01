@@ -25,6 +25,7 @@ export default defineConfig({
   projects: [
     { name: "api", testMatch: /api\/.*\.spec\.ts/ },
     { name: "lifecycle", testMatch: /lifecycle\/.*\.spec\.ts/, fullyParallel: false },
+    { name: "write-probes", testMatch: /probes\/.*\.spec\.ts/, fullyParallel: false },
     { name: "functional", testMatch: /ui\/functional\..*\.spec\.ts/, fullyParallel: false, use: { browserName: "chromium" } },
     { name: "ui-access", testMatch: /ui\/access\..*\.spec\.ts/, fullyParallel: false, use: { browserName: "chromium" } },
   ],

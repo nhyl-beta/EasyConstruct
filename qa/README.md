@@ -69,3 +69,19 @@ Status is Passed, Failed or Not Executed. `qa/results/latest.txt` points at the 
 Add rows to the CSVs in `qa/spec/` (the spec is the source of truth and is read at runtime). A test is tied to a row by its
 title: start it with the Check ID (`CK-ENG-0007 ...`) or, for lifecycle, wrap each step in `test.step("LC-100 step 3 ...")`.
 Tag a test `@known:Bug-006` (stays Failed in the CSV, does not fail the run) or `@pending-feature` (reported Not Executed).
+
+## Write probes (valid-payload authorization probes)
+
+`tests/probes/write-probes.spec.ts` sends valid write payloads as the correct role (must be 2xx) and as each wrong role on a
+fresh fixture (2xx = authorization hole, 403 = fine). It creates real rows, so it only runs with `QA_WRITE_PROBES=1` and must be
+wrapped in a dump/restore of the QA database (local only):
+
+```bash
+PGPASSWORD=qa pg_dump -h localhost -U qa -Fc easyconstruct_qa -f /tmp/qa-before.dump
+QA_WRITE_PROBES=1 npx playwright test --project=write-probes --workers=1      # from qa/
+# stop the API, then:
+PGPASSWORD=qa pg_restore -h localhost -U qa -d easyconstruct_qa --clean --if-exists --no-owner /tmp/qa-before.dump
+# delete files uploaded during the run from apps/api/uploads/{documents,generic}
+```
+
+Results are written to `qa/results/write-probes.json`.
