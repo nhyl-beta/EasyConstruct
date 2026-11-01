@@ -21,6 +21,6 @@ export default defineConfig({
   },
   projects: [
     { name: "api", testMatch: /api\/.*\.spec\.ts/ },
-    { name: "ui-access", testMatch: /ui\/access\.spec\.ts/, use: { browserName: "chromium" } },
+    { name: "ui-access", testMatch: /ui\/access\..*\.spec\.ts/, fullyParallel: false, use: { browserName: "chromium" } },
   ],
 });

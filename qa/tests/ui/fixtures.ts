@@ -67,3 +67,31 @@ export async function settle(page: Page) {
   await page.waitForLoadState("load").catch(() => {});
   await page.waitForTimeout(700);
 }
+
+import type { BrowserContext } from "@playwright/test";
+export interface RolePage { page: Page; context: BrowserContext; health: Health; items: SidebarItem[] | null }
+
+/** One browser context + page per role, reused by every check of that role (much faster than a page per test). */
+export async function openRolePage(browser: import("@playwright/test").Browser, statePathFile: string): Promise<RolePage> {
+  const cfg = assertQaEnvironment();
+  const web = new URL(cfg.baseUrl).origin;
+  const api = new URL(cfg.apiUrl).origin;
+  const context = await browser.newContext({ storageState: statePathFile, baseURL: cfg.baseUrl });
+  const page = await context.newPage();
+  const health: Health = { consoleErrors: [], failedRequests: [] };
+  await context.route("**/*", (route) => {
+    const u = new URL(route.request().url());
+    if (u.protocol === "data:" || u.protocol === "blob:") return route.continue();
+    if (u.origin === web && u.pathname.startsWith("/api/")) { health.failedRequests.push(`BLOCKED ${u.pathname}: web app is not pointed at the QA API`); return route.abort(); }
+    if (u.origin === web || u.origin === api) return route.continue();
+    if (/fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)) return route.abort();
+    health.failedRequests.push(`BLOCKED external ${u.origin}`);
+    return route.abort();
+  });
+  page.on("console", (m) => { if (m.type() === "error") health.consoleErrors.push(m.text().slice(0, 200)); });
+  page.on("pageerror", (e) => health.consoleErrors.push(`pageerror: ${e.message.slice(0, 200)}`));
+  page.on("response", (r) => {
+    if (r.status() >= 400 && r.url().startsWith(api)) health.failedRequests.push(`${r.status()} ${r.request().method()} ${new URL(r.url()).pathname}`);
+  });
+  return { page, context, health, items: null };
+}
