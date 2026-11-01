@@ -12,8 +12,11 @@
     "ui:access": "tsx src/run.ts --project=ui-access",
     "pw": "tsx src/run.ts",
     "functional": "tsx src/run.ts --project=functional",
-    "lifecycle": "tsx src/run.ts --project=lifecycle",
-    "full": "tsx src/run.ts"
+    "lifecycle": "tsx src/run.ts --project=lifecycle --project=lifecycle-ui",
+    "full": "tsx src/run.ts",
+    "crawl": "tsx src/run.ts --project=crawl",
+    "smoke": "tsx src/run.ts --project=smoke",
+    "findings": "tsx src/tools/findings.ts"
   },
   "devDependencies": {
     "@playwright/test": "^1.49.0",

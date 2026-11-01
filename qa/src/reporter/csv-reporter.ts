@@ -101,6 +101,7 @@ class CsvReporter implements Reporter {
     const ids = [...title.matchAll(/\b(?:CK-[A-Z]{2,4}-\d{4}|MX-[A-Z]{2,4}-\d{2,3})\b/g)].map((m) => m[0]);
     for (const id of ids) this.record(id, part, t, status, err, r);
     this.walkSteps(r.steps, t, r);
+    for (const a of t.annotations) if (a.type === "finding" && a.description) { try { this.rawFindings.push(JSON.parse(a.description)); } catch { /* not JSON */ } }
     const lc = title.match(/\b(LC-\d+)\b/);
     if (lc && status === "Skipped") {
       if (tagsOf(title).pending) this.pendingCases.add(lc[1]!);
@@ -150,6 +151,7 @@ class CsvReporter implements Reporter {
     return row;
   }
 
+  private rawFindings: unknown[] = [];
   private pendingCases = new Set<string>();
   private skipReasons = new Map<string, string>();
   private lastFlush = 0;
@@ -211,6 +213,7 @@ class CsvReporter implements Reporter {
     writeFileSync(join(this.dir, "02_lifecycle_test_cases.csv"), toCsv(rows02));
     writeFileSync(join(this.dir, "03_role_page_checks.csv"), toCsv(rows03));
     writeFileSync(join(this.dir, "manual-queue.csv"), toCsv(manual));
+    if (this.rawFindings.length) writeFileSync(join(this.dir, "crawl-findings.json"), JSON.stringify(this.rawFindings, null, 1));
     writeFileSync(join(this.dir, "summary.csv"), this.summary(rows01, rows02, rows03, steps));
     mkdirSync(RESULTS_ROOT, { recursive: true });
     writeFileSync(join(RESULTS_ROOT, "latest.txt"), this.dir + "\n");

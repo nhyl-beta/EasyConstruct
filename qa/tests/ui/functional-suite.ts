@@ -16,8 +16,11 @@ const KNOWN: Record<string, string> = {
 const SPECIAL = ["'", "%", "<script>alert(1)</script>", "😀"];
 const NO_MATCH = "zzz-no-such-value-QA9f3";
 
-const rowsOf = (rp: RolePage) => rp.page.locator("main table tbody tr");
-const searchBox = (rp: RolePage) => rp.page.locator("main").getByPlaceholder(/^(?!.*jump)(?=.*(search|filter))/i).first();
+const content = (rp: RolePage) => rp.page.locator("main:not(:has(main))").first();
+const rowsOf = (rp: RolePage) => content(rp).locator("table tbody tr");
+/** What the page currently shows, for comparing before/after Next (works for tables and card lists alike). */
+const signature = async (rp: RolePage) => ((await content(rp).innerText().catch(() => "")) ?? "").replace(/\s+/g, " ").trim();
+const searchBox = (rp: RolePage) => content(rp).getByPlaceholder(/^(?!.*jump)(?=.*(search|filter))/i).first();
 
 async function firstCellText(rp: RolePage): Promise<string> {
   const cells = await rowsOf(rp).first().locator("td").allInnerTexts();
@@ -65,37 +68,41 @@ async function paginationCheck(rp: RolePage) {
     expect(sizes.length, "rows-per-page selector has no numeric options").toBeGreaterThan(0);
     await rp.page.getByRole("option", { name: String(sizes[0]), exact: true }).click();
     await rp.page.waitForTimeout(600);
-    expect(await rows.count(), `rows per page set to ${sizes[0]} but more rows are shown`).toBeLessThanOrEqual(sizes[0]!);
+    if (await rows.count()) expect(await rows.count(), `rows per page set to ${sizes[0]} but more rows are shown`).toBeLessThanOrEqual(sizes[0]!);
   } else test.info().annotations.push({ type: "remark", description: "no rows-per-page selector; only Next/Previous checked" });
   if (await next.count() && (await next.first().isEnabled())) {
-    const first = (await rows.first().innerText()).trim();
-    await next.first().click(); await rp.page.waitForTimeout(600);
-    expect((await rows.first().innerText()).trim(), "Next did not load a different batch").not.toBe(first);
-    await rp.page.getByRole("button", { name: /go to previous page/i }).first().click(); await rp.page.waitForTimeout(600);
-    expect((await rows.first().innerText()).trim(), "Previous did not return to the first batch").toBe(first);
+    const first = await signature(rp);
+    await next.first().click(); await rp.page.waitForTimeout(700);
+    expect(await signature(rp), "Next did not load a different batch").not.toBe(first);
+    await rp.page.getByRole("button", { name: /go to previous page/i }).first().click(); await rp.page.waitForTimeout(700);
+    expect(await signature(rp), "Previous did not return to the first batch").toBe(first);
   } else test.info().annotations.push({ type: "remark", description: "Next is disabled (single page of data), so Next/Previous were not exercised" });
 }
 
 async function formCheck(rp: RolePage) {
   const { page } = rp;
-  const create = page.locator("main").getByRole("button", { name: /^(new|add|create|upload)\b/i }).first();
-  const createLink = page.locator("main").getByRole("link", { name: /^(new|add|create)\b/i }).first();
-  if (!(await create.count()) && !(await createLink.count())) throw new Error("create control not found (no New / Add / Create button)");
+  const CREATE = /^(new|add|create|upload|start|raise|draft|report|file|submit|send|generate|invite|request)\b/i;
+  const create = content(rp).getByRole("button", { name: CREATE }).first();
+  const createLink = content(rp).getByRole("link", { name: /^(new|add|create)\b/i }).first();
+  if (!(await create.count()) && !(await createLink.count())) throw new Error("create control not found (no New / Add / Create / Raise / Start button on the page)");
   await ((await create.count()) ? create : createLink).click();
-  await page.waitForTimeout(900);
+  await page.waitForTimeout(1000);
   const dialog = page.getByRole("dialog");
-  const scope = (await dialog.count()) ? dialog.last() : page.locator("main");
-  const submit = scope.getByRole("button", { name: /^(create|save|submit|add|upload|send|post)\b/i }).last();
-  if (!(await submit.count())) throw new Error("submit control not found in the form");
-  const invalidSignals = async () => (await scope.locator("[aria-invalid='true']").count()) + (await scope.getByText(/required|invalid|must|please|cannot be empty|at least|enter a/i).count());
-  // A submit button that stays disabled until the form is valid is itself a block on blank input.
+  const scope = (await dialog.count()) ? dialog.last() : content(rp);
+  // A wizard's submit control is its "Next" button; a dialog's is Create / Save / Submit ...
+  const submit = scope.getByRole("button", { name: /^(create|save|submit|add|upload|send|post|next|start|confirm|generate|raise)/i }).last();
+  if (!(await submit.count())) throw new Error(`submit control not found in the form (buttons: ${(await scope.getByRole("button").allInnerTexts()).map((t) => t.trim()).filter(Boolean).slice(0, 8).join(" | ")})`);
+  const invalidSignals = async () => (await scope.locator("[aria-invalid='true'], [role=alert]").count()) + (await scope.getByText(/required|invalid|must|please|cannot be empty|at least|enter a/i).count());
+  const stillOnForm = async () => (await scope.getByRole("button", { name: /^(cancel|back)/i }).count()) > 0 || (await scope.locator("input,textarea").count()) > 0;
+  // A submit that stays disabled until the form is valid is itself a block on blank input.
   const blocked = async () => (await submit.isDisabled().catch(() => false)) || (await invalidSignals()) > 0;
-  if (!(await submit.isDisabled().catch(() => false))) { await submit.click(); await page.waitForTimeout(700); }
+  if (!(await submit.isDisabled().catch(() => false))) { await submit.click(); await page.waitForTimeout(800); }
   expect(await blocked(), "blank submit is neither blocked (disabled button) nor flagged with a validation message").toBe(true);
+  expect(await stillOnForm(), "blank submit closed or left the form").toBe(true);
   const email = scope.locator("input[type=email]").first();
   const text = scope.locator("input[type=text], input:not([type]), textarea").first();
   if (await email.count()) await email.fill("not-an-email"); else if (await text.count()) await text.fill("   ");
-  if (!(await submit.isDisabled().catch(() => false))) { await submit.click(); await page.waitForTimeout(700); }
+  if (!(await submit.isDisabled().catch(() => false))) { await submit.click(); await page.waitForTimeout(800); }
   expect(await blocked(), "invalid values are neither blocked nor flagged").toBe(true);
   await page.keyboard.press("Escape");
   test.info().annotations.push({ type: "remark", description: "blank and invalid values were blocked; the valid-save step needs page-specific data and is not automated" });

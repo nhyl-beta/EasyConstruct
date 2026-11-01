@@ -63,9 +63,9 @@ export const findItem = (items: SidebarItem[], labels: string[]) => items.find((
 export const DENIED_TEXT = /access denied|page not found|don't have permission|not authorized|restricted/i;
 
 /** The app keeps a live notification stream open, so "networkidle" never fires. Wait for load, then a short settle. */
-export async function settle(page: Page) {
+export async function settle(page: Page, ms = 700) {
   await page.waitForLoadState("load").catch(() => {});
-  await page.waitForTimeout(700);
+  await page.waitForTimeout(ms);
 }
 
 import type { BrowserContext } from "@playwright/test";

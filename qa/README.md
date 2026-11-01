@@ -28,15 +28,23 @@ export QA_API_URL=http://localhost:8123/api
 
 ## Commands (run from the repo root)
 
-| Command | What it does |
-|---|---|
-| `npm run qa:guard` | Validates the QA environment and prints the targets. |
-| `npm run qa:reset` | Rebuilds the QA database: schema, accounts, employees, document types, `DEMO-STAGE-0..6`. |
-| `npm run qa:api` | API permission suite from `01_access_matrix.csv` (Phase B). |
-| `npm run qa:ui:access` | UI role suite: NAVIGATE, CONTENT, DENIED, READ-ONLY (Phase B). |
-| `npm run qa:functional` | SEARCH / FILTER, PAGINATION, FORM VALIDATION (Phase C). |
-| `npm run qa:lifecycle` | Lifecycle cases from `02` (Phase C). |
-| `npm run qa:crawl`, `qa:smoke`, `qa:full`, `qa:findings` | Phase D. |
+Every command goes through `qa/src/guard.ts` first. `src/run.ts` starts the QA API (and the web app, for browser suites) if they are not
+already running, using a clean environment, and stops what it started.
+
+| Command | What it does | Typical time (4 cores) |
+|---|---|---|
+| `npm run qa:guard` | Validates the QA environment and prints the targets. | < 1 s |
+| `npm run qa:reset` | Rebuilds the QA database: schema, accounts, employees, document types, `DEMO-STAGE-0..6`. | ~6 min |
+| `npm run qa:smoke` | Sign-in and dashboard per role, 10 key pages, access-matrix API sample. | < 3 min |
+| `npm run qa:api` | API permission suite from `01_access_matrix.csv` (530 role-by-page cells). | ~1 min |
+| `npm run qa:ui:access` | UI role checks: NAVIGATE, CONTENT, DENIED, READ-ONLY (547 checks). | ~22 min |
+| `npm run qa:functional` | SEARCH / FILTER, PAGINATION, FORM VALIDATION (214 checks). | ~9 min |
+| `npm run qa:lifecycle` | Lifecycle cases from `02` through the API, plus the UI-driven runs (LC-001, 100, 120, 150). | ~3 min |
+| `npm run qa:crawl` | Click-everything crawler per role; fails on console errors, failed requests, blank screens. | ~12 min |
+| `npm run qa:full` | Every project above except the write probes, one run, one set of CSVs and the HTML report. | ~45 min |
+| `npm run qa:findings` | Builds `qa/results/findings.md` from the latest run. | seconds |
+
+Do not pass `--reporter=...` to Playwright: it replaces the configured reporters and the CSV reporter would not run.
 
 Guard unit test: `npm run test:guard --prefix qa`.
 
@@ -85,3 +93,19 @@ PGPASSWORD=qa pg_restore -h localhost -U qa -d easyconstruct_qa --clean --if-exi
 ```
 
 Results are written to `qa/results/write-probes.json`.
+
+## Reading the results
+
+Each run writes `qa/results/<timestamp>/` (git-ignored): `01_access_matrix.csv`, `02_lifecycle_test_cases.csv`, `03_role_page_checks.csv`,
+`manual-queue.csv` (Semi / Manual steps with what the human must check), `summary.csv` (per stage and per role), and `crawl-findings.json`
+when the crawler ran. `qa/results/latest.txt` points at the newest run. A lifecycle step covered both through the API and through the UI
+shows one row: a failure in either part makes it Failed and the Actual Results text is prefixed `[ui]` for the UI part.
+`qa:findings` turns the failures into `qa/results/findings.md` (matrix disagreement, missing control, wrong data, crash/console error, known).
+
+## Adding a case
+
+* A new check: add a row to the matching CSV in `qa/spec/`. Page-level checks are picked up by the suites through `src/page-map.ts`
+  (endpoint and sidebar label for a page); add the page there if it is new.
+* A new lifecycle case: add a test in `tests/lifecycle/` titled with the case id and wrap each CSV step in `S.run(n, "...", ...)` from
+  `src/kit.ts`; for a UI-driven run add it to `tests/lifecycle-ui/` with `[ui]` in the test title.
+* Tags in a test title: `@known:Bug-006` (stays Failed, does not fail the run), `@pending-feature` (reported Not Executed).
