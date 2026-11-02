@@ -13,6 +13,8 @@ export interface KpiItem {
   /** Optional trend and delta, passed straight to <KpiCard>. */
   spark?: KpiCardProps["spark"];
   delta?: KpiCardProps["delta"];
+  /** Click-through target for the card. */
+  to?: string;
 }
 
 // Strong text tokens, not the base colours: the value sits on the card ground,
@@ -41,6 +43,7 @@ export function KpiStrip({ items }: KpiStripProps) {
           subLabel={item.hint}
           spark={item.spark}
           delta={item.delta}
+          to={item.to}
           valueClassName={toneText[item.tone ?? "neutral"]}
         />
       ))}

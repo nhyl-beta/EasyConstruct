@@ -1,5 +1,6 @@
 import { ArrowDown, ArrowUp, Minus, type LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
+import { Link } from "react-router";
 
 import { Sparkline } from "@/components/ui/sparkline";
 import { cn } from "@/lib/utils";
@@ -56,6 +57,8 @@ export interface KpiCardProps {
   delta?: Omit<KpiDeltaProps, "className"> & { label?: string };
   /** Colour for the value, e.g. a `*-strong` text token. Pair it with a word. */
   valueClassName?: string;
+  /** Makes the whole card a link to the page behind the number. */
+  to?: string;
   className?: string;
 }
 
@@ -67,15 +70,20 @@ export function KpiCard({
   spark,
   delta,
   valueClassName,
+  to,
   className,
 }: KpiCardProps) {
   return (
     <article
       className={cn(
-        "bg-card text-card-foreground grid gap-4 rounded-lg border border-border p-5 shadow-sm",
+        "bg-card text-card-foreground relative grid gap-4 rounded-lg border border-border p-5 shadow-sm",
+        to && "transition-colors hover:border-primary/40 hover:bg-accent/40 focus-within:ring-2 focus-within:ring-ring",
         className,
       )}
     >
+      {to && (
+        <Link to={to} aria-label={`${label}: open details`} className="absolute inset-0 z-10 rounded-lg focus:outline-none" />
+      )}
       <header className="flex items-center justify-between gap-3">
         <span className="text-body text-muted-foreground">{label}</span>
         <span className="text-muted-foreground flex size-9 shrink-0 items-center justify-center rounded-full border border-border">

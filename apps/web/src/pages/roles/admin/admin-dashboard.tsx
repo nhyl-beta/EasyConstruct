@@ -72,9 +72,9 @@ export default function AdminDashboardPage() {
       {/* ── KPI grid ── */}
       <KpiStrip
         items={[
-          { label: "Total projects", value: `${c.kpis.total}`, icon: FolderKanban },
-          { label: "At risk", value: `${c.kpis.atRisk}`, icon: ShieldAlert, tone: "warn" },
-          { label: "Over budget", value: `${c.overBudget}`, icon: Banknote, tone: c.overBudget > 0 ? "bad" : "neutral" },
+          { label: "Total projects", value: `${c.kpis.total}`, icon: FolderKanban, to: "/admin/projects" },
+          { label: "At risk", value: `${c.kpis.atRisk}`, icon: ShieldAlert, tone: "warn", to: "/admin/projects" },
+          { label: "Over budget", value: `${c.overBudget}`, icon: Banknote, tone: c.overBudget > 0 ? "bad" : "neutral", to: "/admin/projects" },
           {
             label: "Pending approvals",
             value: `${c.pendingApprovals}`,
@@ -85,8 +85,8 @@ export default function AdminDashboardPage() {
       />
       <KpiStrip
         items={[
-          { label: "Active workflows", value: `${c.activeWorkflowCount}`, icon: GitBranch },
-          { label: "Completed workflows", value: `${c.completedWorkflowCount}`, icon: FileCheck2, tone: "good" },
+          { label: "Active workflows", value: `${c.activeWorkflowCount}`, icon: GitBranch, to: "/admin/workflows" },
+          { label: "Completed workflows", value: `${c.completedWorkflowCount}`, icon: FileCheck2, tone: "good", to: "/admin/workflows" },
           {
             label: "Unread notifications",
             value: `${c.unreadNotificationCount}`,
