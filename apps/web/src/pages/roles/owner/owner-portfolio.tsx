@@ -19,7 +19,7 @@ export default function OwnerPortfolioPage() {
         subtitle={`Executive view of ${ctrl.kpis.total} project${ctrl.kpis.total === 1 ? "" : "s"} across the organization`}
       />
 
-      <ProjectsKpiStrip kpis={ctrl.kpis} />
+      <ProjectsKpiStrip kpis={ctrl.kpis} activeRisk={ctrl.filters.risk} onSelect={(risk) => ctrl.setFilter("risk", risk)} />
 
       <ProjectsToolbar
         query={ctrl.query}

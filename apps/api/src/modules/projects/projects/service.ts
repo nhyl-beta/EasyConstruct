@@ -1,6 +1,6 @@
 import * as repo           from "./repository.js";
 import { projects } from "../../../core/db/schema/projects.js";
-import { projectKpis, type ProjectKpis } from "../dashboard/aggregates.js";
+import { projectRiskKpis, type ProjectKpis } from "../dashboard/aggregates.js";
 import { orderByFor, paginate, type PageRequest } from "../../../core/utils/pagination.js";
 import * as projectMemberRepo from "../project-members/repository.js";
 import { usersRepo } from "../../iam/index.js";
@@ -193,9 +193,9 @@ export const getPage = async (filters: ProjectFilters, scope: ProjectScope | und
   //   filtered  - exactly the rows the current search / filters select
   let kpis: ProjectKpis | undefined;
   if (filters.kpis === "portfolio") {
-    kpis = projectKpis(await repo.statusGroups({ ...scoped, search: undefined, status: undefined, risk: undefined, projectType: undefined, deliveryType: undefined, code: undefined, excludeArchived: true }));
+    kpis = projectRiskKpis(await repo.riskGroups({ ...scoped, search: undefined, status: undefined, risk: undefined, projectType: undefined, deliveryType: undefined, code: undefined, excludeArchived: true }));
   } else if (filters.kpis === "filtered") {
-    kpis = projectKpis(await repo.statusGroups(scoped));
+    kpis = projectRiskKpis(await repo.riskGroups(scoped));
   }
   return { items, meta: kpis ? { ...meta, kpis } : meta };
 };

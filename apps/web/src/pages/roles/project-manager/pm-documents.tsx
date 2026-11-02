@@ -4,7 +4,8 @@ import { useOpenOnAction } from "@/features/quick-search/useOpenOnAction";
 import {
   FileText,
   Upload,
-  FolderTree,
+  Folder,
+  FolderOpen,
   Search,
   Eye,
   FileSignature,
@@ -70,13 +71,22 @@ export default function DocumentsPage() {
         {categories.map((c) => (
           <Card
             key={c.type}
+            role="button"
+            tabIndex={0}
+            aria-pressed={activeType === c.type}
             onClick={() => setActiveType(activeType === c.type ? null : c.type)}
-            className={`cursor-pointer rounded-2xl border-border shadow-sm transition hover:border-primary/40 ${
-              activeType === c.type ? "border-primary" : ""
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                setActiveType(activeType === c.type ? null : c.type);
+              }
+            }}
+            className={`cursor-pointer rounded-2xl border-border shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:bg-accent/40 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+              activeType === c.type ? "border-primary bg-accent/30" : ""
             }`}
           >
             <CardContent className="space-y-1 p-4">
-              <FolderTree className="h-5 w-5 text-primary-strong" />
+              {activeType === c.type ? <FolderOpen className="h-5 w-5 text-primary-strong" /> : <Folder className="h-5 w-5 text-primary-strong" />}
               <div className="text-sm font-medium">{c.type}</div>
               <div className="text-xs tabular-nums text-muted-foreground">{c.count} files</div>
             </CardContent>

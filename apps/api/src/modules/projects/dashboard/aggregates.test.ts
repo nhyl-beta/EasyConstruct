@@ -295,3 +295,10 @@ describe("performanceSummary (HR performance rate)", () => {
     assert.deepEqual(agg.performanceSummary([{ status: "Archived", performance: "4.0" }]), { average: 0, rate: 0, rated: 0 });
   });
 });
+
+describe("Projects page cards read risk, matching the risk filter", () => {
+  test("low = on track, medium = at risk, high = delayed", () => {
+    const rows = [{ risk: "low", n: 3 }, { risk: "Medium", n: 2 }, { risk: "high", n: 1 }, { risk: "", n: 1 }];
+    assert.deepEqual(agg.projectRiskKpis(rows), { total: 7, onTrack: 4, atRisk: 2, delayed: 1 });
+  });
+});

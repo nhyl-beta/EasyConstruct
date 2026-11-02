@@ -55,6 +55,18 @@ export const riskBreakdown = (rows: ({ risk: string } & Weighted)[]) => ({
   low: count(rows, (p) => normalizeRisk(p.risk) === "low"),
 });
 
+/**
+ * The Projects page cards. Project status holds the lifecycle phase, so the
+ * health cards read the risk level instead: low = on track, medium = at risk,
+ * high = delayed. These are the same values the risk filter selects.
+ */
+export const projectRiskKpis = (rows: ({ risk: string } & Weighted)[]): ProjectKpis => ({
+  total: count(rows),
+  onTrack: count(rows, (p) => normalizeRisk(p.risk) === "low"),
+  atRisk: count(rows, (p) => normalizeRisk(p.risk) === "medium"),
+  delayed: count(rows, (p) => normalizeRisk(p.risk) === "high"),
+});
+
 // client: admin/owner/pm-dashboard.controller.ts attentionSorted — risk desc,
 // then budget desc; the sort is stable, so ties keep the list's own order.
 const RISK_WEIGHT: Record<RiskLevel, number> = { high: 2, medium: 1, low: 0 };

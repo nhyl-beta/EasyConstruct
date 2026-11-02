@@ -139,6 +139,17 @@ export const statusGroups = async (filters: ProjectFilters): Promise<{ status: s
     .groupBy(projects.status);
 };
 
+/** Projects per risk level for a filter set (the Projects page cards: on track / at risk / delayed). */
+export const riskGroups = async (filters: ProjectFilters): Promise<{ risk: string; n: number }[]> => {
+  if (filters.codes && filters.codes.length === 0) return [];
+  const conditions = buildConditions(filters);
+  return db
+    .select({ risk: projects.risk, n: sql<number>`count(*)::int` })
+    .from(projects)
+    .where(conditions.length ? and(...conditions) : undefined)
+    .groupBy(projects.risk);
+};
+
 export const countFiltered = async (filters: ProjectFilters): Promise<number> => {
   if (filters.codes && filters.codes.length === 0) return 0;
   const conditions = buildConditions(filters);

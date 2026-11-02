@@ -42,7 +42,7 @@ export default function PMProjects() {
         }
       />
 
-      <ProjectsKpiStrip kpis={ctrl.kpis} />
+      <ProjectsKpiStrip kpis={ctrl.kpis} activeRisk={ctrl.filters.risk} onSelect={(risk) => ctrl.setFilter("risk", risk)} />
 
       <ProjectsToolbar
         query={ctrl.query}
