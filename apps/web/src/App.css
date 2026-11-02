@@ -28,8 +28,8 @@
   --radius-xl: 20px;
   --radius-2xl: 24px;
 
-  --sidebar-width: 300px;
-  --sidebar-width-icon: 48px;
+  --sidebar-width: 260px;
+  --sidebar-width-icon: 56px;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -108,8 +108,8 @@
 }
 
 :root {
-  --sidebar-width: 300px;
-  --sidebar-width-icon: 48px;
+  --sidebar-width: 260px;
+  --sidebar-width-icon: 56px;
 
   --radius: 16px;
 
@@ -187,8 +187,8 @@
 }
 
 .dark {
-  --sidebar-width: 300px;
-  --sidebar-width-icon: 48px;
+  --sidebar-width: 260px;
+  --sidebar-width-icon: 56px;
 
   --background: oklch(0.17 0.012 250);
   --foreground: oklch(0.96 0.005 180);

@@ -39,7 +39,7 @@ import { useAuth } from "@/auth/auth-context";
 import { SignOutButton } from "@/components/ui/auth/sign-out-button";
 import { useMenu, useParsed, type TreeMenuItem } from "@refinedev/core";
 import { ChevronRight, ListIcon, type LucideIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { useApprovalsPendingCount } from "@/features/workflows/hooks/useWorkflows";
 import { isNavRouteActive } from "@/lib/nav-active";
@@ -151,12 +151,44 @@ function NavGroup({
 }) {
   const { state, isMobile } = useSidebar();
   const anyActive = items.some((i) => isActive(i.route ?? ""));
-  const [open, setOpen] = useState(anyActive);
+  // A group is open when it was clicked open ("pinned", or holds the active page) or the
+  // mouse is resting on it ("hovered"). Hover only applies to a real mouse, so a tap on a
+  // touch screen still just toggles the group.
+  const [pinned, setPinned] = useState(anyActive);
+  const [hovered, setHovered] = useState(false);
+  const open = pinned || hovered;
+  const hoverTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const ignoreHover = useRef(false);
 
   // Open when a child becomes the active route (load, refresh, back/forward).
   useEffect(() => {
-    if (anyActive) setOpen(true);
+    if (anyActive) setPinned(true);
   }, [anyActive]);
+  useEffect(() => () => clearTimeout(hoverTimer.current), []);
+
+  const onPointerEnter = (e: React.PointerEvent) => {
+    if (e.pointerType !== "mouse" || ignoreHover.current) return;
+    clearTimeout(hoverTimer.current);
+    hoverTimer.current = setTimeout(() => setHovered(true), 120);
+  };
+  const onPointerLeave = (e: React.PointerEvent) => {
+    if (e.pointerType !== "mouse") return;
+    ignoreHover.current = false;
+    clearTimeout(hoverTimer.current);
+    hoverTimer.current = setTimeout(() => setHovered(false), 200);
+  };
+  const onOpenChange = (next: boolean) => {
+    if (next) {
+      setPinned(true);
+    } else if (!pinned && hovered) {
+      // Clicking a group the mouse just opened keeps it open instead of snapping it shut.
+      setPinned(true);
+    } else {
+      setPinned(false);
+      setHovered(false);
+      ignoreHover.current = true; // stay closed until the mouse leaves and comes back
+    }
+  };
 
   const parentClasses = cn("cursor-pointer", "w-full", {
     "font-medium": anyActive,
@@ -180,6 +212,7 @@ function NavGroup({
           <DropdownMenuContent side="right" align="start" className="min-w-44">
             {items.map((item) => {
               const active = isActive(item.route ?? "");
+              const ItemIcon = getIcon(item);
               return (
                 <DropdownMenuItem
                   key={item.key || item.name}
@@ -190,6 +223,7 @@ function NavGroup({
                       active,
                   })}
                 >
+                  <ItemIcon aria-hidden className="h-4 w-4 shrink-0" />
                   {labelOf(item)}
                 </DropdownMenuItem>
               );
@@ -201,8 +235,8 @@ function NavGroup({
   }
 
   return (
-    <Collapsible asChild open={open} onOpenChange={setOpen}>
-      <SidebarMenuItem>
+    <Collapsible asChild open={open} onOpenChange={onOpenChange}>
+      <SidebarMenuItem onPointerEnter={onPointerEnter} onPointerLeave={onPointerLeave}>
         <CollapsibleTrigger asChild>
           <SidebarMenuButton
             isActive={anyActive}
@@ -218,6 +252,7 @@ function NavGroup({
           <SidebarMenuSub>
             {items.map((item) => {
               const active = isActive(item.route ?? "");
+              const ItemIcon = getIcon(item);
               return (
                 <SidebarMenuSubItem key={item.key || item.name}>
                   <SidebarMenuSubButton asChild isActive={active}>
@@ -229,6 +264,7 @@ function NavGroup({
                         [ACTIVE_CLASSES]: active,
                       })}
                     >
+                      <ItemIcon aria-hidden className="h-4 w-4 shrink-0" />
                       <span className="min-w-0 truncate">{labelOf(item)}</span>
                     </button>
                   </SidebarMenuSubButton>

@@ -25,7 +25,8 @@ import { cn } from "@/lib/utils";
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state";
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
-const SIDEBAR_WIDTH = "300px"; // = --sidebar-width in App.css
+const SIDEBAR_WIDTH = "260px"; // = --sidebar-width in App.css
+// Icon rail: 56px with 40px buttons leaves 8px either side of every icon. Keep it in step with App.css.
 const SIDEBAR_WIDTH_MOBILE = "18rem";
 const SIDEBAR_WIDTH_ICON = "3.5rem";
 const SIDEBAR_KEYBOARD_SHORTCUT = "b";
