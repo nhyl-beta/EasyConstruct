@@ -1,27 +1,10 @@
-import { FEATURES } from "@/config/features";
 import { PageHeader } from "@/components/refine-ui/views/page-header";
 import { UtilizationTile } from "@/components/ui/utilization-tile";
-import { RingGauge } from "@/components/ui/ring-gauge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import {
   Table,
@@ -36,12 +19,8 @@ import {
   attendanceLogs,
   attendanceWeek,
   departments,
-  employees,
-  hrAIInsights,
-  hrActivity,
   hrNotifications,
   hrReports,
-  type Employee,
   type ToneBg,
 } from "@/providers/mock-data";
 import { useWorkforceSnapshot } from "@/features/workforce/hooks/useWorkforceSnapshot";
@@ -62,23 +41,17 @@ import {
   Clock,
   Download,
   FileBarChart2,
-  Filter,
   MapPin,
-  MoreHorizontal,
   Plus,
-  Search,
   ShieldCheck,
-  Sparkles,
-  TrendingDown,
   TrendingUp,
   UserCheck,
-  UserX,
   Users,
   Wallet,
   type LucideIcon,
 } from "lucide-react";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { WaitingOnYouCard } from "@/features/lifecycle/components/WaitingOnYouCard";
 
@@ -125,29 +98,6 @@ function Legend({ dot, label }: { dot: string; label: string }) {
     <div className="flex items-center gap-1.5">
       <span className={`h-2.5 w-2.5 rounded-sm ${dot}`} />
       <span>{label}</span>
-    </div>
-  );
-}
-
-function MiniStat({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: string;
-  tone: "success" | "warning" | "destructive";
-}) {
-  const color =
-    tone === "success"
-      ? "text-success-strong"
-      : tone === "warning"
-      ? "text-warning-strong"
-      : "text-destructive-strong";
-  return (
-    <div className="rounded-lg border bg-muted/20 p-2">
-      <div className={`text-lg font-semibold ${color}`}>{value}</div>
-      <div className="text-overline text-muted-foreground">{label}</div>
     </div>
   );
 }
@@ -237,108 +187,46 @@ function Capacity({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AI Insights Card
-// ─────────────────────────────────────────────────────────────────────────────
-
-function AIInsightsCard() {
-  return (
-    <Card className="border-ai/20 bg-gradient-to-b from-ai-soft/60 to-transparent">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-ai text-ai-foreground">
-            <Sparkles className="h-4 w-4" />
-          </div>
-          <div>
-            <CardTitle className="text-base">AI HR assistant</CardTitle>
-            <p className="text-xs text-muted-foreground">
-              Advisory — review before acting
-            </p>
-          </div>
-        </div>
-        <Badge variant="outline" className="rounded-full border-ai/30 text-ai">
-          Live
-        </Badge>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {hrAIInsights.map((i) => (
-          <div
-            key={i.title}
-            className="rounded-xl border border-ai/15 bg-background/60 p-3"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div className="text-sm font-medium leading-snug">{i.title}</div>
-              <Badge variant="outline" className="rounded-full text-overline">
-                {Math.round(i.confidence * 100)}% conf.
-              </Badge>
-            </div>
-            <p className="mt-1 text-xs text-muted-foreground">{i.detail}</p>
-            <div className="mt-2 flex items-center justify-between gap-2">
-              <div className="text-overline text-muted-foreground">
-                <span className="font-medium text-foreground">Impact:</span>{" "}
-                {i.impact}
-              </div>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 px-2 text-xs text-ai hover:bg-ai-soft"
-              >
-                {i.action} <ChevronRight className="h-3.5 w-3.5" />
-              </Button>
-            </div>
-          </div>
-        ))}
-      </CardContent>
-    </Card>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // Sections
 // ─────────────────────────────────────────────────────────────────────────────
 
 function OverviewSection() {
+  // Live figures from the server (shared with the page header and Workforce tab).
+  const workforce = useWorkforceSnapshot();
+  const dash = workforce.loading ? "…" : null;
   const kpis = [
     {
       label: "Total employees",
-      value: "518",
-      delta: "+12 this month",
-      up: true,
+      value: dash ?? String(workforce.totalEmployees),
+      detail: "On record, including archived",
       icon: Users,
     },
     {
-      label: "Active today",
-      value: "478",
-      delta: "92.3% attendance",
-      up: true,
+      label: "Active employees",
+      value: dash ?? String(workforce.totalCapacity),
+      detail: "Available workforce",
       icon: UserCheck,
     },
     {
-      label: "Absent / on leave",
-      value: "40",
-      delta: "-6 vs yesterday",
-      up: true,
-      icon: UserX,
+      label: `On site, last ${workforce.windowDays} days`,
+      value: dash ?? String(workforce.assignedRecently),
+      detail: `${workforce.available} not yet logged`,
+      icon: CalendarCheck,
     },
     {
-      label: "Open attendance issues",
-      value: "14",
-      delta: "+3 needs review",
-      up: false,
+      label: "Overtime crews",
+      value: dash ?? String(workforce.overtimeCrews),
+      detail: "Latest shift over 8 hours",
       icon: AlertTriangle,
     },
     {
-      label: "Payroll cycle",
-      value: "73%",
-      delta: "Cut-off in 2 days",
-      up: true,
-      icon: Wallet,
-    },
-    {
-      label: "Avg attendance rate",
-      value: "94.8%",
-      delta: "+1.2 pts MoM",
-      up: true,
-      icon: CalendarCheck,
+      label: "Performance rate",
+      value: dash ?? (workforce.ratedEmployees > 0 ? `${workforce.performanceRate}%` : "—"),
+      detail:
+        workforce.ratedEmployees > 0
+          ? `Avg ${workforce.averagePerformance.toFixed(1)} / 5 · ${workforce.ratedEmployees} rated`
+          : "No ratings yet",
+      icon: TrendingUp,
     },
   ];
 
@@ -348,33 +236,26 @@ function OverviewSection() {
       <WaitingOnYouCard />
 
       {/* KPI strip */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
         {kpis.map((k) => (
           <Card key={k.label}>
             <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-soft text-primary-strong">
-                  <k.icon className="h-4 w-4" />
-                </div>
-                {k.up ? (
-                  <TrendingUp className="h-3.5 w-3.5 text-success-strong" />
-                ) : (
-                  <TrendingDown className="h-3.5 w-3.5 text-warning-strong" />
-                )}
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-soft text-primary-strong">
+                <k.icon className="h-4 w-4" />
               </div>
               <div className="mt-3 text-2xl font-semibold tracking-tight">
                 {k.value}
               </div>
               <div className="text-overline text-muted-foreground">{k.label}</div>
               <div className="mt-1 text-overline text-muted-foreground/80">
-                {k.delta}
+                {k.detail}
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      {/* Chart + AI */}
+      {/* Chart + department mix */}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
         <Card className="xl:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between space-y-0">
@@ -417,9 +298,6 @@ function OverviewSection() {
                     <div className="text-overline font-medium text-muted-foreground">
                       {d.day}
                     </div>
-                    <div className="text-overline text-muted-foreground/70">
-                      {d.present + d.late + d.absent}
-                    </div>
                   </div>
                 );
               })}
@@ -431,12 +309,7 @@ function OverviewSection() {
             </div>
           </CardContent>
         </Card>
-        {FEATURES.aiPlaceholders && <AIInsightsCard />}
-      </div>
 
-      {/* Department + Payroll + Activity */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        {/* Department allocation */}
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Department allocation</CardTitle>
@@ -467,261 +340,31 @@ function OverviewSection() {
             })}
           </CardContent>
         </Card>
-
-        {/* Payroll status */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-base">Payroll status</CardTitle>
-            <Badge variant="secondary" className="rounded-full">
-              Period · Jun 1–15
-            </Badge>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <div className="flex items-end justify-between">
-                <div>
-                  <div className="text-3xl font-semibold tracking-tight">
-                    ₱2.84M
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    Gross labor (period)
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm font-medium text-success-strong">+4.1%</div>
-                  <div className="text-overline text-muted-foreground">
-                    vs last period
-                  </div>
-                </div>
-              </div>
-              <div className="mt-4 flex items-center gap-4">
-                <RingGauge percent={73} label="Payroll reviewed" size={88} />
-                <div className="text-caption text-muted-foreground">
-                  <div>73% reviewed</div>
-                  <div>Cut-off in 2d 6h</div>
-                </div>
-              </div>
-            </div>
-            <Separator />
-            <div className="grid grid-cols-3 gap-3 text-center">
-              <MiniStat label="Approved" value="378" tone="success" />
-              <MiniStat label="Pending" value="124" tone="warning" />
-              <MiniStat label="Review" value="16" tone="destructive" />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Recent HR activity */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Recent HR activity</CardTitle>
-            <p className="text-xs text-muted-foreground">
-              Latest changes across people ops
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {hrActivity.map((a, i) => (
-              <div key={i} className="flex items-start gap-3">
-                <div
-                  className={`mt-0.5 flex h-7 w-7 items-center justify-center rounded-lg ${toneBg(
-                    a.tone,
-                  )}`}
-                >
-                  <Activity className="h-3.5 w-3.5" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm">{a.text}</p>
-                  <p className="text-overline text-muted-foreground">
-                    {a.time} ago
-                  </p>
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
       </div>
     </>
   );
 }
 
 function EmployeesSection() {
-  const [query, setQuery] = useState("");
-  const [dept, setDept] = useState("all");
-  const [status, setStatus] = useState("all");
-
-  const filtered = useMemo(
-    () =>
-      employees.filter((e) => {
-        const q = query.toLowerCase();
-        const matchQ =
-          !query ||
-          e.name.toLowerCase().includes(q) ||
-          e.id.toLowerCase().includes(q) ||
-          e.role.toLowerCase().includes(q);
-        const matchD = dept === "all" || e.department === dept;
-        const matchS = status === "all" || e.status === status;
-        return matchQ && matchD && matchS;
-      }),
-    [query, dept, status],
-  );
-
+  // The real, paginated employee directory lives on its own page; this tab only points to it.
+  const workforce = useWorkforceSnapshot();
   return (
-    <>
-      <Card>
-        <CardContent className="flex flex-col gap-3 p-4 md:flex-row md:items-center">
-          <div className="relative flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search by name, ID, or role…"
-              className="h-9 border-border bg-muted/40 pl-9"
-            />
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Select value={dept} onValueChange={setDept}>
-              <SelectTrigger className="h-9 w-[170px]">
-                <Filter className="mr-1 h-3.5 w-3.5 text-muted-foreground" />
-                <SelectValue placeholder="Department" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All departments</SelectItem>
-                {departments.map((d) => (
-                  <SelectItem key={d.name} value={d.name}>
-                    {d.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger className="h-9 w-[140px]">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All statuses</SelectItem>
-                <SelectItem value="Active">Active</SelectItem>
-                <SelectItem value="On Leave">On Leave</SelectItem>
-                <SelectItem value="Suspended">Suspended</SelectItem>
-                <SelectItem value="Archived">Archived</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button variant="outline" size="sm">
-              <Download className="h-4 w-4" /> CSV
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0">
-          <div>
-            <CardTitle className="text-base">Employee directory</CardTitle>
-            <p className="text-xs text-muted-foreground">
-              {filtered.length} of {employees.length} employees · bulk actions
-              available
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
-              Archive
-            </Button>
-            <Button variant="outline" size="sm">
-              Reassign
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="px-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[260px]">Employee</TableHead>
-                <TableHead>ID</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Department</TableHead>
-                <TableHead>Site</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Attendance</TableHead>
-                <TableHead className="text-right">Perf.</TableHead>
-                <TableHead className="w-[40px]" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((e) => (
-                <EmployeeRow key={e.id} e={e} />
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </>
-  );
-}
-
-function EmployeeRow({ e }: { e: Employee }) {
-  return (
-    <TableRow className="hover:bg-muted/40">
-      <TableCell>
-        <div className="flex items-center gap-3">
-          <Avatar className="h-9 w-9">
-            <AvatarFallback className="bg-primary-soft text-xs font-semibold text-primary-strong">
-              {e.initials}
-            </AvatarFallback>
-          </Avatar>
-          <div className="min-w-0">
-            <div className="truncate text-sm font-medium">{e.name}</div>
-            <div className="truncate text-overline text-muted-foreground">
-              Hired {e.hiredOn}
-            </div>
-          </div>
+    <Card>
+      <CardContent className="flex flex-col items-start gap-3 p-6 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <div className="text-base font-semibold">Employee directory</div>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {workforce.loading
+              ? "Loading…"
+              : `${workforce.totalEmployees} employees on record, ${workforce.totalCapacity} active.`}{" "}
+            Search, filter, view records and history, archive or reassign on the Employees page.
+          </p>
         </div>
-      </TableCell>
-      <TableCell className="font-mono text-xs text-muted-foreground">
-        {e.id}
-      </TableCell>
-      <TableCell className="text-sm">{e.role}</TableCell>
-      <TableCell className="text-sm text-muted-foreground">
-        {e.department}
-      </TableCell>
-      <TableCell className="text-sm text-muted-foreground">{e.site}</TableCell>
-      <TableCell>
-        <StatusBadge status={e.status} />
-      </TableCell>
-      <TableCell className="text-right">
-        <span
-          className={
-            e.attendanceRate >= 95
-              ? "text-success-strong"
-              : e.attendanceRate >= 85
-              ? "text-warning-strong"
-              : "text-destructive-strong"
-          }
-        >
-          {e.attendanceRate}%
-        </span>
-      </TableCell>
-      <TableCell className="text-right text-sm">
-        {e.performance.toFixed(1)}
-      </TableCell>
-      <TableCell>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-7 w-7">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem>View profile</DropdownMenuItem>
-            <DropdownMenuItem>Edit record</DropdownMenuItem>
-            <DropdownMenuItem>Employment history</DropdownMenuItem>
-            <DropdownMenuItem>Documents</DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-destructive-strong">
-              Archive
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </TableCell>
-    </TableRow>
+        <Button asChild size="sm">
+          <Link to="/employees">Open employees</Link>
+        </Button>
+      </CardContent>
+    </Card>
   );
 }
 

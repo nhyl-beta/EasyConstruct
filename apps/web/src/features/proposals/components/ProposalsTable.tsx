@@ -22,6 +22,11 @@ interface ProposalsTableProps {
   onSelect?: (proposal: Proposal) => void;
   /** Reports the on-screen row order, so arrow keys can step through it. */
   onOrderChange?: (ids: number[]) => void;
+  /**
+   * Column headers re-sort the table (default). When false the headers are plain
+   * labels and the rows stay in ascending Proposal ID order (the Owner's view).
+   */
+  sortable?: boolean;
 }
 
 const COLUMNS: ReadonlyArray<{
@@ -57,6 +62,7 @@ export function ProposalsTable({
   selectedId,
   onSelect,
   onOrderChange,
+  sortable = true,
 }: ProposalsTableProps) {
   const [sortKey, setSortKey] = useState<SortKey>("proposalId");
   const [direction, setDirection] = useState<SortDirection>("asc");
@@ -93,16 +99,22 @@ export function ProposalsTable({
       <Table>
         <TableHeader>
           <TableRow>
-            {COLUMNS.map((column) => (
-              <SortableHead
-                key={column.key}
-                label={column.label}
-                active={sortKey === column.key}
-                direction={direction}
-                onSort={() => toggle(column.key)}
-                className={column.width}
-              />
-            ))}
+            {COLUMNS.map((column) =>
+              sortable ? (
+                <SortableHead
+                  key={column.key}
+                  label={column.label}
+                  active={sortKey === column.key}
+                  direction={direction}
+                  onSort={() => toggle(column.key)}
+                  className={column.width}
+                />
+              ) : (
+                <TableHead key={column.key} className={`${column.width} whitespace-nowrap`}>
+                  {column.label}
+                </TableHead>
+              ),
+            )}
             <TableHead className="w-[10%] whitespace-nowrap">Amount</TableHead>
             <TableHead className="w-[14%] whitespace-nowrap">Reviewer</TableHead>
             <TableHead className="w-[16%] whitespace-nowrap">Comment</TableHead>

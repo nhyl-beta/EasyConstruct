@@ -170,6 +170,7 @@ export const create = async (
     .insert(employees)
     .values({
       ...data,
+      site: data.site ?? "Unassigned",
       payRate:
         data.payRate !== undefined
           ? String(data.payRate)

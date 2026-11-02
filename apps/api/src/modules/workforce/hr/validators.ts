@@ -8,7 +8,7 @@ export const createEmployeeSchema = z.object({
   name: z.string().trim().min(2).max(255),
   role: z.string().trim().min(2).max(100),
   department: z.string().trim().min(2).max(100),
-  site: z.string().trim().min(1).max(255),
+  site: z.string().trim().min(1).max(255).optional(),
   email: z.string().email().optional().or(z.literal("")),
   phone: z.string().trim().max(50).optional(),
   status: z.enum(["Active", "On Leave", "Suspended", "Archived"]).optional(),

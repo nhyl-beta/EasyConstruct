@@ -277,3 +277,21 @@ describe("workflowCounts", () => {
     assert.deepEqual(agg.workflowCounts([]), { active: 0, completed: 0 });
   });
 });
+
+describe("performanceSummary (HR performance rate)", () => {
+  test("averages the 0-5 ratings, skipping archived and unrated employees", () => {
+    const result = agg.performanceSummary([
+      { status: "Active", performance: "4.0" },
+      { status: "On Leave", performance: 5 },
+      { status: "Archived", performance: "1.0" },
+      { status: "Active", performance: "0" },
+      { status: "Active", performance: null },
+    ]);
+    assert.deepEqual(result, { average: 4.5, rate: 90, rated: 2 });
+  });
+
+  test("no ratings reads as zero rather than NaN", () => {
+    assert.deepEqual(agg.performanceSummary([]), { average: 0, rate: 0, rated: 0 });
+    assert.deepEqual(agg.performanceSummary([{ status: "Archived", performance: "4.0" }]), { average: 0, rate: 0, rated: 0 });
+  });
+});

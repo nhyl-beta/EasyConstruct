@@ -12,7 +12,8 @@ export const createEmployeeSchema = z.object({
   name: z.string().min(1, "Name is required").max(255),
   role: z.string().min(1, "Role is required").max(100),
   department: z.string().min(1, "Department is required").max(100),
-  site: z.string().min(1, "Site is required").max(255),
+  // Sites are assigned through projects and attendance, not on the employee record.
+  site: z.string().min(1).max(255).optional(),
   status: employeeStatusEnum.optional(),
   hiredOn: z.string().min(1, "Hire date is required"),
   email: z.union([z.string().email("Invalid email"), z.literal("")]).optional(),

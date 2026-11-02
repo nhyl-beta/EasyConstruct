@@ -28,7 +28,8 @@ export interface EmployeeInput {
   name: string;
   role: string;
   department: string;
-  site: string;
+  /** Not asked for on the employee record any more; the server stores "Unassigned". */
+  site?: string;
   status?: EmployeeStatus;
   hiredOn: string;
   email?: string;

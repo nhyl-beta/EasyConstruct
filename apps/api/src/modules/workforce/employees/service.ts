@@ -107,6 +107,7 @@ export const create = async (rawInput: CreateEmployeeInput) => {
 
   const created = await repo.create({
     ...input,
+    site: input.site ?? "Unassigned",
     email: input.email || undefined,
     phone: input.phone || undefined,
     initials: initialsFrom(input.name),

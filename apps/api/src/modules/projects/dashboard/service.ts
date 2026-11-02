@@ -153,20 +153,26 @@ const engineer = async (actor: SummaryActor) => {
 };
 
 const consultant = async (actor: SummaryActor) => {
-  const [projects, groups, awaitingRows, reviewed, documents] = await Promise.all([
-    projectsBlock(actor),
-    repo.proposalGroups(null),
-    repo.proposalsWithStatus(null, "Pending", 5),
-    repo.proposalsNotStatus(null, "Pending", 5),
-    repo.documentCount(),
+  // Everything here is limited to the projects this consultant is staffed on, the same scope the
+  // Proposals and Advisory Documents pages apply. Counting the whole company made the cards
+  // disagree with those pages.
+  const projects = await projectsBlock(actor);
+  const codes = projects.codes;
+  const [groups, awaiting, awaitingRows, reviewed, documents] = await Promise.all([
+    repo.proposalGroups(codes),
+    repo.reviewQueueCount(codes),
+    repo.reviewQueue(codes, 5),
+    repo.proposalsNotStatus(codes, "Pending", 5),
+    repo.documentCount(codes),
   ]);
   const kpis = aggregates.proposalKpis(groups.map((g) => ({ status: g.status, n: g.n })));
-  const awaiting = groups.filter((g) => g.status === "Pending").reduce((sum, g) => sum + g.n, 0);
+  const { codes: _codes, ...projectsOut } = projects;
   return {
     kpis: {
-      pendingReviews: kpis.pending,
+      // The review queue: what the Proposals page lists for this consultant.
+      pendingReviews: awaiting,
       totalProposals: kpis.total,
-      activeProjects: projects.kpis.total,
+      activeProjects: projectsOut.kpis.total,
       advisoryDocuments: documents,
     },
     proposalsAwaitingReviewCount: awaiting,
@@ -203,15 +209,17 @@ const itDesigner = async () => {
  * for every signed-in role, so this is the same for every caller.
  */
 export const getWorkforce = async () => {
-  const [agg, employees, recentAttendance] = await Promise.all([
+  const [agg, employees, recentAttendance, ratings] = await Promise.all([
     workforceAggregates(),
     repo.employeeRowsForWorkforce(),
     repo.recentAttendanceByEmployee(WORKFORCE_WINDOW_DAYS),
+    repo.employeeRatings(),
   ]);
   return {
     headcount: agg.totals.headcount,
     active: agg.totals.active,
     windowDays: WORKFORCE_WINDOW_DAYS,
+    performance: aggregates.performanceSummary(ratings),
     snapshot: aggregates.workforceSnapshot(
       employees,
       recentAttendance.map((a) => ({ employeeId: a.employeeId, hours: a.hours })),

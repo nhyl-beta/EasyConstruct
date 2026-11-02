@@ -11,6 +11,7 @@ import { cached } from "../../../core/cache/index.js";
 import { EMPLOYEE_SORT_COLUMNS } from "./repository.js";
 import { parseIdParam } from "../../../core/utils/params.js";
 import { isPendingApproval } from "../../iam/index.js";
+import { findAll as findAuditEntries } from "../../../core/audit/repository.js";
 
 export const getAll = async (
   req: Request,
@@ -134,13 +135,37 @@ export const remove = async (
 };
 
 export const deactivate = async (
-  req: Request,
+  req: AuthedRequest,
   res: Response,
   next: NextFunction,
 ) => {
   try {
     const data = await service.deactivate(parseIdParam(req.params.id, "id"));
+    await logAudit({
+      entityType: "employee",
+      entityId: String(req.params.id),
+      action: "archived",
+      actor: req.authUser?.name ?? "unknown",
+      summary: `Archived employee ${data.name}`,
+    });
     res.json(formatSuccess(data, "Employee deactivated"));
+  } catch (err) {
+    next(err);
+  }
+};
+
+/** The employee's record history: every audited change, newest first. */
+export const getHistory = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const id = parseIdParam(req.params.id, "id");
+    await service.getById(id);
+    // Newest 50: a card of recent changes, not the full audit trail.
+    const entries = await findAuditEntries({ entityType: "employee", entityId: String(id), page: 1, perPage: 50 });
+    res.json(formatSuccess(entries, "Employee history retrieved"));
   } catch (err) {
     next(err);
   }

@@ -86,6 +86,7 @@ export async function createEmployee(input: CreateEmployeeInput) {
 
   return repo.insertEmployee({
     ...employeeData,
+    site: employeeData.site ?? "Unassigned",
     initials: initials(input.name),
     email: input.email || null,
     phone: input.phone || null,

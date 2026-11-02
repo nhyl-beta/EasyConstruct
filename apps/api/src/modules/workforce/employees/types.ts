@@ -23,7 +23,8 @@ export interface CreateEmployeeInput {
   name: string;
   role: string;
   department: string;
-  site: string;
+  /** Legacy field: no longer asked for on the employee record; new records are stored as "Unassigned". */
+  site?: string;
   status?: string;
   hiredOn: string;
   email?: string;

@@ -16,10 +16,12 @@ import { ProposalsTable } from "./ProposalsTable";
 interface ProposalsRegisterProps {
   title: string;
   description: string;
+  /** False removes the column sort buttons (rows stay in ascending Proposal ID order). Default true. */
+  sortable?: boolean;
 }
 
 /** The read-only proposals register (Owner, IT Designer): list on the left, details in a right-hand panel. */
-export function ProposalsRegister({ title, description }: ProposalsRegisterProps) {
+export function ProposalsRegister({ title, description, sortable = true }: ProposalsRegisterProps) {
   const { proposals, loading, error, kpis, query: search, setQuery: setSearch, pagination } = useProposals();
   const [selectedId, select] = useSelectedParam();
   const [order, setOrder] = useState<number[]>([]);
@@ -77,7 +79,7 @@ export function ProposalsRegister({ title, description }: ProposalsRegisterProps
               </div>
             )}
             {!loading && !error && proposals.length > 0 && (
-              <ProposalsTable proposals={proposals} selectedId={selected?.id ?? null} onSelect={(p) => select(p.id)} onOrderChange={setOrder} />
+              <ProposalsTable proposals={proposals} selectedId={selected?.id ?? null} onSelect={(p) => select(p.id)} onOrderChange={setOrder} sortable={sortable} />
             )}
             {!loading && !error && proposals.length > 0 && <DataTablePagination {...pagination} />}
           </div>

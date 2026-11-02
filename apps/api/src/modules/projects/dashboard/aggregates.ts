@@ -224,6 +224,25 @@ export const workforceSnapshot = (employees: WorkforceEmployee[], recentAttendan
   };
 };
 
+/**
+ * Org-wide performance rate: the average of the 0–5 ratings on employee records
+ * (archived employees are left out), also shown as a percentage of the top rating.
+ * A rating of 0 means "not rated yet" and is skipped so it cannot drag the average down.
+ */
+export const performanceSummary = (employees: { status: string; performance: string | number | null }[]) => {
+  const ratings = employees
+    .filter((e) => e.status !== "Archived")
+    .map((e) => Number(e.performance ?? 0))
+    .filter((r) => Number.isFinite(r) && r > 0);
+  if (ratings.length === 0) return { average: 0, rate: 0, rated: 0 };
+  const average = ratings.reduce((sum, r) => sum + r, 0) / ratings.length;
+  return {
+    average: Math.round(average * 10) / 10,
+    rate: Math.round((average / 5) * 100),
+    rated: ratings.length,
+  };
+};
+
 // ── IT designer ─────────────────────────────────────────────────────────────
 // client: it-designer-dashboard.controller.ts usersByRole / orphanedRoleUsers
 export const usersByRole = (

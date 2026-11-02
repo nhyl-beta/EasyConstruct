@@ -1,7 +1,29 @@
 import { db }       from "../../../core/db/connection.js";
 import { projects } from "../../../core/db/schema/projects.js";
-import { eq, ne, ilike, and, or, isNull, inArray, sql, SQL } from 'drizzle-orm';
+import { eq, ne, ilike, and, or, isNull, inArray, sql, SQL, getTableColumns, type AnyColumn } from 'drizzle-orm';
 import type { CreateProjectInput, UpdateProjectInput, ProjectFilters } from "./types.js";
+
+// `projects.budget` and `projects.workforce` are columns nothing keeps current, so a
+// project's table row showed 0 for both. The figures served are worked out from the
+// live data instead, falling back to the stored column only where there is no data:
+//  - budget: share of the planned budget already spent, the way Finance totals it
+//    (sum of budgets.actual over sum of budgets.planned for the project's code);
+//  - workforce: distinct people staffed on the project (project_members).
+const liveBudget = sql<number>`coalesce(
+  (select round(sum(b.actual) / sum(b.planned) * 100)::int from budgets b where b.project = ${projects.code} having sum(b.planned) > 0),
+  ${projects.budget}
+)`;
+const liveWorkforce = sql<number>`coalesce(
+  nullif((select count(distinct m.user_id)::int from project_members m where m.project_code = ${projects.code}), 0),
+  ${projects.workforce},
+  0
+)`;
+/** Every project column, with budget and workforce replaced by the live figures. */
+const projectColumns = {
+  ...getTableColumns(projects),
+  budget: liveBudget.mapWith(Number).as('budget'),
+  workforce: liveWorkforce.mapWith(Number).as('workforce'),
+};
 
 const buildConditions = (filters: ProjectFilters): SQL[] => {
   const conditions: SQL[] = [];
@@ -55,8 +77,8 @@ export const findAll = async (filters: ProjectFilters = {}) => {
   if (filters.codes && filters.codes.length === 0) return [];
   const conditions = buildConditions(filters);
   return conditions.length
-    ? await db.select().from(projects).where(and(...conditions))
-    : await db.select().from(projects);
+    ? await db.select(projectColumns).from(projects).where(and(...conditions))
+    : await db.select(projectColumns).from(projects);
 };
 
 /** Project codes a Project Manager owns (code column only — no full-table read). */
@@ -74,7 +96,8 @@ export const PROJECT_SORT_COLUMNS = {
   status: projects.status,
   risk: projects.risk,
   progress: projects.progress,
-  budget: projects.budget,
+  // Sorts by the figure the table shows (the live one), not the stored column.
+  budget: liveBudget as unknown as AnyColumn,
   due: projects.due,
   pm: projects.pm,
   createdAt: projects.createdAt,
@@ -97,7 +120,7 @@ export const findNarrow = async (filters: ProjectFilters) => {
       code: projects.code,
       status: projects.status,
       risk: projects.risk,
-      budget: projects.budget,
+      budget: liveBudget.mapWith(Number),
       progress: projects.progress,
     })
     .from(projects)
@@ -135,7 +158,7 @@ export const findPageSorted = async (
   if (filters.codes && filters.codes.length === 0) return [];
   const conditions = buildConditions(filters);
   return db
-    .select()
+    .select(projectColumns)
     .from(projects)
     .where(conditions.length ? and(...conditions) : undefined)
     .orderBy(...orderBy)
@@ -153,7 +176,7 @@ export const findByCode = async (code: string) => {
 
 export const findById = async (id: number) => {
   const [project] = await db
-    .select()
+    .select(projectColumns)
     .from(projects)
     .where(eq(projects.id, id));
   return project ?? null;

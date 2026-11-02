@@ -4,7 +4,7 @@
 // small LIMITed reads, instead of the full lists the dashboards used to
 // download and count in the browser. Scope arguments are the same visibility
 // rules the list endpoints apply (see projects/service.ts).
-import { and, asc, count, desc, eq, gte, inArray, ne, sql, type SQL } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, inArray, isNull, ne, or, sql, type SQL } from "drizzle-orm";
 import { db } from "../../../core/db/connection.js";
 import { inCodes } from "../../../core/db/paged.js";
 import { attendance } from "../../../core/db/schema/attendance.js";
@@ -68,6 +68,30 @@ export const proposalGroups = async (codes: Codes) =>
     .from(proposals)
     .where(scoped(proposals.projectCode, codes))
     .groupBy(proposals.status);
+
+/**
+ * The Consultant's review queue: Pending, and assigned to the consultant or to nobody yet.
+ * Same rule as the Proposals page (design/proposals/repository.ts, `reviewQueue`), so the
+ * dashboard number and the queue on that page can never disagree.
+ */
+const reviewQueueWhere = (codes: Codes): SQL =>
+  and(
+    sql`lower(trim(${proposals.status})) = 'pending'`,
+    or(
+      isNull(proposals.assignedReviewer),
+      sql`trim(${proposals.assignedReviewer}) = ''`,
+      sql`lower(trim(${proposals.assignedReviewer})) = 'consultant'`,
+    ),
+    scoped(proposals.projectCode, codes),
+  )!;
+
+export const reviewQueueCount = async (codes: Codes): Promise<number> => {
+  const [row] = await db.select({ n: count() }).from(proposals).where(reviewQueueWhere(codes));
+  return row?.n ?? 0;
+};
+
+export const reviewQueue = async (codes: Codes, limit: number) =>
+  db.select().from(proposals).where(reviewQueueWhere(codes)).orderBy(desc(proposals.id)).limit(limit);
 
 /** Proposals with exactly this status, newest id first (the list's own order). */
 export const proposalsWithStatus = async (codes: Codes, status: string, limit: number) =>
@@ -188,8 +212,8 @@ export const attendanceOn = async (employeeId: string, date: string) => {
 
 // ── Documents ───────────────────────────────────────────────────────────────
 
-export const documentCount = async (): Promise<number> => {
-  const [row] = await db.select({ n: count() }).from(documents);
+export const documentCount = async (codes: Codes = null): Promise<number> => {
+  const [row] = await db.select({ n: count() }).from(documents).where(scoped(documents.project, codes));
   return row?.n ?? 0;
 };
 
@@ -242,6 +266,10 @@ export const employeeRowsForWorkforce = async () =>
   db
     .select({ employeeId: employees.employeeId, site: employees.site, status: employees.status })
     .from(employees);
+
+/** Every employee's status and 0–5 rating, for the HR performance KPI. */
+export const employeeRatings = async () =>
+  db.select({ status: employees.status, performance: employees.performance }).from(employees);
 
 /** Per employee: the longest shift they logged in the last `days` days (one row each). */
 export const recentAttendanceByEmployee = async (days: number) =>

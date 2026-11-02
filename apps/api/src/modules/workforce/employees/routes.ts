@@ -21,6 +21,7 @@ router.get("/me", controller.getMe);
 router.get("/", canReadEmployees, controller.getAll);
 router.post("/", canWriteEmployees, validate(createEmployeeSchema), controller.create);
 router.get("/:id", canReadEmployees, controller.getById);
+router.get("/:id/history", canReadEmployees, controller.getHistory);
 router.patch("/:id", canWriteEmployees, validate(updateEmployeeSchema), controller.update);
 router.patch("/:id/deactivate", canWriteEmployees, controller.deactivate);
 router.delete("/:id", canWriteEmployees, controller.remove);

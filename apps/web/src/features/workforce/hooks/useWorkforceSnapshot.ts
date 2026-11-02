@@ -39,6 +39,11 @@ export interface WorkforceSnapshot {
   overtimeCrews: number; // distinct employees whose most recent attendance row logged >8h
   sites: WorkforceSiteSummary[];
   windowDays: number;
+  /** Average of the 0–5 employee ratings (archived and unrated left out). */
+  averagePerformance: number;
+  /** The same average as a percentage of the top rating. */
+  performanceRate: number;
+  ratedEmployees: number;
   reload: () => void;
 }
 
@@ -48,6 +53,7 @@ interface WorkforceFigures {
   headcount: number;
   active: number;
   windowDays: number;
+  performance?: { average: number; rate: number; rated: number };
   snapshot: {
     totalEmployees: number;
     totalCapacity: number;
@@ -82,6 +88,9 @@ export function useWorkforceSnapshot(): WorkforceSnapshot {
     overtimeCrews: snapshot?.overtimeCrews ?? 0,
     sites: snapshot?.sites ?? [],
     windowDays: query.data?.windowDays ?? WINDOW_DAYS,
+    averagePerformance: query.data?.performance?.average ?? 0,
+    performanceRate: query.data?.performance?.rate ?? 0,
+    ratedEmployees: query.data?.performance?.rated ?? 0,
     reload: () => void query.refetch(),
   };
 }

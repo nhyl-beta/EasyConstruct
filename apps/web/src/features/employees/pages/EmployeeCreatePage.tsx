@@ -27,7 +27,7 @@ const STEPS: Step[] = [
   {
     number: 2,
     title: "Employment details",
-    subtitle: "Role, department, and site",
+    subtitle: "Role, department, and pay",
   },
   { number: 3, title: "Review & confirm", subtitle: "Review and add employee" },
 ];
@@ -38,7 +38,6 @@ interface EmployeeFormData {
   employeeId: string;
   role: string;
   department: string;
-  site: string;
   status: EmployeeStatus;
   hiredOn: string;
   email: string;
@@ -53,7 +52,6 @@ const initialForm: EmployeeFormData = {
   employeeId: "",
   role: "",
   department: "",
-  site: "",
   status: "Active",
   hiredOn: "",
   email: "",
@@ -82,7 +80,6 @@ export default function EmployeeCreatePage() {
           employeeId: employee.id,
           role: employee.role,
           department: employee.department,
-          site: employee.site,
           status: employee.status,
           hiredOn: employee.hiredOn,
           email: employee.email ?? "",
@@ -113,7 +110,6 @@ export default function EmployeeCreatePage() {
         name: `${data.firstName} ${data.lastName}`.trim(),
         role: data.role,
         department: data.department,
-        site: data.site,
         status: data.status,
         hiredOn: data.hiredOn,
         email: data.email,
@@ -288,7 +284,7 @@ function StepEmployment({
       <div>
         <h3 className="text-base font-semibold">Employment details</h3>
         <p className="mt-1 text-sm text-muted-foreground">
-          Define the role, department, and site assignment.
+          Define the role, department, and pay.
         </p>
       </div>
       <div className="grid grid-cols-2 gap-5">
@@ -320,23 +316,6 @@ function StepEmployment({
               <SelectItem value="Design">Design</SelectItem>
               <SelectItem value="Safety">Safety</SelectItem>
               <SelectItem value="Project Mgmt">Project Mgmt</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-1.5">
-          <Label>
-            Site assignment <span className="text-destructive-strong">*</span>
-          </Label>
-          <Select value={data.site} onValueChange={(v) => set("site", v)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select site" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Westgate Tower">Westgate Tower</SelectItem>
-              <SelectItem value="Harborline Hub">Harborline Hub</SelectItem>
-              <SelectItem value="Northgate Plaza">Northgate Plaza</SelectItem>
-              <SelectItem value="Phoenix HQ">Phoenix HQ</SelectItem>
-              <SelectItem value="HQ">HQ</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -407,7 +386,6 @@ function StepReview({ data }: { data: EmployeeFormData }) {
           { label: "Employee ID", value: data.employeeId || "—" },
           { label: "Role", value: data.role || "—" },
           { label: "Department", value: data.department || "—" },
-          { label: "Site", value: data.site || "—" },
           { label: "Hire date", value: data.hiredOn || "—" },
         ].map((row) => (
           <div

@@ -30,7 +30,7 @@ const CONSULTANT_HIDDEN_FIELDS = [
   "workforce",
 ] as const;
 
-export function toConsultantView(project: Awaited<ReturnType<typeof repo.findAll>>[number]) {
+export function toConsultantView(project: object) {
   const scoped: Record<string, unknown> = { ...project };
   for (const field of CONSULTANT_HIDDEN_FIELDS) delete scoped[field];
   return scoped;

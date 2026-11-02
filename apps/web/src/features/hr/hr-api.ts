@@ -129,3 +129,16 @@ export async function deactivateEmployee(id: number): Promise<Employee> {
   const raw = await unwrap<BackendEmployee>(apiClient.patch(`/employees/${id}/deactivate`, {}));
   return normalize(raw);
 }
+
+/** One audited change on an employee record (GET /employees/:id/history). */
+export interface EmployeeHistoryEntry {
+  id: number;
+  action: string;
+  actor: string;
+  summary: string | null;
+  createdAt: string | null;
+}
+
+export async function getEmployeeHistory(id: number): Promise<EmployeeHistoryEntry[]> {
+  return unwrap<EmployeeHistoryEntry[]>(apiClient.get(`/employees/${id}/history`));
+}
