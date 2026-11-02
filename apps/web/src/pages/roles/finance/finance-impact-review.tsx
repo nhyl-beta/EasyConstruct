@@ -204,7 +204,7 @@ export default function ImpactReviewPage() {
     <PageContainer>
       <PageHeader
         title="Budget change review"
-        description="The materials, labour and other-cost changes behind each budget change request, with the justification filed against it."
+        description="Cost changes and justification behind each budget change request."
       />
       <PageContent className="space-y-6 p-4 md:p-8">
         <KpiStrip

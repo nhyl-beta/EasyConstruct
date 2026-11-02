@@ -517,7 +517,7 @@ function StepProjectInfo({
                 </label>
               ))}
             </div>
-            <p className="text-overline text-muted-foreground">Each one becomes a plan set with its own lead, sheet range and status once the project reaches Design.</p>
+            <p className="text-overline text-muted-foreground">Becomes a plan set once the project reaches Design.</p>
             <FieldError message={errors.designDisciplines} />
           </div>
         )}
@@ -661,7 +661,7 @@ function StepProjectInfo({
           </div>
           <FieldError message={errors.location} />
           <p className="text-overline text-muted-foreground">
-            Start typing an address to search — selecting a result moves the map pin below.
+            Search an address to move the map pin.
           </p>
         </div>
 
@@ -791,8 +791,7 @@ function StepProjectInfo({
       <div className="flex items-start gap-3 rounded-xl border border-info/20 bg-info/5 px-4 py-3">
         <Info className="mt-0.5 h-4 w-4 shrink-0 text-info-strong" />
         <p className="text-xs text-muted-foreground">
-          You can always edit these details later. All fields marked with{" "}
-          <span className="font-medium text-destructive-strong">*</span> are required.
+          <span className="font-medium text-destructive-strong">*</span> Required. You can edit these later.
         </p>
       </div>
     </div>
@@ -845,9 +844,7 @@ function StepScopeSchedule({
       <div>
         <h3 className="text-base font-semibold">Scope & schedule</h3>
         <p className="mt-1 text-sm text-muted-foreground">
-          Define the project scope, and optionally draft the timeline
-          milestones to create alongside it. Milestones start as drafts and
-          can be edited from the project's detail page afterward.
+          Set the scope. Milestones are optional drafts you can edit later.
         </p>
       </div>
       <div className="space-y-4">
@@ -954,8 +951,7 @@ function StepBudget({
       <div>
         <h3 className="text-base font-semibold">Budget & financials</h3>
         <p className="mt-1 text-sm text-muted-foreground">
-          Total contract value is saved with the project. Contingency is
-          informational only — there's no column for it yet.
+          Contingency is for reference only and is not saved.
         </p>
       </div>
       <div className="grid grid-cols-2 gap-5">
@@ -1078,10 +1074,7 @@ function StepTeam({
         ))}
       </div>
       <p className="text-xs text-muted-foreground">
-        Architect and Consultant are required to start the project's
-        lifecycle. Engineer and Site Personnel are optional here — any of
-        these can also be added or changed later from the project's detail
-        page.
+        Architect and Consultant are required. Others can be added later.
       </p>
 
       <StakeholderDraftEditor value={stakeholders} onChange={setStakeholders} ownerHint={data.client.trim() || undefined} />

@@ -49,7 +49,7 @@ export function ReportsTab({ projectCode, canUpload }: { projectCode: string; ca
     );
   }
   if (status.applicable.length === 0) {
-    return <p className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">Reports are due while a project is in Construction or Closeout (or Design, for a design project). This project is not in one of those phases.</p>;
+    return <p className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">Reports are due during Construction, Closeout or Design. Not applicable in this phase.</p>;
   }
 
   const open = (period: ReportPeriod, cell?: ReportCell) =>
@@ -58,7 +58,7 @@ export function ReportsTab({ projectCode, canUpload }: { projectCode: string; ca
   return (
     <div className="space-y-4">
       <p className="text-xs text-muted-foreground">
-        Green means a report was filed for that period, red means it is missing. The project manager is reminded each morning about the report for the period that has just ended.
+        Green: filed. Red: missing. The project manager is reminded each morning.
       </p>
       <Tabs defaultValue={status.applicable[0]}>
         <TabsList>

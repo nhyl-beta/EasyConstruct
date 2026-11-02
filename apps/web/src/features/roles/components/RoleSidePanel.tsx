@@ -105,8 +105,7 @@ export function RoleSidePanel({ roleKey, role, label, accounts, parentLabel, gro
               <div className="flex items-start gap-2 rounded-xl border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
                 <Info className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
                 <p>
-                  Page access, as enforced by the client route guards. What a role may do inside a page (create, edit, approve, delete) is enforced per
-                  endpoint on the server and is not editable from here yet.
+                  Page access only. Actions inside a page are set on the server and cannot be edited here yet.
                 </p>
               </div>
               {byGroup.size === 0 && <p className="text-sm text-muted-foreground">No pages are mapped to this role.</p>}
@@ -142,8 +141,7 @@ export function RoleSidePanel({ roleKey, role, label, accounts, parentLabel, gro
           label: "History",
           content: (
             <p className="text-sm text-muted-foreground">
-              No permission changes are recorded. Permissions are defined in code today, so there is nothing to audit here; account changes appear in
-              Activity Logs.
+              No permission changes recorded. Account changes appear in Activity Logs.
             </p>
           ),
         },

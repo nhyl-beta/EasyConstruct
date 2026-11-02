@@ -763,7 +763,7 @@ function DesignStageSection({
           Design stage
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Assigned engineer(s), the designs submitted by the architect, and files filed against the Design stage.
+          Engineers, architect designs and Design stage files.
         </p>
       </div>
 
