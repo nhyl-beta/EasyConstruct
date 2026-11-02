@@ -15,6 +15,38 @@ const pillars = [
   { icon: LineChart, label: "Analytics", detail: "Forecasts and executive reporting" },
 ];
 
+/**
+ * Below the desktop breakpoint the big panel is hidden, so this carries the same
+ * branding (subtitle, AI label, the four areas, access note) in a compact block.
+ */
+export function AuthBrandSummary() {
+  return (
+    <section aria-label="About EasyConstruct" className="mt-8 space-y-4 border-t border-border pt-6 lg:hidden">
+      <div>
+        <p className="font-display text-base font-semibold tracking-tight">EasyConstruct</p>
+        <p className="text-sm text-muted-foreground">Construction Decision Support System</p>
+      </div>
+      <p className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/40 px-3 py-1 text-xs font-medium text-muted-foreground">
+        <Sparkles className="size-3.5 text-ai" aria-hidden="true" />
+        AI-assisted project intelligence
+      </p>
+      <ul className="grid grid-cols-2 gap-2">
+        {pillars.map((p) => (
+          <li key={p.label} className="rounded-lg border border-border/60 bg-background/40 p-3">
+            <p.icon className="mb-1.5 size-4 text-primary-strong" aria-hidden="true" />
+            <p className="text-sm font-medium">{p.label}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">{p.detail}</p>
+          </li>
+        ))}
+      </ul>
+      <p className="flex items-center gap-2 text-xs text-muted-foreground">
+        <ShieldCheck className="size-4 shrink-0" aria-hidden="true" />
+        Role-based access control across every workspace.
+      </p>
+    </section>
+  );
+}
+
 export function AuthBrandPanel() {
   return (
     <aside className="relative hidden overflow-hidden border-r border-border bg-sidebar text-sidebar-foreground lg:flex lg:flex-col lg:justify-between lg:p-12 xl:p-16">

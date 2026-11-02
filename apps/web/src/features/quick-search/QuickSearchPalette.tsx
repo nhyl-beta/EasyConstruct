@@ -75,7 +75,7 @@ export function QuickSearchPalette() {
       <Dialog open={open} onOpenChange={(next) => !next && closePalette()}>
         <DialogContent
           showCloseButton={false}
-          className="top-[12%] translate-y-0 gap-0 overflow-hidden p-0 motion-reduce:animate-none motion-reduce:transition-none sm:max-w-2xl"
+          className="top-[12%] translate-y-0 gap-0 overflow-hidden p-0 motion-reduce:animate-none motion-reduce:transition-none sm:max-w-xl"
           onKeyDown={(e) => {
             // Refine's kbar (mounted in App.tsx) listens for these keys on
             // window and would activate its own first result. They are ours.
@@ -104,12 +104,16 @@ export function QuickSearchPalette() {
             />
             <CommandList className="max-h-[min(60vh,420px)]">
               {qs.sections.map((section) => (
-                <CommandGroup key={section.heading} heading={section.heading}>
+                <CommandGroup
+                  key={section.heading}
+                  heading={section.heading}
+                  className="p-1.5 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:pb-1 [&_[cmdk-group-heading]]:pt-2 [&_[cmdk-group-heading]]:text-overline [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider"
+                >
                   {section.rows.map((row) => {
                     const Icon = row.icon;
                     return (
-                      <CommandItem key={row.key} value={row.key} onSelect={() => choose(row)}>
-                        <Icon className="text-muted-foreground" aria-hidden />
+                      <CommandItem key={row.key} value={row.key} onSelect={() => choose(row)} className="gap-3 rounded-lg px-2 py-1.5">
+                        <Icon className="size-8 shrink-0 rounded-md bg-muted p-2 text-muted-foreground" aria-hidden />
                         <div className="min-w-0 flex-1">
                           <div className="truncate text-sm">{row.label}</div>
                           {row.description && (

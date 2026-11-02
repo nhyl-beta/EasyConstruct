@@ -68,7 +68,7 @@ export function FilePreviewDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-3xl">
+      <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="whitespace-normal break-words">
             {title}
@@ -117,7 +117,7 @@ export function FilePreviewDialog({
             <img
               src={resolved}
               alt={title}
-              className="max-h-[70vh] w-full object-contain"
+              className="max-h-[55dvh] w-full object-contain"
             />
           )}
 
@@ -125,7 +125,7 @@ export function FilePreviewDialog({
             <iframe
               src={resolved}
               title={title}
-              className="h-[70vh] w-full border-0 bg-card"
+              className="h-[55dvh] w-full border-0 bg-card"
             />
           )}
 

@@ -114,9 +114,9 @@ export function NotificationBell() {
         </Button>
       </PopoverTrigger>
 
-      <PopoverContent align="end" className="w-[min(30rem,calc(100vw-1.5rem))] rounded-3xl p-0">
-        <div className="space-y-3 px-5 pb-3 pt-5">
-          <h2 className="text-2xl font-semibold tracking-tight">Notifications</h2>
+      <PopoverContent align="end" className="w-[min(26rem,calc(100vw-1.5rem))] rounded-2xl p-0">
+        <div className="space-y-3 px-4 pb-3 pt-4">
+          <h2 className="text-xl font-semibold tracking-tight">Notifications</h2>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div role="tablist" aria-label="Filter notifications" className="inline-flex rounded-xl bg-muted p-1">
               {TABS.map((t) => (
@@ -161,9 +161,9 @@ export function NotificationBell() {
         </div>
         <div className="border-t border-border/70" />
 
-        {/* h-96, not max-h: Radix's viewport needs a definite height to scroll. */}
-        <ScrollArea className="h-96">
-          <div className="space-y-3 p-4">
+        {/* A definite height (Radix's viewport needs one to scroll), capped to the room under the bell so the footer never falls off a short screen. */}
+        <ScrollArea className="h-[clamp(10rem,calc(var(--radix-popover-content-available-height,100dvh)_-_9rem),24rem)]">
+          <div className="space-y-2.5 p-3">
             {loading && notifications.length === 0 && <p className="px-1 py-6 text-sm text-muted-foreground">Loading…</p>}
             {!loading && error && (
               <p role="alert" className="px-1 py-6 text-sm text-destructive">
@@ -183,7 +183,7 @@ export function NotificationBell() {
                 return (
                   <article
                     key={n.id}
-                    className={`rounded-2xl border p-4 shadow-sm ${
+                    className={`rounded-xl border p-3 shadow-sm ${
                       n.isRead ? "bg-card" : "bg-gradient-to-b from-primary-soft/50 to-card"
                     } ${urgent && !n.isRead ? "border-destructive/30" : "border-border/70"}`}
                   >
@@ -193,8 +193,8 @@ export function NotificationBell() {
                         n.isRead ? "bg-muted-foreground/30" : urgent ? "bg-destructive" : "bg-primary"
                       }`}
                     />
-                    <h3 className="text-base font-medium leading-snug">{n.title}</h3>
-                    {n.message && <p className="mt-1 text-sm text-muted-foreground">{n.message}</p>}
+                    <h3 className="text-sm font-medium leading-snug">{n.title}</h3>
+                    {n.message && <p className="mt-1 line-clamp-3 text-xs text-muted-foreground">{n.message}</p>}
                     <div className="mt-3 flex items-end justify-between gap-3">
                       <div className="flex flex-wrap gap-2">
                         {label ? (
@@ -220,7 +220,7 @@ export function NotificationBell() {
           </div>
         </ScrollArea>
 
-        <div className="flex items-center justify-between border-t border-border/70 px-5 py-3 text-sm">
+        <div className="flex items-center justify-between border-t border-border/70 px-4 py-2.5 text-sm">
           {filtered.length > shown ? (
             <button type="button" className="text-muted-foreground hover:text-foreground" onClick={() => setShown((s) => s + PAGE_SIZE)}>
               Show more ({filtered.length - shown})
