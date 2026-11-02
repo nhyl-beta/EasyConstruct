@@ -50,6 +50,18 @@ export default function SettingsPage() {
     <PageContainer>
       <PageHeader title="Settings" description="Your own preferences." />
       <PageContent className="space-y-6 p-6 md:p-8">
+        <SectionCard title="Profile">
+          <dl className="grid max-w-xl grid-cols-[7rem_1fr] gap-x-4 gap-y-2 text-sm">
+            <dt className="text-muted-foreground">Name</dt>
+            <dd>{user?.name}</dd>
+            <dt className="text-muted-foreground">Email</dt>
+            <dd className="break-all">{user?.email}</dd>
+            <dt className="text-muted-foreground">Role</dt>
+            <dd className="capitalize">{user?.role.replace(/-/g, " ")}</dd>
+          </dl>
+          <p className="mt-3 text-xs text-muted-foreground">Name and email are managed by HR. Changes to the Owner's account need the Owner's approval.</p>
+        </SectionCard>
+
         <SectionCard title="Notifications">
           {error && <p className="text-sm text-destructive-strong">{error}</p>}
           {!error && value === null && <Skeleton className="h-10 w-full max-w-md" />}

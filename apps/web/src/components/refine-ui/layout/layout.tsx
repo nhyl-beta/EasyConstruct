@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { QuickSearchPalette } from "@/features/quick-search/QuickSearchPalette";
 import { QuickSearchProvider } from "@/features/quick-search/QuickSearchProvider";
 import type { PropsWithChildren } from "react";
+import { AppFooter } from "./app-footer";
 import { Sidebar } from "./sidebar";
 
 export function Layout({ children }: PropsWithChildren) {
@@ -36,6 +37,7 @@ export function Layout({ children }: PropsWithChildren) {
           >
             {children}
           </main>
+          <AppFooter />
         </SidebarInset>
         <QuickSearchPalette />
       </SidebarProvider>
