@@ -35,6 +35,8 @@ export function useAttendancePaged(scope?: AttendanceScope) {
   const [query, setQuery] = useState("");
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState<AttendanceFilterState>(NO_FILTERS);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<number>(DEFAULT_PAGE_SIZE);
 
@@ -63,13 +65,13 @@ export function useAttendancePaged(scope?: AttendanceScope) {
     setLoading(true);
     setError(null);
     try {
-      setData(await listAttendancePage({ page, pageSize, search: scope?.search ?? search, dateFrom: scope?.dateFrom, dateTo: scope?.dateTo, ...filters }, names));
+      setData(await listAttendancePage({ page, pageSize, search: scope?.search ?? search, dateFrom: scope?.dateFrom ?? (dateFrom || undefined), dateTo: scope?.dateTo ?? (dateTo || undefined), ...filters }, names));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load attendance");
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, search, filters, names, scope?.search, scope?.dateFrom, scope?.dateTo]);
+  }, [page, pageSize, search, filters, names, dateFrom, dateTo, scope?.search, scope?.dateFrom, scope?.dateTo]);
 
   useEffect(() => {
     void load();
@@ -94,6 +96,8 @@ export function useAttendancePaged(scope?: AttendanceScope) {
 
   const clearFilters = () => {
     setFilters(NO_FILTERS);
+    setDateFrom("");
+    setDateTo("");
     setQuery("");
     setSearch("");
     setPage(1);
@@ -112,7 +116,14 @@ export function useAttendancePaged(scope?: AttendanceScope) {
     filters,
     setFilter,
     clearFilters,
-    hasActiveFilters: query.trim() !== "" || Object.values(filters).some((v) => v !== "all"),
+    dateFrom,
+    dateTo,
+    setDateRange: (from: string, to: string) => {
+      setDateFrom(from);
+      setDateTo(to);
+      setPage(1);
+    },
+    hasActiveFilters: dateFrom !== "" || dateTo !== "" || query.trim() !== "" || Object.values(filters).some((v) => v !== "all"),
     setPage,
     setPageSize: (size: number) => {
       setPageSize(size);

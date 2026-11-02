@@ -4,14 +4,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import {
   Table,
@@ -40,7 +32,7 @@ import {
 import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
 import { useAttendancePaged } from "@/features/hr/hooks/use-attendance-paged";
 import { AttendanceVerificationDialog } from "@/components/hr/attendance-verification-dialog";
-import { SavedFiltersBar } from "@/components/shared/SavedFiltersBar";
+import { DateRangeFields, FilterBar, FilterChips } from "@/components/shared/filter-bar";
 import { AttendanceExceptionsPanel } from "@/features/hr/components/AttendanceExceptionsPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -50,9 +42,7 @@ import {
   Clock,
   FileSpreadsheet,
   MapPin,
-  Search,
   ShieldCheck,
-  X,
 } from "lucide-react";
 
 const VERIFICATION_OPTIONS = ["Pending", "Verified", "Flagged"];
@@ -205,59 +195,18 @@ export default function HRAttendancePage() {
             </div>
           )}
 
-          <div className="flex flex-wrap items-center gap-2 px-6 pb-3">
-            <div className="relative w-56">
-              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={a.query}
-                onChange={(e) => a.setQuery(e.target.value)}
-                placeholder="Search name, ID or site…"
-                aria-label="Search attendance"
-                className="h-8 pl-8 text-xs"
-              />
-            </div>
-            <Select value={a.filters.verification} onValueChange={(v) => a.setFilter("verification", v)}>
-              <SelectTrigger aria-label="Filter by verification" className="h-8 w-36 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All verification</SelectItem>
-                {VERIFICATION_OPTIONS.map((s) => (
-                  <SelectItem key={s} value={s}>
-                    {s}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={a.filters.status} onValueChange={(v) => a.setFilter("status", v)}>
-              <SelectTrigger aria-label="Filter by attendance status" className="h-8 w-36 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All attendance</SelectItem>
-                {DAY_STATUS_OPTIONS.map((s) => (
-                  <SelectItem key={s} value={s}>
-                    {s}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {a.hasActiveFilters && (
-              <Button size="sm" variant="ghost" className="h-8 gap-1 px-2 text-xs" onClick={a.clearFilters}>
-                <X className="h-3 w-3" /> Clear
-              </Button>
-            )}
-            <SavedFiltersBar
-              page="hr-attendance"
-              current={{ search: a.query, verification: a.filters.verification, status: a.filters.status }}
-              hasActive={a.hasActiveFilters}
-              onApply={(f: { search: string; verification: string; status: string }) => {
-                a.setQuery(f.search);
-                a.setFilter("verification", f.verification);
-                a.setFilter("status", f.status);
-              }}
-            />
-          </div>
+          <FilterBar
+            className="px-6 pb-3"
+            query={a.query}
+            onQuery={a.setQuery}
+            placeholder="Search name, ID or site…"
+            active={a.hasActiveFilters}
+            onClear={a.clearFilters}
+          >
+            <FilterChips label="Filter by verification" options={VERIFICATION_OPTIONS} value={a.filters.verification} onChange={(v) => a.setFilter("verification", v)} allLabel="All verification" />
+            <FilterChips label="Filter by attendance status" options={DAY_STATUS_OPTIONS} value={a.filters.status} onChange={(v) => a.setFilter("status", v)} allLabel="All attendance" />
+            <DateRangeFields from={a.dateFrom} to={a.dateTo} onChange={a.setDateRange} />
+          </FilterBar>
 
           <CardContent className="overflow-hidden px-0 [&_[data-slot=table-container]]:overflow-x-hidden [&_td]:whitespace-normal [&_td]:break-words [&_td]:px-2 [&_th]:px-2">
             {/* table-fixed + percentage widths (sum 100%) so long names/badges
