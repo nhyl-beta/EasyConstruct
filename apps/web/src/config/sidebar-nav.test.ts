@@ -18,8 +18,12 @@ const registered: Res[] = resources.map((r) => ({ name: r.name }));
 const flatNames = (entries: SidebarNavEntry<Res>[]) =>
   entries.flatMap((e) => (e.kind === "item" ? [e.item.name] : e.items.map((i) => i.name)));
 
-const granted = (role: string) =>
-  registered.map((r) => r.name).filter((n) => (ROLE_RESOURCE_ACCESS[role] ?? []).includes(n));
+// Registry order, except that User Support is always last.
+const SUPPORT = ["support", "admin-support", "it-designer-support"];
+const granted = (role: string) => {
+  const names = registered.map((r) => r.name).filter((n) => (ROLE_RESOURCE_ACCESS[role] ?? []).includes(n));
+  return [...names.filter((n) => !SUPPORT.includes(n)), ...names.filter((n) => SUPPORT.includes(n))];
+};
 
 describe("buildSidebarNav", () => {
   for (const role of Object.keys(ROLE_RESOURCE_ACCESS)) {
@@ -64,6 +68,14 @@ describe("buildSidebarNav", () => {
     });
   }
 
+  it("always puts User Support last", () => {
+    for (const role of Object.keys(ROLE_RESOURCE_ACCESS)) {
+      const names = flatNames(buildSidebarNav(role, registered)).filter((n) => n !== "ai-validation-reference");
+      const idx = names.findIndex((n) => SUPPORT.includes(n));
+      expect(idx).toBe(names.length - 1);
+    }
+  });
+
   it("leaves roles without a config flat, in registry order", () => {
     for (const role of Object.keys(ROLE_RESOURCE_ACCESS)) {
       if (hasSidebarNavConfig(role)) continue;
@@ -90,8 +102,9 @@ describe("buildSidebarNav", () => {
     ROLE_RESOURCE_ACCESS.admin = [...original, "future-resource"];
     try {
       const entries = buildSidebarNav("admin", extra);
-      const last = entries[entries.length - 1];
-      expect(last.kind === "item" && last.item.name).toBe("future-resource");
+      // Appended after the configured entries, but still before User Support, which is always last.
+      const beforeSupport = entries[entries.length - 2];
+      expect(beforeSupport.kind === "item" && beforeSupport.item.name).toBe("future-resource");
     } finally {
       ROLE_RESOURCE_ACCESS.admin = original;
     }

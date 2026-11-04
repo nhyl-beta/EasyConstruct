@@ -194,5 +194,10 @@ export function buildSidebarNav<T extends { name: string }>(
   for (const [name, found] of byName) {
     if (!used.has(name)) out.push({ kind: "item", item: found });
   }
-  return out;
+
+  // User Support is always the last entry, whatever the role.
+  const isSupport = (e: SidebarNavEntry<T>) => e.kind === "item" && SUPPORT_RESOURCES.has(e.item.name);
+  return [...out.filter((e) => !isSupport(e)), ...out.filter(isSupport)];
 }
+
+const SUPPORT_RESOURCES = new Set(["support", "admin-support", "it-designer-support"]);

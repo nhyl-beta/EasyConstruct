@@ -99,6 +99,7 @@ const fin = (name: string, router: Router, method: Method, path: string, allowed
 const SPECIAL: Case[] = [
   // support: only IT Designer handles a request; documents: only Admin edits or deletes one
   supportReq("patch", "/5", ["it-designer"]),
+  supportReq("post", "/", ROLES.filter((r) => r !== "it-designer")),
   docs("patch", "/5", ["admin"]),
   docs("delete", "/5", ["admin"]),
 ];

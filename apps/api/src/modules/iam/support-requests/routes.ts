@@ -13,8 +13,9 @@ import { NotFoundError } from "../../../core/utils/errors.js";
 import { parseIdParam } from "../../../core/utils/params.js";
 import { formatSuccess, parsePageRequest, paginate, sendPaged } from "../../../core/utils/pagination.js";
 
-// User Support: any signed-in user files an account-related request. IT Designer alone acts on them
-// (account changes are IT-only everywhere - see iam/users/routes.ts). Admin can read the inbox but not act.
+// User Support: any signed-in user except IT files an account-related request and sees only their own. IT Designer
+// alone sees the whole inbox and answers requests (account changes are IT-only everywhere - see iam/users/routes.ts).
+// Admin has no access to other people's requests.
 export const SUPPORT_CATEGORIES = ["password_reset", "email_name_change", "role_access", "cannot_sign_in", "other_account"] as const;
 export const SUPPORT_STATUSES = ["open", "in_progress", "resolved", "declined"] as const;
 
@@ -24,12 +25,18 @@ const createSchema = z.object({
   details: z.string().trim().min(5, "Describe what you need").max(2000),
 });
 
-const updateSchema = z.object({
-  status: z.enum(SUPPORT_STATUSES),
-  resolutionNote: z.string().trim().max(2000).optional(),
-});
+const updateSchema = z
+  .object({
+    status: z.enum(SUPPORT_STATUSES),
+    resolutionNote: z.string().trim().max(2000).optional(),
+  })
+  // IT's answer is what the requester reads: closing a request needs one.
+  .refine((v) => (v.status !== "resolved" && v.status !== "declined") || !!v.resolutionNote, {
+    message: "Write a reply before resolving or declining",
+    path: ["resolutionNote"],
+  });
 
-const SEES_ALL = ["it-designer", "admin"];
+const SEES_ALL = ["it-designer"];
 
 const router = Router();
 router.use(authenticate);
@@ -59,7 +66,8 @@ router.get("/", async (req: AuthedRequest, res: Response, next: NextFunction) =>
   }
 });
 
-router.post("/", validate(createSchema), async (req: AuthedRequest, res: Response, next: NextFunction) => {
+// IT Designer answers requests rather than sending them.
+router.post("/", requireRole("admin", "owner", "project-manager", "human-resources", "finance-manager", "architect", "engineer", "site-personnel", "consultant"), validate(createSchema), async (req: AuthedRequest, res: Response, next: NextFunction) => {
   try {
     const user = req.authUser!;
     const [created] = await db

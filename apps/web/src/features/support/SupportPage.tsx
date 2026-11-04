@@ -11,6 +11,7 @@ import { DataTablePagination } from "@/components/refine-ui/data-table/data-tabl
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SectionCard } from "@/components/ui/section-card";
@@ -38,7 +39,8 @@ const ALL = "all";
 export default function SupportPage() {
   const { user } = useAuth();
   const isIt = user?.role === "it-designer";
-  const seesAll = isIt || user?.role === "admin";
+  // Only IT sees every request (and answers them). Everyone else sees just their own.
+  const seesAll = isIt;
 
   const [status, setStatus] = useState<string>(ALL);
   const list = useServerList<SupportRequest>({
@@ -75,13 +77,26 @@ export default function SupportPage() {
     }
   };
 
-  const act = async (r: SupportRequest, next: SupportStatus) => {
+  // IT's reply dialog: the reply is what the requester reads.
+  const [replying, setReplying] = useState<SupportRequest | null>(null);
+  const [reply, setReply] = useState("");
+  const [answering, setAnswering] = useState(false);
+  const openReply = (r: SupportRequest) => {
+    setReplying(r);
+    setReply(r.resolutionNote ?? "");
+  };
+  const answer = async (next: SupportStatus) => {
+    if (!replying) return;
+    setAnswering(true);
     try {
-      await supportApi.update(r.id, { status: next });
-      toast.success(`Marked ${STATUS_LABEL[next].toLowerCase()}`);
+      await supportApi.update(replying.id, { status: next, resolutionNote: reply.trim() || undefined });
+      toast.success(next === "in_progress" ? "Reply sent" : `Marked ${STATUS_LABEL[next].toLowerCase()}`);
+      setReplying(null);
       await list.reload();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Couldn't update the request");
+    } finally {
+      setAnswering(false);
     }
   };
 
@@ -89,9 +104,10 @@ export default function SupportPage() {
     <PageContainer>
       <PageHeader
         title="User support"
-        description="Account help only: password resets, email or name changes, role or access changes and sign-in problems. IT makes the changes."
+        description={isIt ? "Account requests sent by users. Reply to each one, then resolve or decline it." : "Account help only: password resets, email or name changes, role or access changes and sign-in problems. IT makes the changes."}
       />
       <PageContent className="space-y-6 p-6 md:p-8">
+        {!isIt && (
         <SectionCard title="Send a request to IT" subtitle="Only IT can change accounts. Site reports from engineers are on the Reports tab, not here.">
           <div className="grid max-w-2xl gap-4">
             <div className="grid gap-1.5">
@@ -122,10 +138,11 @@ export default function SupportPage() {
             </div>
           </div>
         </SectionCard>
+        )}
 
         <SectionCard
           title={seesAll ? "All support requests" : "My requests"}
-          subtitle={isIt ? "You can start, resolve or decline each request." : seesAll ? "Read only. IT handles requests." : undefined}
+          subtitle={isIt ? "Open a request to reply to it." : "IT's reply appears under each request."}
         >
           <div className="mb-3 flex flex-wrap items-center gap-2">
             <Input
@@ -171,7 +188,7 @@ export default function SupportPage() {
                       <td className="max-w-md px-4 py-3">
                         <div className="font-medium">{r.subject}</div>
                         <div className="whitespace-pre-wrap break-words text-xs text-muted-foreground">{r.details}</div>
-                        {r.resolutionNote && <div className="mt-1 text-xs">IT: {r.resolutionNote}</div>}
+                        {r.resolutionNote && <div className="mt-2 rounded-lg bg-muted/50 px-3 py-2 text-xs"><span className="font-medium">IT reply:</span> {r.resolutionNote}</div>}
                       </td>
                       {seesAll && (
                         <td className="px-3 py-3 text-xs">
@@ -186,14 +203,10 @@ export default function SupportPage() {
                       <td className="whitespace-nowrap px-3 py-3 text-xs text-muted-foreground">{formatRelativeTime(r.createdAt)}</td>
                       {isIt && (
                         <td className="px-4 py-3">
-                          <div className="flex justify-end gap-1">
-                            {r.status === "open" && <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => void act(r, "in_progress")}>Start</Button>}
-                            {(r.status === "open" || r.status === "in_progress") && (
-                              <>
-                                <Button size="sm" className="h-7 text-xs" onClick={() => void act(r, "resolved")}>Resolve</Button>
-                                <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => void act(r, "declined")}>Decline</Button>
-                              </>
-                            )}
+                          <div className="flex justify-end">
+                            <Button size="sm" variant={r.status === "open" || r.status === "in_progress" ? "default" : "outline"} className="h-7 text-xs" onClick={() => openReply(r)}>
+                              {r.status === "open" || r.status === "in_progress" ? "Reply" : "View"}
+                            </Button>
                           </div>
                         </td>
                       )}
@@ -222,6 +235,37 @@ export default function SupportPage() {
           </Card>
         </Link>
       </PageContent>
+
+      <Dialog open={replying !== null} onOpenChange={(open) => !open && setReplying(null)}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{replying?.subject}</DialogTitle>
+            <DialogDescription>
+              {replying?.requesterName} · {replying ? categoryLabel(replying.category) : ""}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="whitespace-pre-wrap break-words rounded-lg bg-muted/50 p-3 text-sm">{replying?.details}</p>
+            {replying && (replying.status === "open" || replying.status === "in_progress") ? (
+              <div className="grid gap-1.5">
+                <Label htmlFor="support-reply">Your reply</Label>
+                <Textarea id="support-reply" rows={4} maxLength={2000} value={reply} onChange={(e) => setReply(e.target.value)} placeholder="What you did, or what the user should do next." />
+              </div>
+            ) : (
+              replying?.resolutionNote && <p className="text-sm"><span className="font-medium">Your reply:</span> {replying.resolutionNote}</p>
+            )}
+          </div>
+          {replying && (replying.status === "open" || replying.status === "in_progress") && (
+            <DialogFooter className="gap-2 sm:justify-between">
+              <Button variant="ghost" disabled={answering || !reply.trim()} onClick={() => void answer("declined")}>Decline</Button>
+              <div className="flex gap-2">
+                <Button variant="outline" disabled={answering || !reply.trim()} onClick={() => void answer("in_progress")}>Reply, keep open</Button>
+                <Button disabled={answering || !reply.trim()} onClick={() => void answer("resolved")}>Resolve</Button>
+              </div>
+            </DialogFooter>
+          )}
+        </DialogContent>
+      </Dialog>
     </PageContainer>
   );
 }
