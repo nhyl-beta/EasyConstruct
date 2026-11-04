@@ -23,6 +23,7 @@ export const ROLE_RESOURCE_ACCESS: Record<string, string[]> = {
     "owner-oversight",
     "owner-account-recovery",
     "reports",
+    "support",
   ],
   it_designer: [
     "dashboard",
@@ -53,6 +54,7 @@ export const ROLE_RESOURCE_ACCESS: Record<string, string[]> = {
     "archive-search",
     "legacy-import",
     "reports",
+    "support",
   ],
   human_resources: [
     "dashboard",
@@ -62,6 +64,7 @@ export const ROLE_RESOURCE_ACCESS: Record<string, string[]> = {
     "workforce-reports",
     "approvals",
     "reports",
+    "support",
   ],
   finance_manager: [
     "dashboard",
@@ -71,6 +74,7 @@ export const ROLE_RESOURCE_ACCESS: Record<string, string[]> = {
     "approvals",
     "impact-review",
     "reports",
+    "support",
   ],
   architect: [
     "dashboard",
@@ -87,6 +91,7 @@ export const ROLE_RESOURCE_ACCESS: Record<string, string[]> = {
     "requests",
     "archive-search",
     "legacy-import",
+    "support",
   ],
   engineer: [
     "dashboard",
@@ -97,8 +102,9 @@ export const ROLE_RESOURCE_ACCESS: Record<string, string[]> = {
     "issues",
     "projects",
     "requests",
+    "support",
   ],
-  site_personnel: ["dashboard", "attendance", "tasks", "requirements", "documents", "issues"],
+  site_personnel: ["dashboard", "attendance", "tasks", "requirements", "documents", "issues", "support"],
   consultant: [
     "dashboard",
     // Consultant's review screen, not the Architect authoring page the
@@ -116,5 +122,6 @@ export const ROLE_RESOURCE_ACCESS: Record<string, string[]> = {
     "advisory-docs",
     "consultant-projects",
     "requests",
+    "support",
   ],
 };

@@ -116,6 +116,7 @@ export const SIDEBAR_NAV: Record<string, SidebarNavConfigEntry[]> = {
     // Not scope-tagged
     group("records-requests", "Records & Requests", Archive, RECORDS),
     item("resources"),
+    item("support"),
   ],
   architect: [
     item("dashboard"),
@@ -134,6 +135,7 @@ export const SIDEBAR_NAV: Record<string, SidebarNavConfigEntry[]> = {
     item("approvals"),
     // Not scope-tagged
     group("records-requests", "Records & Requests", Network, RECORDS),
+    item("support"),
   ],
 };
 

@@ -157,7 +157,7 @@ export const ROLE_CONFIGS: Record<string, RoleConfig> = {
       {
         label: "Intelligence",
         items: [
-          { label: "Reports", icon: BarChart2, route: "/reports" },
+          { label: "Site Reports", icon: BarChart2, route: "/reports" },
         ],
       },
     ],
@@ -268,7 +268,7 @@ export const ROLE_CONFIGS: Record<string, RoleConfig> = {
       {
         label: "Intelligence",
         items: [
-          { label: "Reports", icon: BarChart2, route: "/reports" },
+          { label: "Site Reports", icon: BarChart2, route: "/reports" },
         ],
       },
     ],
@@ -293,7 +293,7 @@ export const ROLE_CONFIGS: Record<string, RoleConfig> = {
       { label: "Attendance", icon: UserCheck, route: "/attendance" },
       { label: "Payroll", icon: DollarSign, route: "/payroll" },
       { label: "Approvals", icon: CheckSquare, route: "/approvals" },
-      { label: "Reports", icon: BarChart2, route: "/reports" },
+      { label: "Site Reports", icon: BarChart2, route: "/reports" },
     ],
 
     sections: [
@@ -572,7 +572,7 @@ export const ROLE_CONFIGS: Record<string, RoleConfig> = {
         label: "Output",
         items: [
           { label: "Advisory Docs", icon: BarChart2, route: "/advisory-docs" },
-          { label: "Reports", icon: BadgeCheck, route: "/reports" },
+          { label: "Site Reports", icon: BadgeCheck, route: "/reports" },
         ],
       },
     ],

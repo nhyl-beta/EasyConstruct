@@ -111,8 +111,8 @@ describe("buildSidebarNav", () => {
   it.each([
     ["admin", 7],
     ["it_designer", 6],
-    ["project_manager", 8],
-    ["architect", 6],
+    ["project_manager", 9],
+    ["architect", 7],
   ])("%s shows %i top-level entries", (role, count) => {
     expect(topLevel(role)).toHaveLength(count);
   });

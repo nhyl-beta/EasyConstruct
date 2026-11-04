@@ -47,8 +47,8 @@ export default function SharedReportsPage() {
   return (
     <PageContainer>
       <PageHeader
-        title="Reports"
-        description="Engineering reports awaiting a decision — including Final Inspection, which Closeout needs Approved before it can complete."
+        title="Site reports"
+        description="Reports written by engineers from the construction site, awaiting a decision, including Final Inspection, which Closeout needs Approved before it can complete. For account help, use User Support."
       />
       <PageContent className="space-y-4 p-6 md:p-8">
         {error && (

@@ -9,6 +9,8 @@ import hrRoutes from "./workforce/hr/routes.js";
 import payrollRoutes from "./workforce/payroll/routes.js";
 import attendanceRoutes from "./workforce/attendance/routes.js";
 import userRoutes from "./iam/users/routes.js";
+import supportRoutes from "./iam/support-requests/routes.js";
+import documentRoutes from "./documents/documents/routes.js";
 import roleRoutes from "./iam/roles/routes.js";
 import { budgetsRoutes } from "./finance/budget/routes.js";
 import { budgetAdjustmentsRoutes } from "./finance/budget-adjustments/routes.js";
@@ -86,8 +88,20 @@ const payroll = (method: Method, path: string, allowed: readonly Role[]): Case =
 const attendance = (method: Method, path: string, allowed: readonly Role[]): Case => ({ name: `/api/attendance`, router: attendanceRoutes, method, path, allowed });
 const users = (method: Method, path: string, allowed: readonly Role[]): Case => ({ name: `/api/users`, router: userRoutes, method, path, allowed });
 
+const supportReq = (method: Method, path: string, allowed: readonly Role[]): Case => ({ name: `/api/support-requests`, router: supportRoutes, method, path, allowed });
+const docs = (method: Method, path: string, allowed: readonly Role[]): Case => ({ name: `/api/documents`, router: documentRoutes, method, path, allowed });
+
 const FM: Role[] = ["finance-manager"];
 const fin = (name: string, router: Router, method: Method, path: string, allowed: readonly Role[]): Case => ({ name, router, method, path, allowed });
+
+// Writes where Admin is deliberately allowed or the rule is not "finance/HR writes": checked per role,
+// but kept out of the "Admin is read-only" list below.
+const SPECIAL: Case[] = [
+  // support: only IT Designer handles a request; documents: only Admin edits or deletes one
+  supportReq("patch", "/5", ["it-designer"]),
+  docs("patch", "/5", ["admin"]),
+  docs("delete", "/5", ["admin"]),
+];
 
 const WRITES: Case[] = [
   // finance writes: Finance Manager only (Admin is read-only)
@@ -174,7 +188,7 @@ const READS: Case[] = [
 
 const label = (c: Case) => `${c.method.toUpperCase()} ${c.name}${c.path === "/" ? "" : c.path}`;
 
-for (const c of [...WRITES, ...READS]) {
+for (const c of [...WRITES, ...SPECIAL, ...READS]) {
   test(`${label(c)}: only ${c.allowed.length === ANYONE.length ? "any signed-in role" : c.allowed.join(", ")} get through`, () => {
     for (const role of ROLES) {
       const expected = c.allowed.includes(role) ? 200 : 403;

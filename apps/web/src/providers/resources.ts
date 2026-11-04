@@ -320,7 +320,12 @@ const allResources: ResourceProps[] = [
   {
     name: "reports",
     list: "/reports",
-    meta: { label: "Reports", group: "Intelligence" },
+    meta: { label: "Site Reports", group: "Intelligence" },
+  },
+  {
+    name: "support",
+    list: "/support",
+    meta: { label: "User Support", group: "Support" },
   },
   {
     name: "resources",

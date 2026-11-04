@@ -57,10 +57,15 @@ export function DateRangeFields({
   onChange: (from: string, to: string) => void;
 }) {
   return (
-    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-      <Input type="date" aria-label="From date" value={from} max={to || undefined} onChange={(e) => onChange(e.target.value, to)} className="h-8 w-36 text-xs" />
-      <span>to</span>
-      <Input type="date" aria-label="To date" value={to} min={from || undefined} onChange={(e) => onChange(from, e.target.value)} className="h-8 w-36 text-xs" />
+    <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+      <label className="flex items-center gap-1.5">
+        <span>From date</span>
+        <Input type="date" aria-label="From date" value={from} max={to || undefined} onChange={(e) => onChange(e.target.value, to)} className="h-8 w-36 text-xs" />
+      </label>
+      <label className="flex items-center gap-1.5">
+        <span>To date</span>
+        <Input type="date" aria-label="To date" value={to} min={from || undefined} onChange={(e) => onChange(from, e.target.value)} className="h-8 w-36 text-xs" />
+      </label>
     </div>
   );
 }

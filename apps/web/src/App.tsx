@@ -93,7 +93,7 @@ import AdminSecurity from "./pages/roles/admin/admin-security";
 import AdminRolesPermissions from "./pages/roles/admin/admin-roles-permissions";
 import AdminWorkflowConfiguration from "./pages/roles/admin/admin-workflow-configuration";
 import AdminApprovalHierarchy from "./pages/roles/admin/admin-approval-hierarchy";
-import AdminSupport from "./pages/roles/admin/admin-support";
+import SupportPage from "./features/support/SupportPage";
 import AdminDocumentTypes from "./pages/roles/admin/admin-document-types";
 
 // ── Owner Pages ──
@@ -230,6 +230,8 @@ function App() {
                       list read-only, same convention as /reports above. */}
                   <Route path="/blueprint-reviews" element={<SharedBlueprintReviews />} />
                   <Route path="/resources" element={<SharedResources />} />
+                  {/* User Support: account help for every role (IT Designer acts on requests). */}
+                  <Route path="/support" element={<SupportPage />} />
                   <Route path="/archive" element={<SharedArchiveSearch />} />
                   <Route path="/legacy-import" element={<SharedLegacyImport />} />
 
@@ -461,7 +463,7 @@ function App() {
                     path="/admin/support"
                     element={
                       <RequireRole allow={["admin", "it_designer"]}>
-                        <AdminSupport />
+                        <SupportPage />
                       </RequireRole>
                     }
                   />
@@ -558,7 +560,7 @@ function App() {
                     path="/it-designer/support"
                     element={
                       <RequireRole allow={["it_designer"]}>
-                        <AdminSupport />
+                        <SupportPage />
                       </RequireRole>
                     }
                   />

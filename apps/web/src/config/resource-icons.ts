@@ -68,6 +68,7 @@ export const RESOURCE_ICONS: Record<string, LucideIcon> = {
   "admin-workflow-configuration": GitBranch,
   "admin-approval-hierarchy": CheckSquare,
   "admin-support": LifeBuoy,
+  support: LifeBuoy,
   "consultant-proposals": FileText,
   "consultant-designs": Ruler,
   "consultant-projects": FolderKanban,
