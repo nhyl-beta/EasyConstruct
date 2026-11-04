@@ -33,7 +33,6 @@ export const ROLE_RESOURCE_ACCESS: Record<string, string[]> = {
     "admin-projects",
     "admin-workflows",
     "admin-documents",
-    "admin-document-types",
     "admin-workflow-configuration",
     "admin-approval-hierarchy",
     "it-designer-roles-permissions",

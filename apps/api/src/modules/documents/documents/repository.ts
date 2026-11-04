@@ -94,3 +94,12 @@ export const create = async (data: CreateDocumentInput) => {
   const [created] = await db.insert(documents).values(data).returning();
   return created;
 };
+
+export const update = async (id: number, patch: { title?: string; type?: string; version?: string }) => {
+  const [updated] = await db
+    .update(documents)
+    .set({ ...patch, updatedAt: new Date() })
+    .where(eq(documents.id, id))
+    .returning();
+  return updated ?? null;
+};

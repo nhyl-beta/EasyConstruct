@@ -50,6 +50,20 @@ export const create = async (
   return created;
 };
 
+/** Admin's edit of a document's title, type or version. A type change is checked against the active types. */
+export const update = async (id: number, patch: { title?: string; type?: string; version?: string }) => {
+  const before = await repo.findById(id);
+  if (!before) throw new NotFoundError("Document", String(id));
+  await assertProjectWritable(before.project);
+  const next = { ...patch };
+  if (patch.type !== undefined && patch.type !== before.type) next.type = await resolveForNewDocument(patch.type);
+  const after = await repo.update(id, next);
+  if (!after) throw new NotFoundError("Document", String(id));
+  // Gate checks read document type (P5, C5, X2), so progress can change.
+  if (after.type !== before.type) await refreshProjectProgress(after.project);
+  return { before, after };
+};
+
 /**
  * Hard delete: the row and its stored file are removed. The audit log (written
  * by the controller) is what keeps the record of who removed what and when —

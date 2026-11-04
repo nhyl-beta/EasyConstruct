@@ -52,5 +52,34 @@ export function useDocumentsPaged(type: string | null) {
     }
   }, []);
 
-  return { list, typeCounts: list.extra?.typeCounts ?? [], uploading, upload };
+  // Admin only (the API refuses anyone else).
+  const [changing, setChanging] = useState(false);
+  const edit = useCallback(async (id: number, patch: { title?: string; type?: string; version?: string }) => {
+    setChanging(true);
+    try {
+      await documentsRepository.update(id, patch);
+      toast.success("Document updated");
+      await list.reload();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to update document");
+      throw e;
+    } finally {
+      setChanging(false);
+    }
+  }, [list]);
+  const remove = useCallback(async (id: number) => {
+    setChanging(true);
+    try {
+      await documentsRepository.remove(id);
+      toast.success("Document deleted");
+      await list.reload();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to delete document");
+      throw e;
+    } finally {
+      setChanging(false);
+    }
+  }, [list]);
+
+  return { list, typeCounts: list.extra?.typeCounts ?? [], uploading, upload, edit, remove, changing };
 }

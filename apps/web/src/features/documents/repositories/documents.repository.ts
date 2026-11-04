@@ -83,6 +83,9 @@ export const documentsRepository = {
     );
   },
 
+  update: (id: number, patch: { title?: string; type?: string; version?: string }): Promise<{ data: DocumentRecord }> =>
+    apiClient.patch(`/documents/${id}`, patch),
+
   remove: (id: number): Promise<{ data: DocumentRecord }> =>
     apiClient.del(`/documents/${id}`),
 

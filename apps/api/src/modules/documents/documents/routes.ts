@@ -11,6 +11,7 @@ import { validate } from "../../../core/http/validate.js";
 
 import {
   createDocumentSchema,
+  updateDocumentSchema,
 } from "./validators.js";
 
 import {
@@ -50,11 +51,18 @@ router.post(
   controller.upload,
 );
 
-// Removing an uploaded document is a governance action, not an editing one:
-// Admin, Owner and IT Designer only.
+// Changing a document (editing its details or removing it) is Admin only. Every
+// other role can still upload new documents above, but cannot alter or delete one.
+router.patch(
+  "/:id",
+  requireRole("admin"),
+  validate(updateDocumentSchema),
+  controller.update,
+);
+
 router.delete(
   "/:id",
-  requireRole("admin", "owner", "it-designer"),
+  requireRole("admin"),
   controller.remove,
 );
 

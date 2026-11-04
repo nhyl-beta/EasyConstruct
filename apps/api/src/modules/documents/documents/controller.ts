@@ -87,6 +87,31 @@ export const create = async (
   }
 };
 
+export const update = async (
+  req: AuthedRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { before, after } = await service.update(parseIdParam(req.params.id, "id"), req.body);
+    const changes: string[] = [];
+    if (before.title !== after.title) changes.push(`title "${before.title}" -> "${after.title}"`);
+    if (before.type !== after.type) changes.push(`type "${before.type}" -> "${after.type}"`);
+    if (before.version !== after.version) changes.push(`version ${before.version} -> ${after.version}`);
+    await logAudit({
+      entityType: "document",
+      entityId: after.documentId,
+      action: "updated",
+      actor: req.authUser?.name ?? "unknown",
+      summary: `Edited document ${after.documentId}: ${changes.join(", ") || "no change"}`,
+      projectCode: after.project,
+    });
+    return res.json(formatSuccess(after, "Document updated"));
+  } catch (err) {
+    return next(err);
+  }
+};
+
 export const remove = async (
   req: AuthedRequest,
   res: Response,

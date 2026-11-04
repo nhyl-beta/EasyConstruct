@@ -412,7 +412,7 @@ function App() {
                   <Route
                     path="/admin/document-types"
                     element={
-                      <RequireRole allow={["admin", "it_designer"]}>
+                      <RequireRole allow={["admin"]}>
                         <AdminDocumentTypes />
                       </RequireRole>
                     }

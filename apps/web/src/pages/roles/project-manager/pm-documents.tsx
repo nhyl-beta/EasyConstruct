@@ -8,6 +8,8 @@ import {
   FolderOpen,
   Search,
   Eye,
+  Pencil,
+  Trash2,
   FileSignature,
   Image as ImageIcon,
   FileSpreadsheet,
@@ -17,6 +19,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge }   from "@/components/ui/badge";
 import { Button }  from "@/components/ui/button";
 import { Input }   from "@/components/ui/input";
+import { useAuth } from "@/auth/auth-context";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { EditDocumentDialog } from "@/components/documents/edit-document-dialog";
 import { UploadDocumentDialog } from "@/components/documents/upload-document-dialog";
 import { FilePreviewDialog } from "@/components/shared/file-preview-dialog";
 import { useDocumentsPaged } from "@/features/documents/hooks/useDocumentsPaged";
@@ -43,7 +48,12 @@ export default function DocumentsPage() {
   // rows, and both now report that instead of opening a blank tab.
   const [previewing, setPreviewing] = useState<DocumentRecord | null>(null);
   const [activeType, setActiveType] = useState<string | null>(null);
-  const { list, typeCounts, uploading, upload } = useDocumentsPaged(activeType);
+  const { list, typeCounts, uploading, upload, edit, remove, changing } = useDocumentsPaged(activeType);
+  // Only Admin may change a document (edit or delete); everyone else here can upload and view.
+  const { user } = useAuth();
+  const canChange = user?.role === "admin";
+  const [editing, setEditing] = useState<DocumentRecord | null>(null);
+  const [deleting, setDeleting] = useState<DocumentRecord | null>(null);
   const { loading, searchInput: search, setSearchInput: setSearch } = list;
   const documents = list.pageItems;
 
@@ -156,7 +166,17 @@ export default function DocumentsPage() {
                           {formatRelativeTime(d.createdAt)}
                         </td>
                         <td className="px-5 py-3.5">
-                          <div className="flex justify-end">
+                          <div className="flex justify-end gap-1">
+                            {canChange && (
+                              <>
+                                <Button variant="ghost" size="icon" className="h-8 w-8" title="Edit document" aria-label={`Edit ${d.title}`} onClick={() => setEditing(d)}>
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive-strong" title="Delete document" aria-label={`Delete ${d.title}`} onClick={() => setDeleting(d)}>
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </>
+                            )}
                             <Button
                               variant="ghost"
                               size="icon"
@@ -182,6 +202,34 @@ export default function DocumentsPage() {
       </Card>
 
       <UploadDocumentDialog open={uploadOpen} onOpenChange={setUploadOpen} uploading={uploading} onSubmit={upload} />
+
+      <EditDocumentDialog
+        document={editing}
+        saving={changing}
+        onClose={() => setEditing(null)}
+        onSave={async (id, patch) => {
+          await edit(id, patch);
+          setEditing(null);
+        }}
+      />
+
+      <ConfirmDialog
+        open={deleting !== null}
+        onOpenChange={(open) => !open && setDeleting(null)}
+        title="Delete this document?"
+        description={deleting ? `"${deleting.title}" (${deleting.documentId}) and its file will be permanently removed. The deletion is recorded in the audit trail.` : undefined}
+        confirmLabel="Delete"
+        loading={changing}
+        onConfirm={async () => {
+          if (!deleting) return;
+          try {
+            await remove(deleting.id);
+            setDeleting(null);
+          } catch {
+            // the toast already explains; keep the dialog open
+          }
+        }}
+      />
 
       <FilePreviewDialog
         open={previewing !== null}

@@ -131,7 +131,7 @@ describe("buildSidebarNav", () => {
     });
     expect(shape("it_designer")).toEqual({
       "User & Access": ["it-designer-users", "it-designer-roles-permissions"],
-      "Operations Oversight": ["admin-projects", "admin-documents", "admin-document-types", "it-designer-proposals"],
+      "Operations Oversight": ["admin-projects", "admin-documents", "it-designer-proposals"],
       "Workflow Management": ["admin-workflows", "admin-workflow-configuration", "admin-approval-hierarchy"],
       "Security & Audit": ["it-designer-activity-logs", "it-designer-security"],
     });

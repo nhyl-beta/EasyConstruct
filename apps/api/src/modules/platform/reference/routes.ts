@@ -56,9 +56,9 @@ mount("clients", ["project-manager", "admin", "it-designer"]);
 mount("vendors", ["finance-manager", "engineer", "project-manager", "admin"]);
 
 // -- Document types (client demo change #1) -------------------------------
-// Everyone signed in reads the active types (they fill the upload dialogs); Admin and IT Designer
-// add, rename, regroup and deactivate. `?all=1` (writers only) includes the inactive ones.
-const DOCUMENT_TYPE_WRITERS = ["admin", "it-designer"];
+// Everyone signed in reads the active types (they fill the upload dialogs); Only Admin
+// adds, renames, regroup and deactivate. `?all=1` (writers only) includes the inactive ones.
+const DOCUMENT_TYPE_WRITERS = ["admin"];
 
 const documentTypeCreateSchema = z.object({
   name: z.string().trim().min(2, "Enter a name").max(50, "At most 50 characters"),

@@ -19,3 +19,12 @@ export const createDocumentSchema = z.object({
   reportPeriod: z.enum(["daily", "weekly", "monthly"]).optional(),
   periodDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use a YYYY-MM-DD date").optional(),
 });
+
+/** Admin's edit of a filed document: its title, type or version. The file itself is not touched here. */
+export const updateDocumentSchema = z
+  .object({
+    title: z.string().trim().min(2).max(255).optional(),
+    type: z.string().trim().min(1).max(50).optional(),
+    version: z.string().trim().min(1).max(10).optional(),
+  })
+  .refine((v) => Object.keys(v).length > 0, { message: "Nothing to change" });
