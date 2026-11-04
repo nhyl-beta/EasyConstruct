@@ -50,9 +50,11 @@ const SECTION_ORDER = [
   "Operations",
   "Monitoring",
   "Configuration",
-  "Support",
   "Intelligence",
 ];
+
+// User Support is always the last section, after any role-specific ones.
+const LAST_SECTION = "Support";
 
 function groupMenuItems(items: TreeMenuItem[], role: string) {
   const allowed = ROLE_RESOURCE_ACCESS[role] ?? [];
@@ -69,9 +71,10 @@ function groupMenuItems(items: TreeMenuItem[], role: string) {
   });
 
   const ordered = SECTION_ORDER.filter((g) => groups[g]);
-  const extras = Object.keys(groups).filter((g) => !SECTION_ORDER.includes(g));
+  const extras = Object.keys(groups).filter((g) => !SECTION_ORDER.includes(g) && g !== LAST_SECTION);
+  const last = groups[LAST_SECTION] ? [LAST_SECTION] : [];
 
-  return [...ordered, ...extras].map((label) => ({
+  return [...ordered, ...extras, ...last].map((label) => ({
     label,
     items: groups[label] ?? [],
   }));
