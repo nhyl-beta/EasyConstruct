@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import { AlertTriangle, KeyRound, ShieldAlert, Trash2, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { PageContainer } from "@/components/refine-ui/views/page-container";
@@ -22,7 +22,7 @@ const SENSITIVE_ACTIONS = ["rejected", "deleted", "sensitive_download", "downloa
 
 const SIGNIN_PAGE_SIZE = DEFAULT_PAGE_SIZE;
 
-export default function AdminSecurityPage() {
+export default function AdminSecurityPage({ belowHeader }: { belowHeader?: ReactNode } = {}) {
   const { logs, loading, error } = useAuditLogs({ actions: SENSITIVE_ACTIONS });
   const security = useSecurityOverview();
 
@@ -44,6 +44,7 @@ export default function AdminSecurityPage() {
         description="Sensitive events from the audit trail: rejections, deletions, legal file downloads and damaged files."
       />
       <PageContent className="space-y-6 p-6 md:p-8">
+        {belowHeader}
         <ReconciliationPanel />
         <div className="space-y-3">
           <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
@@ -142,7 +143,7 @@ export default function AdminSecurityPage() {
             {/* Hidden while everything fits on the first page. Keyed to the
                 smallest page size rather than pageCount, so picking a larger
                 size can't make the controls vanish with no way back. */}
-            {!security.loading && security.sessions.length > SIGNIN_PAGE_SIZE && (
+            {!security.loading && security.sessions.length > 0 && (
               <DataTablePagination {...sessionsPagination} compact />
             )}
           </div>
@@ -185,7 +186,7 @@ export default function AdminSecurityPage() {
                 </span>
               </div>
             ))}
-            {!security.loading && security.failedLogins.length > SIGNIN_PAGE_SIZE && (
+            {!security.loading && security.failedLogins.length > 0 && (
               <DataTablePagination {...failedLoginsPagination} compact />
             )}
           </div>

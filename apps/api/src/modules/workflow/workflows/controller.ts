@@ -150,7 +150,7 @@ export const create = async (req: AuthedRequest, res: Response, next: NextFuncti
   try {
     const createdBy = req.authUser?.name ?? req.authUser?.email ?? "unknown";
     await assertProjectVisible(req.authUser, req.body.projectCode, "workflows");
-    const data = await service.createWorkflow(req.body, createdBy, req.authUser?.role, req.authUser?.id);
+    const data = await service.createWorkflow(req.body, createdBy, req.authUser?.role, req.authUser?.id, { requireNextAssignee: req.authUser?.role === "admin" });
     await logAudit({
       entityType: "workflow",
       entityId: String(data.id),

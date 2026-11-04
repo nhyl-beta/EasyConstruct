@@ -500,12 +500,7 @@ function App() {
                     path="/owner/oversight"
                     element={
                       <RequireRole allow={["owner"]}>
-                        <>
-                          <div className="p-4 pb-0 md:p-8 md:pb-0">
-                            <AttentionCard />
-                          </div>
-                          <AdminSecurity />
-                        </>
+                        <AdminSecurity belowHeader={<AttentionCard />} />
                       </RequireRole>
                     }
                   />

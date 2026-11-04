@@ -202,17 +202,17 @@ export default function ConsultantDashboardPage() {
           </CardContent>
         </Card>
 
-        {/* ai-signals E3: the old "AI validation insights" ComingSoonCard
-            here (permanently hidden behind FEATURES.aiPlaceholders) is now
-            redundant — the WaitingOnYouCard below already surfaces
-            warn/critical advisory signals (Sparkles-badged "AI" items from
-            GET /api/lifecycle/my-actions) for this consultant's projects,
-            so no second placeholder-turned-summary card is needed here. */}
+        {/* "Waiting on you" fills the third column beside the review queue. It also
+            surfaces warn/critical advisory signals (Sparkles-badged "AI" items from
+            GET /api/lifecycle/my-actions) for this consultant's projects. */}
+        <div className="xl:col-span-1">
+          <WaitingOnYouCard />
+        </div>
       </section>
 
       {/* ── Bottom row — approvals + recently reviewed ── */}
-      <section className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">
+      <section className="grid grid-cols-1 gap-6">
+        <div>
           <Card>
             <CardHeader className="pb-4">
               <CardTitle className="text-lg">
@@ -261,7 +261,6 @@ export default function ConsultantDashboardPage() {
 
         {/* K1: was a "not built yet" placeholder for exactly this — cross-project
             workflow stages and gate checks waiting on this consultant. */}
-        <WaitingOnYouCard />
       </section>
 
       {/* ── Footer status ── */}

@@ -176,6 +176,13 @@ export function NewWorkflowDialog({
     setBudgetId("");
   };
 
+  // The stage that acts first needs a named person, otherwise the workflow goes nowhere. When the
+  // creator's own role owns stage 1 (their step is approved for them), the next stage is the one.
+  const stages = selectedTemplate?.defaultStages ?? [];
+  const nextIndex = stages[0] && user?.role && stages[0].role === user.role ? 1 : 0;
+  const nextStage = stages[nextIndex];
+  const nextAssigned = !nextStage || (stageAssignments[String(nextIndex + 1)] ?? "").trim().length > 0;
+
   const handleSubmit = async () => {
     if (!title || !projectCode || !templateId || closeoutBlockReason) return;
     const cleanedAssignments = Object.fromEntries(
@@ -312,7 +319,7 @@ export function NewWorkflowDialog({
           {selectedTemplate && (
             <div className="grid gap-2 rounded-lg border border-border p-3">
               <Label className="text-xs text-muted-foreground">
-                Assign stages (optional)
+                Assign stages{nextStage ? ` (${nextStage.roleLabel} is required)` : ""}
               </Label>
               {selectedTemplate.defaultStages.map((stage, index) => {
                 const sequence = String(index + 1);
@@ -333,6 +340,11 @@ export function NewWorkflowDialog({
                   </div>
                 );
               })}
+              {!nextAssigned && nextStage && (
+                <p role="alert" className="text-xs text-destructive-strong">
+                  Choose who handles "{nextStage.roleLabel}" first, otherwise this workflow has no one to go to.
+                </p>
+              )}
             </div>
           )}
 
@@ -365,7 +377,7 @@ export function NewWorkflowDialog({
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={creating || !title || !projectCode || !templateId || !!closeoutBlockReason}
+            disabled={creating || !title || !projectCode || !templateId || !!closeoutBlockReason || !nextAssigned}
           >
             {creating ? "Starting…" : "Start workflow"}
           </Button>

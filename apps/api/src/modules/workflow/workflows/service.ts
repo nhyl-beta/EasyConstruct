@@ -327,9 +327,19 @@ export const createWorkflow = async (
   createdBy: string,
   createdByRole?: string,
   createdByUserId?: number,
+  /** The workflow screen sets this: someone must be named for the stage that acts next. System-made workflows leave it off. */
+  options: { requireNextAssignee?: boolean } = {},
 ): Promise<WorkflowWithStages> => {
   const template = await repo.findTemplateById(input.templateId);
   if (!template) throw new ValidationError(`Unknown workflow template ${input.templateId}`);
+  if (options.requireNextAssignee) {
+    // The initiator's own stage (when their role owns stage 1) is approved for them, so the next one acts first.
+    const nextIndex = createdByRole && template.defaultStages[0]?.role === createdByRole ? 1 : 0;
+    const next = template.defaultStages[nextIndex];
+    if (next && !input.stageAssignments?.[String(nextIndex + 1)]?.trim()) {
+      throw new ValidationError(`Assign someone to the "${next.roleLabel}" stage, otherwise the workflow has no one to go to`);
+    }
+  }
   await assertProjectWritable(input.projectCode);
 
   // H3: a Project Closeout workflow only makes sense once the project has

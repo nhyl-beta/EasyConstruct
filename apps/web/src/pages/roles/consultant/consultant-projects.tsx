@@ -92,6 +92,7 @@ export default function ConsultantProjects() {
             : "No projects match your search."}
         </div>
       ) : (
+        <div className="overflow-hidden rounded-xl border border-border bg-card">
         <Table>
           <TableHeader>
             <TableRow>
@@ -138,6 +139,7 @@ export default function ConsultantProjects() {
             ))}
           </TableBody>
         </Table>
+        </div>
       )}
 
       {!error && list.total > 0 && <DataTablePagination {...list} />}

@@ -82,7 +82,7 @@ export default function ConsultantDesigns() {
           No designs match your filters.
         </div>
       ) : (
-        <>
+        <div className="overflow-hidden rounded-xl border border-border bg-card">
         <Table>
           <TableHeader>
             <TableRow>
@@ -142,7 +142,7 @@ export default function ConsultantDesigns() {
         <div className="border-t px-4 py-3">
           <DataTablePagination {...c.pagination} />
         </div>
-        </>
+        </div>
       )}
 
       <DesignDetailDialog design={selected} onOpenChange={(open) => !open && setSelected(null)} />
