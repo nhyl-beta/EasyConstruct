@@ -34,4 +34,7 @@ export interface AuditLogFilters {
 export interface AuditLogFacets {
   entityTypes: string[];
   actors: string[];
+  /** Project codes that appear on at least one entry. */
+  projects: string[];
+  actions: string[];
 }

@@ -15,7 +15,11 @@ const buildConditions = (filters: AuditLogFilters): SQL[] => {
   if (filters.actions?.length) conditions.push(inArray(auditLogs.action, filters.actions));
   if (filters.actor) conditions.push(eq(auditLogs.actor, filters.actor));
   if (filters.dateFrom) conditions.push(gte(auditLogs.createdAt, new Date(filters.dateFrom)));
-  if (filters.dateTo) conditions.push(lte(auditLogs.createdAt, new Date(filters.dateTo)));
+  if (filters.dateTo) {
+    // A bare date (YYYY-MM-DD) means the whole day, so entries on the "to" date are included.
+    const to = /^\d{4}-\d{2}-\d{2}$/.test(filters.dateTo) ? new Date(`${filters.dateTo}T23:59:59.999Z`) : new Date(filters.dateTo);
+    conditions.push(lte(auditLogs.createdAt, to));
+  }
   if (filters.search) {
     const term = `%${filters.search}%`;
     conditions.push(
@@ -68,13 +72,17 @@ export const findCount = async (filters: AuditLogFilters = {}) => {
 /** Distinct facet values for filter dropdowns — independent of the current
  * page/filter so options never disappear as the user narrows the list. */
 export const findFacets = async () => {
-  const [entityTypeRows, actorRows] = await Promise.all([
+  const [entityTypeRows, actorRows, projectRows, actionRows] = await Promise.all([
     db.selectDistinct({ entityType: auditLogs.entityType }).from(auditLogs),
     db.selectDistinct({ actor: auditLogs.actor }).from(auditLogs),
+    db.selectDistinct({ projectCode: auditLogs.projectCode }).from(auditLogs),
+    db.selectDistinct({ action: auditLogs.action }).from(auditLogs),
   ]);
   return {
     entityTypes: entityTypeRows.map((r) => r.entityType).sort(),
     actors: actorRows.map((r) => r.actor).sort(),
+    projects: projectRows.map((r) => r.projectCode).filter((c): c is string => !!c).sort(),
+    actions: actionRows.map((r) => r.action).sort(),
   };
 };
 

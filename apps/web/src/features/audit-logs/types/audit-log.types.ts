@@ -34,6 +34,8 @@ export interface AuditLogsResult {
 export interface AuditLogFacets {
   entityTypes: string[];
   actors: string[];
+  projects: string[];
+  actions: string[];
 }
 
 /** GET /api/audit-logs/security-overview */
