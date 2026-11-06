@@ -25,6 +25,7 @@
     "ai:seed-references": "tsx scripts/ops/seed-reference-data.ts",
     "demo:reset": "tsx scripts/demo/reset-demo-data.ts",
     "demo:verify": "tsx scripts/demo/demo-verify.ts",
+    "demo:overdue-review": "tsx scripts/demo/demo-overdue-review.ts",
     "demo:cashflow": "tsx scripts/demo/demo-cashflow.ts",
     "demo:employees": "tsx scripts/demo/demo-employees.ts",
     "demo:audit": "tsx scripts/demo/demo-audit.ts",
