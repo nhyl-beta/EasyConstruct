@@ -7,8 +7,9 @@ assertDemoEnvironment();
 // number (default 5) so the card can be tested. "Overdue" = a stage still "current" that was
 // created more than 48 hours ago (findApprovalStats, workflow/workflows/repository.ts).
 // It counts the consultant stages that are already overdue, then starts the missing number of
-// "Document Compliance Review" workflows as the Consultant on DEMO-S2 (through the real API,
-// so the stage is genuinely pending) and moves each new stage's created_at 3 days back.
+// "Design Proposal Approval" workflows as the Architect on DEMO-S2 (through the real API,
+// the initiator's own stage is auto-approved, so the Architect submitting leaves the
+// Consultant Review stage current, i.e. genuinely pending) and moves each new stage's created_at 3 days back.
 // Idempotent: once the count is at the target, a second run changes nothing.
 //
 // A real run needs the API running from this shell with PORT=8123 (same rule as the other demo seeds);
@@ -23,7 +24,7 @@ import { api, BASE, openSession } from "./demo-seed-lib.js";
 import { uploadPdf } from "./demo-files.js";
 
 const CODE = "DEMO-S2";
-const TEMPLATE = "Document Compliance Review";
+const TEMPLATE = "Design Proposal Approval"; // Architect submits -> the Consultant Review stage becomes current
 const arg = (n: string) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3);
 const DRY = process.argv.includes("--dry-run");
 const target = Math.max(1, Number(arg("target") ?? 5) || 5);
@@ -52,12 +53,12 @@ async function main() {
 
     const stamp = Date.now().toString(36);
     for (let i = 1; i <= missing; i++) {
-      const title = `Overdue test ${stamp}-${i}: compliance review`;
-      const file = await uploadPdf(BASE, s.consultant.token, `overdue-test-${stamp}-${i}.pdf`, title, [
+      const title = `Overdue test ${stamp}-${i}: design proposal`;
+      const file = await uploadPdf(BASE, s.architect.token, `overdue-test-${stamp}-${i}.pdf`, title, [
         `Project: ${CODE}`,
         "Synthetic file made by demo:overdue-review to test the Overdue card.",
       ]);
-      const wf = await api<{ id: number; stages: { id: number; role: string; status: string }[] }>("/workflows", s.consultant.token, {
+      const wf = await api<{ id: number; stages: { id: number; role: string; status: string }[] }>("/workflows", s.architect.token, {
         method: "POST",
         body: { title, projectCode: CODE, templateId, attachments: [{ kind: "document", label: title, fileUrl: file.url, fileName: file.filename, fileSize: `${Math.round(file.sizeBytes / 1024)} KB` }] },
       });
