@@ -11,12 +11,14 @@ assertDemoEnvironment();
 // so the stage is genuinely pending) and moves each new stage's created_at 3 days back.
 // Idempotent: once the count is at the target, a second run changes nothing.
 //
-// Needs the API running from this shell with PORT=8123 (same rule as the other demo seeds).
+// A real run needs the API running from this shell with PORT=8123 (same rule as the other demo seeds);
+// a --dry-run needs only the database.
 // Usage:  ALLOW_DEMO_RESET=true npm run demo:overdue-review -- --dry-run
 //         ALLOW_DEMO_RESET=true npm run demo:overdue-review            (target 5)
 //         ALLOW_DEMO_RESET=true npm run demo:overdue-review -- --target=8
 import "dotenv/config";
 import pg from "pg";
+import { assertDemoDatabase } from "./demo-guard.js";
 import { api, BASE, openSession } from "./demo-seed-lib.js";
 import { uploadPdf } from "./demo-files.js";
 
@@ -27,7 +29,7 @@ const DRY = process.argv.includes("--dry-run");
 const target = Math.max(1, Number(arg("target") ?? 5) || 5);
 
 async function main() {
-  const s = await openSession(); // also runs the database and API guards
+  assertDemoDatabase(); // a dry run needs only the database guard, not the API
   const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
   try {
     const count = async (overdueOnly: boolean) =>
@@ -43,6 +45,7 @@ async function main() {
     if (missing === 0) return console.log("Already at or above the target: nothing changed.");
     if (DRY) return console.log("Dry run: nothing changed.");
 
+    const s = await openSession(); // signs in as the demo accounts; needs the API on the demo port
     const templates = await api<{ id: number; name: string }[]>("/workflows/templates", s.admin.token);
     const templateId = templates.find((t) => t.name === TEMPLATE)?.id;
     if (templateId === undefined) throw new Error(`No workflow template named "${TEMPLATE}" in this database.`);
