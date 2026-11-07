@@ -197,7 +197,12 @@ export const proposalService = {
       createdByUserId,
     );
 
-    const linked = await proposalRepository.update(proposal.id, { workflowId: workflow.id });
+    // The workflow can already be finished by now (a single-stage template, or the initiator's own
+    // stage was the last one), and its decision sync only runs for a proposal that is already
+    // linked, so the proposal would stay Pending for good. Apply the outcome here.
+    const settled = await workflowsRepo.findWorkflowById(workflow.id);
+    const outcome = settled?.status === "completed" ? "Approved" : settled?.status === "rejected" ? "Rejected" : undefined;
+    const linked = await proposalRepository.update(proposal.id, { workflowId: workflow.id, ...(outcome ? { status: outcome } : {}) });
     await refreshProjectProgress(data.projectCode);
     return { proposal: linked ?? proposal, workflow };
   },

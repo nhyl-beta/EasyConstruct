@@ -39,3 +39,19 @@ export const openLinkedTasks = (
   links
     .filter((l) => l.linkType === "task" && l.task && l.task.status !== "Completed")
     .map((l) => l.task!.title);
+
+/**
+ * B-225: a milestone is completed by itself when its last linked task is completed.
+ * Only in Construction, only when it has at least one task link and every one of them is
+ * Completed, and only from an open status: a completed or cancelled milestone is never reopened.
+ */
+export const shouldAutoComplete = (input: {
+  phase: string;
+  milestoneStatus: string;
+  links: { linkType: string; task?: { status: string } | null }[];
+}): boolean => {
+  if (input.phase !== "Construction") return false;
+  if (input.milestoneStatus === "completed" || input.milestoneStatus === "cancelled") return false;
+  const taskLinks = input.links.filter((l) => l.linkType === "task");
+  return taskLinks.length > 0 && taskLinks.every((l) => l.task?.status === "Completed");
+};

@@ -129,7 +129,7 @@ export const designKpis = (rows: ({ status: string } & Weighted)[]) => ({
   total: count(rows),
   inReview: count(rows, (d) => d.status === "In Review"),
   approved: count(rows, (d) => d.status === "Approved"),
-  revisionNeeded: count(rows, (d) => d.status === "Revision Needed"),
+  revisionNeeded: count(rows, (d) => d.status === "Revision Needed" || d.status === "Revision Required"),
 });
 
 // ── Workflows ───────────────────────────────────────────────────────────────
@@ -151,7 +151,19 @@ export const topActors = (actors: string[], top = 5) => {
 };
 
 // client: it-designer-dashboard.controller.ts
-export const SENSITIVE_ACTIONS = new Set(["rejected", "deleted"]);
+// Must stay the same list as the Security page uses (web: pages/roles/admin/admin-security.tsx
+// SENSITIVE_ACTIONS), so the dashboard number equals the list it links to. All time.
+export const SENSITIVE_ACTIONS = new Set(["rejected", "deleted", "sensitive_download", "download_blocked", "integrity_failed"]);
+
+/**
+ * "Juan Dela Cruz, EMP-0012": the audit trail stores the actor's name only, so the
+ * employee ID is looked up from the account of that name. A name shared by several
+ * accounts, or an account with no employee record, falls back to the name alone.
+ */
+export const actorLabel = (actor: string, employeeIdsByName: ReadonlyMap<string, string | null>): string => {
+  const id = employeeIdsByName.get(actor);
+  return id ? `${actor}, ${id}` : actor;
+};
 
 // ── Engineer ────────────────────────────────────────────────────────────────
 // client: engineering-reports.types.ts PROGRESS_REPORT_TYPES / ISSUE_REPORT_TYPES

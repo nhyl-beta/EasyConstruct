@@ -36,7 +36,7 @@ export const useDesignsController = () => {
       total: counts.reduce((sum, c) => sum + c.count, 0),
       inReview: n("In Review"),
       approved: n("Approved"),
-      revisionNeeded: n("Revision Needed"),
+      revisionNeeded: n("Revision Needed") + n("Revision Required"),
     };
   }, [list.extra]);
 

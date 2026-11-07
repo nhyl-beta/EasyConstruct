@@ -5,6 +5,8 @@ import { orderByFor, paginate, type PageRequest } from "../../../core/utils/pagi
 import { assertProjectWritable, refreshProjectProgress } from "../lifecycle/service.js";
 import * as repo from "./repository.js";
 import * as milestonesRepo from "../milestones/repository.js";
+import { shouldAutoComplete } from "../milestones/permissions.js";
+import * as projectsRepo from "../projects/repository.js";
 import { notificationsService } from "../../platform/index.js";
 import { todayManila, addDaysIso } from "../../../core/utils/dates.js";
 import {
@@ -149,24 +151,31 @@ export const updateStatus = async (
       `"${updated.title}" was marked complete on ${updated.projectCode}`,
     );
 
-    // G2: if every task linked to a milestone is now Completed, tell the PM
-    // the milestone itself is ready to be moved along.
+    // B-225: if every task linked to a milestone is now Completed, the milestone is completed
+    // too (Construction only, never reopened; see milestones/permissions.ts shouldAutoComplete).
+    // The PM is told "Milestone completed", and the progress refresh below picks it up. The K2
+    // gate only reads the milestone's status, so nothing here can fire it a second time.
+    const project = await projectsRepo.findByCode(updated.projectCode);
     const linkedMilestones = await milestonesRepo.findMilestonesLinkedToTask(updated.id);
     const linksByMilestone = await milestonesRepo.findLinksForMilestones(linkedMilestones.map((m) => m.id));
+    let milestoneChanged = false;
     for (const milestone of linkedMilestones) {
       const links = linksByMilestone.get(milestone.id) ?? [];
-      const taskLinks = links.filter((l) => l.linkType === "task");
-      const allDone = taskLinks.length > 0 && taskLinks.every((l) => l.task?.status === "Completed");
-      if (allDone) {
-        await notifyPm(
-          updated.projectCode,
-          "Milestone ready",
-          `All tasks linked to milestone "${milestone.title}" are complete`,
-        );
-      }
+      if (!shouldAutoComplete({ phase: project?.status ?? "", milestoneStatus: milestone.status, links })) continue;
+      await milestonesRepo.update(milestone.id, {
+        status: "completed",
+        completedBy: "System (all linked tasks completed)",
+        completedAt: new Date(),
+      });
+      milestoneChanged = true;
+      await notifyPm(
+        updated.projectCode,
+        "Milestone completed",
+        `All tasks linked to milestone "${milestone.title}" are complete, so it was marked completed.`,
+      );
     }
+    if (milestoneChanged) await refreshProjectProgress(updated.projectCode);
   }
-
   return updated;
 };
 

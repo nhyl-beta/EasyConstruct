@@ -4,6 +4,8 @@ export interface AuditLog {
   entityId: string;
   action: string;
   actor: string;
+  /** Dashboard only: "Name, EMP-0012" when the actor has an employee record. */
+  actorLabel?: string;
   summary: string | null;
   // K3: nullable — many entries (auth, user/role/template admin) have no
   // single project to attach to.

@@ -190,6 +190,8 @@ const itDesigner = async () => {
     repo.recentAuditForEntity("user", 8),
   ]);
   const active = users.filter((u) => u.isActive).length;
+  const ids = await repo.employeeIdsByAccountName(audit.recent.map((r) => r.actor));
+  const recent = audit.recent.map((r) => ({ ...r, actorLabel: aggregates.actorLabel(r.actor, ids) }));
   return {
     users: {
       total: users.length,
@@ -199,7 +201,7 @@ const itDesigner = async () => {
       orphaned: aggregates.orphanedRoleUsers(users, roles),
     },
     roles: { count: roles.length },
-    audit: { total: audit.total, sensitive, recent: audit.recent, accountEvents },
+    audit: { total: audit.total, sensitive, recent, accountEvents },
   };
 };
 

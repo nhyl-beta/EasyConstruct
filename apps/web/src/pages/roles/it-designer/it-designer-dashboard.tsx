@@ -68,6 +68,8 @@ export default function ITDesignerDashboardPage() {
             value: `${c.sensitiveEventCount}`,
             icon: ShieldAlert,
             tone: c.sensitiveEventCount > 0 ? "warn" : "good",
+            hint: "All time: rejections, deletions, sensitive downloads, blocked downloads, failed file checks",
+            to: "/it-designer/security",
           },
         ]}
       />
@@ -221,7 +223,7 @@ export default function ITDesignerDashboardPage() {
               c.recentActivity.map((log) => (
                 <div key={log.id} className="border-b border-border pb-3 last:border-0 last:pb-0">
                   <p className="text-sm font-medium leading-tight">
-                    {log.actor} <span className="font-normal text-muted-foreground">{log.action}</span>{" "}
+                    {log.actorLabel ?? log.actor} <span className="font-normal text-muted-foreground">{log.action}</span>{" "}
                     {log.entityType} {log.entityId}
                   </p>
                   <p className="text-xs text-muted-foreground">

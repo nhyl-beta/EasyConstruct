@@ -241,6 +241,25 @@ export const auditSensitiveCount = async (actions: string[]): Promise<number> =>
   return row?.n ?? 0;
 };
 
+/** name -> employee ID, only for names that belong to exactly one account that has an employee record. */
+export const employeeIdsByAccountName = async (names: string[]): Promise<Map<string, string | null>> => {
+  const unique = [...new Set(names)];
+  if (unique.length === 0) return new Map();
+  const rows = await db
+    .select({ name: users.name, employeeId: employees.employeeId })
+    .from(users)
+    .leftJoin(employees, eq(employees.userId, users.id))
+    .where(inArray(users.name, unique));
+  const byName = new Map<string, string | null>();
+  const seen = new Set<string>();
+  for (const r of rows) {
+    // two accounts with the same name: do not guess which one acted
+    byName.set(r.name, seen.has(r.name) ? null : (r.employeeId ?? null));
+    seen.add(r.name);
+  }
+  return byName;
+};
+
 export const recentAuditForEntity = async (entityType: string, limit: number) =>
   db
     .select()

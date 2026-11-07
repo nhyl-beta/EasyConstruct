@@ -3,6 +3,7 @@ import { countRows, inCodes, selectPage } from "../../../core/db/paged.js";
 import { db } from "../../../core/db/connection.js";
 import { designEngineers } from "../../../core/db/schema/design-engineers.js";
 import { designs } from "../../../core/db/schema/designs.js";
+import { statusesFor } from "./status-group.js";
 import type {
   CreateDesignInput,
   DesignFilters,
@@ -26,7 +27,7 @@ const buildConditions = (filters: DesignFilters): SQL[] => {
   if (filters.codes) conditions.push(inCodes(designs.projectCode, filters.codes));
 
   if (filters.status && filters.status !== "all")
-    conditions.push(eq(designs.status, filters.status));
+    conditions.push(inArray(designs.status, statusesFor(filters.status)));
 
   if (filters.discipline && filters.discipline !== "all")
     conditions.push(eq(designs.discipline, filters.discipline));

@@ -1,6 +1,6 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import { assertEngineerMayUpdate, openLinkedTasks } from "./permissions.js";
+import { assertEngineerMayUpdate, openLinkedTasks, shouldAutoComplete } from "./permissions.js";
 import { ForbiddenError } from "../../../core/utils/errors.js";
 
 describe("assertEngineerMayUpdate", () => {
@@ -53,5 +53,25 @@ describe("openLinkedTasks", () => {
       ]),
       [],
     );
+  });
+});
+
+describe("shouldAutoComplete (B-225)", () => {
+  const done = { linkType: "task", task: { status: "Completed" } };
+  const open = { linkType: "task", task: { status: "In Progress" } };
+  test("completes when every linked task is Completed, in Construction", () => {
+    assert.equal(shouldAutoComplete({ phase: "Construction", milestoneStatus: "active", links: [done, done] }), true);
+  });
+  test("not while a task is open, or with no task link", () => {
+    assert.equal(shouldAutoComplete({ phase: "Construction", milestoneStatus: "active", links: [done, open] }), false);
+    assert.equal(shouldAutoComplete({ phase: "Construction", milestoneStatus: "active", links: [] }), false);
+    assert.equal(shouldAutoComplete({ phase: "Construction", milestoneStatus: "active", links: [{ linkType: "document" }] }), false);
+  });
+  test("only in Construction", () => {
+    assert.equal(shouldAutoComplete({ phase: "Design", milestoneStatus: "active", links: [done] }), false);
+  });
+  test("never touches a completed or cancelled milestone", () => {
+    assert.equal(shouldAutoComplete({ phase: "Construction", milestoneStatus: "completed", links: [done] }), false);
+    assert.equal(shouldAutoComplete({ phase: "Construction", milestoneStatus: "cancelled", links: [done] }), false);
   });
 });

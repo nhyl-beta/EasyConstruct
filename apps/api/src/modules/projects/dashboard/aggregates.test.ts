@@ -302,3 +302,19 @@ describe("Projects page cards read risk, matching the risk filter", () => {
     assert.deepEqual(agg.projectRiskKpis(rows), { total: 7, onTrack: 4, atRisk: 2, delayed: 1 });
   });
 });
+
+describe("IT dashboard: sensitive events and actor label (B-68, B-71)", () => {
+  test("sensitive events cover the same actions as the Security page list", () => {
+    assert.deepEqual(
+      [...agg.SENSITIVE_ACTIONS].sort(),
+      ["deleted", "download_blocked", "integrity_failed", "rejected", "sensitive_download"],
+    );
+  });
+
+  test("actor label is name plus employee ID, and falls back to the name", () => {
+    const ids = new Map<string, string | null>([["Juan Dela Cruz", "EMP-0012"], ["No Record", null]]);
+    assert.equal(agg.actorLabel("Juan Dela Cruz", ids), "Juan Dela Cruz, EMP-0012");
+    assert.equal(agg.actorLabel("No Record", ids), "No Record");
+    assert.equal(agg.actorLabel("Unknown Person", ids), "Unknown Person");
+  });
+});
