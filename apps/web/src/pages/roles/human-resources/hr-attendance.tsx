@@ -208,7 +208,7 @@ export default function HRAttendancePage() {
             <DateRangeFields from={a.dateFrom} to={a.dateTo} onChange={a.setDateRange} />
           </FilterBar>
 
-          <CardContent className="overflow-hidden px-0 [&_[data-slot=table-container]]:overflow-x-hidden [&_td]:whitespace-normal [&_td]:break-words [&_td]:px-2 [&_th]:px-2">
+          <CardContent className="px-0 [&_[data-slot=table-container]]:overflow-x-auto [&_table]:min-w-[60rem] [&_td]:whitespace-normal [&_td]:break-words [&_td]:px-2 [&_th]:px-2">
             {/* table-fixed + percentage widths (sum 100%) so long names/badges
                 wrap instead of forcing the table wider than the card. */}
             <Table className="table-fixed">

@@ -31,7 +31,7 @@ type DataTablePaginationProps = {
    * selector, no first/last buttons, and wrapping rows instead of one wide one.
    */
   compact?: boolean;
-  /** Page sizes offered; defaults to 10, 20, 30, 40, 50. */
+  /** Page sizes offered; defaults to 5, 10, 20, 30, 40, 50. */
   pageSizeOptions?: readonly number[];
 };
 

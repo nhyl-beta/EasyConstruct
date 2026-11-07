@@ -10,6 +10,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { PageContainer } from "@/components/refine-ui/views/page-container";
+import { DatePicker } from "@/components/ui/date-picker";
+import { GroupedCombobox } from "@/components/shared/grouped-combobox";
+import { groupEntityTypes } from "@/lib/entity-groups";
 import { PageHeader } from "@/components/refine-ui/views/page-header";
 import { PageContent } from "@/components/refine-ui/views/page-content";
 import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
@@ -213,19 +216,16 @@ export default function AdminActivityLogsPage() {
               </Select>
             </FilterField>
             <FilterField label="Module">
-              <Select value={entityType ?? ALL} onValueChange={(v) => setEntityType(v === ALL ? null : v)}>
-                <SelectTrigger aria-label="Module" className="h-9 w-full rounded-lg text-xs capitalize">
-                  <SelectValue placeholder="All modules" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ALL}>All modules</SelectItem>
-                  {facets.entityTypes.map((type) => (
-                    <SelectItem key={type} value={type} className="capitalize">
-                      {type === DOWNLOAD_ENTITY ? "Downloads" : type}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <GroupedCombobox
+                ariaLabel="Module"
+                allLabel="All modules"
+                value={entityType}
+                onChange={setEntityType}
+                groups={groupEntityTypes(facets.entityTypes).map((g) => ({
+                  label: g.group,
+                  options: g.types.map((type) => ({ value: type, label: type === DOWNLOAD_ENTITY ? "Downloads" : type })),
+                }))}
+              />
             </FilterField>
             <FilterField label="Action">
               <Select value={action ?? ALL} onValueChange={(v) => setAction(v === ALL ? null : v)}>
@@ -244,10 +244,10 @@ export default function AdminActivityLogsPage() {
           {range === "custom" && (
             <div className="flex flex-wrap items-end gap-3">
               <FilterField label="From date">
-                <Input type="date" aria-label="From date" value={customFrom} max={customTo || undefined} onChange={(e) => setCustomFrom(e.target.value)} className="h-9 w-40 text-xs" />
+                <DatePicker value={customFrom} max={customTo || undefined} onChange={setCustomFrom} className="w-44" />
               </FilterField>
               <FilterField label="To date">
-                <Input type="date" aria-label="To date" value={customTo} min={customFrom || undefined} onChange={(e) => setCustomTo(e.target.value)} className="h-9 w-40 text-xs" />
+                <DatePicker value={customTo} min={customFrom || undefined} onChange={setCustomTo} className="w-44" />
               </FilterField>
             </div>
           )}

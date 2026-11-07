@@ -1,3 +1,4 @@
+import { DatePicker } from "@/components/ui/date-picker";
 import type { ReactNode } from "react";
 import { Search, X } from "lucide-react";
 
@@ -60,11 +61,11 @@ export function DateRangeFields({
     <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
       <label className="flex items-center gap-1.5">
         <span>From date</span>
-        <Input type="date" aria-label="From date" value={from} max={to || undefined} onChange={(e) => onChange(e.target.value, to)} className="h-8 w-36 text-xs" />
+        <DatePicker value={from} max={to || undefined} onChange={(v) => onChange(v, to)} className="h-8 w-40" />
       </label>
       <label className="flex items-center gap-1.5">
         <span>To date</span>
-        <Input type="date" aria-label="To date" value={to} min={from || undefined} onChange={(e) => onChange(from, e.target.value)} className="h-8 w-36 text-xs" />
+        <DatePicker value={to} min={from || undefined} onChange={(v) => onChange(from, v)} className="h-8 w-40" />
       </label>
     </div>
   );

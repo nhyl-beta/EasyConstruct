@@ -3,6 +3,7 @@
 import { format } from "date-fns";
 import { AlertTriangle, Clock } from "lucide-react";
 import { Link } from "react-router";
+import { canAccessPath } from "@/config/route-access";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -59,11 +60,13 @@ export function EventDetails({ event, role, onOpen, heading = true }: { event: C
           </>
         )}
       </dl>
-      <Button asChild size="sm" className="w-full sm:w-auto">
-        <Link to={eventHref(event, role)} onClick={onOpen}>
-          Open
-        </Link>
-      </Button>
+      {canAccessPath(role, eventHref(event, role)) && (
+        <Button asChild size="sm" className="w-full sm:w-auto">
+          <Link to={eventHref(event, role)} onClick={onOpen}>
+            Open
+          </Link>
+        </Button>
+      )}
     </div>
   );
 }

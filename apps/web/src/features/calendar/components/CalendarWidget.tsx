@@ -192,7 +192,7 @@ export function CalendarWidget() {
             <Button variant="outline" size="icon" className="h-8 w-8" aria-label={state.view === "week" ? "Next week" : "Next month"} onClick={() => shift(1)}>
               <ChevronRight className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => goTo(new Date())}>
+            <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => goTo(new Date())}>
               Today
             </Button>
             {refreshing && <RefreshCw className="h-3.5 w-3.5 animate-spin text-muted-foreground" aria-label="Updating" />}
