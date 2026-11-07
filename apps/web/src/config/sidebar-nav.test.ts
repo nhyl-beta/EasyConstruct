@@ -122,7 +122,7 @@ describe("buildSidebarNav", () => {
     buildSidebarNav(role, registered).filter((e) => !(e.kind === "item" && e.item.name === "ai-validation-reference"));
 
   it.each([
-    ["admin", 7],
+    ["admin", 8],
     ["it_designer", 6],
     ["project_manager", 9],
     ["architect", 7],

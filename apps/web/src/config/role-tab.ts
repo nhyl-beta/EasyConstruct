@@ -127,12 +127,12 @@ export const ROLE_CONFIGS: Record<string, RoleConfig> = {
     accentBg: "bg-primary",
     searchPlaceholder: "Search or jump to… (Ctrl K)",
     primaryAi: "Executive Intelligence",
-    primaryAction: { label: "Audit Trail", icon: ShieldCheck, route: "/owner/audit-trail" },
+    // B-19: Audit Trail is reached from the sidebar and the dashboard's activity card only; no header button, no tab.
+    primaryAction: { label: "Audit Trail", icon: ShieldCheck },
 
     tabs: [
       { label: "Portfolio", icon: FolderKanban, route: "/owner/portfolio" },
       { label: "Proposals", icon: FileText, route: "/owner/proposals" },
-      { label: "Audit Trail", icon: ShieldCheck, route: "/owner/audit-trail" },
       { label: "Oversight", icon: ShieldAlert, route: "/owner/oversight" },
     ],
 

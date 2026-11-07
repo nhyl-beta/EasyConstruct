@@ -54,13 +54,6 @@ export default function OwnerDashboardPage() {
               : `${c.totalProjectCount} project${c.totalProjectCount === 1 ? "" : "s"} · ${c.activeWorkflowCount} active workflow${c.activeWorkflowCount === 1 ? "" : "s"} · ${c.auditEventCount} recorded action${c.auditEventCount === 1 ? "" : "s"} across the organization.`}
         actions={
           <>
-          <Button
-            variant="quiet"
-            onClick={() => navigate("/owner/audit-trail")}
-          >
-            <ShieldCheck className="h-4 w-4" />
-            Audit trail
-          </Button>
           <Button onClick={() => navigate("/owner/portfolio")}>
             <FolderKanban className="h-4 w-4" />
             Portfolio

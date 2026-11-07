@@ -43,17 +43,17 @@ export function UsefulnessCard() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Advice</TableHead>
-                <TableHead className="text-right">Shown</TableHead>
-                <TableHead className="text-right">Accepted</TableHead>
-                <TableHead className="text-right">Dismissed</TableHead>
-                <TableHead className="text-right">Acceptance rate</TableHead>
+                <TableHead title="Kind of advice shown">Advice</TableHead>
+                <TableHead className="text-right" title="Times this advice was shown">Shown</TableHead>
+                <TableHead className="text-right" title="Times someone accepted it">Accepted</TableHead>
+                <TableHead className="text-right" title="Times someone dismissed it">Dismissed</TableHead>
+                <TableHead className="text-right" title="Acceptance rate: accepted out of accepted plus dismissed">Rate</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {kinds.map((k) => (
                 <TableRow key={k.kind}>
-                  <TableCell className="text-sm">{k.label}</TableCell>
+                  <TableCell className="max-w-56 truncate text-sm" title={k.label}>{k.label}</TableCell>
                   <TableCell className="text-right text-sm tabular-nums">{k.shown}</TableCell>
                   <TableCell className="text-right text-sm tabular-nums">{k.accepted}</TableCell>
                   <TableCell className="text-right text-sm tabular-nums">{k.dismissed}</TableCell>

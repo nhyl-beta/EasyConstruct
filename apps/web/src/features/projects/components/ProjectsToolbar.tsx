@@ -37,7 +37,7 @@ export const ProjectsToolbar: React.FC<{
   onToggleCompletedOnly,
 }) => {
   return (
-    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+    <div className="flex flex-col gap-3 2xl:flex-row 2xl:items-center 2xl:justify-between">
       <div>
         <h2 className="text-2xl font-semibold tracking-tight">All projects</h2>
         <p className="text-sm text-muted-foreground">
@@ -45,7 +45,8 @@ export const ProjectsToolbar: React.FC<{
         </p>
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        <div className="relative max-w-sm flex-1">
+        {/* B-67: a basis and min width, so the box never shrinks to a sliver (cropped) beside the filters at 1024-1280 px. */}
+        <div className="relative min-w-56 max-w-sm flex-1 basis-64">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search by name or code…"

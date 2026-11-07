@@ -52,6 +52,7 @@ export const SIDEBAR_NAV: Record<string, SidebarNavConfigEntry[]> = {
     item("dashboard"),
     item("admin-projects"),
     item("admin-documents"),
+    item("proposals"),
     // Tag C
     group("workflow-management", "Workflow Management", Workflow, [
       "admin-workflows",
