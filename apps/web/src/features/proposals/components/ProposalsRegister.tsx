@@ -1,3 +1,4 @@
+import { ProposalStatusFilter } from "./ProposalStatusFilter";
 import { useCallback, useState } from "react";
 import { FileText, Search } from "lucide-react";
 
@@ -22,7 +23,7 @@ interface ProposalsRegisterProps {
 
 /** The read-only proposals register (Owner, IT Designer): list on the left, details in a right-hand panel. */
 export function ProposalsRegister({ title, description, sortable = true }: ProposalsRegisterProps) {
-  const { proposals, loading, error, kpis, query: search, setQuery: setSearch, pagination } = useProposals();
+  const { proposals, loading, error, kpis, query: search, setQuery: setSearch, status, setStatus, pagination } = useProposals();
   const [selectedId, select] = useSelectedParam();
   const [order, setOrder] = useState<number[]>([]);
 
@@ -50,6 +51,10 @@ export function ProposalsRegister({ title, description, sortable = true }: Propo
             { label: "Revision requested", value: `${kpis.revisionRequested}`, icon: FileText, tone: kpis.revisionRequested > 0 ? "warn" : "neutral" },
           ]}
         />
+
+        <div className="flex justify-end">
+          <ProposalStatusFilter value={status} onChange={setStatus} />
+        </div>
 
         <SplitDetailLayout
           open={!!selected}

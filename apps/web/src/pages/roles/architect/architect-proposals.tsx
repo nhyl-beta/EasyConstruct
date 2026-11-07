@@ -1,3 +1,4 @@
+import { ProposalStatusFilter } from "@/features/proposals/components/ProposalStatusFilter";
 import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
 import { useCallback, useRef, useState } from "react";
 import { useOpenOnAction } from "@/features/quick-search/useOpenOnAction";
@@ -502,6 +503,10 @@ export default function ArchitectProposals() {
           shrinking. Percentage widths keep the same relative proportions but
           always sum to 100% of the container, so text wraps (TableCell
           already breaks words by default) instead of overflowing. */}
+      <div className="flex justify-end">
+        <ProposalStatusFilter value={c.status} onChange={c.setStatus} />
+      </div>
+
       <SplitDetailLayout
         open={!!selectedProposal}
         onClose={closePanel}
