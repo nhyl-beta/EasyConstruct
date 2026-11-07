@@ -25,6 +25,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/auth/auth-context";
+import { useRoleConfig } from "@/hooks/use-role-config";
+import { canAccessPath } from "@/config/route-access";
 import { useProjectLifecycle } from "../hooks/useProjectLifecycle";
 import { SEQUENCED_PHASES } from "../types/lifecycle.types";
 import { formatRelativeTime } from "@/lib/format-relative-time";
@@ -58,6 +60,7 @@ export function ProjectLifecyclePanel({
   projectCode?: string;
 }) {
   const { user } = useAuth();
+  const { identity } = useRoleConfig();
   const isAdmin = user?.role === "admin";
   const isPm = user?.role === "project-manager";
   const canManage = isAdmin || isPm;
@@ -292,6 +295,7 @@ export function ProjectLifecyclePanel({
                           (this check's own ownerRoles, or admin). */}
                       {!check.passed &&
                         check.link &&
+                        canAccessPath(identity.role, check.link) &&
                         (isAdmin || (user?.role && check.ownerRoles.includes(user.role))) && (
                           <Link
                             to={check.link}

@@ -14,11 +14,14 @@ import { Radar } from "lucide-react";
 
 import { SectionCard } from "@/components/ui/section-card";
 import { FEATURES } from "@/config/features";
+import { useRoleConfig } from "@/hooks/use-role-config";
+import { canAccessPath } from "@/config/route-access";
 import { LifecycleRepository } from "../repositories/lifecycle.repository";
 import type { ImpactAwareness } from "../types/lifecycle.types";
 import { SignalRow } from "./DecisionSupportSection";
 
 export function ImpactAwarenessCard({ projectCode, className }: { projectCode?: string; className?: string }) {
+  const { identity } = useRoleConfig();
   const [data, setData] = useState<ImpactAwareness | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -64,9 +67,13 @@ export function ImpactAwarenessCard({ projectCode, className }: { projectCode?: 
           {pg.pageItems.map((p) => (
             <section key={p.projectCode} aria-label={`${p.projectName} advisories`}>
               <h4 className="mb-1.5 flex flex-wrap items-baseline gap-2 text-sm font-medium">
-                <Link to={`/projects/${encodeURIComponent(p.projectCode)}`} className="hover:underline">
-                  {p.projectName}
-                </Link>
+                {canAccessPath(identity.role, `/projects/${encodeURIComponent(p.projectCode)}`) ? (
+                  <Link to={`/projects/${encodeURIComponent(p.projectCode)}`} className="hover:underline">
+                    {p.projectName}
+                  </Link>
+                ) : (
+                  <span>{p.projectName}</span>
+                )}
                 <span className="font-mono text-overline font-normal text-muted-foreground">
                   {p.projectCode} · {p.phase}
                 </span>

@@ -17,6 +17,8 @@ import {
 import { Home } from "lucide-react";
 import { Fragment, useMemo } from "react";
 import { useLocation } from "react-router";
+import { useRoleConfig } from "@/hooks/use-role-config";
+import { canAccessPath } from "@/config/route-access";
 
 const LINK_CLASS =
   "rounded-sm hover:text-foreground transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
@@ -32,6 +34,7 @@ interface BreadcrumbProps {
 
 export function Breadcrumb({ label }: BreadcrumbProps = {}) {
   const Link = useLink();
+  const { identity } = useRoleConfig();
   const { pathname } = useLocation();
   const { breadcrumbs } = useBreadcrumb();
   const { resources } = useResourceParams();
@@ -48,8 +51,16 @@ export function Breadcrumb({ label }: BreadcrumbProps = {}) {
             | string
             | undefined,
         lastLabel: label,
+      }).map((crumb) => {
+        // A crumb is a link only where this role may open it. A role with its own
+        // project list (admin, IT Designer) goes there; otherwise the crumb is plain text.
+        if (!crumb.href || canAccessPath(identity.role, crumb.href)) return crumb;
+        if (crumb.href === "/projects" && canAccessPath(identity.role, "/admin/projects")) {
+          return { ...crumb, href: "/admin/projects" };
+        }
+        return { label: crumb.label };
       }),
-    [breadcrumbs, pathname, resources, label],
+    [breadcrumbs, pathname, resources, label, identity.role],
   );
 
   return (

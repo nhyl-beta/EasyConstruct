@@ -13,6 +13,7 @@ import { BrowserRouter, Navigate, Outlet, Route, Routes } from "react-router";
 import { AuthProvider } from "@/auth/auth-context";
 import { ProtectedRoutes, PublicAuthRoute } from "@/components/auth/auth-routes";
 import { RequireRole } from "@/components/auth/role-guard";
+import { RequireResource } from "@/components/auth/require-resource";
 
 import { Layout } from "./components/refine-ui/layout/layout";
 import { Toaster } from "./components/refine-ui/notification/toaster";
@@ -258,7 +259,7 @@ function App() {
                   />
                   <Route path="/projects/:projectId" element={<ProjectDetailPage />} />
 
-                  <Route path="/workflows" element={<PMWorkflows />} />
+                  <Route path="/workflows" element={<RequireResource resource="workflows"><PMWorkflows /></RequireResource>} />
                   <Route path="/approvals" element={<PMApprovals />} />
                   <Route path="/documents" element={<DocumentsRouter />} />
 
@@ -332,12 +333,12 @@ function App() {
                   <Route path="/progress" element={<EngineerProgress />} />
                   <Route
                     path="/requirements"
-                    element={<EngineerRequirements />}
+                    element={<RequireResource resource="requirements"><EngineerRequirements /></RequireResource>}
                   />
                   <Route path="/issues" element={<IssuesRouter />} />
 
                   {/* ── Site Personnel Routes ── */}
-                  <Route path="/tasks" element={<SPTasks />} />
+                  <Route path="/tasks" element={<RequireResource resource="tasks"><SPTasks /></RequireResource>} />
 
                   {/* ── Consultant Routes ── */}
                   <Route

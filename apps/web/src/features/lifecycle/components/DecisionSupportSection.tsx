@@ -8,6 +8,8 @@ import { DecisionSupportLabel } from "@/components/shared/decision-support-label
 import { Link } from "react-router";
 import { AlertTriangle, Info, TriangleAlert } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useRoleConfig } from "@/hooks/use-role-config";
+import { canAccessPath } from "@/config/route-access";
 import type { Signal, Severity } from "../types/lifecycle.types";
 
 const SEVERITY_STYLE: Record<Severity, { className: string; icon: typeof Info; label: string }> = {
@@ -19,6 +21,7 @@ const SEVERITY_STYLE: Record<Severity, { className: string; icon: typeof Info; l
 export function SignalRow({ signal }: { signal: Signal }) {
   const style = SEVERITY_STYLE[signal.severity];
   const Icon = style.icon;
+  const { identity } = useRoleConfig();
 
   return (
     <li className="flex items-start gap-2 rounded-xl border border-border bg-background/60 px-3 py-2 text-sm">
@@ -46,11 +49,12 @@ export function SignalRow({ signal }: { signal: Signal }) {
               .join(" · ")}
           </p>
         )}
-        {signal.link && (
-          <Link to={signal.link} className="inline-block text-xs font-medium text-primary-strong hover:underline">
-            Go to {signal.link.replace(/^\//, "")}
-          </Link>
-        )}
+        {signal.link &&
+          (canAccessPath(identity.role, signal.link) ? (
+            <Link to={signal.link} className="inline-block text-xs font-medium text-primary-strong hover:underline">
+              Go to {signal.link.replace(/^\//, "")}
+            </Link>
+          ) : null)}
       </div>
     </li>
   );

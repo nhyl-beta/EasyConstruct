@@ -8,9 +8,12 @@ import { CheckCircle2, ChevronDown, ChevronRight, RefreshCw, XCircle } from "luc
 import { Button } from "@/components/ui/button";
 import { SectionCard } from "@/components/ui/section-card";
 import { formatRelativeTime } from "@/lib/format-relative-time";
+import { useRoleConfig } from "@/hooks/use-role-config";
+import { canAccessPath } from "@/config/route-access";
 import { getReconciliation, type ReconciliationCheck, type ReconciliationReport } from "./reconciliation.api";
 
 function CheckRow({ check }: { check: ReconciliationCheck }) {
+  const role = useRoleConfig().identity.role;
   const [open, setOpen] = useState(false);
   const failed = check.status === "fail";
   return (
@@ -43,9 +46,13 @@ function CheckRow({ check }: { check: ReconciliationCheck }) {
         <ul className="space-y-1.5 border-t border-border/60 p-3 text-xs">
           {check.mismatches.map((m) => (
             <li key={`${m.subject}-${m.detail}`}>
-              <Link to={m.link} className="font-medium text-primary-strong hover:underline">
-                {m.subject}
-              </Link>
+              {canAccessPath(role, m.link) ? (
+                <Link to={m.link} className="font-medium text-primary-strong hover:underline">
+                  {m.subject}
+                </Link>
+              ) : (
+                <span className="font-medium">{m.subject}</span>
+              )}
               <span className="text-muted-foreground">: {m.detail}</span>
             </li>
           ))}
@@ -56,7 +63,7 @@ function CheckRow({ check }: { check: ReconciliationCheck }) {
           )}
         </ul>
       )}
-      {failed && check.firstLink && !open && (
+      {failed && check.firstLink && canAccessPath(role, check.firstLink) && !open && (
         <div className="border-t border-border/60 px-3 py-1.5 text-xs">
           <Link to={check.firstLink} className="text-primary-strong hover:underline">
             Open the first mismatch

@@ -10,6 +10,8 @@ import { formatRelativeTime } from "@/lib/format-relative-time";
 import { useEffect, useState } from "react";
 import { recordDecisionSupport } from "@/features/decision-support/events.api";
 import { useMyActions } from "../hooks/useMyActions";
+import { useRoleConfig } from "@/hooks/use-role-config";
+import { canAccessPath } from "@/config/route-access";
 import type { MyActionItem } from "../types/my-actions.types";
 
 // ai-signals E3: a "signal" item is decision support, not a gate/workflow
@@ -26,9 +28,24 @@ function actionIcon(a: MyActionItem) {
   return <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-warning-strong" />;
 }
 
+// A row is a button only when the signed-in role may open its target; otherwise it is plain text.
+function RowShell({ href, onOpen, children }: { href: string | null; onOpen: (to: string) => void; children: React.ReactNode }) {
+  if (!href) return <div className="flex w-full items-start gap-2.5 rounded-lg px-2 py-2 text-left">{children}</div>;
+  return (
+    <button
+      type="button"
+      onClick={() => onOpen(href)}
+      className="flex w-full items-start gap-2.5 rounded-lg px-2 py-2 text-left hover:bg-muted/50"
+    >
+      {children}
+    </button>
+  );
+}
+
 export function WaitingOnYouCard() {
   const { actions, loading } = useMyActions();
   const navigate = useNavigate();
+  const { identity } = useRoleConfig();
   // Fix 3.7: detected issues shown here, and the answer to "was this useful".
   const [answered, setAnswered] = useState<Set<string>>(new Set());
   const keyOf = (a: MyActionItem) => `${a.projectCode}|${a.title}`;
@@ -63,11 +80,10 @@ export function WaitingOnYouCard() {
         )}
         {!loading &&
           actions.slice(0, 6).map((a, i) => (
-            <button
+            <RowShell
               key={`${a.projectCode}-${a.kind}-${i}`}
-              type="button"
-              onClick={() => navigate(a.link)}
-              className="flex w-full items-start gap-2.5 rounded-lg px-2 py-2 text-left hover:bg-muted/50"
+              href={canAccessPath(identity.role, a.link) ? a.link : null}
+              onOpen={navigate}
             >
               {actionIcon(a)}
               <span className="min-w-0 flex-1">
@@ -125,8 +141,10 @@ export function WaitingOnYouCard() {
                   </span>
                 )}
               </span>
-              <ChevronRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-            </button>
+              {canAccessPath(identity.role, a.link) && (
+                <ChevronRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              )}
+            </RowShell>
           ))}
         {!loading && actions.length > 6 && (
           <p className="px-2 pt-1 text-xs text-muted-foreground">
