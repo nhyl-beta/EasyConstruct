@@ -1,26 +1,11 @@
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { STATUS_TONES } from "@/config/status-tone";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { EMAIL_STATUS_LABEL, STATUS_LABEL, type DesignRequest, type EmailStatus, type RequestKind, type RequestStatus } from "../types/request.types";
 
-const TONE: Record<RequestStatus, string> = {
-  draft: STATUS_TONES.neutral,
-  open: STATUS_TONES.info,
-  in_review: STATUS_TONES.warning,
-  client_replied: STATUS_TONES.brand,
-  answered: STATUS_TONES.success,
-  approved: STATUS_TONES.success,
-  approved_as_noted: STATUS_TONES.brand,
-  rejected: STATUS_TONES.danger,
-  closed: STATUS_TONES.neutral,
-};
-
 export function RequestStatusBadge({ status, className }: { status: RequestStatus; className?: string }) {
-  return (
-    <Badge variant="outline" className={cn("rounded-full text-overline font-medium", TONE[status], className)}>
-      {STATUS_LABEL[status]}
-    </Badge>
-  );
+  return <StatusBadge status={STATUS_LABEL[status]} {...(className ? { className } : {})} />;
 }
 
 export function KindBadge({ kind }: { kind: RequestKind }) {

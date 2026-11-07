@@ -19,34 +19,7 @@ export function toneBg(tone: ToneBg) {
   }
 }
 
-export function StatusBadge({ status }: { status: string }) {
-  const map: Record<string, string> = {
-    Active: "bg-success/10 text-success-strong border-success/20",
-    "On Leave": "bg-warning/15 text-warning-strong border-warning/30",
-    Suspended: "bg-destructive/10 text-destructive-strong border-destructive/20",
-    Archived: "bg-muted text-muted-foreground border-border",
-    Verified: "bg-success/10 text-success-strong border-success/20",
-    Pending: "bg-warning/15 text-warning-strong border-warning/30",
-    Flagged: "bg-destructive/10 text-destructive-strong border-destructive/20",
-    Approved: "bg-success/10 text-success-strong border-success/20",
-    Review: "bg-destructive/10 text-destructive-strong border-destructive/20",
-    Present: "bg-success/10 text-success-strong border-success/20",
-    Absent: "bg-destructive/10 text-destructive-strong border-destructive/20",
-    Late: "bg-warning/15 text-warning-strong border-warning/30",
-    "Half Day": "bg-info/10 text-info-strong border-info/20",
-    Completed: "bg-success/10 text-success-strong border-success/20",
-    Processing: "bg-warning/15 text-warning-strong border-warning/30",
-    Draft: "bg-muted text-muted-foreground border-border",
-  };
-  return (
-    <Badge
-      variant="outline"
-      className={`rounded-full text-overline ${map[status] ?? ""}`}
-    >
-      {status}
-    </Badge>
-  );
-}
+export { StatusBadge } from "@/components/ui/status-badge";
 
 export function Legend({ dot, label }: { dot: string; label: string }) {
   return (

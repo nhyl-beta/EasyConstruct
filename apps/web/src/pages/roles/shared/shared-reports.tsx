@@ -116,6 +116,7 @@ export default function SharedReportsPage() {
                       <div className="mt-2 flex gap-2">
                         <Button
                           size="sm"
+                          variant="success"
                           className="h-7 text-xs"
                           disabled={deciding === r.dbId}
                           onClick={() => void decide(r.dbId, "Approved")}
@@ -125,7 +126,7 @@ export default function SharedReportsPage() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="h-7 text-xs text-destructive-strong hover:bg-destructive/10 hover:text-destructive-strong"
+                          className="h-7 text-xs"
                           disabled={deciding === r.dbId}
                           onClick={() => void decide(r.dbId, "Revision Required")}
                         >
@@ -133,8 +134,8 @@ export default function SharedReportsPage() {
                         </Button>
                         <Button
                           size="sm"
-                          variant="ghost"
-                          className="h-7 text-xs text-destructive-strong"
+                          variant="destructive"
+                          className="h-7 text-xs"
                           disabled={deciding === r.dbId}
                           onClick={() => void decide(r.dbId, "Rejected")}
                         >

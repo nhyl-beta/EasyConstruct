@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
-import { STATUS_CONFIG } from "@/config/status-config";
+import { statusTone } from "@/config/status-config";
 import { STATUS_TONES, type StatusTone } from "@/config/status-tone";
 
 interface StatusBadgeProps {
@@ -13,7 +13,7 @@ interface StatusBadgeProps {
 
 /** A leading dot plus the status word; the dot is decoration. */
 export function StatusBadge({ status, tone, className }: StatusBadgeProps) {
-  const resolved = tone ?? STATUS_CONFIG[status] ?? "neutral";
+  const resolved = tone ?? statusTone(status);
 
   return (
     <Badge

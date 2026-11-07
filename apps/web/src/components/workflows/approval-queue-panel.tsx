@@ -27,6 +27,7 @@ import {
   XCircle,
 } from "lucide-react";
 
+import { StatusBadge } from "@/components/ui/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -498,8 +499,8 @@ export function ApprovalQueuePanel({
                       <div className="flex flex-wrap justify-end gap-2">
                         <Button
                           size="sm"
-                          variant="ghost"
-                          className="h-8 text-destructive-strong hover:bg-destructive/10 hover:text-destructive-strong"
+                          variant="outline"
+                          className="h-8"
                           disabled={deciding === a.stageId}
                           title="Send back to the submitter for revision"
                           onClick={() => void decideWithToast(a, "revise")}
@@ -508,7 +509,7 @@ export function ApprovalQueuePanel({
                         </Button>
                         <Button
                           size="sm"
-                          variant="outline"
+                          variant="destructive"
                           className="h-8"
                           disabled={deciding === a.stageId}
                           onClick={() => void decideWithToast(a, "reject")}
@@ -517,6 +518,7 @@ export function ApprovalQueuePanel({
                         </Button>
                         <Button
                           size="sm"
+                          variant="success"
                           className="h-8"
                           disabled={deciding === a.stageId}
                           onClick={() => void decideWithToast(a, "approve")}
@@ -527,9 +529,7 @@ export function ApprovalQueuePanel({
                       </div>
                     </div>
                   ) : (
-                    <Badge variant="outline" className="rounded-full text-overline capitalize">
-                      {a.status.replace("-", " ")}
-                    </Badge>
+                    <StatusBadge status={a.status.replace("-", " ")} />
                   )}
                 </div>
               </div>

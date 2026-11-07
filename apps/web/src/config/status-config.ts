@@ -100,7 +100,40 @@ export const STATUS_CONFIG: Record<string, StatusTone> = {
   Inside: "success",
   Outside: "danger",
   Edge: "warning",
+
+  // ==========================
+  // Attendance, requests (RFI/RFA) and email delivery. These had their own
+  // colour maps next to their badges; they live here now so a word has one colour.
+  // ==========================
+  Present: "success",
+  Absent: "danger",
+  Late: "warning",
+  "Half Day": "info",
+  Open: "info",
+  "Client replied": "brand",
+  Answered: "success",
+  "Approved as noted": "brand",
+  Closed: "neutral",
+  Sent: "success",
+  "Not sent": "neutral",
+  Failed: "danger",
 };
+
+const normalise = (s: string) => s.trim().toLowerCase().replace(/[-_]+/g, " ");
+const NORMALISED = new Map<string, StatusTone>();
+for (const [k, v] of Object.entries(STATUS_CONFIG)) {
+  // First entry wins, so the capitalised key ("Active") beats a lowercase twin ("active").
+  if (!NORMALISED.has(normalise(k))) NORMALISED.set(normalise(k), v);
+}
+
+/**
+ * The one status-to-colour lookup. Exact key first (budget "active" and "Active"
+ * are separate keys on purpose), then case and separator insensitive, so
+ * "in_review", "In review" and "In Review" all read the same everywhere.
+ */
+export function statusTone(status: string): StatusTone {
+  return STATUS_CONFIG[status] ?? NORMALISED.get(normalise(status)) ?? "neutral";
+}
 
 /**
  * Priority scale shared by every screen that shows Low / Medium / High / Critical

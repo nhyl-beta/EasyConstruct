@@ -1,4 +1,4 @@
-import { STATUS_TONES } from "@/config/status-tone";
+import { StatusBadge } from "@/components/ui/status-badge";
 import type { WorkflowStatus } from "@/features/workflows/types/workflow.types";
 
 interface WorkflowStatusBadgeProps {
@@ -12,21 +12,7 @@ const STATUS_LABELS: Record<WorkflowStatus, string> = {
   cancelled: "Cancelled",
 };
 
-const STATUS_CLASSES: Record<WorkflowStatus, string> = {
-  active: STATUS_TONES.info,
-  completed: STATUS_TONES.success,
-  rejected: STATUS_TONES.danger,
-  cancelled: STATUS_TONES.neutral,
-};
-
-export function WorkflowStatusBadge({
-  status,
-}: WorkflowStatusBadgeProps) {
-  return (
-    <span
-      className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium ${STATUS_CLASSES[status]}`}
-    >
-      {STATUS_LABELS[status]}
-    </span>
-  );
+// Colour comes from the shared status map (config/status-config.ts), like every other status badge.
+export function WorkflowStatusBadge({ status }: WorkflowStatusBadgeProps) {
+  return <StatusBadge status={STATUS_LABELS[status]} />;
 }

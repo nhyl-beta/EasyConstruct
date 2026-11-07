@@ -10,7 +10,7 @@ export interface ProposalDecisionOption {
   status: ProposalDecision;
   label: string;
   icon: LucideIcon;
-  variant: "default" | "outline" | "destructive";
+  variant: "success" | "outline" | "destructive";
   /** Shown in the confirmation dialog before the decision is submitted. */
   confirmTitle: string;
   confirmDescription: string;
@@ -27,7 +27,7 @@ export const PROPOSAL_DECISIONS: ReadonlyArray<ProposalDecisionOption> = [
     status: "Approved",
     label: "Approve",
     icon: Check,
-    variant: "default",
+    variant: "success",
     confirmTitle: "Approve this proposal?",
     confirmDescription:
       "The proposal is marked Approved and your comment is recorded against it. This can't be undone from this screen.",
