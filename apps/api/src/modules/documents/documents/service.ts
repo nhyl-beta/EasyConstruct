@@ -1,3 +1,4 @@
+import { resolveContentType } from "../../../core/storage/mime.js";
 import * as repo from "./repository.js";
 import { documents as documentsTable } from "../../../core/db/schema/documents.js";
 import { orderByFor, paginate, type PageRequest } from "../../../core/utils/pagination.js";
@@ -114,7 +115,7 @@ export const upload = async ({
   // With an S3 bucket configured the temp file is pushed there (the host's own disk is ephemeral);
   // otherwise it stays where multer wrote it.
   const fileUrl = isS3Configured()
-    ? (await storage.putFile(file.path, file.originalname, file.mimetype || "application/octet-stream")).url
+    ? (await storage.putFile(file.path, file.originalname, resolveContentType(file.mimetype, file.originalname))).url
     : `/uploads/documents/${file.filename}`;
 
   const sizeInMb =

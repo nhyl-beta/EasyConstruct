@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiClient } from "@/services/api.client";
 import { STALE } from "@/lib/query-client";
+import { filterReviews, type ReviewTab } from "../lib/review-filter";
 import type { DesignReview } from "../types/design-review.types";
 import type { Design } from "@/features/designs/types/design.types";
 
@@ -11,7 +12,7 @@ export const useDesignReviewsController = ({ autoLoad = true }: { autoLoad?: boo
   // Joined client-side so a review row can show the design's name, project and
   // files (GET /designs is open to every authenticated role).
   const [designsById, setDesignsById] = useState<Record<number, Design>>({});
-  const [tab, setTab] = useState<"pending" | "approved" | "rejected">("pending");
+  const [tab, setTab] = useState<ReviewTab>("pending");
 
   // Was raw fetch() with no Authorization header — authenticate() has always
   // required a Bearer token (apps/api/src/middleware/auth.ts), so this 401'd
@@ -62,11 +63,7 @@ export const useDesignReviewsController = ({ autoLoad = true }: { autoLoad?: boo
     fetchReviews();
   };
 
-  const filtered = useMemo(() => {
-    if (tab === "pending") return reviews.filter((r) => r.status === "Pending" || r.status === "Changes Requested");
-    if (tab === "approved") return reviews.filter((r) => r.status === "Approved");
-    return reviews.filter((r) => r.status === "Rejected");
-  }, [reviews, tab]);
+  const filtered = useMemo(() => filterReviews(reviews, tab), [reviews, tab]);
 
   return { reviews, filtered, designsById, loading, tab, setTab, decide, create };
 };

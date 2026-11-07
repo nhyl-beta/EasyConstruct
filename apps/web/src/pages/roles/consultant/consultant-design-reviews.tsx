@@ -14,6 +14,7 @@ import { useCurrentRevisions } from "@/features/revisions/hooks/useCurrentRevisi
 import type { RevisionItemType } from "@/features/revisions/types/revision.types";
 import { useState } from "react";
 import { GitBranch } from "lucide-react";
+import { REVIEW_TABS, isDecidable } from "@/features/design-reviews/lib/review-filter";
 import { fileTypeLabel } from "@/lib/file-type-label";
 
 // E1/E2: deciding a design review (Approved/Rejected/Changes Requested) is
@@ -35,9 +36,9 @@ export default function ConsultantDesignReviews() {
 
       <Tabs value={c.tab} onValueChange={(v) => c.setTab(v as typeof c.tab)}>
         <TabsList>
-          <TabsTrigger value="pending">Pending</TabsTrigger>
-          <TabsTrigger value="approved">Approved</TabsTrigger>
-          <TabsTrigger value="rejected">Rejected</TabsTrigger>
+          {REVIEW_TABS.map((t) => (
+            <TabsTrigger key={t.value} value={t.value}>{t.label}</TabsTrigger>
+          ))}
         </TabsList>
 
         <TabsContent value={c.tab} className="mt-4">
@@ -99,7 +100,7 @@ export default function ConsultantDesignReviews() {
                     <span>·</span>
                     <span>Due {r.dueDate ?? "—"}</span>
                   </div>
-                  {c.tab === "pending" && (
+                  {isDecidable(r) && (
                     // Part B item 1: these were 28px-tall, low-contrast
                     // buttons (a ghost-variant destructive Reject blended
                     // into the row entirely) — a real action a consultant

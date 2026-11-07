@@ -1,3 +1,4 @@
+import { resolveContentType } from "../../../core/storage/mime.js";
 import { NextFunction, Response } from "express";
 import { pipeline } from "node:stream/promises";
 import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
@@ -57,7 +58,7 @@ export const uploadStreamed = async (req: AuthedRequest, res: Response, next: Ne
     await integrity.recordFromDisk({
       url: `/uploads/generic/${req.file.filename}`,
       absolutePath: req.file.path,
-      contentType: req.file.mimetype || "application/octet-stream",
+      contentType: resolveContentType(req.file.mimetype, req.file.originalname),
       uploadedByUserId: req.authUser?.id,
     });
     res.status(HTTP.CREATED).json(
@@ -65,7 +66,7 @@ export const uploadStreamed = async (req: AuthedRequest, res: Response, next: Ne
         {
           url: `/uploads/generic/${req.file.filename}`,
           filename: req.file.originalname,
-          contentType: req.file.mimetype || "application/octet-stream",
+          contentType: resolveContentType(req.file.mimetype, req.file.originalname),
           sizeBytes: req.file.size,
         },
         "File uploaded",
@@ -80,7 +81,7 @@ export const uploadStreamed = async (req: AuthedRequest, res: Response, next: Ne
 // removed. Any failure removes the temp file and answers STORAGE_UNAVAILABLE (502).
 const uploadStreamedToS3 = async (req: AuthedRequest, res: Response) => {
   const file = req.file!;
-  const contentType = file.mimetype || "application/octet-stream";
+  const contentType = resolveContentType(file.mimetype, file.originalname);
   try {
     const stored = await storage.putFile(file.path, file.originalname, contentType);
     await integrity.recordFromDisk({
@@ -168,7 +169,7 @@ export const download = async (req: AuthedRequest, res: Response, next: NextFunc
     await assertCanOpenFile(url, req.authUser);
     const file = await service.openStoredFile(url);
     await record("ok");
-    res.setHeader("Content-Type", file.contentType);
+    res.setHeader("Content-Type", resolveContentType(file.contentType, url));
     if (file.sizeBytes != null) res.setHeader("Content-Length", String(file.sizeBytes));
     res.setHeader("Cache-Control", "private, no-store");
     res.setHeader("X-Content-Type-Options", "nosniff");

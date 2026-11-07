@@ -36,15 +36,38 @@ function needsAuthFetch(url: string): boolean {
   return url.startsWith("/") || url.startsWith("s3:") || isBlobHost(url);
 }
 
+const VIEWABLE_TYPES: Record<string, string> = {
+  pdf: "application/pdf",
+  png: "image/png",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  gif: "image/gif",
+  webp: "image/webp",
+  svg: "image/svg+xml",
+  bmp: "image/bmp",
+};
+
+/**
+ * B-207: a PDF or image that arrives as a generic binary cannot be shown in a tab or an iframe, and the
+ * browser reports it as corrupted. When the type says nothing, take it from the file extension. Any
+ * other type is left as it is, so it downloads.
+ */
+export function withViewableType(blob: Blob, url: string): Blob {
+  if (blob.type && blob.type !== "application/octet-stream") return blob;
+  const ext = (url.split(/[?#]/)[0] ?? "").split(".").pop()?.toLowerCase() ?? "";
+  const type = VIEWABLE_TYPES[ext];
+  return type ? new Blob([blob], { type }) : blob;
+}
+
 /** Fetch a stored file's bytes with the caller's credentials. */
 export async function fetchFileBlob(url: string): Promise<Blob> {
   if (needsAuthFetch(url)) {
-    return apiClient.getBlob(`/uploads/file?url=${encodeURIComponent(url)}`);
+    return withViewableType(await apiClient.getBlob(`/uploads/file?url=${encodeURIComponent(url)}`), url);
   }
   // Legacy public URL on another host — no credentials needed or wanted.
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Could not load file (${res.status})`);
-  return res.blob();
+  return withViewableType(await res.blob(), url);
 }
 
 export const DAMAGED_WARNING = [

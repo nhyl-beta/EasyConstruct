@@ -21,6 +21,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { validateBlueprintForm, type BlueprintFormValues } from "@/features/blueprint/lib/blueprint-form";
 import { FileText, Plus, Search, Star } from "lucide-react";
 import { useBlueprints } from "@/features/blueprint/hooks/useBlueprints";
 
@@ -47,7 +48,28 @@ function NewBlueprintDialog({
   const [author, setAuthor] = useState("");
   const [projectCode, setProjectCode] = useState("");
 
+  // A field shows its message once it has been left (or a submit was tried); the button stays
+  // disabled until every field is valid.
+  const [touched, setTouched] = useState<Partial<Record<keyof BlueprintFormValues, boolean>>>({});
+  const errors = validateBlueprintForm({ drawingNumber, folder, title, author });
+  const valid = Object.keys(errors).length === 0;
+  const touch = (key: keyof BlueprintFormValues) => setTouched((t) => ({ ...t, [key]: true }));
+  const fieldError = (key: keyof BlueprintFormValues) => (touched[key] ? errors[key] : undefined);
+  const fieldProps = (key: keyof BlueprintFormValues) => ({
+    onBlur: () => touch(key),
+    "aria-invalid": fieldError(key) ? true : undefined,
+    "aria-describedby": fieldError(key) ? `bp-${key}-error` : undefined,
+    className: fieldError(key) ? "border-destructive focus-visible:ring-destructive" : undefined,
+  });
+  const FieldError = ({ name }: { name: keyof BlueprintFormValues }) =>
+    fieldError(name) ? (
+      <p id={`bp-${name}-error`} role="alert" className="text-xs text-destructive-strong">
+        {fieldError(name)}
+      </p>
+    ) : null;
+
   const reset = () => {
+    setTouched({});
     setDrawingNumber("");
     setTitle("");
     setFolder("");
@@ -56,7 +78,10 @@ function NewBlueprintDialog({
   };
 
   const handleSubmit = async () => {
-    if (!drawingNumber.trim() || !title.trim() || !folder.trim() || !author.trim()) return;
+    if (!valid) {
+      setTouched({ drawingNumber: true, folder: true, title: true, author: true });
+      return;
+    }
     const ok = await onCreate({
       drawingNumber: drawingNumber.trim(),
       title: title.trim(),
@@ -85,16 +110,19 @@ function NewBlueprintDialog({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Drawing number</Label>
-              <Input value={drawingNumber} onChange={(e) => setDrawingNumber(e.target.value)} placeholder="A-101" />
+              <Input value={drawingNumber} onChange={(e) => setDrawingNumber(e.target.value)} placeholder="A-101" {...fieldProps("drawingNumber")} />
+              <FieldError name="drawingNumber" />
             </div>
             <div className="space-y-1.5">
               <Label>Folder</Label>
-              <Input value={folder} onChange={(e) => setFolder(e.target.value)} placeholder="Architectural" />
+              <Input value={folder} onChange={(e) => setFolder(e.target.value)} placeholder="Architectural" {...fieldProps("folder")} />
+              <FieldError name="folder" />
             </div>
           </div>
           <div className="space-y-1.5">
             <Label>Title</Label>
-            <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ground Floor Plan" />
+            <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ground Floor Plan" {...fieldProps("title")} />
+            <FieldError name="title" />
           </div>
           <div className="space-y-1.5">
             <Label>Project</Label>
@@ -104,13 +132,14 @@ function NewBlueprintDialog({
           </div>
           <div className="space-y-1.5">
             <Label>Author</Label>
-            <Input value={author} onChange={(e) => setAuthor(e.target.value)} placeholder="Your name" />
+            <Input value={author} onChange={(e) => setAuthor(e.target.value)} placeholder="Your name" {...fieldProps("author")} />
+            <FieldError name="author" />
           </div>
           {createError && <p className="text-sm text-destructive-strong">{createError}</p>}
         </div>
         <DialogFooter>
           <Button
-            disabled={creating || !drawingNumber.trim() || !title.trim() || !folder.trim() || !author.trim()}
+            disabled={creating || !valid}
             onClick={handleSubmit}
           >
             {creating ? "Saving…" : "Register blueprint"}

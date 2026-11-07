@@ -2,6 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { NotFoundError, ValidationError } from "../utils/errors.js";
+import { MIME_BY_EXT } from "./mime.js";
 import type { OpenStorageResult, StorageAdapter, StoragePutInput, StorageResult } from "./adapter.js";
 
 const uploadsRoot = process.env.VERCEL
@@ -9,22 +10,6 @@ const uploadsRoot = process.env.VERCEL
   : path.resolve(process.cwd(), "uploads");
 const uploadDirectory = path.join(uploadsRoot, "generic");
 
-const MIME_BY_EXT: Record<string, string> = {
-  ".pdf": "application/pdf",
-  ".png": "image/png",
-  ".jpg": "image/jpeg",
-  ".jpeg": "image/jpeg",
-  ".gif": "image/gif",
-  ".webp": "image/webp",
-  ".doc": "application/msword",
-  ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  ".xls": "application/vnd.ms-excel",
-  ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  ".ppt": "application/vnd.ms-powerpoint",
-  ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-  ".txt": "text/plain",
-  ".csv": "text/csv",
-};
 
 function resolveUploadPath(url: string): string | undefined {
   if (!url.startsWith("/uploads/")) return undefined;
