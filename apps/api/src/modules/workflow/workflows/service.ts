@@ -617,9 +617,22 @@ export const decideStage = async (
   // independently — one source of truth instead of two, since the old
   // PATCH /proposals/:id/review wrote the proposal directly with nothing
   // keeping it and its workflow's stages in agreement.
+  // B-41: who decided and what they wrote is copied onto the proposal too, so the Reviewer and
+  // Comment columns on the Proposals pages are filled for workflow decisions, not only for the
+  // old direct review. It is recorded on every decision, including a non-final approval that
+  // leaves the status unchanged.
+  const reviewFields = {
+    reviewerName: input.decidedBy,
+    reviewComment: input.comments?.trim() ? input.comments : null,
+    reviewedAt: decidedAt,
+  };
   const syncLinkedProposal = async (status: "Approved" | "Rejected" | "Revision Requested") => {
     const linked = await proposalRepository.findByWorkflowId(workflowId);
-    if (linked) await proposalRepository.update(linked.id, { status });
+    if (linked) await proposalRepository.update(linked.id, { status, ...reviewFields });
+  };
+  const recordProposalReview = async () => {
+    const linked = await proposalRepository.findByWorkflowId(workflowId);
+    if (linked) await proposalRepository.update(linked.id, reviewFields);
   };
 
   // Fix 3.1: an approved proposal gets a draft plan for the PM to review. It is
@@ -688,6 +701,7 @@ export const decideStage = async (
     const allStages = await repo.findStagesByWorkflow(workflowId);
     const next = allStages.find((s) => s.sequence === stage.sequence + 1);
     if (next) {
+      await recordProposalReview();
       await repo.updateStage(next.id, { status: "current" });
       // J2: the next stage's owning role now has something waiting on them.
       if (owningWorkflow) {
@@ -916,10 +930,13 @@ export const getApprovalStats = async (
   requesterRole: string,
   _requesterName: string,
   visibleCodes?: ReadonlySet<string> | null,
+  // B-38, B-39: the Owner owns no approval stage, so a per-role count is always 0 on a card that
+  // says "across the organization". The Owner dashboard asks for the organisation-wide count.
+  organizationWide = false,
 ) => {
   const stats = await repo.findApprovalStats(
     requesterRole,
-    PRIVILEGED_READ_ROLES.includes(requesterRole),
+    organizationWide || PRIVILEGED_READ_ROLES.includes(requesterRole),
     visibleCodes ? [...visibleCodes] : null,
   );
 

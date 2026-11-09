@@ -13,6 +13,13 @@ async function unwrap<T>(promise: Promise<any>): Promise<T> {
   return json as T;
 }
 
+// B-42: the date pickers give a bare day (YYYY-MM-DD) and the table shows times in the viewer's own
+// timezone, but the API reads a bare day as UTC. Send the viewer's local day boundaries instead, so
+// "Nov 3 to Nov 3" returns exactly the rows the table shows under Nov 3.
+const BARE_DAY = /^\d{4}-\d{2}-\d{2}$/;
+const startOfLocalDay = (d: string) => (BARE_DAY.test(d) ? new Date(`${d}T00:00:00`).toISOString() : d);
+const endOfLocalDay = (d: string) => (BARE_DAY.test(d) ? new Date(`${d}T23:59:59.999`).toISOString() : d);
+
 export const AuditLogRepository = {
   async list(query: AuditLogsQuery = {}): Promise<AuditLogsResult> {
     const params = new URLSearchParams();
@@ -22,8 +29,8 @@ export const AuditLogRepository = {
     if (query.actions?.length) params.set("actions", query.actions.join(","));
     if (query.search) params.set("search", query.search);
     if (query.actor) params.set("actor", query.actor);
-    if (query.dateFrom) params.set("dateFrom", query.dateFrom);
-    if (query.dateTo) params.set("dateTo", query.dateTo);
+    if (query.dateFrom) params.set("dateFrom", startOfLocalDay(query.dateFrom));
+    if (query.dateTo) params.set("dateTo", endOfLocalDay(query.dateTo));
     if (query.page) params.set("page", String(query.page));
     if (query.perPage) params.set("perPage", String(query.perPage));
     const qs = params.toString();

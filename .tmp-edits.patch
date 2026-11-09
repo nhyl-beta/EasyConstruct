@@ -1,0 +1,93 @@
+diff --git a/apps/api/src/modules/projects/dashboard/service.ts b/apps/api/src/modules/projects/dashboard/service.ts
+index b4aa91a..91f8647 100644
+--- a/apps/api/src/modules/projects/dashboard/service.ts
++++ b/apps/api/src/modules/projects/dashboard/service.ts
+@@ -59,7 +59,7 @@ const projectsBlock = async (actor: SummaryActor, opts: { restrictTo?: string[];
+ 
+ const approvalsBlock = async (actor: SummaryActor) => {
+   const visible = await visibleProjectCodes({ role: actor.role, userId: actor.id, name: actor.name });
+-  const stats = await getApprovalStats(actor.role, actor.name, visible);
++  const stats = await getApprovalStats(actor.role, actor.name, visible, actor.role === "owner");
+   return { pending: stats.pending, overdue: stats.overdue };
+ };
+ 
+diff --git a/apps/api/src/modules/workflow/workflows/service.ts b/apps/api/src/modules/workflow/workflows/service.ts
+index 3443a99..750d747 100644
+--- a/apps/api/src/modules/workflow/workflows/service.ts
++++ b/apps/api/src/modules/workflow/workflows/service.ts
+@@ -617,9 +617,22 @@ export const decideStage = async (
+   // independently — one source of truth instead of two, since the old
+   // PATCH /proposals/:id/review wrote the proposal directly with nothing
+   // keeping it and its workflow's stages in agreement.
++  // B-41: who decided and what they wrote is copied onto the proposal too, so the Reviewer and
++  // Comment columns on the Proposals pages are filled for workflow decisions, not only for the
++  // old direct review. It is recorded on every decision, including a non-final approval that
++  // leaves the status unchanged.
++  const reviewFields = {
++    reviewerName: input.decidedBy,
++    reviewComment: input.comments?.trim() ? input.comments : null,
++    reviewedAt: decidedAt,
++  };
+   const syncLinkedProposal = async (status: "Approved" | "Rejected" | "Revision Requested") => {
+     const linked = await proposalRepository.findByWorkflowId(workflowId);
+-    if (linked) await proposalRepository.update(linked.id, { status });
++    if (linked) await proposalRepository.update(linked.id, { status, ...reviewFields });
++  };
++  const recordProposalReview = async () => {
++    const linked = await proposalRepository.findByWorkflowId(workflowId);
++    if (linked) await proposalRepository.update(linked.id, reviewFields);
+   };
+ 
+   // Fix 3.1: an approved proposal gets a draft plan for the PM to review. It is
+@@ -688,6 +701,7 @@ export const decideStage = async (
+     const allStages = await repo.findStagesByWorkflow(workflowId);
+     const next = allStages.find((s) => s.sequence === stage.sequence + 1);
+     if (next) {
++      await recordProposalReview();
+       await repo.updateStage(next.id, { status: "current" });
+       // J2: the next stage's owning role now has something waiting on them.
+       if (owningWorkflow) {
+@@ -916,10 +930,13 @@ export const getApprovalStats = async (
+   requesterRole: string,
+   _requesterName: string,
+   visibleCodes?: ReadonlySet<string> | null,
++  // B-38, B-39: the Owner owns no approval stage, so a per-role count is always 0 on a card that
++  // says "across the organization". The Owner dashboard asks for the organisation-wide count.
++  organizationWide = false,
+ ) => {
+   const stats = await repo.findApprovalStats(
+     requesterRole,
+-    PRIVILEGED_READ_ROLES.includes(requesterRole),
++    organizationWide || PRIVILEGED_READ_ROLES.includes(requesterRole),
+     visibleCodes ? [...visibleCodes] : null,
+   );
+ 
+diff --git a/apps/web/src/features/audit-logs/repositories/audit-log.repository.ts b/apps/web/src/features/audit-logs/repositories/audit-log.repository.ts
+index 7801436..fd35271 100644
+--- a/apps/web/src/features/audit-logs/repositories/audit-log.repository.ts
++++ b/apps/web/src/features/audit-logs/repositories/audit-log.repository.ts
+@@ -13,6 +13,13 @@ async function unwrap<T>(promise: Promise<any>): Promise<T> {
+   return json as T;
+ }
+ 
++// B-42: the date pickers give a bare day (YYYY-MM-DD) and the table shows times in the viewer's own
++// timezone, but the API reads a bare day as UTC. Send the viewer's local day boundaries instead, so
++// "Nov 3 to Nov 3" returns exactly the rows the table shows under Nov 3.
++const BARE_DAY = /^\d{4}-\d{2}-\d{2}$/;
++const startOfLocalDay = (d: string) => (BARE_DAY.test(d) ? new Date(`${d}T00:00:00`).toISOString() : d);
++const endOfLocalDay = (d: string) => (BARE_DAY.test(d) ? new Date(`${d}T23:59:59.999`).toISOString() : d);
++
+ export const AuditLogRepository = {
+   async list(query: AuditLogsQuery = {}): Promise<AuditLogsResult> {
+     const params = new URLSearchParams();
+@@ -22,8 +29,8 @@ export const AuditLogRepository = {
+     if (query.actions?.length) params.set("actions", query.actions.join(","));
+     if (query.search) params.set("search", query.search);
+     if (query.actor) params.set("actor", query.actor);
+-    if (query.dateFrom) params.set("dateFrom", query.dateFrom);
+-    if (query.dateTo) params.set("dateTo", query.dateTo);
++    if (query.dateFrom) params.set("dateFrom", startOfLocalDay(query.dateFrom));
++    if (query.dateTo) params.set("dateTo", endOfLocalDay(query.dateTo));
+     if (query.page) params.set("page", String(query.page));
+     if (query.perPage) params.set("perPage", String(query.perPage));
+     const qs = params.toString();

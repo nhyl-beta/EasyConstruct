@@ -59,7 +59,7 @@ const projectsBlock = async (actor: SummaryActor, opts: { restrictTo?: string[];
 
 const approvalsBlock = async (actor: SummaryActor) => {
   const visible = await visibleProjectCodes({ role: actor.role, userId: actor.id, name: actor.name });
-  const stats = await getApprovalStats(actor.role, actor.name, visible);
+  const stats = await getApprovalStats(actor.role, actor.name, visible, actor.role === "owner");
   return { pending: stats.pending, overdue: stats.overdue };
 };
 
