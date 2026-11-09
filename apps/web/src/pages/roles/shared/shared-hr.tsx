@@ -1,4 +1,3 @@
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader as SharedPageHeader } from "@/components/refine-ui/views/page-header";
 import type { ToneBg } from "@/providers/mock-data";

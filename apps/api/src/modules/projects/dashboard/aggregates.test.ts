@@ -318,3 +318,11 @@ describe("IT dashboard: sensitive events and actor label (B-68, B-71)", () => {
     assert.equal(agg.actorLabel("Unknown Person", ids), "Unknown Person");
   });
 });
+
+describe("design revision card counts both revision words (B-204)", () => {
+  test("Revision Needed and Revision Required are one group", () => {
+    const k = agg.designKpis([{ status: "Revision Needed" }, { status: "Revision Required", n: 2 }, { status: "Approved" }]);
+    assert.equal(k.revisionNeeded, 3);
+    assert.equal(k.approved, 1);
+  });
+});
