@@ -1,4 +1,5 @@
 import { ProjectLoadingState } from "@/features/projects/components/ProjectLoadingState";
+import { ProjectsFilters } from "@/features/projects/components/ProjectsFilters";
 import { ProjectsGrid } from "@/features/projects/components/ProjectsGrid";
 import { ProjectsHeader } from "@/features/projects/components/ProjectsHeader";
 import { ProjectsKpiStrip } from "@/features/projects/components/ProjectsKpiStrip";
@@ -27,6 +28,14 @@ export default function OwnerPortfolioPage() {
         view={ctrl.view}
         setView={ctrl.setView}
         showCreate={false}
+        filters={
+          <ProjectsFilters
+            filters={ctrl.filters}
+            onChange={ctrl.setFilter}
+            onClear={ctrl.clearFilters}
+            active={ctrl.hasActiveFilters}
+          />
+        }
         showArchived={ctrl.showArchived}
         onToggleArchived={ctrl.setShowArchived}
         completedOnly={ctrl.completedOnly}

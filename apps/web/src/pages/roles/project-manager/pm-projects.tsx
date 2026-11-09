@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 
 import { ProjectEmptyState } from "@/features/projects/components/ProjectEmptyState";
 import { ProjectLoadingState } from "@/features/projects/components/ProjectLoadingState";
+import { ProjectsFilters } from "@/features/projects/components/ProjectsFilters";
 import { ProjectsGrid } from "@/features/projects/components/ProjectsGrid";
 import { ProjectsHeader } from "@/features/projects/components/ProjectsHeader";
 import { ProjectsKpiStrip } from "@/features/projects/components/ProjectsKpiStrip";
@@ -50,6 +51,14 @@ export default function PMProjects() {
         view={ctrl.view}
         setView={ctrl.setView}
         showCreate={canCreate}
+        filters={
+          <ProjectsFilters
+            filters={ctrl.filters}
+            onChange={ctrl.setFilter}
+            onClear={ctrl.clearFilters}
+            active={ctrl.hasActiveFilters}
+          />
+        }
         showArchived={ctrl.showArchived}
         onToggleArchived={ctrl.setShowArchived}
       />
