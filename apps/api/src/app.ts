@@ -15,7 +15,9 @@ const app = express();
 // sign-in limiter and audit logging into one bucket. TRUST_PROXY = number of proxy hops (0 = none).
 if (env.TRUST_PROXY > 0) app.set("trust proxy", env.TRUST_PROXY);
 
-app.use(express.json({ limit: "12mb" }));
+// Base64 uploads (POST /api/uploads) are the only big JSON bodies; everything else, login included, stays small.
+app.use("/api/uploads", express.json({ limit: "12mb" }));
+app.use(express.json({ limit: "2mb" }));
 app.disable("x-powered-by");
 app.use(securityHeaders);
 // Liveness probe for the host / Docker HEALTHCHECK: before auth, no database or cache call.
