@@ -32,6 +32,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { ProjectPicker } from "@/components/shared/project-picker";
+import { openFileUrl } from "@/lib/file-url";
 import { Receipt, Search, Plus, Truck, ListChecks, Sparkles, Paperclip, Download } from "lucide-react";
 import { formatAxisCurrency, formatCurrency } from "@/lib/format-currency";
 import { downloadCsv } from "@/lib/export-csv";
@@ -333,7 +334,11 @@ export default function FinanceExpensesPage() {
                         <TableCell className="text-right text-sm">{formatCurrency(e.amount)}</TableCell>
                         <TableCell className="text-xs text-muted-foreground">{e.submittedAt}</TableCell>
                         <TableCell>
-                          <Paperclip className="h-3.5 w-3.5 text-muted-foreground" />
+                          {e.receiptUrl && (
+                            <Button size="icon" variant="ghost" className="h-7 w-7" aria-label={`Open receipt for ${e.id}`} onClick={() => void openFileUrl(e.receiptUrl)}>
+                              <Paperclip className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
                         </TableCell>
                         {FEATURES.ai && (
                           <TableCell>
@@ -374,7 +379,7 @@ export default function FinanceExpensesPage() {
                                 <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => setPendingDecision({ id: e.id, vendor: e.vendor, amount: e.amount, decision: "approve" })}>
                                   Approve
                                 </Button>
-                                <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-destructive-strong" onClick={() => setPendingDecision({ id: e.id, vendor: e.vendor, amount: e.amount, decision: "reject" })}>
+                                <Button size="sm" variant="outline" className="h-7 px-2 text-xs border-destructive/40 text-destructive-strong" onClick={() => setPendingDecision({ id: e.id, vendor: e.vendor, amount: e.amount, decision: "reject" })}>
                                   Reject
                                 </Button>
                               </div>

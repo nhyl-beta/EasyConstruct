@@ -217,7 +217,7 @@ export function ApprovalQueuePanel({
       {/* Roles that own a stage in a template can also start the chain that
           reaches it — Architect, Engineer and HR each get their own actions
           here; every other role sees nothing. */}
-      {showInitiationActions && (
+      {showInitiationActions && user?.role !== "architect" && (
         <WorkflowInitiationActions role={user?.role ?? ""} onCreated={() => void reload()} />
       )}
 

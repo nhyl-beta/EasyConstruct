@@ -10,6 +10,7 @@
 // login page. Both are read through GET /api/uploads/file, which checks the
 // caller's token and streams the bytes. Because that needs a header, the
 // client fetches the file with the token and hands the browser an object URL.
+import { toast } from "sonner";
 import { useEffect, useState } from "react";
 import { apiClient } from "@/services/api.client";
 import { getIntegrity, refreshIntegrity } from "@/features/uploads/lib/integrity-store";
@@ -88,7 +89,11 @@ export async function confirmIfDamaged(url: string): Promise<boolean> {
 
 /** Open a stored file in a new tab. */
 export async function openFileUrl(url: string | null | undefined): Promise<void> {
-  if (!isRealFileUrl(url)) return;
+  if (!isRealFileUrl(url)) {
+    // B-53: this used to return without a word, so the Open button looked dead.
+    toast.error("This file was never stored, so it can't be opened. Ask for it to be uploaded again.");
+    return;
+  }
   if (!(await confirmIfDamaged(url as string))) return;
   // Fetch first, then open the finished object URL. (Opening an empty tab up
   // front and navigating it later left some browsers on about:blank.) If the
