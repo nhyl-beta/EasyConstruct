@@ -90,5 +90,5 @@ export const PAGINATION_EXEMPT: PaginationExemption[] = [
   { file: "pages/roles/project-manager/pm-dashboard.tsx", reason: WIDGET },
   { file: "pages/roles/site-personnel/sp-dashboard.tsx", reason: WIDGET },
   { file: "features/hr/components/EmployeeDetailSheet.tsx", reason: "One employee's change history in a side card; the server returns only the newest 50 entries (GET /employees/:id/history)." },
-  { file: "pages/roles/human-resources/hr-dashboard.tsx", reason: "Overview tabs built on static sample data from providers/mock-data (not API records); the real employee, attendance and payroll lists are paginated on their own pages." },
+  { file: "pages/roles/human-resources/hr-dashboard.tsx", reason: "The Payroll tab previews the first 25 live payroll lines; the full employee, attendance and payroll lists are paginated on their own pages." },
 ];

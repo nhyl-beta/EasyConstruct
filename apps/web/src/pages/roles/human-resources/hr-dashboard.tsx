@@ -15,14 +15,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  attendanceLogs,
-  attendanceWeek,
-  departments,
-  hrNotifications,
-  hrReports,
-  type ToneBg,
-} from "@/providers/mock-data";
 import { useWorkforceSnapshot } from "@/features/workforce/hooks/useWorkforceSnapshot";
 import {
   listPayroll,
@@ -33,17 +25,11 @@ import {
 import {
   Activity,
   AlertTriangle,
-  Bell,
   CalendarCheck,
-  Camera,
   CheckCircle2,
-  ChevronRight,
   Clock,
   Download,
-  FileBarChart2,
-  MapPin,
   Plus,
-  ShieldCheck,
   TrendingUp,
   UserCheck,
   Users,
@@ -55,21 +41,6 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { WaitingOnYouCard } from "@/features/lifecycle/components/WaitingOnYouCard";
 
-
-function toneBg(tone: ToneBg) {
-  switch (tone) {
-    case "success":
-      return "bg-success/10 text-success-strong";
-    case "warning":
-      return "bg-warning/15 text-warning-strong";
-    case "destructive":
-      return "bg-destructive/10 text-destructive-strong";
-    case "info":
-      return "bg-info/10 text-info-strong";
-    default:
-      return "bg-muted text-muted-foreground";
-  }
-}
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, string> = {
@@ -90,15 +61,6 @@ function StatusBadge({ status }: { status: string }) {
     >
       {status}
     </Badge>
-  );
-}
-
-function Legend({ dot, label }: { dot: string; label: string }) {
-  return (
-    <div className="flex items-center gap-1.5">
-      <span className={`h-2.5 w-2.5 rounded-sm ${dot}`} />
-      <span>{label}</span>
-    </div>
   );
 }
 
@@ -254,93 +216,6 @@ function OverviewSection() {
           </Card>
         ))}
       </div>
-
-      {/* Chart + department mix */}
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-        <Card className="xl:col-span-2">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0">
-            <div>
-              <CardTitle className="text-base">Weekly attendance</CardTitle>
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                Present · late · absent across all active sites
-              </p>
-            </div>
-            <Badge variant="outline" className="rounded-full">
-              This week
-            </Badge>
-          </CardHeader>
-          <CardContent>
-            <div className="flex h-56 items-end gap-3">
-              {attendanceWeek.map((d) => {
-                const max = 530;
-                return (
-                  <div
-                    key={d.day}
-                    className="flex flex-1 flex-col items-center gap-2"
-                  >
-                    <div className="flex h-44 w-full flex-col-reverse overflow-hidden rounded-lg border bg-muted/30">
-                      <div
-                        className="bg-primary"
-                        style={{ height: `${(d.present / max) * 100}%` }}
-                        title={`Present ${d.present}`}
-                      />
-                      <div
-                        className="bg-warning/80"
-                        style={{ height: `${(d.late / max) * 100}%` }}
-                        title={`Late ${d.late}`}
-                      />
-                      <div
-                        className="bg-destructive/70"
-                        style={{ height: `${(d.absent / max) * 100}%` }}
-                        title={`Absent ${d.absent}`}
-                      />
-                    </div>
-                    <div className="text-overline font-medium text-muted-foreground">
-                      {d.day}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="mt-4 flex flex-wrap items-center gap-4 text-overline text-muted-foreground">
-              <Legend dot="bg-primary" label="Present" />
-              <Legend dot="bg-warning/80" label="Late" />
-              <Legend dot="bg-destructive/70" label="Absent" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Department allocation</CardTitle>
-            <p className="text-xs text-muted-foreground">
-              Headcount by department
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {departments.map((d) => {
-              const total = departments.reduce((s, x) => s + x.count, 0);
-              const pct = Math.round((d.count / total) * 100);
-              return (
-                <div key={d.name}>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-medium">{d.name}</span>
-                    <span className="text-muted-foreground">
-                      {d.count} · {pct}%
-                    </span>
-                  </div>
-                  <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                    <div
-                      className={`h-full ${d.color}`}
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </CardContent>
-        </Card>
-      </div>
     </>
   );
 }
@@ -369,207 +244,24 @@ function EmployeesSection() {
 }
 
 function AttendanceSection() {
+  // The real attendance log, verification and exceptions live on their own page; this tab only points to it.
   return (
-    <>
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <KpiMini
-          label="Verified today"
-          value="436"
-          tone="success"
-          icon={CheckCircle2}
-        />
-        <KpiMini
-          label="Pending verification"
-          value="28"
-          tone="warning"
-          icon={Clock}
-        />
-        <KpiMini
-          label="Geofence flags"
-          value="9"
-          tone="destructive"
-          icon={MapPin}
-        />
-        <KpiMini
-          label="Photo auth failures"
-          value="5"
-          tone="destructive"
-          icon={Camera}
-        />
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-        <Card className="xl:col-span-2">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0">
-            <div>
-              <CardTitle className="text-base">
-                Today's attendance log
-              </CardTitle>
-              <p className="text-xs text-muted-foreground">
-                Clock-ins, geofence and photo authentication results
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button size="sm" variant="outline">
-                Bulk verify
-              </Button>
-              <Button size="sm">
-                <ShieldCheck className="h-4 w-4" /> Resolve flags
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="px-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Employee</TableHead>
-                  <TableHead>Site</TableHead>
-                  <TableHead>Clock in</TableHead>
-                  <TableHead>Clock out</TableHead>
-                  <TableHead className="text-right">Hours</TableHead>
-                  <TableHead>Geofence</TableHead>
-                  <TableHead>Photo</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {attendanceLogs.map((l) => (
-                  <TableRow key={l.empId} className="hover:bg-muted/40">
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Avatar className="h-7 w-7">
-                          <AvatarFallback className="bg-primary-soft text-overline font-semibold text-primary-strong">
-                            {l.initials}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="min-w-0">
-                          <div className="text-sm font-medium">{l.name}</div>
-                          <div className="font-mono text-overline text-muted-foreground">
-                            {l.empId}
-                          </div>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {l.site}
-                    </TableCell>
-                    <TableCell className="font-mono text-xs">
-                      {l.clockIn}
-                    </TableCell>
-                    <TableCell className="font-mono text-xs">
-                      {l.clockOut}
-                    </TableCell>
-                    <TableCell className="text-right text-sm">
-                      {l.hours.toFixed(1)}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant="outline"
-                        className={`rounded-full text-overline ${
-                          l.geofence === "Inside"
-                            ? "border-success/30 text-success-strong"
-                            : l.geofence === "Edge"
-                            ? "border-warning/30 text-warning-strong"
-                            : "border-destructive/30 text-destructive-strong"
-                        }`}
-                      >
-                        <MapPin className="mr-1 h-3 w-3" /> {l.geofence}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant="outline"
-                        className={`rounded-full text-overline ${
-                          l.photo === "Verified"
-                            ? "border-success/30 text-success-strong"
-                            : l.photo === "Pending"
-                            ? "border-warning/30 text-warning-strong"
-                            : "border-destructive/30 text-destructive-strong"
-                        }`}
-                      >
-                        <Camera className="mr-1 h-3 w-3" /> {l.photo}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge status={l.status} />
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Site heatmap</CardTitle>
-            <p className="text-xs text-muted-foreground">
-              Attendance density · last 14 days
-            </p>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {[
-                "Westgate Tower",
-                "Harborline Hub",
-                "Northgate Plaza",
-                "Phoenix HQ",
-              ].map((site) => (
-                <div key={site}>
-                  <div className="mb-1 flex items-center justify-between text-xs">
-                    <span className="font-medium">{site}</span>
-                    <span className="text-muted-foreground">14d</span>
-                  </div>
-                  <div className="flex gap-1">
-                    {Array.from({ length: 14 }).map((_, i) => {
-                      const intensity = Math.round(40 + Math.random() * 60);
-                      return (
-                        <div
-                          key={i}
-                          className="h-5 flex-1 rounded-sm"
-                          style={{
-                            backgroundColor: `color-mix(in oklch, var(--color-primary) ${intensity}%, transparent)`,
-                          }}
-                          title={`Day ${i + 1}: ${intensity}%`}
-                        />
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
-            <Separator className="my-4" />
-            <div className="space-y-2 text-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">On-time rate</span>
-                <span className="font-medium text-success-strong">91.4%</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">
-                  Late arrivals (avg)
-                </span>
-                <span className="font-medium">18 / day</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Avg shift length</span>
-                <span className="font-medium">9.4 h</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </>
+    <Card>
+      <CardContent className="flex flex-col items-start gap-3 p-6 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <div className="text-base font-semibold">Attendance</div>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Clock-ins, verification, geofence and photo checks, and exceptions are on the Attendance page.
+          </p>
+        </div>
+        <Button asChild size="sm">
+          <Link to="/attendance">Open attendance</Link>
+        </Button>
+      </CardContent>
+    </Card>
   );
 }
 
-// Part E3/C4: was 4 hardcoded KPIs, a hardcoded "Payroll batch B-118" table
-// (payrollRows, mock-data.ts), and a hardcoded "Period summary" distribution
-// (78/6/4/12% — never computed from anything). Real data: listPayrollBatches
-// (payroll_batches, real grossPayroll/netPayroll/deductions/overtimeHours/
-// status columns) for the KPIs/summary, listPayroll (payroll lines) for the
-// per-employee table — both already-real endpoints (see
-// apps/web/src/features/hr/payroll-api.ts), generated by the already-verified
-// POST /payroll/generate → real SSS/PhilHealth/Pag-IBIG math.
 function PayrollSection() {
   const [batches, setBatches] = useState<PayrollBatch[]>([]);
   const [lines, setLines] = useState<PayrollLine[]>([]);
@@ -827,71 +519,21 @@ function WorkforceSection() {
 }
 
 function ReportsSection() {
+  // Real reports live on the Workforce Reports page; this tab only points to it.
   return (
-    <>
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
-        {hrReports.map((r) => (
-          <Card key={r.title}>
-            <CardContent className="p-5">
-              <div className="flex items-start justify-between">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-soft text-primary-strong">
-                  <FileBarChart2 className="h-5 w-5" />
-                </div>
-                <Badge variant="outline" className="rounded-full text-overline">
-                  {r.tag}
-                </Badge>
-              </div>
-              <h3 className="mt-3 text-sm font-semibold">{r.title}</h3>
-              <p className="mt-1 text-xs text-muted-foreground">{r.desc}</p>
-              <div className="mt-4 flex items-center gap-2">
-                <Button size="sm" variant="outline">
-                  <Download className="h-4 w-4" /> Export
-                </Button>
-                <Button size="sm" variant="ghost">
-                  Open <ChevronRight className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Notifications center</CardTitle>
-          <p className="text-xs text-muted-foreground">
-            HR alerts requiring action
+    <Card>
+      <CardContent className="flex flex-col items-start gap-3 p-6 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <div className="text-base font-semibold">Workforce reports</div>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Workforce reports and exports are on the Workforce Reports page.
           </p>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {hrNotifications.map((n, i) => (
-            <div
-              key={i}
-              className="flex items-start justify-between rounded-xl border bg-muted/20 px-4 py-3"
-            >
-              <div className="flex items-start gap-3">
-                <div
-                  className={`flex h-8 w-8 items-center justify-center rounded-lg ${toneBg(
-                    n.tone,
-                  )}`}
-                >
-                  <Bell className="h-4 w-4" />
-                </div>
-                <div>
-                  <div className="text-sm font-medium">{n.title}</div>
-                  <div className="text-overline text-muted-foreground">
-                    {n.time}
-                  </div>
-                </div>
-              </div>
-              <Button size="sm" variant="ghost">
-                Review
-              </Button>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-    </>
+        </div>
+        <Button asChild size="sm">
+          <Link to="/workforce-reports">Open reports</Link>
+        </Button>
+      </CardContent>
+    </Card>
   );
 }
 

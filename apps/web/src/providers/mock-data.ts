@@ -184,19 +184,6 @@ export interface Employee {
   hiredOn:        string;
 }
 
-export interface AttendanceLog {
-  empId:    string;
-  name:     string;
-  initials: string;
-  site:     string;
-  clockIn:  string;
-  clockOut: string;
-  hours:    number;
-  geofence: GeofenceStatus;
-  photo:    PhotoStatus;
-  status:   AttendanceStatus;
-}
-
 export interface PayrollRow {
   empId:      string;
   name:       string;
@@ -214,13 +201,6 @@ export interface Department {
   name:  string;
   count: number;
   color: string; // tailwind bg class
-}
-
-export interface AttendanceDay {
-  day:     string;
-  present: number;
-  late:    number;
-  absent:  number;
 }
 
 export interface HRAIInsight {
@@ -243,18 +223,6 @@ export interface WorkforceSite {
   capacity:  number;
   available: number;
   ot:        number;
-}
-
-export interface HRReport {
-  title: string;
-  desc:  string;
-  tag:   string;
-}
-
-export interface HRNotification {
-  title: string;
-  time:  string;
-  tone:  ToneBg;
 }
 
 // Dashboard — KPIs
@@ -698,20 +666,6 @@ export const employees: Employee[] = [
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
-// HR — Attendance Logs
-// ─────────────────────────────────────────────────────────────────────────────
-
-export const attendanceLogs: AttendanceLog[] = [
-  { empId: "EMP-001", name: "Adaeze Nwosu", initials: "AN", site: "Westgate Tower",  clockIn: "06:58", clockOut: "16:02", hours: 9.1,  geofence: "Inside",  photo: "Verified", status: "Verified" },
-  { empId: "EMP-002", name: "Marcus Bell",  initials: "MB", site: "Harborline Hub",  clockIn: "07:34", clockOut: "17:10", hours: 9.6,  geofence: "Outside", photo: "Failed",   status: "Flagged"  },
-  { empId: "EMP-003", name: "Lena Park",    initials: "LP", site: "HQ",              clockIn: "08:01", clockOut: "17:00", hours: 8.9,  geofence: "Inside",  photo: "Verified", status: "Verified" },
-  { empId: "EMP-006", name: "Kwame Asante", initials: "KA", site: "Northgate Plaza", clockIn: "07:05", clockOut: "16:30", hours: 9.4,  geofence: "Inside",  photo: "Verified", status: "Verified" },
-  { empId: "EMP-007", name: "Priya Menon",  initials: "PM", site: "Westgate Tower",  clockIn: "07:55", clockOut: "17:05", hours: 9.2,  geofence: "Edge",    photo: "Pending",  status: "Pending"  },
-  { empId: "EMP-009", name: "Yuki Tanaka",  initials: "YT", site: "Phoenix HQ",      clockIn: "07:00", clockOut: "16:00", hours: 9.0,  geofence: "Inside",  photo: "Verified", status: "Verified" },
-  { empId: "EMP-010", name: "Amara Diallo", initials: "AD", site: "Northgate Plaza", clockIn: "08:10", clockOut: "17:15", hours: 9.1,  geofence: "Inside",  photo: "Verified", status: "Verified" },
-];
-
-// ─────────────────────────────────────────────────────────────────────────────
 // HR — Payroll Rows
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -738,18 +692,6 @@ export const departments: Department[] = [
   { name: "Design",       count: 56,  color: "bg-ai"             },
   { name: "Safety",       count: 38,  color: "bg-secondary"      },
   { name: "Project Mgmt", count: 64,  color: "bg-muted-foreground"},
-];
-
-// ─────────────────────────────────────────────────────────────────────────────
-// HR — Weekly Attendance Chart
-// ─────────────────────────────────────────────────────────────────────────────
-
-export const attendanceWeek: AttendanceDay[] = [
-  { day: "Mon", present: 468, late: 22, absent: 28 },
-  { day: "Tue", present: 471, late: 18, absent: 29 },
-  { day: "Wed", present: 458, late: 31, absent: 29 },
-  { day: "Thu", present: 445, late: 28, absent: 45 },
-  { day: "Fri", present: 436, late: 24, absent: 58 },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -803,26 +745,3 @@ export const workforceSites: WorkforceSite[] = [
   { name: "Phoenix HQ",      assigned: 62,  capacity: 70,  available: 8,  ot: 1 },
 ];
 
-// ─────────────────────────────────────────────────────────────────────────────
-// HR — Reports
-// ─────────────────────────────────────────────────────────────────────────────
-
-export const hrReports: HRReport[] = [
-  { title: "Attendance report",   desc: "Daily, weekly, monthly attendance breakdown with late-arrival analysis.",          tag: "Operations" },
-  { title: "Payroll report",      desc: "Gross labor, deductions, and net payable per period with approval trail.",         tag: "Finance"    },
-  { title: "Workforce report",    desc: "Capacity, allocation, and utilization across sites and departments.",              tag: "Capacity"   },
-  { title: "Performance report",  desc: "Employee performance trends, ratings, and outliers.",                              tag: "People"     },
-  { title: "HR analytics",        desc: "Turnover, tenure, and engagement signals with AI explainability.",                 tag: "Analytics"  },
-  { title: "Executive HR brief",  desc: "C-level summary covering workforce health and labor cost trends.",                 tag: "Executive"  },
-];
-
-// ─────────────────────────────────────────────────────────────────────────────
-// HR — Notifications
-// ─────────────────────────────────────────────────────────────────────────────
-
-export const hrNotifications: HRNotification[] = [
-  { title: "Geofence breach — Marcus Bell",                    time: "22 min ago", tone: "warning"     },
-  { title: "Payroll batch B-118 awaiting approval",            time: "1 hr ago",   tone: "info"        },
-  { title: "4 certifications expiring within 14 days",         time: "Today",      tone: "warning"     },
-  { title: "Workforce risk: Westgate Tower understaffed Thu",  time: "Today",      tone: "destructive" },
-];
