@@ -16,6 +16,7 @@ apps/api/backups/
 # Personal notes and local scratch (kept on disk, not shared in the repo)
 .claude/
 CHANGES.md
+.tmp-*.patch
 README.previous.md
 tempec-check*/
 refactor-notes/*
