@@ -135,6 +135,15 @@ export const issueGroups = async (codes: Codes) =>
     .where(scoped(issues.projectCode, codes))
     .groupBy(issues.status);
 
+/** Critical issues that are not yet Resolved: the same rule as the Issues page's Critical card (B-164). */
+export const criticalOpenIssueCount = async (codes: Codes): Promise<number> => {
+  const [row] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(issues)
+    .where(and(scoped(issues.projectCode, codes), eq(issues.severity, "Critical"), ne(issues.status, "Resolved")));
+  return row?.n ?? 0;
+};
+
 export const reportGroups = async (codes: Codes) =>
   db
     .select({ type: engineeringReports.type, priority: engineeringReports.priority, n: sql<number>`count(*)::int` })

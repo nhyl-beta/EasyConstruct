@@ -1,4 +1,4 @@
-import { and, desc, eq, ilike, inArray, or, sql, SQL } from "drizzle-orm";
+import { and, desc, eq, ilike, inArray, isNull, or, sql, SQL } from "drizzle-orm";
 import { countRows, inCodes, selectPage } from "../../../core/db/paged.js";
 import { db } from "../../../core/db/connection.js";
 import {
@@ -207,16 +207,45 @@ export const updateStage = async (
 
 // ── Approval queue views ─────────────────────────────────────────────────────
 
-export const findPendingStagesForRole = async (role: string, isPrivileged: boolean) => {
-  const condition = isPrivileged
-    ? eq(workflowStages.status, "current")
-    : and(eq(workflowStages.status, "current"), eq(workflowStages.role, role));
+/** Who is asking: lets the pending views include the caller's own in-progress requests (B-166, B-167). */
+export interface PendingRequester {
+  userId?: number | null;
+  name?: string | null;
+}
 
+/**
+ * ONE definition of "pending for me", shared by the queue list and the stats card so the two
+ * cannot disagree. A stage is pending when it is the workflow's current stage and either
+ *  - it waits on the caller's role (admin / it-designer see every role), or
+ *  - the caller started the workflow and it is still active (their own request, waiting on
+ *    someone else; shown view-only). Old rows without created_by_user_id fall back to the name.
+ */
+const pendingCondition = (role: string, isPrivileged: boolean, requester?: PendingRequester) => {
+  const current = eq(workflowStages.status, "current");
+  if (isPrivileged) return current;
+  const own: SQL[] = [];
+  if (requester?.userId != null) {
+    own.push(eq(workflows.createdByUserId, requester.userId));
+    if (requester.name) {
+      own.push(and(isNull(workflows.createdByUserId), eq(workflows.createdBy, requester.name)) as SQL);
+    }
+  } else if (requester?.name) {
+    own.push(eq(workflows.createdBy, requester.name));
+  }
+  const mine = own.length ? and(eq(workflows.status, "active"), or(...own)) : undefined;
+  return and(current, mine ? or(eq(workflowStages.role, role), mine) : eq(workflowStages.role, role));
+};
+
+export const findPendingStagesForRole = async (
+  role: string,
+  isPrivileged: boolean,
+  requester?: PendingRequester,
+) => {
   return db
     .select({ stage: workflowStages, workflow: workflows })
     .from(workflowStages)
     .innerJoin(workflows, eq(workflowStages.workflowId, workflows.id))
-    .where(condition)
+    .where(pendingCondition(role, isPrivileged, requester))
     .orderBy(workflowStages.createdAt);
 };
 
@@ -224,7 +253,8 @@ export const findPendingStagesForRole = async (role: string, isPrivileged: boole
  * Counts behind GET /workflows/approvals/stats, computed in SQL. The old code
  * loaded the pending queue AND every decided stage in the system, plus their
  * attachments and line items, only to count them. Same definitions:
- *  - pending: stages in "current" for this role (admin / it-designer: every role)
+ *  - pending: stages in "current" for this role (admin / it-designer: every role), plus the
+ *    caller's own still-active requests (see pendingCondition)
  *  - overdue: pending for more than 48 hours
  *  - history: stages decided "done" or "rejected" (any decider)
  *  - avgCycleDays: mean of decided_at - created_at over history rows that have both
@@ -235,6 +265,7 @@ export const findApprovalStats = async (
   role: string,
   isPrivileged: boolean,
   codes: readonly string[] | null,
+  requester?: PendingRequester,
 ) => {
   const scope = codes ? inCodes(workflows.projectCode, codes) : undefined;
 
@@ -245,13 +276,7 @@ export const findApprovalStats = async (
     })
     .from(workflowStages)
     .innerJoin(workflows, eq(workflowStages.workflowId, workflows.id))
-    .where(
-      and(
-        eq(workflowStages.status, "current"),
-        isPrivileged ? undefined : eq(workflowStages.role, role),
-        scope,
-      ),
-    );
+    .where(and(pendingCondition(role, isPrivileged, requester), scope));
 
   const [historyRow] = await db
     .select({

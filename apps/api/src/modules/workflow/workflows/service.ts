@@ -810,18 +810,38 @@ const PRIVILEGED_READ_ROLES = ["admin", "it-designer"];
 
 type QueueRow = Awaited<ReturnType<typeof repo.findPendingStagesForRole>>[number];
 
+/**
+ * B-168: "Decided by me" and "History" come back as one row per decided STAGE, so a request that
+ * went through four sign-offs showed up four times. They list requests, so keep one row per
+ * workflow: the most recent decision (rows arrive newest decision first).
+ */
+const latestStagePerWorkflow = (rows: QueueRow[]): QueueRow[] => {
+  const seen = new Set<number>();
+  return rows.filter((r) => {
+    if (seen.has(r.workflow.id)) return false;
+    seen.add(r.workflow.id);
+    return true;
+  });
+};
+
 const loadQueueRows = async (
   scope: ApprovalScope,
   requesterRole: string,
   requesterName: string,
   visibleCodes?: ReadonlySet<string> | null,
+  requesterUserId?: number | null,
 ): Promise<QueueRow[]> => {
   const allRows =
     scope === "pending"
-      ? await repo.findPendingStagesForRole(requesterRole, PRIVILEGED_READ_ROLES.includes(requesterRole))
-      : scope === "mine"
-        ? await repo.findDecidedStagesBy(requesterName)
-        : await repo.findAllDecidedStages();
+      ? await repo.findPendingStagesForRole(requesterRole, PRIVILEGED_READ_ROLES.includes(requesterRole), {
+          userId: requesterUserId,
+          name: requesterName,
+        })
+      : latestStagePerWorkflow(
+          scope === "mine"
+            ? await repo.findDecidedStagesBy(requesterName)
+            : await repo.findAllDecidedStages(),
+        );
   // A stage owner only sees the queue entries of projects they may see.
   return filterRowsToCodes(allRows, visibleCodes ?? null, (r) => r.workflow.projectCode);
 };
@@ -829,7 +849,10 @@ const loadQueueRows = async (
 // A queue row that does not say whether anything was submitted gives the
 // approver no reason to open the detail view at all, so each row carries the
 // attachment and line-item counts of its workflow.
-const toQueueItems = async (rows: QueueRow[]): Promise<ApprovalQueueItem[]> => {
+const toQueueItems = async (
+  rows: QueueRow[],
+  viewer?: { role: string },
+): Promise<ApprovalQueueItem[]> => {
   const workflowIds = [...new Set(rows.map((r) => r.workflow.id))];
   const [attachmentCounts, lineItemCounts] = await Promise.all([
     repo.countAttachmentsByWorkflow(workflowIds),
@@ -856,6 +879,13 @@ const toQueueItems = async (rows: QueueRow[]): Promise<ApprovalQueueItem[]> => {
     requestedBy: workflow.createdBy,
     attachmentCount: attachmentCounts.get(workflow.id) ?? 0,
     lineItemCount: lineItemCounts.get(workflow.id) ?? 0,
+    // B-166/B-167: a pending row on someone else's stage is the viewer's own request. Read-only.
+    viewOnly:
+      stage.status === "current" &&
+      !!viewer &&
+      !PRIVILEGED_READ_ROLES.includes(viewer.role) &&
+      stage.role !== viewer.role,
+    waitingLabel: stage.status === "current" ? `Waiting on ${stage.roleLabel}` : null,
   }));
 };
 
@@ -865,8 +895,11 @@ export const getApprovalQueue = async (
   requesterName: string,
   /** Project codes the caller may see; null/undefined = no restriction (admin, HR, Finance…). */
   visibleCodes?: ReadonlySet<string> | null,
+  requesterUserId?: number | null,
 ): Promise<ApprovalQueueItem[]> =>
-  toQueueItems(await loadQueueRows(scope, requesterRole, requesterName, visibleCodes));
+  toQueueItems(await loadQueueRows(scope, requesterRole, requesterName, visibleCodes, requesterUserId), {
+    role: requesterRole,
+  });
 
 export const APPROVAL_SORTABLE = ["createdAt", "decidedAt", "title", "projectCode"] as const;
 
@@ -885,12 +918,13 @@ export const getApprovalQueuePage = async (
   visibleCodes: ReadonlySet<string> | null | undefined,
   request: PageRequest,
   filters: ApprovalQueueFilters = {},
+  requesterUserId?: number | null,
 ) => {
   // The queue's own order (oldest pending first / newest decision first) is the default.
-  const rows = await loadQueueRows(scope, requesterRole, requesterName, visibleCodes);
+  const rows = await loadQueueRows(scope, requesterRole, requesterName, visibleCodes, requesterUserId);
   const { items, meta } = paginateRows(rows.filter(queueFilter(filters)), request, QUEUE_SORTERS);
   return {
-    items: await toQueueItems(items),
+    items: await toQueueItems(items, { role: requesterRole }),
     // Filter choices come from the whole queue, not the filtered page.
     meta: {
       ...meta,
@@ -928,16 +962,18 @@ const queueFilter = (f: ApprovalQueueFilters) => (r: QueueRow) => {
 
 export const getApprovalStats = async (
   requesterRole: string,
-  _requesterName: string,
+  requesterName: string,
   visibleCodes?: ReadonlySet<string> | null,
   // B-38, B-39: the Owner owns no approval stage, so a per-role count is always 0 on a card that
   // says "across the organization". The Owner dashboard asks for the organisation-wide count.
   organizationWide = false,
+  requesterUserId?: number | null,
 ) => {
   const stats = await repo.findApprovalStats(
     requesterRole,
     organizationWide || PRIVILEGED_READ_ROLES.includes(requesterRole),
     visibleCodes ? [...visibleCodes] : null,
+    { userId: requesterUserId, name: requesterName },
   );
 
   return {

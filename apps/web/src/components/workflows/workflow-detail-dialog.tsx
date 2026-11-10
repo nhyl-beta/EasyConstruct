@@ -74,8 +74,8 @@ export function WorkflowDetailDialog({
   // stages or attachments needed an inner scroll just to reach "Approve".
   // Wider on large screens, with the chain laid out horizontally (the
   // pipeline component already supports this — see workflow-stage-
-  // pipeline.tsx's `direction="row"`) and the two data sections side by
-  // side, so the content that used to need scrolling now mostly fits.
+  // pipeline.tsx's `direction="row"`). The two data sections are stacked at
+  // full width: side by side, the cost table was cut off (B-165).
   const hasLineItems = (workflow?.lineItems.length ?? 0) > 0;
 
   return (
@@ -113,7 +113,8 @@ export function WorkflowDetailDialog({
             {/* Fix 3.2: shown for budget changes and change orders only (the card hides itself otherwise). */}
             <ImpactForecastCard workflowId={workflow.id} />
 
-            <div className={hasLineItems ? "grid gap-6 lg:grid-cols-2" : ""}>
+            {/* B-165: the cost table gets the dialog's full width (it was squeezed into half of it and cut off). */}
+            <div className="space-y-6">
               {/* Rendered only for workflows that actually have cost lines —
                   a design-approval chain has none, and an empty table on it
                   would just be noise. */}

@@ -18,12 +18,6 @@ export const ProjectsToolbar: React.FC<{
   showCreate?: boolean;
   /** Filter controls rendered beside the search box (see ProjectsFilters). */
   filters?: React.ReactNode;
-  /** Archived is hidden by default (C12) — omitted callers just don't get the toggle. */
-  showArchived?: boolean;
-  onToggleArchived?: (next: boolean) => void;
-  /** K2: Owner's portfolio wants a quick way to see only Completed projects. */
-  completedOnly?: boolean;
-  onToggleCompletedOnly?: (next: boolean) => void;
 }> = ({
   query,
   setQuery,
@@ -31,10 +25,6 @@ export const ProjectsToolbar: React.FC<{
   setView,
   showCreate = true,
   filters,
-  showArchived,
-  onToggleArchived,
-  completedOnly,
-  onToggleCompletedOnly,
 }) => {
   return (
     <div className="flex flex-col gap-3 2xl:flex-row 2xl:items-center 2xl:justify-between">
@@ -63,28 +53,6 @@ export const ProjectsToolbar: React.FC<{
             <Link to="/projects/new">
               <Plus className="h-4 w-4" /> New project
             </Link>
-          </Button>
-        )}
-
-        {onToggleArchived && (
-          <Button
-            size="sm"
-            variant={showArchived ? "secondary" : "outline"}
-            className="h-9 text-xs"
-            onClick={() => onToggleArchived(!showArchived)}
-          >
-            {showArchived ? "Hide archived" : "Show archived"}
-          </Button>
-        )}
-
-        {onToggleCompletedOnly && (
-          <Button
-            size="sm"
-            variant={completedOnly ? "secondary" : "outline"}
-            className="h-9 text-xs"
-            onClick={() => onToggleCompletedOnly(!completedOnly)}
-          >
-            {completedOnly ? "All projects" : "Completed only"}
           </Button>
         )}
 

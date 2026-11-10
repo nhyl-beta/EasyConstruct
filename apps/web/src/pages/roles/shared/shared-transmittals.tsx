@@ -148,7 +148,7 @@ export default function SharedTransmittals() {
                         </Button>
                       )}
                       <Button size="icon" variant="ghost" className="h-7 w-7" asChild aria-label={`Print ${t.controlNo}`}>
-                        <Link to={`/transmittals/${t.id}/print`} target="_blank" rel="noreferrer">
+                        <Link to={`/transmittals/${t.id}/print`}>
                           <Printer className="h-4 w-4" />
                         </Link>
                       </Button>

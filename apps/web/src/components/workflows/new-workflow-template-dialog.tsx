@@ -276,7 +276,8 @@ export function NewWorkflowTemplateDialog({
             {stages.map((stage, index) => (
               <div
                 key={index}
-                className="grid grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_auto_auto] items-center gap-2 rounded-lg bg-muted/30 p-2"
+                // B-52: wraps on a phone (role and step type each get their own line) and is the five-column grid from sm up.
+                className="flex flex-wrap items-center gap-2 rounded-lg bg-muted/30 p-2 sm:grid sm:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_auto_auto]"
               >
                 <div className="flex flex-col items-center text-muted-foreground">
                   <GripVertical className="h-3.5 w-3.5" />
@@ -287,7 +288,7 @@ export function NewWorkflowTemplateDialog({
                   onValueChange={(v) => handleRoleChange(index, v)}
                   disabled={creating}
                 >
-                  <SelectTrigger className="h-9">
+                  <SelectTrigger className="h-9 min-w-0 flex-1 basis-40 sm:basis-auto">
                     <SelectValue placeholder="Select a role" />
                   </SelectTrigger>
                   <SelectContent>
@@ -309,7 +310,7 @@ export function NewWorkflowTemplateDialog({
                   onValueChange={(v) => updateStage(index, { iconKey: v })}
                   disabled={creating || !stage.role}
                 >
-                  <SelectTrigger className="h-9">
+                  <SelectTrigger className="h-9 min-w-0 flex-1 basis-40 sm:basis-auto">
                     <SelectValue placeholder={stage.role ? "Step type" : "Pick a role first"} />
                   </SelectTrigger>
                   <SelectContent>

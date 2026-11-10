@@ -72,7 +72,7 @@ export default function AdminDashboardPage() {
       {/* ── KPI grid ── */}
       <KpiStrip
         items={[
-          { label: "Total projects", value: `${c.kpis.total}`, icon: FolderKanban, to: "/admin/projects" },
+          { label: "Active projects", value: `${c.kpis.total}`, icon: FolderKanban, to: "/admin/projects" },
           { label: "At risk", value: `${c.kpis.atRisk}`, icon: ShieldAlert, tone: "warn", to: "/admin/projects" },
           { label: "Over budget", value: `${c.overBudget}`, icon: Banknote, tone: c.overBudget > 0 ? "bad" : "neutral", to: "/admin/projects" },
           {

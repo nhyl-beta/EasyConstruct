@@ -195,6 +195,10 @@ export interface ApprovalQueueItem {
   requestedBy?: string;
   attachmentCount: number;
   lineItemCount: number;
+  /** The viewer's own request, waiting on someone else's stage: listed but not actionable. */
+  viewOnly?: boolean;
+  /** "Waiting on <stage>" for a pending row. */
+  waitingLabel?: string | null;
 }
 
 export interface ApprovalStats {

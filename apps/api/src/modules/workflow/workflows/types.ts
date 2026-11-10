@@ -170,4 +170,8 @@ export interface ApprovalQueueItem {
   /** Counts so a queue row can advertise there is something to read. */
   attachmentCount: number;
   lineItemCount: number;
+  /** The viewer's own request waiting on someone else's stage: listed, but not actionable. */
+  viewOnly: boolean;
+  /** "Waiting on <stage>" for a pending row, null once decided. */
+  waitingLabel: string | null;
 }

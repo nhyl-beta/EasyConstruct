@@ -125,16 +125,18 @@ export function SearchableSelect({
                 >
                   <Check
                     className={cn(
-                      "h-4 w-4",
+                      "h-4 w-4 shrink-0",
                       option.value === value ? "opacity-100" : "opacity-0",
                     )}
                   />
-                  <span className="truncate">{option.label}</span>
-                  {option.description && (
-                    <span className="ml-auto truncate text-xs text-muted-foreground">
-                      {option.description}
-                    </span>
-                  )}
+                  {/* B-85: the full name is shown (wrapping if it must); the description sits under it
+                      instead of squeezing the name out of a narrow list. */}
+                  <span className="flex min-w-0 flex-col">
+                    <span className="break-words">{option.label}</span>
+                    {option.description && (
+                      <span className="break-all text-xs text-muted-foreground">{option.description}</span>
+                    )}
+                  </span>
                 </CommandItem>
               ))}
             </CommandGroup>

@@ -48,7 +48,8 @@ const projectsBlock = async (actor: SummaryActor, opts: { restrictTo?: string[];
 
   return {
     total: rows.length,
-    kpis: aggregates.projectKpis(rows),
+    // B-86: same definition as the Projects page cards (risk level, archived excluded).
+    kpis: aggregates.projectRiskKpis(rows),
     overBudget: aggregates.overBudgetCount(rows),
     riskBreakdown: aggregates.riskBreakdown(rows),
     byPhase: aggregates.phaseCounts(rows),
@@ -59,7 +60,7 @@ const projectsBlock = async (actor: SummaryActor, opts: { restrictTo?: string[];
 
 const approvalsBlock = async (actor: SummaryActor) => {
   const visible = await visibleProjectCodes({ role: actor.role, userId: actor.id, name: actor.name });
-  const stats = await getApprovalStats(actor.role, actor.name, visible, actor.role === "owner");
+  const stats = await getApprovalStats(actor.role, actor.name, visible, actor.role === "owner", actor.id);
   return { pending: stats.pending, overdue: stats.overdue };
 };
 
@@ -121,9 +122,10 @@ const engineer = async (actor: SummaryActor) => {
   const visibleCodes = visible ? [...visible] : null;
   const engineerCodes = await repo.memberProjectCodes(actor.id, "engineer");
 
-  const [projects, issueGroups, reportGroups, recentReports, requirementGroups] = await Promise.all([
+  const [projects, issueGroups, criticalOpen, reportGroups, recentReports, requirementGroups] = await Promise.all([
     projectsBlock(actor, { restrictTo: engineerCodes, top: 0 }),
     repo.issueGroups(engineerCodes),
+    repo.criticalOpenIssueCount(engineerCodes),
     repo.reportGroups(visibleCodes),
     repo.recentReports(visibleCodes, 5),
     repo.requirementGroups(visibleCodes),
@@ -143,6 +145,8 @@ const engineer = async (actor: SummaryActor) => {
     issues: aggregates.issueStats(issueGroups.map((g) => ({ status: g.status, n: g.n }))),
     reports: {
       ...aggregates.reportCounts(reportGroups.map((g) => ({ type: g.type, priority: g.priority, n: g.n }))),
+      // B-164: the Issues page's Critical count (unresolved critical issues), not report priorities.
+      criticalIssues: criticalOpen,
       recent: recentReports,
     },
     requirements: {

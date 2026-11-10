@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ReferencePicker } from "@/features/reference/components/ReferencePicker";
 import { expenseCategoryForRequirement } from "@/config/expense-categories";
 import { formatCurrency } from "@/lib/format-currency";
+import { todayIso } from "@/lib/today-iso";
 import { useExpenseCategories } from "../hooks/use-expense-categories";
 import type { ActionResult, CreatePurchaseRequestInput, LineItem } from "../types/purchasing.types";
 import { CategorySelect } from "./CategorySelect";
@@ -69,6 +70,11 @@ export function RequestPurchaseDialog({ requirement, onClose, onSubmit, routingH
 
   const submit = async () => {
     if (!requirement) return;
+    // The date input's `min` is a hint only; typing a past date still has to be refused.
+    if (neededBy && neededBy < todayIso()) {
+      setError("Needed-by date cannot be in the past");
+      return;
+    }
     setBusy(true);
     setError(null);
     const r = await onSubmit({
@@ -106,7 +112,7 @@ export function RequestPurchaseDialog({ requirement, onClose, onSubmit, routingH
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="pr-needed">Needed by</Label>
-              <Input id="pr-needed" type="date" value={neededBy} onChange={(e) => setNeededBy(e.target.value)} />
+              <Input id="pr-needed" type="date" min={todayIso()} value={neededBy} onChange={(e) => setNeededBy(e.target.value)} />
             </div>
           </div>
 

@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useWorkflowTemplates } from "@/features/workflows/hooks/useWorkflows";
 import { downloadFileUrl } from "@/lib/file-url";
 import { useMarkClientReplied, useRequestDetail, useResendRequestEmail } from "../hooks/useRequests";
+import { canFollowUpRequest, REQUEST_RAISER_ROLES } from "../lib/follow-up-rule";
 import { RequestRepository } from "../repositories/request.repository";
 import { DISCIPLINE_LABEL, MAX_EMAIL_RESENDS, STATUS_LABEL, type DesignRequestDetail, type RequestFile } from "../types/request.types";
 import { EmailStatusBadge, formatDate, formatDateTime, KindBadge, OverdueBadge, RecipientBadge, RequestStatusBadge } from "./RequestBadges";
@@ -24,7 +25,7 @@ import { FileIntegrityBadge } from "@/features/uploads/components/FileIntegrityB
 import { RecipientsList } from "./RecipientsList";
 import { OverrideReasonDialog } from "@/components/shared/override-reason-dialog";
 
-const RAISERS = new Set(["project-manager", "engineer", "admin"]);
+const RAISERS = REQUEST_RAISER_ROLES;
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -114,7 +115,7 @@ export function RequestDetailSheet({
   const [overrideOpen, setOverrideOpen] = useState(false);
   const [overrideError, setOverrideError] = useState<string | null>(null);
   const canClose = !!r && r.status !== "closed" && (isAdmin || role === "project-manager" || r.requestedByUserId === user?.id);
-  const canFollowUp = !!r && RAISERS.has(role) && r.status !== "draft" && r.status !== "closed";
+  const canFollowUp = !!r && canFollowUpRequest(role, r.status);
   const canRecordReturned = !!r && RAISERS.has(role) && r.kind === "RFA" && ["approved", "approved_as_noted", "rejected"].includes(r.status);
   const canChangeOrder = !!r && r.suggestsChangeOrder && ["project-manager", "admin", "engineer"].includes(role);
 
@@ -306,7 +307,7 @@ export function RequestDetailSheet({
                     </Button>
                   )}
                   <Button size="sm" variant="outline" asChild>
-                    <Link to={`/requests/${r.id}/print`} target="_blank" rel="noreferrer">
+                    <Link to={`/requests/${r.id}/print`}>
                       <Printer className="h-4 w-4" /> Print / PDF
                     </Link>
                   </Button>

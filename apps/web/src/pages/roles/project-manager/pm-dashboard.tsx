@@ -65,7 +65,7 @@ export default function DashboardPage() {
       {/* ── KPI grid — real, from /api/projects ── */}
       <KpiStrip
         items={[
-          { label: "Total projects", value: `${c.kpis.total}`, icon: FolderKanban },
+          { label: "Active projects", value: `${c.kpis.total}`, icon: FolderKanban },
           { label: "On track", value: `${c.kpis.onTrack}`, icon: Activity, tone: "good" },
           { label: "At risk", value: `${c.kpis.atRisk}`, icon: ShieldAlert, tone: "warn" },
           { label: "Over budget", value: `${c.overBudget}`, icon: Banknote, tone: c.overBudget > 0 ? "bad" : "neutral" },

@@ -2,8 +2,8 @@
 // sheets. The browser's "Save as PDF" in the print dialog produces the PDF.
 // These routes sit outside the app Layout so no sidebar/header is printed.
 import { useEffect, useState } from "react";
-import { useParams } from "react-router";
-import { Printer } from "lucide-react";
+import { useNavigate, useParams } from "react-router";
+import { ArrowLeft, Printer } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { COMPANY } from "@/features/requests/lib/company";
@@ -46,13 +46,19 @@ const Check = ({ on, label }: { on: boolean; label: string }) => (
 );
 
 function Shell({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
+  const navigate = useNavigate();
   useEffect(() => {
     document.title = title;
   }, [title]);
   return (
     <div>
       <style>{PRINT_CSS}</style>
-      <div className="no-print" style={{ textAlign: "center", padding: 12 }}>
+      <div className="no-print" style={{ display: "flex", justifyContent: "center", gap: 8, padding: 12 }}>
+        {/* B-210: this page opens in the same tab (a new tab has no session unless "remember me" is on),
+            so it needs its own way back. */}
+        <Button variant="outline" onClick={() => navigate(-1)}>
+          <ArrowLeft className="mr-1 h-4 w-4" /> Back
+        </Button>
         <Button onClick={() => window.print()}>
           <Printer className="mr-1 h-4 w-4" /> Print / Save as PDF
         </Button>

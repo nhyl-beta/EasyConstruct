@@ -22,10 +22,6 @@ interface Options {
    * rows the search / toggles select ("filtered", the PM and Owner pages).
    */
   kpis?: "portfolio" | "filtered";
-  /** Offer the "Show archived" toggle (archived projects are hidden by default). */
-  archivedToggle?: boolean;
-  /** Offer the "Completed only" toggle (Owner's portfolio). */
-  completedToggle?: boolean;
 }
 
 /**
@@ -34,14 +30,12 @@ interface Options {
  * previous page stays on screen while the next one loads, and the headline
  * counts come back in the response's `meta.kpis` - no full list is downloaded.
  */
-export function useProjectsPaged({ kpis = "portfolio", archivedToggle = false, completedToggle = false }: Options = {}) {
+export function useProjectsPaged({ kpis = "portfolio" }: Options = {}) {
   const [filters, setFilters] = useState<ProjectFilterState>(NO_FILTERS);
   const [view, setView] = useState<"table" | "grid">("table");
-  const [showArchived, setShowArchived] = useState(false);
-  const [completedOnly, setCompletedOnly] = useState(false);
 
   const list = useServerList<Project, ProjectsKpi | undefined>({
-    key: (params) => qk.projects.list({ ...params, kpis, archivedToggle }),
+    key: (params) => qk.projects.list({ ...params, kpis }),
     fetchPage: async (params) => {
       const page = await ProjectRepository.listPage({
         page: params.page,
@@ -50,14 +44,14 @@ export function useProjectsPaged({ kpis = "portfolio", archivedToggle = false, c
         projectType: filters.projectType,
         deliveryType: filters.deliveryType,
         risk: filters.risk,
-        status: completedOnly ? "Completed" : filters.status,
+        status: filters.status,
         // Archived is the terminal phase: hidden unless asked for (or filtered to explicitly).
-        excludeArchived: archivedToggle ? !showArchived && filters.status !== "Archived" : filters.status !== "Archived",
+        excludeArchived: filters.status !== "Archived",
         kpis,
       });
       return { items: page.items, total: page.total, pages: page.pages, extra: page.kpis };
     },
-    filters: { ...filters, showArchived, completedOnly },
+    filters: { ...filters },
     initialPageSize: DEFAULT_PAGE_SIZE,
   });
 
@@ -88,10 +82,6 @@ export function useProjectsPaged({ kpis = "portfolio", archivedToggle = false, c
     hasActiveFilters,
     view,
     setView,
-    showArchived: archivedToggle ? showArchived : false,
-    setShowArchived,
-    completedOnly: completedToggle ? completedOnly : false,
-    setCompletedOnly,
     kpis: list.extra ?? NO_KPIS,
     /** A request is in flight (also while the previous page is still shown). */
     loading: list.fetching,

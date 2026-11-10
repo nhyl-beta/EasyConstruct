@@ -1,5 +1,5 @@
 // apps/api/src/issues/repository.ts — NEW
-import { and, desc, eq, isNotNull, SQL } from "drizzle-orm";
+import { and, desc, eq, isNotNull, ne, SQL } from "drizzle-orm";
 import { db } from "../../../core/db/connection.js";
 import { issues } from "../../../core/db/schema/issues.js";
 import { countRows, groupCount, inCodes, selectPage } from "../../../core/db/paged.js";
@@ -32,13 +32,17 @@ export const countFiltered = async (filters: IssueFilters = {}) => {
   return countRows(issues, conditions.length ? and(...conditions) : undefined);
 };
 
-/** Headline counts for the KPI cards: per status and per severity over the caller's scope (status filter ignored). */
+/**
+ * Headline counts for the KPI cards: per status and per severity over the caller's scope (status filter ignored).
+ * Severity counts cover unresolved issues only (B-164), so the "Critical" card means "critical and still open"
+ * and matches the Engineer dashboard card, which uses the same rule.
+ */
 export const headlineCounts = async (filters: IssueFilters = {}) => {
   const conditions = buildConditions({ ...filters, status: undefined });
   const where = conditions.length ? and(...conditions) : undefined;
   const [statusCounts, severityCounts] = await Promise.all([
     groupCount(issues, issues.status, where),
-    groupCount(issues, issues.severity, where),
+    groupCount(issues, issues.severity, and(where, ne(issues.status, "Resolved"))),
   ]);
   return { statusCounts, severityCounts };
 };

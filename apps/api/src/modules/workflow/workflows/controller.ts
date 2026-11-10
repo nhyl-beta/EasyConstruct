@@ -230,11 +230,11 @@ export const getApprovals = async (req: AuthedRequest, res: Response, next: Next
         from: text(req.query.from),
         to: text(req.query.to),
         search: text(req.query.search),
-      });
+      }, req.authUser?.id);
       sendPaged(res, items, MSG.workflows.retrieved, meta);
       return;
     }
-    const data = await service.getApprovalQueue(scope, role, name, codes);
+    const data = await service.getApprovalQueue(scope, role, name, codes, req.authUser?.id);
     res.json(formatSuccess(data, MSG.workflows.retrieved));
   } catch (err) {
     next(err);
@@ -248,7 +248,7 @@ export const getApprovalStats = async (req: AuthedRequest, res: Response, next: 
     // The sidebar / header badge asks for this on every page. It depends on the
     // caller's role and visible projects, so the entry is per user; any write
     // anywhere invalidates it (the `all` domain). 20 s.
-    const load = async () => service.getApprovalStats(role, name, await visibleProjectCodes(scopeOf(req)));
+    const load = async () => service.getApprovalStats(role, name, await visibleProjectCodes(scopeOf(req)), false, req.authUser?.id);
     const scope = userScope(req.authUser);
     const data = scope ? await cached("workflows", scope, 20, load, { query: { stats: true }, deps: [ALL_DOMAIN] }) : await load();
     res.json(formatSuccess(data, MSG.workflows.retrieved));

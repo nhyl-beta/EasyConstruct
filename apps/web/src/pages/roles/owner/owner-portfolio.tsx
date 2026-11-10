@@ -12,7 +12,7 @@ import { ProjectsPagination } from "@/features/projects/components/ProjectsPagin
 // with no `actions` slot: Owner has no create/edit grant on /api/projects, so
 // offering a "New Project" button here would only ever produce a 403.
 export default function OwnerPortfolioPage() {
-  const ctrl = useProjectsPaged({ kpis: "filtered", archivedToggle: true, completedToggle: true });
+  const ctrl = useProjectsPaged({ kpis: "filtered" });
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-8">
@@ -36,10 +36,6 @@ export default function OwnerPortfolioPage() {
             active={ctrl.hasActiveFilters}
           />
         }
-        showArchived={ctrl.showArchived}
-        onToggleArchived={ctrl.setShowArchived}
-        completedOnly={ctrl.completedOnly}
-        onToggleCompletedOnly={ctrl.setCompletedOnly}
       />
 
       {ctrl.error ? (

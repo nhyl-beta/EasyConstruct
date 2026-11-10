@@ -65,7 +65,7 @@ export default function OwnerDashboardPage() {
       {/* ── KPI grid ── */}
       <KpiStrip
         items={[
-          { label: "Total projects", value: `${c.kpis.total}`, icon: FolderKanban },
+          { label: "Active projects", value: `${c.kpis.total}`, icon: FolderKanban },
           { label: "At risk", value: `${c.kpis.atRisk}`, icon: ShieldAlert, tone: "warn" },
           {
             label: "Over budget",

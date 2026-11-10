@@ -24,7 +24,7 @@ import { useNavigate } from "react-router";
 const CAN_CREATE_PROJECT = ["project-manager", "admin", "it-designer"];
 
 export default function PMProjects() {
-  const ctrl = useProjectsPaged({ kpis: "filtered", archivedToggle: true });
+  const ctrl = useProjectsPaged({ kpis: "filtered" });
   const navigate = useNavigate();
   const { user } = useAuth();
   const canCreate = CAN_CREATE_PROJECT.includes(user?.role ?? "");
@@ -59,8 +59,6 @@ export default function PMProjects() {
             active={ctrl.hasActiveFilters}
           />
         }
-        showArchived={ctrl.showArchived}
-        onToggleArchived={ctrl.setShowArchived}
       />
 
       {ctrl.error ? (

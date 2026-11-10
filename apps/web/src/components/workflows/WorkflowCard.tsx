@@ -64,7 +64,7 @@ export function WorkflowCard({
             {workflow.code}
           </p>
 
-          <h3 className="font-semibold">
+          <h3 className="break-words font-semibold [overflow-wrap:anywhere]">
             {workflow.title}
           </h3>
 
@@ -73,12 +73,15 @@ export function WorkflowCard({
           </p>
         </div>
 
-        <WorkflowStatusBadge status={workflow.status} />
+        <div className="shrink-0">
+          <WorkflowStatusBadge status={workflow.status} />
+        </div>
       </CardHeader>
 
       <CardContent className="space-y-4">
         {/* Workflow information */}
-        <div className="grid grid-cols-2 gap-4 text-sm md:grid-cols-4">
+        {/* B-50: cells may shrink and break long names, so a long value never runs into the next column on a phone. */}
+        <div className="grid grid-cols-2 gap-4 text-sm md:grid-cols-4 [&>div]:min-w-0 [&_p]:break-words">
           <div>
             <p className="text-muted-foreground">
               Type
@@ -131,7 +134,7 @@ export function WorkflowCard({
               {workflow.stages.map((stage) => (
                 <div
                   key={stage.id}
-                  className="flex items-center justify-between rounded-lg border p-3"
+                  className="flex items-center justify-between gap-3 rounded-lg border p-3"
                 >
                   <div className="min-w-0">
                     <p className="text-sm font-medium">

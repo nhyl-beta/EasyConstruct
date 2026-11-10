@@ -82,11 +82,6 @@ export function WorkflowLineItemsTable({
                 <span>Current: {formatCurrency(amountOf(item.currentAmount), currency)}</span>
                 <span className="text-foreground">Requested: {formatCurrency(amountOf(item.requestedAmount), currency)}</span>
               </div>
-              {FEATURES.ai && item.validation && (
-                <div className="mt-2">
-                  <ReferenceBasisBadge validation={item.validation} />
-                </div>
-              )}
             </div>
           );
         })}
@@ -110,7 +105,6 @@ export function WorkflowLineItemsTable({
               <th className="px-3 py-2 text-right">Current</th>
               <th className="px-3 py-2 text-right">Requested</th>
               <th className="px-3 py-2 text-right">Difference</th>
-              {FEATURES.ai && <th className="px-3 py-2">Market cost</th>}
             </tr>
           </thead>
           <tbody>
@@ -138,11 +132,6 @@ export function WorkflowLineItemsTable({
                     {delta > 0 ? "+" : ""}
                     {formatCurrency(delta, currency)}
                   </td>
-                  {FEATURES.ai && (
-                    <td className="px-3 py-2.5">
-                      {item.validation && <ReferenceBasisBadge validation={item.validation} />}
-                    </td>
-                  )}
                 </tr>
               );
             })}
@@ -166,11 +155,30 @@ export function WorkflowLineItemsTable({
                 {totalDelta > 0 ? "+" : ""}
                 {formatCurrency(totalDelta, currency)}
               </td>
-              {FEATURES.ai && <td className="px-3 py-2.5" />}
             </tr>
           </tfoot>
         </table>
       </div>
+
+      {/* B-51: the market-cost check used to be a table column, so it scrolled sideways with the table.
+          It is its own full-width block under the table now, for the table and the stacked layout alike. */}
+      {FEATURES.ai && lineItems.some((i) => i.validation) && (
+        <div className="mt-3 rounded-xl border border-border bg-muted/20 p-3">
+          <p className="mb-2 text-overline uppercase tracking-wider text-muted-foreground">Decision support · market cost</p>
+          <ul className="space-y-2">
+            {lineItems
+              .filter((i) => i.validation)
+              .map((item) => (
+                <li key={item.id} className="flex flex-col gap-1 text-sm sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                  <span className="min-w-0 break-words [overflow-wrap:anywhere]">{item.description}</span>
+                  <span className="shrink-0">
+                    <ReferenceBasisBadge validation={item.validation!} />
+                  </span>
+                </li>
+              ))}
+          </ul>
+        </div>
+      )}
     </>
   );
 }
@@ -205,7 +213,10 @@ export function WorkflowAttachmentList({
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-medium">{attachment.label}</span>
+                    {/* B-169: long file names wrap inside the card instead of running over the badges beside them. */}
+                    <span className="min-w-0 break-words font-medium [overflow-wrap:anywhere]" title={attachment.label}>
+                      {attachment.label}
+                    </span>
                     {attachment.stageLabel && (
                       <Badge variant="outline" className="rounded-full text-overline">
                         {attachment.stageLabel}

@@ -1,9 +1,9 @@
 import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
 import { usePagination } from "@/hooks/use-pagination";
-import { useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { useOpenOnAction } from "@/features/quick-search/useOpenOnAction";
 import { Link, useSearchParams } from "react-router";
-import { FileSignature, Plus, Search, X } from "lucide-react";
+import { ChevronDown, ChevronRight, CornerDownRight, FileSignature, Plus, Search, X } from "lucide-react";
 
 import { useAuth } from "@/auth/auth-context";
 import { PageHeader } from "@/components/refine-ui/views/page-header";
@@ -15,7 +15,8 @@ import { CreateRequestDialog } from "@/features/requests/components/CreateReques
 import { EmailStatusBadge, formatDate, KindBadge, OverdueBadge, RecipientBadge, RequestStatusBadge } from "@/features/requests/components/RequestBadges";
 import { RequestDetailSheet } from "@/features/requests/components/RequestDetailSheet";
 import { useRequests } from "@/features/requests/hooks/useRequests";
-import { REQUEST_KINDS, REQUEST_STATUSES, STATUS_LABEL, type RequestFilters } from "@/features/requests/types/request.types";
+import { nestFollowUps } from "@/features/requests/lib/nest-follow-ups";
+import { REQUEST_KINDS, REQUEST_STATUSES, STATUS_LABEL, type DesignRequest, type RequestFilters } from "@/features/requests/types/request.types";
 
 const RAISERS = new Set(["project-manager", "engineer", "admin"]);
 const RESPONDERS = new Set(["architect", "consultant"]);
@@ -41,7 +42,16 @@ export default function SharedRequests() {
 
   const box = scope === "mine" ? (isResponder ? "inbox" : canRaise && role !== "admin" ? "raised" : undefined) : undefined;
   const { requests, loading, error, reload } = useRequests({ kind, status, search: query, box, overdue: overdueOnly });
-  const pg = usePagination(requests, 10, `${scope}|${kind}|${status}|${query}|${overdueOnly}`);
+  // B-208: follow-ups are listed under the request they follow up; paging counts top-level requests.
+  const nested = useMemo(() => nestFollowUps(requests), [requests]);
+  const [expanded, setExpanded] = useState<Set<number>>(new Set());
+  const toggleExpanded = (id: number) =>
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (!next.delete(id)) next.add(id);
+      return next;
+    });
+  const pg = usePagination(nested, 10, `${scope}|${kind}|${status}|${query}|${overdueOnly}`);
 
   const openId = Number(params.get("open")) || null;
   const setOpen = (id: number | null) => {
@@ -50,6 +60,62 @@ export default function SharedRequests() {
     else next.delete("open");
     setParams(next, { replace: true });
   };
+
+  const renderRow = (
+    r: DesignRequest,
+    followUpToggle?: { count: number; open: boolean; toggle: () => void },
+    isFollowUp = false,
+  ) => (
+    <TableRow key={r.id} className="cursor-pointer" onClick={() => setOpen(r.id)}>
+      <TableCell className="whitespace-normal">
+        <div className={`flex items-center gap-2 ${isFollowUp ? "pl-6" : ""}`}>
+          {isFollowUp && <CornerDownRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />}
+          <button
+            type="button"
+            className="flex items-center gap-2 text-left"
+            onClick={(e) => {
+              e.stopPropagation();
+              setOpen(r.id);
+            }}
+            aria-label={`Open ${r.number}`}
+          >
+            <KindBadge kind={r.kind} />
+            <span>
+              <span className="block font-mono text-xs">{r.number}</span>
+              <span className="block text-sm">{r.subject}</span>
+            </span>
+          </button>
+          {followUpToggle && (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-6 gap-1 rounded-full px-2 text-overline"
+              aria-expanded={followUpToggle.open}
+              onClick={(e) => {
+                e.stopPropagation();
+                followUpToggle.toggle();
+              }}
+            >
+              {followUpToggle.open ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+              {followUpToggle.count} follow-up{followUpToggle.count === 1 ? "" : "s"}
+            </Button>
+          )}
+        </div>
+      </TableCell>
+      <TableCell className="font-mono text-xs">{r.projectCode}</TableCell>
+      <TableCell className="hidden text-sm md:table-cell">{isResponder && scope === "mine" ? r.requestedByName : r.recipientType === "client" ? (r.recipientEmail ?? "Client") : r.assignedToName}</TableCell>
+      <TableCell className="hidden text-sm sm:table-cell">{formatDate(r.dueDate)}</TableCell>
+      <TableCell>
+        <div className="flex flex-wrap items-center gap-1">
+          <RequestStatusBadge status={r.status} />
+          <RecipientBadge request={r} />
+          <EmailStatusBadge request={r} />
+          <OverdueBadge request={r} />
+        </div>
+      </TableCell>
+    </TableRow>
+  );
 
   const hasFilters = kind !== "all" || status !== "all" || query !== "" || overdueOnly;
   const mineLabel = isResponder ? "My inbox" : "Raised by me";
@@ -161,38 +227,15 @@ export default function SharedRequests() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {pg.pageItems.map((r) => (
-                <TableRow key={r.id} className="cursor-pointer" onClick={() => setOpen(r.id)}>
-                  <TableCell className="whitespace-normal">
-                    <button
-                      type="button"
-                      className="flex items-center gap-2 text-left"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setOpen(r.id);
-                      }}
-                      aria-label={`Open ${r.number}`}
-                    >
-                      <KindBadge kind={r.kind} />
-                      <span>
-                        <span className="block font-mono text-xs">{r.number}</span>
-                        <span className="block text-sm">{r.subject}</span>
-                      </span>
-                    </button>
-                  </TableCell>
-                  <TableCell className="font-mono text-xs">{r.projectCode}</TableCell>
-                  <TableCell className="hidden text-sm md:table-cell">{isResponder && scope === "mine" ? r.requestedByName : r.recipientType === "client" ? (r.recipientEmail ?? "Client") : r.assignedToName}</TableCell>
-                  <TableCell className="hidden text-sm sm:table-cell">{formatDate(r.dueDate)}</TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap items-center gap-1">
-                      <RequestStatusBadge status={r.status} />
-                      <RecipientBadge request={r} />
-                      <EmailStatusBadge request={r} />
-                      <OverdueBadge request={r} />
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {pg.pageItems.map(({ request: r, followUps }) => {
+                const open = expanded.has(r.id);
+                return (
+                  <Fragment key={r.id}>
+                    {renderRow(r, followUps.length > 0 ? { count: followUps.length, open, toggle: () => toggleExpanded(r.id) } : undefined)}
+                    {open && followUps.map((f) => renderRow(f, undefined, true))}
+                  </Fragment>
+                );
+              })}
             </TableBody>
           </Table>
           <div className="pt-2">

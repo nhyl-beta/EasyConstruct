@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { SearchableSelect } from "@/components/ui/searchable-select";
+import { todayIso } from "@/lib/today-iso";
 import { Button } from "@/components/ui/button";
 import { ProjectRepository } from "@/features/projects/repositories/project.repository";
 import { ProjectMemberRepository, type ProjectMemberRole } from "@/features/project-members/repositories/project-member.repository";
@@ -138,12 +139,6 @@ const initialForm: ProjectFormData = {
 
 type FieldErrors = Record<string, string>;
 
-/** Today as yyyy-MM-dd in the browser's timezone (the DatePicker's format). */
-const todayIso = () => {
-  const d = new Date();
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-};
 
 /**
  * Errors for ONE wizard step, all at once — so pressing Next highlights every

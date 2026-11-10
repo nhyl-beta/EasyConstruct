@@ -4,6 +4,16 @@ const category = z.string().trim().min(2).max(64);
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use a date as YYYY-MM-DD");
 const note = z.string().trim().max(2000).optional();
 
+// "Today" in the business's own timezone (Asia/Manila), so a server running in UTC does not reject a
+// date that is still today in Manila. Evaluated on every parse, not once at start-up.
+export const manilaToday = (now: Date = new Date()): string =>
+  now.toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
+
+/** B-87: a request cannot be needed by a day that has already passed. */
+export const neededByDate = isoDate.refine((d) => d >= manilaToday(), {
+  message: "Needed-by date cannot be in the past",
+});
+
 export const lineItemSchema = z.object({
   description: z.string().trim().min(1, "Every line item needs a description").max(255),
   qty: z.number().positive("Quantity must be greater than zero"),
@@ -19,19 +29,24 @@ export const attachmentSchema = z.object({
 });
 
 // The amount is never accepted from the client: it is computed from the lines.
+const purchaseRequestFields = {
+  requirementId: z.number().int().positive(),
+  title: z.string().trim().min(2).max(255),
+  category,
+  lineItems: z.array(lineItemSchema).min(1, "At least one line item is required"),
+  neededBy: isoDate.optional(),
+  justification: z.string().trim().max(2000).optional(),
+  preferredVendor: z.string().trim().max(255).optional(),
+};
+
+// The past-date rule applies when a request is raised. An edit that leaves an already-saved date
+// alone must not start failing just because that date has since gone by.
 export const createPurchaseRequestSchema = z
-  .object({
-    requirementId: z.number().int().positive(),
-    title: z.string().trim().min(2).max(255),
-    category,
-    lineItems: z.array(lineItemSchema).min(1, "At least one line item is required"),
-    neededBy: isoDate.optional(),
-    justification: z.string().trim().max(2000).optional(),
-    preferredVendor: z.string().trim().max(255).optional(),
-  })
+  .object({ ...purchaseRequestFields, neededBy: neededByDate.optional() })
   .strict();
 
-export const updatePurchaseRequestSchema = createPurchaseRequestSchema
+export const updatePurchaseRequestSchema = z
+  .object(purchaseRequestFields)
   .omit({ requirementId: true })
   .partial()
   .strict();

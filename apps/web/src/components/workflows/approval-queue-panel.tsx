@@ -341,8 +341,8 @@ export function ApprovalQueuePanel({
         <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border/60 px-3 py-2 text-sm">
           <label className="flex items-center gap-2">
             <Checkbox
-              checked={selectedItems.length > 0 && selectedItems.length === pagination.pageItems.length}
-              onCheckedChange={(on) => setSelected(on ? new Set(pagination.pageItems.map((a) => a.stageId)) : new Set())}
+              checked={selectedItems.length > 0 && selectedItems.length === pagination.pageItems.filter((a) => !a.viewOnly).length}
+              onCheckedChange={(on) => setSelected(on ? new Set(pagination.pageItems.filter((a) => !a.viewOnly).map((a) => a.stageId)) : new Set())}
               aria-label="Select all on this page"
             />
             Select all on this page
@@ -369,7 +369,7 @@ export function ApprovalQueuePanel({
             <CardContent className="p-4">
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div className="flex min-w-0 items-start gap-3">
-                  {tab === "pending" && canDecide && (
+                  {tab === "pending" && canDecide && !a.viewOnly && (
                     <Checkbox
                       className="mt-3"
                       checked={selected.has(a.stageId)}
@@ -385,7 +385,7 @@ export function ApprovalQueuePanel({
                       <span className="font-mono text-overline text-muted-foreground">
                         {a.workflowCode}
                       </span>
-                      <span className="font-medium">{a.title}</span>
+                      <span className="min-w-0 break-words font-medium [overflow-wrap:anywhere]">{a.title}</span>
                       <Badge
                         variant="outline"
                         className={`rounded-full px-2 py-0.5 text-overline ${SEVERITY_TONE[a.severity]}`}
@@ -399,7 +399,7 @@ export function ApprovalQueuePanel({
                       <span>·</span>
                       <span>{a.type ?? "—"}</span>
                       <span>·</span>
-                      <span>{a.ownerRoleLabel}</span>
+                      <span>{a.viewOnly && a.waitingLabel ? a.waitingLabel : a.ownerRoleLabel}</span>
                       <span>·</span>
                       <span className="inline-flex items-center gap-1">
                         <Clock className="h-3 w-3" /> {formatRelativeTime(a.createdAt)}
@@ -430,7 +430,7 @@ export function ApprovalQueuePanel({
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 md:flex-col md:items-end">
+                <div className="flex flex-wrap items-center gap-2 md:flex-col md:items-end">
                   <span className="text-sm font-medium tabular-nums">
                     {WorkflowFormatService.amount(a.amount)}
                   </span>
@@ -442,9 +442,9 @@ export function ApprovalQueuePanel({
                   >
                     <Eye className="h-3.5 w-3.5" /> View details
                   </Button>
-                  {tab === "pending" && !canDecide ? (
+                  {tab === "pending" && (!canDecide || a.viewOnly) ? (
                     <Badge variant="outline" className="rounded-full text-overline">
-                      Read-only
+                      {a.viewOnly ? "Your request" : "Read-only"}
                     </Badge>
                   ) : tab === "pending" ? (
                     <div className="flex w-full flex-col items-end gap-2 md:w-174">
