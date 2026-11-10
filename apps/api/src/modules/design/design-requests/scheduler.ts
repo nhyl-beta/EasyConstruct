@@ -7,23 +7,15 @@
 // (`overdue_notified_at` additionally makes a repeat sweep a no-op).
 // Not started on Vercel (serverless has no long-lived process): there the same
 // sweep is reachable as POST /api/design-requests/sweep for an external cron.
-import { db } from "../../../core/db/connection.js";
-import { sql } from "drizzle-orm";
+import { withJobLock } from "../../../core/jobs/lock.js";
 import { sweepOverdue } from "./service.js";
 
 const HOUR_MS = 60 * 60 * 1000;
 const LOCK_KEY = 74_2025_01; // arbitrary, stable
 let started = false;
 
-export async function runOverdueSweepOnce(): Promise<{ notified: number } | null> {
-  const [{ locked }] = (await db.execute(sql`SELECT pg_try_advisory_lock(${LOCK_KEY}) AS locked`)).rows as [{ locked: boolean }];
-  if (!locked) return null;
-  try {
-    return await sweepOverdue();
-  } finally {
-    await db.execute(sql`SELECT pg_advisory_unlock(${LOCK_KEY})`);
-  }
-}
+// Transaction-level lock: a session-level one can be unlocked on a different pooled connection and stay held.
+export const runOverdueSweepOnce = (): Promise<{ notified: number } | null> => withJobLock(LOCK_KEY, sweepOverdue);
 
 export function startOverdueSweeper(): void {
   if (started || process.env.VERCEL || process.env.DISABLE_SCHEDULER === "true") return;
