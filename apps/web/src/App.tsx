@@ -224,7 +224,7 @@ function App() {
                     />
                   )}
                   <Route path="/settings" element={<SettingsPage />} />
-                  <Route path="/reports" element={<SharedReports />} />
+                  <Route path="/reports" element={<RequireRole allow={["owner","project_manager","consultant","engineer","admin"]}><SharedReports /></RequireRole>} />
                   {/* Part B item 8: real decide action for gate D3, role-gated
                       server-side (consultant/project-manager/admin); every
                       other authenticated role that reaches it sees the same

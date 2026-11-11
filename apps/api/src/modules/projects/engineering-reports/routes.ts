@@ -16,14 +16,16 @@ const router = Router();
 // may ever call create/update, same split as projects PATCH.
 router.use(authenticate);
 
-router.get("/", controller.getAll);
+// Site reports are for the people who run or review the site, not HR, Finance or Site Personnel (B-128).
+const readers = requireRole("engineer", "project-manager", "owner", "consultant", "admin");
+router.get("/", readers, controller.getAll);
 router.post(
   "/",
   requireRole("engineer", "admin"),
   validate(createEngineeringReportSchema),
   controller.create,
 );
-router.get("/:id", controller.getById);
+router.get("/:id", readers, controller.getById);
 router.patch(
   "/:id",
   requireRole("engineer", "admin", "project-manager"),

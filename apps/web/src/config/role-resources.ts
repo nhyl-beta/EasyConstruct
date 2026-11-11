@@ -64,7 +64,6 @@ export const ROLE_RESOURCE_ACCESS: Record<string, string[]> = {
     "payroll",
     "workforce-reports",
     "approvals",
-    "reports",
     "support",
   ],
   finance_manager: [
@@ -74,7 +73,6 @@ export const ROLE_RESOURCE_ACCESS: Record<string, string[]> = {
     "expenses",
     "approvals",
     "impact-review",
-    "reports",
     "support",
   ],
   architect: [
@@ -105,7 +103,7 @@ export const ROLE_RESOURCE_ACCESS: Record<string, string[]> = {
     "requests",
     "support",
   ],
-  site_personnel: ["dashboard", "attendance", "tasks", "requirements", "documents", "issues", "support"],
+  site_personnel: ["dashboard", "attendance", "tasks", "requirements", "projects", "documents", "issues", "support"],
   consultant: [
     "dashboard",
     // Consultant's review screen, not the Architect authoring page the

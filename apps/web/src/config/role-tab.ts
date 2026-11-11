@@ -495,6 +495,7 @@ export const ROLE_CONFIGS: Record<string, RoleConfig> = {
       { label: "Attendance", icon: UserCheck, route: "/attendance" },
       { label: "Tasks", icon: CheckSquare, route: "/tasks" },
       { label: "Requirements", icon: ClipboardList, route: "/requirements" },
+      { label: "Projects", icon: FolderKanban, route: "/projects" },
       { label: "Documents", icon: FileText, route: "/documents" },
       { label: "Issues", icon: ActivitySquare, route: "/issues" },
     ],
@@ -516,6 +517,7 @@ export const ROLE_CONFIGS: Record<string, RoleConfig> = {
       {
         label: "Operations",
         items: [
+          { label: "Projects", icon: FolderKanban, route: "/projects" },
           { label: "Documents", icon: FileText, route: "/documents" },
           { label: "Issues", icon: ActivitySquare, route: "/issues" },
         ],
