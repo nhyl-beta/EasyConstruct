@@ -220,7 +220,7 @@ async function buildDesign(c: Ctx, decided: boolean) {
   });
   if (!decided) return { designId: design.id, reviewId: review.id };
   await api(`/design-reviews/${review.id}/decide`, consultant.token, { method: "POST", body: { decision: "Approved" } });
-  await api("/blueprints", architect.token, {
+  const bp = await api<{ id: number }>("/blueprints", architect.token, {
     method: "POST",
     body: {
       drawingNumber: `BP-${c.code}`,
@@ -230,7 +230,6 @@ async function buildDesign(c: Ctx, decided: boolean) {
       scale: "1:100",
       revision: "A",
       author: architect.name,
-      approval: "Approved",
       status: "Current",
       fileType: "PDF",
       sizeKb: Math.max(1, Math.round(planPdf.sizeBytes / 1024)),
@@ -238,6 +237,7 @@ async function buildDesign(c: Ctx, decided: boolean) {
       designId: design.id,
     },
   });
+  await api(`/blueprints/${bp.id}/decide`, consultant.token, { method: "POST", body: { approval: "Approved" } });
   return { designId: design.id, reviewId: review.id };
 }
 

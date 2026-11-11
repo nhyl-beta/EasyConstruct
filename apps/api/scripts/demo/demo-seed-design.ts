@@ -93,7 +93,8 @@ async function main() {
   await mkDesign("DSN-D1-STR", "Medical arts building — structural framing", "Structural", 1);
   const rv = await api<{ id: number }>("/design-reviews", s.consultant.token, { method: "POST", body: { code: "REV-D1-ARCH", designId: arch.id, requestedBy: s.architect.name } });
   await api(`/design-reviews/${rv.id}/decide`, s.consultant.token, { method: "POST", body: { decision: "Approved" } });
-  await api("/blueprints", s.architect.token, { method: "POST", body: { drawingNumber: "BP-D1-A101", title: "Architectural drawing set — issue 1", folder: "Architectural", discipline: "Architectural", scale: "1:100", revision: "A", author: s.architect.name, approval: "Approved", status: "Current", fileType: "PDF", sizeKb: 220, projectCode: CODE, designId: arch.id } });
+  const bp = await api<{ id: number }>("/blueprints", s.architect.token, { method: "POST", body: { drawingNumber: "BP-D1-A101", title: "Architectural drawing set — issue 1", folder: "Architectural", discipline: "Architectural", scale: "1:100", revision: "A", author: s.architect.name, status: "Current", fileType: "PDF", sizeKb: 220, projectCode: CODE, designId: arch.id } });
+  await api(`/blueprints/${bp.id}/decide`, s.consultant.token, { method: "POST", body: { approval: "Approved" } });
 
   // RFIs / RFAs.
   const answered = await api<{ id: number }>("/design-requests", pm.token, {

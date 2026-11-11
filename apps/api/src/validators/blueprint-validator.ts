@@ -8,8 +8,8 @@ export const createBlueprintSchema = z.object({
   discipline: z.string().max(50).optional(),
   scale: z.string().max(20).optional(),
   revision: z.string().max(20).optional(),
-  author: z.string().min(2).max(100),
-  approval: z.string().max(50).optional(),
+  // The server sets the author from the signed-in user, and approval only changes through POST /:id/decide.
+  author: z.string().max(100).optional(),
   status: z.string().max(50).optional(),
   fileType: z.string().max(20).optional(),
   sizeKb: z.number().int().nonnegative().optional(),
@@ -18,7 +18,7 @@ export const createBlueprintSchema = z.object({
   projectCode: z.string().max(50).nullable().optional(),
   designId: z.number().int().nullable().optional(),
 });
-export const updateBlueprintSchema = createBlueprintSchema.partial();
+export const updateBlueprintSchema = createBlueprintSchema.omit({ author: true }).partial();
 
 export const decideBlueprintSchema = z.object({
   approval: z.enum(["Approved", "Rejected", "Revision Required"]),

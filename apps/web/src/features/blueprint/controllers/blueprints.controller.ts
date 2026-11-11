@@ -15,16 +15,12 @@ export const useBlueprintsController = () => {
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebouncedValue(query.trim(), 300);
-  const [folder, setFolder] = useState("all");
-  const [projectCode, setProjectCode] = useState("");
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
 
   const load = useCallback(() => {
     const params = new URLSearchParams();
     if (debouncedQuery) params.set("search", debouncedQuery);
-    if (folder !== "all") params.set("folder", folder);
-    if (projectCode) params.set("projectCode", projectCode);
     setLoading(true);
     // Was raw fetch() with no Authorization header — authenticate() has
     // always required a Bearer token (apps/api/src/middleware/auth.ts), so
@@ -33,7 +29,7 @@ export const useBlueprintsController = () => {
       .then((data) => setBlueprints(data ?? []))
       .catch((err) => console.error(err))
       .finally(() => setLoading(false));
-  }, [debouncedQuery, folder, projectCode]);
+  }, [debouncedQuery]);
 
   useEffect(() => {
     load();
@@ -74,7 +70,6 @@ export const useBlueprintsController = () => {
     }
   };
 
-  const folders = useMemo(() => Array.from(new Set(blueprints.map((b) => b.folder))), [blueprints]);
   const favorites = useMemo(() => blueprints.filter((b) => b.favorite), [blueprints]);
 
   return {
@@ -83,11 +78,6 @@ export const useBlueprintsController = () => {
     loading,
     query,
     setQuery,
-    folder,
-    setFolder,
-    projectCode,
-    setProjectCode,
-    folders,
     creating,
     createError,
     create,

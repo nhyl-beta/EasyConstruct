@@ -159,9 +159,12 @@ async function designs() {
       const t = team(b.code);
       const created = await api<{ id: number }>("/blueprints", t.architect.token, {
         method: "POST",
-        body: { drawingNumber: b.num, title: b.title, folder: "Structural", discipline: "Structural", scale: "1:100", revision: "A", author: t.architect.name, approval: b.approval, status: b.status, fileType: "PDF", sizeKb: 180, projectCode: b.code },
+        body: { drawingNumber: b.num, title: b.title, folder: "Structural", discipline: "Structural", scale: "1:100", revision: "A", author: t.architect.name, status: b.status, fileType: "PDF", sizeKb: 180, projectCode: b.code },
       });
-      if (b.decide) await api(`/blueprints/${created.id}/decide`, t.consultant.token, { method: "POST", body: { approval: b.decide } });
+      const want = b.decide ?? (b.approval === "Pending" ? undefined : (b.approval as "Approved"));
+      if (want) await api(`/blueprints/${created.id}/decide`, t.consultant.token, { method: "POST", body: { approval: want } });
+      // Approving marks a drawing Current; a seeded "Superseded" one is set back afterwards.
+      if (want === "Approved" && !b.decide && b.status !== "Current") await api(`/blueprints/${created.id}`, t.architect.token, { method: "PATCH", body: { status: b.status } });
       bump("blueprints");
     });
   }

@@ -11,9 +11,6 @@ import { ProjectPicker } from "@/components/shared/project-picker";
 import { RevisionLink } from "@/features/revisions/components/RevisionLink";
 import { useCurrentRevisions } from "@/features/revisions/hooks/useCurrentRevisions";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import {
   Dialog,
   DialogContent,
   DialogFooter,
@@ -22,7 +19,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { validateBlueprintForm, type BlueprintFormValues } from "@/features/blueprint/lib/blueprint-form";
-import { FileText, Plus, Search, Star } from "lucide-react";
+import { FileText, Folder, Plus, Search, Star, User } from "lucide-react";
+import { architectFolders, filesIn, projectFolders, type DirectoryEntry } from "@/features/blueprint/lib/blueprint-directory";
 import { useBlueprints } from "@/features/blueprint/hooks/useBlueprints";
 
 function NewBlueprintDialog({
@@ -36,7 +34,6 @@ function NewBlueprintDialog({
     drawingNumber: string;
     title: string;
     folder: string;
-    author: string;
     projectCode?: string;
   }) => Promise<boolean>;
 }) {
@@ -45,13 +42,12 @@ function NewBlueprintDialog({
   const [drawingNumber, setDrawingNumber] = useState("");
   const [title, setTitle] = useState("");
   const [folder, setFolder] = useState("");
-  const [author, setAuthor] = useState("");
   const [projectCode, setProjectCode] = useState("");
 
   // A field shows its message once it has been left (or a submit was tried); the button stays
   // disabled until every field is valid.
   const [touched, setTouched] = useState<Partial<Record<keyof BlueprintFormValues, boolean>>>({});
-  const errors = validateBlueprintForm({ drawingNumber, folder, title, author });
+  const errors = validateBlueprintForm({ drawingNumber, folder, title });
   const valid = Object.keys(errors).length === 0;
   const touch = (key: keyof BlueprintFormValues) => setTouched((t) => ({ ...t, [key]: true }));
   const fieldError = (key: keyof BlueprintFormValues) => (touched[key] ? errors[key] : undefined);
@@ -73,20 +69,18 @@ function NewBlueprintDialog({
     setDrawingNumber("");
     setTitle("");
     setFolder("");
-    setAuthor("");
     setProjectCode("");
   };
 
   const handleSubmit = async () => {
     if (!valid) {
-      setTouched({ drawingNumber: true, folder: true, title: true, author: true });
+      setTouched({ drawingNumber: true, folder: true, title: true });
       return;
     }
     const ok = await onCreate({
       drawingNumber: drawingNumber.trim(),
       title: title.trim(),
       folder: folder.trim(),
-      author: author.trim(),
       projectCode: projectCode || undefined,
     });
     if (ok) {
@@ -130,11 +124,6 @@ function NewBlueprintDialog({
                 drawing sat in one flat, unfiltered gallery. */}
             <ProjectPicker value={projectCode} onChange={setProjectCode} className="w-full" />
           </div>
-          <div className="space-y-1.5">
-            <Label>Author</Label>
-            <Input value={author} onChange={(e) => setAuthor(e.target.value)} placeholder="Your name" {...fieldProps("author")} />
-            <FieldError name="author" />
-          </div>
           {createError && <p className="text-sm text-destructive-strong">{createError}</p>}
         </div>
         <DialogFooter>
@@ -150,16 +139,35 @@ function NewBlueprintDialog({
   );
 }
 
+function DirectoryTile({ entry, icon: Icon, onOpen }: { entry: DirectoryEntry; icon: typeof Folder; onOpen: () => void }) {
+  return (
+    <button type="button" onClick={onOpen} className="flex items-center gap-3 rounded-2xl border p-4 text-left transition-colors hover:bg-muted/40">
+      <Icon className="h-8 w-8 shrink-0 text-muted-foreground" />
+      <div className="min-w-0">
+        <div className="truncate text-sm font-medium">{entry.name}</div>
+        <div className="text-overline text-muted-foreground">{entry.count} {entry.count === 1 ? "drawing" : "drawings"}</div>
+      </div>
+    </button>
+  );
+}
+
 export default function ArchitectBlueprints() {
   const c = useBlueprints();
-  const pg = usePagination(c.blueprints, 12, `${c.query}|${c.folder}`);
   const currentRevisions = useCurrentRevisions("blueprint");
+  // Library path: all projects -> one project -> one architect's drawings. A search shows matches from everywhere.
+  const [project, setProject] = useState<string | null>(null);
+  const [architect, setArchitect] = useState<string | null>(null);
+  const searching = c.query.trim() !== "";
+  const showProjects = !searching && project === null;
+  const showArchitects = !searching && project !== null && architect === null;
+  const files = filesIn(c.blueprints, searching ? null : project, searching ? null : architect);
+  const pg = usePagination(files, 12, `${c.query}|${project}|${architect}`);
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-8">
       <PageHeader
         title="Blueprint library"
-        description="Every drawing across projects, grouped by folder."
+        description="One folder per project, and inside it one folder per architect."
         actions={<NewBlueprintDialog creating={c.creating} createError={c.createError} onCreate={c.create} />}
       />
 
@@ -168,18 +176,19 @@ export default function ArchitectBlueprints() {
           <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input value={c.query} onChange={(e) => c.setQuery(e.target.value)} placeholder="Search blueprints…" className="h-8 pl-8 text-xs" />
         </div>
-        <Select value={c.folder} onValueChange={c.setFolder}>
-          <SelectTrigger className="h-8 w-40 text-xs">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All folders</SelectItem>
-            {c.folders.map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <div className="w-56">
-          <ProjectPicker value={c.projectCode} onChange={c.setProjectCode} placeholder="All projects" className="h-8 text-xs" />
-        </div>
+        {!searching && (
+          <nav aria-label="Library path" className="flex items-center gap-1 text-sm">
+            <button type="button" className="hover:underline" onClick={() => { setProject(null); setArchitect(null); }}>All projects</button>
+            {project !== null && (<>
+              <span className="text-muted-foreground">/</span>
+              <button type="button" className="hover:underline" onClick={() => setArchitect(null)}>{project}</button>
+            </>)}
+            {architect !== null && (<>
+              <span className="text-muted-foreground">/</span>
+              <span className="font-medium">{architect}</span>
+            </>)}
+          </nav>
+        )}
       </div>
 
       {c.loading ? (
@@ -187,6 +196,14 @@ export default function ArchitectBlueprints() {
       ) : c.blueprints.length === 0 ? (
         <div className="rounded-2xl border border-dashed p-10 text-center text-sm text-muted-foreground">
           No blueprints match this view.
+        </div>
+      ) : showProjects ? (
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {projectFolders(c.blueprints).map((e) => <DirectoryTile key={e.name} entry={e} icon={Folder} onOpen={() => setProject(e.name)} />)}
+        </div>
+      ) : showArchitects ? (
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {architectFolders(c.blueprints, project!).map((e) => <DirectoryTile key={e.name} entry={e} icon={User} onOpen={() => setArchitect(e.name)} />)}
         </div>
       ) : (
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">

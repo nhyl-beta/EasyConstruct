@@ -187,8 +187,10 @@ async function main() {
     reviewId = r.id;
   });
   await act("Design", "Consultant approves the design review (D2)", ["D2"], () => api(`/design-reviews/${reviewId}/decide`, consultant.token, { method: "POST", body: { decision: "Approved" } }));
-  await act("Design", "Architect files approved current blueprint (D3)", ["D3"], () =>
-    api("/blueprints", architect.token, { method: "POST", body: { drawingNumber: `BP-${CODE}`, title: `${CODE} drawing set`, folder: "Structural", discipline: "Structural", scale: "1:100", revision: "A", author: architect.name, approval: "Approved", status: "Current", fileType: "PDF", sizeKb: 1, projectCode: CODE, designId } }));
+  await act("Design", "Architect files approved current blueprint (D3)", ["D3"], async () => {
+    const bp = await api<{ id: number }>("/blueprints", architect.token, { method: "POST", body: { drawingNumber: `BP-${CODE}`, title: `${CODE} drawing set`, folder: "Structural", discipline: "Structural", scale: "1:100", revision: "A", author: architect.name, status: "Current", fileType: "PDF", sizeKb: 1, projectCode: CODE, designId } });
+    await api(`/blueprints/${bp.id}/decide`, consultant.token, { method: "POST", body: { approval: "Approved" } });
+  });
   v = await view();
   rec("Design", "All Design gates pass", v.canAdvance, keys(v));
   v = await uiAdvance("Design", "Design", "Pre-Construction");
