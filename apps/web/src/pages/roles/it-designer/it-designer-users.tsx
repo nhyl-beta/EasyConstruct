@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link2, Pencil, Plus, Search, Trash2, UserCheck, UserPlus, UserX, UsersRound } from "lucide-react";
 import { useSearchParams } from "react-router";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ROLE_HIERARCHY } from "@/features/roles/role-hierarchy";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,8 +26,15 @@ import { OwnerApprovalStatus } from "@/features/owner-approvals/components/Owner
 
 export default function ITDesignerUsersPage() {
   const [roleFilter, setRoleFilter] = useState<string | null>(null);
-  const { list, create, update, setPassword, setActive, remove, linkEmployee, createEmployeeFromAccount } = useUsersPaged(roleFilter);
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
+  const { list, create, update, setPassword, setActive, remove, linkEmployee, createEmployeeFromAccount } = useUsersPaged(roleFilter, statusFilter);
   const { roles } = useRoles();
+  // B-75: role filters follow the organisation chart (Owner first), not the order the API returns them.
+  const roleRank = (name: string) => {
+    const i = ROLE_HIERARCHY.findIndex((n) => n.role === name);
+    return i === -1 ? ROLE_HIERARCHY.length : i;
+  };
+  const orderedRoles = [...roles].sort((a, b) => roleRank(a.name) - roleRank(b.name));
   const { loading, error: loadError, searchInput: search, setSearchInput: setSearch } = list;
   const error = loadError;
   const users = list.pageItems;
@@ -175,7 +184,7 @@ export default function ITDesignerUsersPage() {
             >
               All{roleFilter === null ? ` (${list.total})` : ""}
             </Badge>
-            {roles.map((role) => (
+            {orderedRoles.map((role) => (
               <Badge
                 key={role.id}
                 variant="outline"
@@ -186,14 +195,26 @@ export default function ITDesignerUsersPage() {
               </Badge>
             ))}
           </div>
-          <div className="relative w-full md:w-64">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Search accounts…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="h-9 border-border bg-muted/40 pl-9"
-            />
+          <div className="flex w-full flex-wrap items-center gap-2 md:w-auto">
+            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
+              <SelectTrigger aria-label="Account status" className="h-9 w-36 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All statuses</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Deactivated</SelectItem>
+              </SelectContent>
+            </Select>
+            <div className="relative w-full md:w-72">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search name, email or employee ID…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="h-9 border-border bg-muted/40 pl-9"
+              />
+            </div>
           </div>
         </div>
 
@@ -219,7 +240,7 @@ export default function ITDesignerUsersPage() {
           <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-muted/50 px-6 py-12 text-center">
             <UsersRound className="h-5 w-5 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">
-              {!list.search && !roleFilter ? "No accounts yet." : "No accounts match your filters."}
+              {!list.search && !roleFilter && statusFilter === "all" ? "No accounts yet." : "No accounts match your filters."}
             </p>
           </div>
         )}

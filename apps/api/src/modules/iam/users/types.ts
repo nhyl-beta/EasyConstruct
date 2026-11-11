@@ -16,6 +16,8 @@ export interface UserFilters {
   role?: string;
   /** Name or email contains this text (paged lists only). */
   search?: string;
+  /** true = active accounts only, false = deactivated only (paged lists only). */
+  active?: boolean;
 }
 
 /** An account is always created FROM an employee: name and email come from that record. */

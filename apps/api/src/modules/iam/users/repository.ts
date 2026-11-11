@@ -1,7 +1,7 @@
 import { db } from "../../../core/db/connection.js";
 import { users } from "../../../core/db/schema/users.js";
 import { employees } from "../../../core/db/schema/employees.js";
-import { and, asc, eq, ilike, isNull, isNotNull, or, SQL } from "drizzle-orm";
+import { and, asc, eq, ilike, inArray, isNull, isNotNull, or, SQL } from "drizzle-orm";
 import { countRows } from "../../../core/db/paged.js";
 import { ConflictError } from "../../../core/utils/errors.js";
 import type { NewAccountRow, UpdateUserInput, UserFilters } from "./types.js";
@@ -29,8 +29,11 @@ const userConditions = (filters: UserFilters): SQL[] => {
   if (filters.role) conditions.push(eq(users.role, filters.role));
   if (filters.search) {
     const s = `%${filters.search}%`;
-    conditions.push(or(ilike(users.name, s), ilike(users.email, s), ilike(users.role, s))!);
+    // B-77: an Employee ID (EMP-DEMO-01) finds the account linked to that employee record.
+    const byEmployeeId = inArray(users.id, db.select({ id: employees.userId }).from(employees).where(ilike(employees.employeeId, s)));
+    conditions.push(or(ilike(users.name, s), ilike(users.email, s), ilike(users.role, s), byEmployeeId)!);
   }
+  if (filters.active !== undefined) conditions.push(eq(users.isActive, filters.active));
   return conditions;
 };
 

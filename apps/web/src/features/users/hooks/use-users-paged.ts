@@ -14,14 +14,15 @@ import {
  * Writes go through apiClient, which invalidates the "users" queries, so the
  * visible page refreshes without a manual reload.
  */
-export function useUsersPaged(role: string | null) {
+export function useUsersPaged(role: string | null, status: "all" | "active" | "inactive" = "all") {
   const list = useServerList<PublicUser>({
     key: (params) => qk.users.list(params),
-    filters: { role: role ?? "" },
+    filters: { role: role ?? "", status },
     fetchPage: async (params, signal) => {
       const qs = new URLSearchParams({ page: String(params.page), limit: String(params.limit) });
       if (params.search) qs.set("search", params.search);
       if (role) qs.set("role", role);
+      if (status !== "all") qs.set("status", status);
       const json = await apiClient.get(`/users?${qs.toString()}`, { signal });
       return {
         items: (json?.data ?? []) as PublicUser[],

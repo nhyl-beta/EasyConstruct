@@ -23,7 +23,9 @@ export const getAll = async (req: Request, res: Response, next: NextFunction) =>
     const paging = parsePageRequest(req.query, { sortable: Object.keys(USER_SORT_COLUMNS), defaultOrder: "asc" });
     if (paging.requested) {
       const search = typeof req.query.search === "string" && req.query.search.trim() ? req.query.search.trim() : undefined;
-      const { items, meta } = await service.getPage({ ...filters, search }, paging);
+      const status = req.query.status;
+      const active = status === "active" ? true : status === "inactive" ? false : undefined;
+      const { items, meta } = await service.getPage({ ...filters, search, ...(active === undefined ? {} : { active }) }, paging);
       sendPaged(res, items, "Users retrieved", meta);
       return;
     }
