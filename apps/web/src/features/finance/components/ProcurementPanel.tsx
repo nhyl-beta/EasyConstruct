@@ -213,7 +213,7 @@ export function ProcurementPanel({ procurement, canAct, onNotice, onOpenExpense 
                             </Button>
                           )}
                           {(o.status === "ordered" || o.status === "in-transit") && (
-                            <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-destructive-strong" onClick={() => setDialog({ kind: "cancel", order: o })}>
+                            <Button size="sm" variant="outline" className="h-7 px-2 text-xs border-destructive/40 text-destructive-strong" onClick={() => setDialog({ kind: "cancel", order: o })}>
                               Cancel
                             </Button>
                           )}
@@ -242,7 +242,7 @@ export function ProcurementPanel({ procurement, canAct, onNotice, onOpenExpense 
       >
         <div className="space-y-1.5">
           <Label htmlFor="ship-eta">Expected delivery</Label>
-          <Input id="ship-eta" type="date" value={eta} onChange={(e) => setEta(e.target.value)} />
+          <Input id="ship-eta" type="date" className="max-w-48" value={eta} onChange={(e) => setEta(e.target.value)} />
         </div>
       </DecisionDialog>
 

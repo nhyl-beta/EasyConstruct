@@ -118,6 +118,13 @@ export function RequestPurchaseDialog({ requirement, onClose, onSubmit, routingH
 
           <fieldset className="space-y-2">
             <legend className="text-sm font-medium">Line items</legend>
+            {/* B-90: the inputs' labels are screen-reader only and placeholders vanish once filled, so name the columns. */}
+            <div aria-hidden className="grid grid-cols-12 gap-2 text-xs text-muted-foreground">
+              <span className="col-span-12 sm:col-span-5">Description</span>
+              <span className="col-span-3 sm:col-span-2">Qty</span>
+              <span className="col-span-4 sm:col-span-2">Unit</span>
+              <span className="col-span-5 sm:col-span-3">Unit cost</span>
+            </div>
             {lines.map((l, i) => (
               <div key={i} className="grid grid-cols-12 items-end gap-2">
                 <div className="col-span-12 sm:col-span-5">

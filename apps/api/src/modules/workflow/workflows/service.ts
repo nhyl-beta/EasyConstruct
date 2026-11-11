@@ -332,6 +332,10 @@ export const createWorkflow = async (
 ): Promise<WorkflowWithStages> => {
   const template = await repo.findTemplateById(input.templateId);
   if (!template) throw new ValidationError(`Unknown workflow template ${input.templateId}`);
+  // N-5: only the PM or Admin raises a change order (system-made workflows pass no role).
+  if (template.name === "Change Order Request" && createdByRole && !["project-manager", "admin"].includes(createdByRole)) {
+    throw new ForbiddenError("Only the Project Manager or Admin can raise a change order");
+  }
   if (options.requireNextAssignee) {
     // The initiator's own stage (when their role owns stage 1) is approved for them, so the next one acts first.
     const nextIndex = createdByRole && template.defaultStages[0]?.role === createdByRole ? 1 : 0;

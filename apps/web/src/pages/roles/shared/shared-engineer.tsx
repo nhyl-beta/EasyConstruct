@@ -147,6 +147,7 @@ export function NewReportDialog({
     description: "",
     findings: "",
     measurements: "",
+    observations: "",
     recommendations: "",
     requiredActions: "",
   });
@@ -165,6 +166,7 @@ export function NewReportDialog({
       description: "",
       findings: "",
       measurements: "",
+      observations: "",
       recommendations: "",
       requiredActions: "",
     });
@@ -188,6 +190,7 @@ export function NewReportDialog({
         description: form.description,
         findings: form.findings,
         measurements: form.measurements || undefined,
+        observations: form.observations || undefined,
         recommendations: form.recommendations,
         requiredActions: form.requiredActions || undefined,
       });
@@ -312,6 +315,16 @@ export function NewReportDialog({
               rows={2}
               required
             />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="report-measurements">Measurements (optional)</Label>
+            <Textarea id="report-measurements" value={form.measurements} onChange={(e) => set("measurements", e.target.value)} rows={2} />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="report-observations">Observations (optional)</Label>
+            <Textarea id="report-observations" value={form.observations} onChange={(e) => set("observations", e.target.value)} rows={2} />
           </div>
 
           <div className="space-y-1.5">

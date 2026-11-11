@@ -158,7 +158,7 @@ function CreateOrderDialog({
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="po-eta">Expected delivery</Label>
-              <Input id="po-eta" type="date" value={eta} onChange={(e) => setEta(e.target.value)} />
+              <Input id="po-eta" type="date" className="max-w-48" value={eta} onChange={(e) => setEta(e.target.value)} />
             </div>
           </div>
           <div className="overflow-x-auto">

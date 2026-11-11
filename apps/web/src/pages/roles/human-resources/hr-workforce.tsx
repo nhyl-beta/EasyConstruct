@@ -13,6 +13,8 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FairnessPanel } from "@/features/workforce/components/FairnessPanel";
 import { useWorkforceBoard } from "@/features/hr/hooks/use-workforce-board";
+import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
+import { usePagination } from "@/hooks/use-pagination";
 
 export default function HRWorkforcePage() {
   const [from, setFrom] = useState("");
@@ -24,6 +26,7 @@ export default function HRWorkforcePage() {
   const byDepartment = board.byDepartment;
   const bySite = board.bySite;
   const dailyAttendance = board.dailyAttendance;
+  const attendancePg = usePagination(dailyAttendance, 10, `${from}|${to}`);
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-6">
@@ -178,7 +181,7 @@ export default function HRWorkforcePage() {
                   No attendance records in the selected range.
                 </p>
               ) : (
-                dailyAttendance.map((row) => (
+                attendancePg.pageItems.map((row) => (
                   <div
                     key={row.date}
                     className="grid grid-cols-4 border-b py-2 text-sm last:border-0"
@@ -199,6 +202,7 @@ export default function HRWorkforcePage() {
                   </div>
                 ))
               )}
+              {dailyAttendance.length > 0 && <DataTablePagination {...attendancePg} />}
             </CardContent>
           </Card>
         </>

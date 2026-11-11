@@ -121,7 +121,7 @@ export function PmPurchasingPanel() {
                             <Button size="sm" className="h-7 px-2 text-xs" onClick={async () => void done(await requests.endorse(r.id), `${r.id} endorsed and sent to Finance.`)}>
                               Endorse
                             </Button>
-                            <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-destructive-strong" onClick={() => setRejecting({ id: r.id, label: r.title })}>
+                            <Button size="sm" variant="outline" className="h-7 px-2 text-xs border-destructive/40 text-destructive-strong" onClick={() => setRejecting({ id: r.id, label: r.title })}>
                               Reject
                             </Button>
                           </div>

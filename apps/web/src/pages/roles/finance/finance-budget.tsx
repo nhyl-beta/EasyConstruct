@@ -98,6 +98,10 @@ import { useBudgetApproval } from "@/features/finance/budgets/hooks/useBudgetApp
 import { Check, Download, RotateCcw, X } from "lucide-react";
 import { downloadCsv } from "@/lib/export-csv";
 import { SearchableSelect } from "@/components/ui/searchable-select";
+
+const THIS_YEAR = new Date().getFullYear();
+// shortcut: a fixed window around today, not the years found in the data; upgrade if budgets reach further back.
+const FISCAL_YEARS = [THIS_YEAR + 1, THIS_YEAR, THIS_YEAR - 1, THIS_YEAR - 2].map(String);
 import type { CreateBudgetInput } from "@/features/finance/budgets/controllers/budget.controllers";
 import { OwnerDepartmentPicker } from "@/components/shared/owner-department-picker";
 import { useProjects } from "@/features/projects/hooks/useProjects";
@@ -370,8 +374,12 @@ export default function FinanceBudget() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All FY</SelectItem>
-                <SelectItem value="FY2026">FY2026</SelectItem>
-                <SelectItem value="FY2025">FY2025</SelectItem>
+                {/* N-1: budgets store the plain year ("2026", the validator enforces YYYY), so the value must be the year too. */}
+                {FISCAL_YEARS.map((y) => (
+                  <SelectItem key={y} value={y}>
+                    FY{y}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

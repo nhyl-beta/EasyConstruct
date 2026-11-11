@@ -1,6 +1,8 @@
 // service.ts
 import * as repo from "./repository.js";
 import * as designsRepo from "../repository.js";
+import * as reviewsRepo from "../design-reviews/repository.js";
+import { REVISION_STATUSES } from "../status-group.js";
 import { projectsRepo } from "../../../projects/index.js";
 import { projectsService } from "../../../projects/index.js";
 import { assertProjectWritable } from "../../../projects/index.js";
@@ -100,6 +102,20 @@ export const create = async (
     summary: `${design.code} ${created.parentVersion ?? "—"} → ${created.version} (Rev ${created.revisionNumber}, ${created.status})${created.isDemo ? " [demo data]" : ""}`,
     projectCode: design.projectCode,
   });
+  // B-211: a revision answering a "Revision Required" design must go back to the
+  // Consultant — reopen the design and queue a fresh Pending review.
+  if (!internal.bypassLock && (REVISION_STATUSES as readonly string[]).includes(design.status)) {
+    const [last] = await reviewsRepo.findAll({ designId: design.id });
+    await reviewsRepo.create({
+      code: `REV-${design.code}-${Date.now().toString(36).toUpperCase()}`.slice(0, 20),
+      designId: design.id,
+      discipline: last?.discipline ?? undefined,
+      priority: last?.priority ?? undefined,
+      reviewers: last?.reviewers ?? undefined,
+      requestedBy: createdBy,
+    });
+    await designsRepo.update(design.id, { status: "Under Review" });
+  }
   return created;
 };
 
