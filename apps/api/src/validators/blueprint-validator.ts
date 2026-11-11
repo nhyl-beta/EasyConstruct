@@ -13,6 +13,7 @@ export const createBlueprintSchema = z.object({
   status: z.string().max(50).optional(),
   fileType: z.string().max(20).optional(),
   sizeKb: z.number().int().nonnegative().optional(),
+  fileUrl: z.string().max(2000).nullable().optional(),
   favorite: z.boolean().optional(),
   tags: z.string().optional(),
   projectCode: z.string().max(50).nullable().optional(),

@@ -8,7 +8,7 @@ const integerFromEnv = (fallback: number) =>
   );
 
 const maxUploadFromEnv = z.preprocess(
-  (value) => Math.max(1, Number.parseInt(String(value ?? "100"), 10) || 100),
+  (value) => Math.max(1, Number.parseInt(String(value ?? "500"), 10) || 500),
   z.number().int(),
 );
 

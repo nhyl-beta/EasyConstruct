@@ -12,6 +12,7 @@ export interface Blueprint {
   status: string;
   fileType: string;
   sizeKb: number;
+  fileUrl: string | null;
   favorite: boolean;
   tags: string | null;
   projectCode: string | null;
@@ -24,9 +25,9 @@ export interface CreateBlueprintInput {
   drawingNumber: string;
   title: string;
   folder: string;
-  author: string;
   discipline?: string;
   projectCode?: string;
-  approval?: string;
-  status?: string;
+  fileUrl?: string;
+  fileType?: string;
+  sizeKb?: number;
 }

@@ -27,6 +27,8 @@ export const blueprints = pgTable("blueprints", {
   status: varchar("status", { length: 50 }).notNull().default("Current"),
   fileType: varchar("file_type", { length: 20 }).notNull().default("DWG"),
   sizeKb: integer("size_kb").notNull().default(0),
+  // Stored file (DWG, PDF, ...) from POST /uploads; null for a drawing registered without one.
+  fileUrl: text("file_url"),
   favorite: boolean("favorite").notNull().default(false),
   tags: text("tags"), // comma-separated — no tag table yet
   issueDate: timestamp("issue_date").defaultNow(),

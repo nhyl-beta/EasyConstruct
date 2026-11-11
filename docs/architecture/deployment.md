@@ -54,7 +54,7 @@ R = required, O = optional. S = secret (never commit, never put in the web build
 | `MAIL_FROM` | R for mail | no | the verified sender, e.g. `EasyConstruct <noreply@your-domain>`; used as From whenever set |
 | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | O | yes | shared cache; in-memory cache is used when unset (fine for one instance) |
 | `DB_POOL_MAX` | O | no | default 5 |
-| `MAX_UPLOAD_MB` | O | no | default 100 |
+| `MAX_UPLOAD_MB` | O | no | default 500 |
 | `BLOB_READ_WRITE_TOKEN` | **leave unset** | yes | with it unset, old Vercel Blob URLs answer "file not available" instead of calling Blob |
 
 `PORT` is set by Render itself.

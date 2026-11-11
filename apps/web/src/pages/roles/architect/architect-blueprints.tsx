@@ -1,6 +1,6 @@
 import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
 import { usePagination } from "@/hooks/use-pagination";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useOpenOnAction } from "@/features/quick-search/useOpenOnAction";
 import { PageHeader } from "@/components/refine-ui/views/page-header";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -19,7 +19,10 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { validateBlueprintForm, type BlueprintFormValues } from "@/features/blueprint/lib/blueprint-form";
-import { FileText, Folder, Plus, Search, Star, User } from "lucide-react";
+import { Download, FileText, Folder, Paperclip, Plus, Search, Star, User } from "lucide-react";
+import { checkUploadable, formatBytes, getMaxUploadBytes, uploadLargeFile } from "@/features/uploads/lib/upload-file";
+import { downloadFileUrl } from "@/lib/file-url";
+import type { CreateBlueprintInput } from "@/features/blueprint/types/blueprint.types";
 import { architectFolders, filesIn, projectFolders, type DirectoryEntry } from "@/features/blueprint/lib/blueprint-directory";
 import { useBlueprints } from "@/features/blueprint/hooks/useBlueprints";
 
@@ -30,12 +33,7 @@ function NewBlueprintDialog({
 }: {
   creating: boolean;
   createError: string | null;
-  onCreate: (input: {
-    drawingNumber: string;
-    title: string;
-    folder: string;
-    projectCode?: string;
-  }) => Promise<boolean>;
+  onCreate: (input: CreateBlueprintInput) => Promise<boolean>;
 }) {
   const [open, setOpen] = useState(false);
   useOpenOnAction("new-blueprint", () => setOpen(true));
@@ -43,6 +41,14 @@ function NewBlueprintDialog({
   const [title, setTitle] = useState("");
   const [folder, setFolder] = useState("");
   const [projectCode, setProjectCode] = useState("");
+  // Optional drawing file (DWG, PDF, ...), sent with the shared large-file upload before the row is saved.
+  const [file, setFile] = useState<File | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
+  const [uploadPct, setUploadPct] = useState<number | null>(null);
+  const [maxLabel, setMaxLabel] = useState<string | null>(null);
+  useEffect(() => {
+    getMaxUploadBytes().then((b) => setMaxLabel(formatBytes(b))).catch(() => setMaxLabel(null));
+  }, []);
 
   // A field shows its message once it has been left (or a submit was tried); the button stays
   // disabled until every field is valid.
@@ -70,6 +76,8 @@ function NewBlueprintDialog({
     setTitle("");
     setFolder("");
     setProjectCode("");
+    setFile(null);
+    setFileError(null);
   };
 
   const handleSubmit = async () => {
@@ -77,11 +85,26 @@ function NewBlueprintDialog({
       setTouched({ drawingNumber: true, folder: true, title: true });
       return;
     }
+    let stored: Awaited<ReturnType<typeof uploadLargeFile>> | null = null;
+    if (file) {
+      setUploadPct(0);
+      try {
+        stored = await uploadLargeFile(file, setUploadPct);
+      } catch (err) {
+        setFileError(err instanceof Error ? err.message : "The upload failed.");
+        return;
+      } finally {
+        setUploadPct(null);
+      }
+    }
     const ok = await onCreate({
       drawingNumber: drawingNumber.trim(),
       title: title.trim(),
       folder: folder.trim(),
       projectCode: projectCode || undefined,
+      ...(file && stored
+        ? { fileUrl: stored.url, fileType: file.name.split(".").pop()!.toUpperCase().slice(0, 20), sizeKb: Math.max(1, Math.round(stored.sizeBytes / 1024)) }
+        : {}),
     });
     if (ok) {
       reset();
@@ -124,14 +147,36 @@ function NewBlueprintDialog({
                 drawing sat in one flat, unfiltered gallery. */}
             <ProjectPicker value={projectCode} onChange={setProjectCode} className="w-full" />
           </div>
+          <div className="space-y-1.5">
+            <Label>Drawing file <span className="font-normal text-muted-foreground">(optional)</span></Label>
+            <label className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed px-3 py-2 text-sm">
+              <Paperclip className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <span className="truncate">{file ? `${file.name} · ${formatBytes(file.size)}` : "Choose a DWG, DXF or PDF file"}</span>
+              <input
+                type="file"
+                accept=".dwg,.dxf,.pdf,.rvt,.ifc,.skp,.png,.jpg,.jpeg,.tif,.tiff"
+                className="hidden"
+                disabled={uploadPct !== null}
+                onChange={(e) => {
+                  const picked = e.target.files?.[0] ?? null;
+                  setFile(picked);
+                  setFileError(null);
+                  if (picked) void checkUploadable(picked).then(setFileError);
+                  e.target.value = "";
+                }}
+              />
+            </label>
+            {maxLabel && <p className="text-xs text-muted-foreground">Files up to {maxLabel}.</p>}
+            {fileError && <p role="alert" className="text-xs text-destructive-strong">{fileError}</p>}
+          </div>
           {createError && <p className="text-sm text-destructive-strong">{createError}</p>}
         </div>
         <DialogFooter>
           <Button
-            disabled={creating || !valid}
+            disabled={creating || uploadPct !== null || !valid || !!fileError}
             onClick={handleSubmit}
           >
-            {creating ? "Saving…" : "Register blueprint"}
+            {uploadPct !== null ? `Uploading ${uploadPct}%…` : creating ? "Saving…" : "Register blueprint"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -228,6 +273,11 @@ export default function ArchitectBlueprints() {
                 <span>{b.author}</span>
                 <span>Rev {b.revision}</span>
               </div>
+              {b.fileUrl && (
+                <Button variant="outline" size="sm" className="mt-2 w-full" onClick={() => void downloadFileUrl(b.fileUrl, `${b.drawingNumber}.${b.fileType.toLowerCase()}`)}>
+                  <Download className="h-3.5 w-3.5" /> Download {b.fileType}
+                </Button>
+              )}
               <div className="mt-2 border-t pt-2">
                 <RevisionLink itemType="blueprint" itemId={b.id} current={currentRevisions[b.id]} />
               </div>
