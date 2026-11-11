@@ -27,7 +27,8 @@ export function AttentionCard() {
       ) : !attention || total === 0 ? (
         <p className="text-sm text-muted-foreground">Nothing is overdue or stuck right now.</p>
       ) : (
-        <div className="space-y-4">
+        // A long list scrolls inside the card instead of stretching the whole page.
+        <div className="max-h-80 space-y-4 overflow-y-auto pr-1">
           {attention.overdueRequests.length > 0 && (
             <section aria-label="Overdue requests">
               <h4 className="mb-1 flex items-center gap-1.5 text-xs font-medium text-destructive-strong">

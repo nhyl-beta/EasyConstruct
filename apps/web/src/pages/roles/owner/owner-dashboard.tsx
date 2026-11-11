@@ -72,6 +72,7 @@ export default function OwnerDashboardPage() {
             value: `${c.overBudget}`,
             icon: Banknote,
             tone: c.overBudget > 0 ? "bad" : "neutral",
+            to: "/owner/portfolio",
           },
           {
             label: "Pending approvals",
@@ -89,6 +90,7 @@ export default function OwnerDashboardPage() {
             value: `${c.completedWorkflowCount}`,
             icon: FileCheck2,
             tone: "good",
+            to: "/owner/audit-trail", // B-43: the card opens the log that records each completed workflow
           },
           {
             label: "Proposals pending",

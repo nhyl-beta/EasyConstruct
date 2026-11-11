@@ -1,7 +1,6 @@
 import { useMemo, useState, type ReactNode } from "react";
-import { AlertTriangle, ChevronDown, ChevronRight, KeyRound, ShieldAlert, Trash2, Users } from "lucide-react";
+import { AlertTriangle, KeyRound, ShieldAlert, Trash2, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { PageContainer } from "@/components/refine-ui/views/page-container";
 import { PageHeader } from "@/components/refine-ui/views/page-header";
 import { PageContent } from "@/components/refine-ui/views/page-content";
@@ -72,52 +71,12 @@ const renderFailed = (f: AuditLog) => (
   </div>
 );
 
-const PREVIEW_ROWS = 5;
-
-/**
- * B-66: a section that starts collapsed, shows its first 5 rows when opened, and keeps the
- * full paginated list behind "View all".
- */
-function CollapsibleList({
-  heading,
-  total,
-  rows,
-  fullList,
-}: {
-  heading: ReactNode;
-  total: number;
-  rows: ReactNode[];
-  fullList: ReactNode;
-}) {
-  const [open, setOpen] = useState(false);
-  const [all, setAll] = useState(false);
-  const Chevron = open ? ChevronDown : ChevronRight;
+/** B-73/B-74: a heading and its list, always open and paginated in place (no accordion, no "View all"). */
+function Section({ heading, total, empty, children }: { heading: ReactNode; total: number; empty: string; children: ReactNode }) {
   return (
     <div className="min-w-0 space-y-3">
-      <button
-        type="button"
-        aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-2 text-left text-sm font-semibold text-foreground"
-      >
-        <Chevron className="h-4 w-4 text-muted-foreground" />
-        {heading}
-      </button>
-      {open && (
-        <div className="space-y-2">
-          {all ? fullList : rows.slice(0, PREVIEW_ROWS)}
-          {!all && total > PREVIEW_ROWS && (
-            <Button type="button" variant="outline" size="sm" onClick={() => setAll(true)}>
-              View all ({total.toLocaleString()})
-            </Button>
-          )}
-          {all && (
-            <Button type="button" variant="ghost" size="sm" onClick={() => setAll(false)}>
-              Show fewer
-            </Button>
-          )}
-        </div>
-      )}
+      <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">{heading}</h3>
+      {total === 0 ? <p className="text-sm text-muted-foreground">{empty}</p> : <div className="space-y-2">{children}</div>}
     </div>
   );
 }
@@ -146,14 +105,13 @@ export default function AdminSecurityPage({ belowHeader }: { belowHeader?: React
       <PageContent className="space-y-6 p-6 md:p-8">
         {belowHeader}
         <ReconciliationPanel />
-        {/* Each section starts collapsed (B-66): first 5 rows when opened, the paginated list behind "View all". */}
-        <div className="space-y-3">
+                <div className="space-y-3">
           {loading && <p className="text-sm text-muted-foreground">Loading sensitive actions…</p>}
           {!loading && error && (
             <p className="text-sm text-destructive-strong">Couldn't load audit data. {error.message}</p>
           )}
           {!loading && !error && (
-            <CollapsibleList
+            <Section
               heading={
                 <>
                   <ShieldAlert className="h-4 w-4 text-destructive-strong" />
@@ -162,14 +120,13 @@ export default function AdminSecurityPage({ belowHeader }: { belowHeader?: React
                 </>
               }
               total={sensitiveEvents.length}
-              rows={sensitiveEvents.length === 0 ? [<p key="none" className="text-sm text-muted-foreground">Nothing sensitive recorded — no rejections, deletions, legal downloads or damaged files.</p>] : sensitiveEvents.map(renderEvent)}
-              fullList={
+              empty="Nothing sensitive recorded — no rejections, deletions, legal downloads or damaged files."
+              >
                 <>
                   {pagination.pageItems.map(renderEvent)}
                   <DataTablePagination {...pagination} />
                 </>
-              }
-            />
+            </Section>
           )}
         </div>
 
@@ -183,7 +140,7 @@ export default function AdminSecurityPage({ belowHeader }: { belowHeader?: React
               <p className="text-sm text-destructive-strong">Couldn't load sign-in activity. {security.error.message}</p>
             )}
             {!security.loading && !security.error && (
-              <CollapsibleList
+              <Section
                 heading={
                   <>
                     <Users className="h-4 w-4 text-primary-strong" />
@@ -192,14 +149,13 @@ export default function AdminSecurityPage({ belowHeader }: { belowHeader?: React
                   </>
                 }
                 total={security.sessions.length}
-                rows={security.sessions.length === 0 ? [<p key="none" className="text-sm text-muted-foreground">Nobody has signed in within the last 8 hours.</p>] : security.sessions.map(renderSession)}
-                fullList={
+                empty="Nobody has signed in within the last 8 hours."
+                >
                   <>
                     {sessionsPagination.pageItems.map(renderSession)}
                     <DataTablePagination {...sessionsPagination} compact />
                   </>
-                }
-              />
+              </Section>
             )}
           </div>
 
@@ -212,7 +168,7 @@ export default function AdminSecurityPage({ belowHeader }: { belowHeader?: React
                     {security.totalFailedLogins.toLocaleString()}. Older attempts remain in the audit trail.
                   </p>
                 )}
-                <CollapsibleList
+                <Section
                   heading={
                     <>
                       <KeyRound className="h-4 w-4 text-destructive-strong" />
@@ -221,14 +177,13 @@ export default function AdminSecurityPage({ belowHeader }: { belowHeader?: React
                     </>
                   }
                   total={security.failedLogins.length}
-                  rows={security.failedLogins.length === 0 ? [<p key="none" className="text-sm text-muted-foreground">No failed sign-in attempts recorded.</p>] : security.failedLogins.map(renderFailed)}
-                  fullList={
+                  empty="No failed sign-in attempts recorded."
+                  >
                     <>
                       {failedLoginsPagination.pageItems.map(renderFailed)}
                       <DataTablePagination {...failedLoginsPagination} compact />
                     </>
-                  }
-                />
+                </Section>
               </>
             )}
           </div>
