@@ -8,6 +8,7 @@ import { ChevronDown, ChevronRight, CornerDownRight, FileSignature, Plus, Search
 import { useAuth } from "@/auth/auth-context";
 import { PageHeader } from "@/components/refine-ui/views/page-header";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -215,10 +216,12 @@ export default function SharedRequests() {
           {hasFilters ? "No requests match these filters." : isResponder && scope === "mine" ? "Nothing is waiting for your response." : "No requests yet."}
         </div>
       ) : (
-        <div className="overflow-hidden rounded-2xl border">
+        <Card>
+          <CardContent className="p-0">
+          <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow>
+              <TableRow className="border-b border-border bg-muted/40 text-left text-overline font-medium uppercase tracking-wider text-muted-foreground hover:bg-muted/40">
                 <TableHead>Request</TableHead>
                 <TableHead>Project</TableHead>
                 <TableHead className="hidden md:table-cell">{isResponder && scope === "mine" ? "From" : "To"}</TableHead>
@@ -238,10 +241,12 @@ export default function SharedRequests() {
               })}
             </TableBody>
           </Table>
-          <div className="pt-2">
+          </div>
+          <div className="p-2">
             <DataTablePagination {...pg} />
           </div>
-        </div>
+          </CardContent>
+        </Card>
       )}
 
       <RequestDetailSheet id={openId} onOpenChange={(o) => !o && setOpen(null)} onChanged={reload} />
