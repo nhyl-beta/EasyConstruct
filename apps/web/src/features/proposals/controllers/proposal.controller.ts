@@ -69,6 +69,7 @@ export interface ProposalsListOptions {
 
 interface ProposalsExtra {
   statusCounts: { status: string; count: number }[];
+  failedValidation: number;
 }
 
 export const useProposalsController = (options: ProposalsListOptions = {}) => {
@@ -92,7 +93,7 @@ export const useProposalsController = (options: ProposalsListOptions = {}) => {
         items: (json?.data ?? []) as Proposal[],
         total: json?.meta?.total ?? 0,
         pages: json?.meta?.pages,
-        extra: { statusCounts: json?.meta?.statusCounts ?? [] },
+        extra: { statusCounts: json?.meta?.statusCounts ?? [], failedValidation: json?.meta?.failedValidation ?? 0 },
       };
     },
   });
@@ -258,6 +259,7 @@ export const useProposalsController = (options: ProposalsListOptions = {}) => {
       pending: n("Pending", "In Review"),
       approved: n("Approved"),
       revisionRequested: n("Revision Requested"),
+      failedValidation: Number(list.extra?.failedValidation ?? 0),
     };
   }, [list.extra]);
 

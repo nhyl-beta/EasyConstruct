@@ -37,11 +37,15 @@ export const proposalController = {
           paging,
         );
         if (req.query.counts === "1") {
-          const statusCounts = await proposalService.statusCounts({
+          const scope = {
             ...(isAssignedScoped(auth) ? { codes: [...(await assignedCodesFor(auth))] } : {}),
             projectCode: text(req.query.projectCode),
-          });
-          return { data: items, meta: { ...meta, statusCounts } };
+          };
+          const [statusCounts, failedValidation] = await Promise.all([
+            proposalService.statusCounts(scope),
+            proposalService.failedValidationCount(scope),
+          ]);
+          return { data: items, meta: { ...meta, statusCounts, failedValidation } };
         }
         return { data: items, meta };
       }

@@ -1,6 +1,6 @@
 import { ProposalStatusFilter } from "./ProposalStatusFilter";
 import { useCallback, useState } from "react";
-import { FileText, Search } from "lucide-react";
+import { AlertTriangle, CheckCircle2, FileText, Search } from "lucide-react";
 
 import { SplitDetailLayout } from "@/components/detail-panel/DetailPanel";
 import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
@@ -47,14 +47,10 @@ export function ProposalsRegister({ title, description, sortable = true }: Propo
           items={[
             { label: "Total proposals", value: `${kpis.total}`, icon: FileText },
             { label: "Pending review", value: `${kpis.pending}`, icon: FileText, tone: kpis.pending > 0 ? "warn" : "neutral" },
-            { label: "Approved", value: `${kpis.approved}`, icon: FileText, tone: "good" },
-            { label: "Revision requested", value: `${kpis.revisionRequested}`, icon: FileText, tone: kpis.revisionRequested > 0 ? "warn" : "neutral" },
+            { label: "Approved", value: `${kpis.approved}`, icon: CheckCircle2, tone: "good" },
+            { label: "Failed validation", value: `${kpis.failedValidation}`, icon: AlertTriangle, tone: kpis.failedValidation > 0 ? "warn" : "neutral" },
           ]}
         />
-
-        <div className="flex justify-end">
-          <ProposalStatusFilter value={status} onChange={setStatus} />
-        </div>
 
         <SplitDetailLayout
           open={!!selected}
@@ -68,9 +64,12 @@ export function ProposalsRegister({ title, description, sortable = true }: Propo
           }
         >
           <div className="space-y-4">
-            <div className="relative w-64">
-              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search proposals…" className="h-8 pl-8 text-xs" />
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="relative min-w-56 flex-1">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search proposals…" aria-label="Search proposals" className="h-9 pl-9 text-xs" />
+              </div>
+              <ProposalStatusFilter value={status} onChange={setStatus} />
             </div>
 
             {loading && <p className="text-sm text-muted-foreground">Loading proposals…</p>}

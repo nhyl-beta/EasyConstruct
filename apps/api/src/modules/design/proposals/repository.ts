@@ -58,6 +58,14 @@ export const statusCounts = async (filters: ProposalFilters = {}) => {
   return rows.map((r) => ({ status: r.status, count: r.count }));
 };
 
+/** B-54: proposals whose stored rule-based validation did not pass (same scope as statusCounts). */
+export const failedValidationCount = async (filters: ProposalFilters = {}) => {
+  const conditions = buildConditions({ codes: filters.codes, projectCode: filters.projectCode, excludeStatus: filters.excludeStatus });
+  conditions.push(sql`${proposals.aiValidation} ~ '"passed"\\s*:\\s*false'`);
+  const [row] = await db.select({ count: sql<number>`count(*)::int` }).from(proposals).where(and(...conditions));
+  return row?.count ?? 0;
+};
+
 export const proposalRepository = {
   async countFiltered(filters: ProposalFilters = {}) {
     const conditions = buildConditions(filters);
