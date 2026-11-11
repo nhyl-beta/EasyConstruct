@@ -21,8 +21,8 @@ import {
 import { validateBlueprintForm, type BlueprintFormValues } from "@/features/blueprint/lib/blueprint-form";
 import { Download, FileText, Folder, Paperclip, Plus, Search, Star, User } from "lucide-react";
 import { checkUploadable, formatBytes, getMaxUploadBytes, uploadLargeFile } from "@/features/uploads/lib/upload-file";
-import { downloadFileUrl } from "@/lib/file-url";
-import type { CreateBlueprintInput } from "@/features/blueprint/types/blueprint.types";
+import { downloadFileUrl, useFileObjectUrl } from "@/lib/file-url";
+import type { Blueprint, CreateBlueprintInput } from "@/features/blueprint/types/blueprint.types";
 import { architectFolders, filesIn, projectFolders, type DirectoryEntry } from "@/features/blueprint/lib/blueprint-directory";
 import { useBlueprints } from "@/features/blueprint/hooks/useBlueprints";
 
@@ -184,6 +184,21 @@ function NewBlueprintDialog({
   );
 }
 
+// shortcut: a PDF card fetches its whole file to show page 1, at most 12 cards per page; upgrade to a thumbnail made at upload if files get huge.
+// DWG and other types stay a placeholder, since browsers cannot draw them.
+function DrawingPreview({ b }: { b: Blueprint }) {
+  const { objectUrl } = useFileObjectUrl(b.fileUrl, b.fileType.toUpperCase() === "PDF");
+  return (
+    <div className="flex aspect-[4/3] items-center justify-center overflow-hidden rounded-xl border bg-muted/40 text-xs text-muted-foreground">
+      {objectUrl ? (
+        <iframe title={`Preview of ${b.drawingNumber}`} src={`${objectUrl}#page=1&toolbar=0&navpanes=0&view=FitH`} className="h-full w-full border-0 bg-white" />
+      ) : (
+        <><FileText className="mr-1 h-3.5 w-3.5" /> {b.fileType}</>
+      )}
+    </div>
+  );
+}
+
 function DirectoryTile({ entry, icon: Icon, onOpen }: { entry: DirectoryEntry; icon: typeof Folder; onOpen: () => void }) {
   return (
     <button type="button" onClick={onOpen} className="flex items-center gap-3 rounded-2xl border p-4 text-left transition-colors hover:bg-muted/40">
@@ -254,9 +269,7 @@ export default function ArchitectBlueprints() {
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {pg.pageItems.map((b) => (
             <div key={b.id} className="rounded-2xl border p-4">
-              <div className="flex aspect-[4/3] items-center justify-center rounded-xl border-2 border-dashed bg-muted/40 text-xs text-muted-foreground">
-                <FileText className="mr-1 h-3.5 w-3.5" /> {b.fileType}
-              </div>
+              <DrawingPreview b={b} />
               <div className="mt-3 flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <div className="truncate text-sm font-medium">{b.drawingNumber} · {b.title}</div>

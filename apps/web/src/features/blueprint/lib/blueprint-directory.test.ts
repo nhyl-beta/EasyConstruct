@@ -4,7 +4,7 @@ import { architectFolders, filesIn, NO_PROJECT, projectFolders } from "./bluepri
 
 const bp = (id: number, projectCode: string | null, author: string, folder = "Structural"): Blueprint => ({
   id, drawingNumber: `A-${id}`, title: `Drawing ${id}`, folder, discipline: null, scale: null, revision: "A", author,
-  approval: "Pending", status: "Current", fileType: "PDF", sizeKb: 1, favorite: false, tags: null,
+  approval: "Pending", status: "Current", fileType: "PDF", sizeKb: 1, fileUrl: null, favorite: false, tags: null,
   projectCode, designId: null, issueDate: null, latestRevisionDate: null,
 });
 
