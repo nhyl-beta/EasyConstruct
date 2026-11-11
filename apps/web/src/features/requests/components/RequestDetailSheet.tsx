@@ -117,7 +117,7 @@ export function RequestDetailSheet({
   const canClose = !!r && r.status !== "closed" && (isAdmin || role === "project-manager" || r.requestedByUserId === user?.id);
   const canFollowUp = !!r && canFollowUpRequest(role, r.status);
   const canRecordReturned = !!r && RAISERS.has(role) && r.kind === "RFA" && ["approved", "approved_as_noted", "rejected"].includes(r.status);
-  const canChangeOrder = !!r && r.suggestsChangeOrder && ["project-manager", "admin", "engineer"].includes(role);
+  const canChangeOrder = !!r && r.suggestsChangeOrder && ["project-manager", "admin"].includes(role);
 
   return (
     <>
