@@ -41,6 +41,13 @@ export const projectKpis = (rows: ProjectStatusRow[]): ProjectKpis => ({
 export const overBudgetCount = (rows: ({ budget: number } & Weighted)[]): number =>
   count(rows, (p) => p.budget > 100);
 
+/**
+ * B-43: a project is over budget when its total passes 100%, or when any one budget line has
+ * spent and committed more than it planned (a single blown category is hidden in the total).
+ */
+export const overBudgetProjects = (rows: { code: string; budget: number }[], overLineCodes: readonly string[]): number =>
+  new Set([...rows.filter((p) => p.budget > 100).map((p) => p.code), ...overLineCodes]).size;
+
 // client: features/projects/repositories/project.repository.ts normalizeRisk
 export type RiskLevel = "low" | "medium" | "high";
 export const normalizeRisk = (risk: string | null | undefined): RiskLevel => {

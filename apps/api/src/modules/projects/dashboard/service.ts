@@ -50,7 +50,7 @@ const projectsBlock = async (actor: SummaryActor, opts: { restrictTo?: string[];
     total: rows.length,
     // B-86: same definition as the Projects page cards (risk level, archived excluded).
     kpis: aggregates.projectRiskKpis(rows),
-    overBudget: aggregates.overBudgetCount(rows),
+    overBudget: aggregates.overBudgetProjects(rows, await repo.overBudgetLineCodes(rows.map((r) => r.code))),
     riskBreakdown: aggregates.riskBreakdown(rows),
     byPhase: aggregates.phaseCounts(rows),
     codes: rows.map((r) => r.code),

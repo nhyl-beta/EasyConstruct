@@ -47,6 +47,16 @@ export const projectRows = async (filters: ProjectFilters) => {
   return projectsRepo.findNarrow(f);
 };
 
+/** Project codes with at least one budget line whose actual + committed is more than its plan. */
+export const overBudgetLineCodes = async (codes: string[]): Promise<string[]> => {
+  if (codes.length === 0) return [];
+  const rows = await db
+    .selectDistinct({ project: budgets.project })
+    .from(budgets)
+    .where(and(inArray(budgets.project, codes), sql`${budgets.actual} + ${budgets.committed} > ${budgets.planned}`));
+  return rows.map((r) => r.project);
+};
+
 export const projectsByCodes = async (codes: string[]) => {
   if (codes.length === 0) return [];
   return db.select().from(projects).where(inArray(projects.code, codes));

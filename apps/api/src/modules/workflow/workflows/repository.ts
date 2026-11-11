@@ -221,7 +221,8 @@ export interface PendingRequester {
  *    someone else; shown view-only). Old rows without created_by_user_id fall back to the name.
  */
 const pendingCondition = (role: string, isPrivileged: boolean, requester?: PendingRequester) => {
-  const current = eq(workflowStages.status, "current");
+  // A stage left "current" on a rejected or cancelled workflow is not waiting on anyone (B-45).
+  const current = and(eq(workflowStages.status, "current"), eq(workflows.status, "active"));
   if (isPrivileged) return current;
   const own: SQL[] = [];
   if (requester?.userId != null) {

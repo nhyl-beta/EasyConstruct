@@ -6,11 +6,12 @@ import type { CreateProjectInput, UpdateProjectInput, ProjectFilters } from "./t
 // `projects.budget` and `projects.workforce` are columns nothing keeps current, so a
 // project's table row showed 0 for both. The figures served are worked out from the
 // live data instead, falling back to the stored column only where there is no data:
-//  - budget: share of the planned budget already spent, the way Finance totals it
-//    (sum of budgets.actual over sum of budgets.planned for the project's code);
+//  - budget: share of the planned budget already spent or committed, the way Finance's
+//    "remaining" works (sum of budgets.actual + budgets.committed over sum of budgets.planned
+//    for the project's code), so an approved purchase request shows up before it is paid;
 //  - workforce: distinct people staffed on the project (project_members).
 const liveBudget = sql<number>`coalesce(
-  (select round(sum(b.actual) / sum(b.planned) * 100)::int from budgets b where b.project = ${projects.code} having sum(b.planned) > 0),
+  (select round((sum(b.actual) + sum(b.committed)) / sum(b.planned) * 100)::int from budgets b where b.project = ${projects.code} having sum(b.planned) > 0),
   ${projects.budget}
 )`;
 const liveWorkforce = sql<number>`coalesce(

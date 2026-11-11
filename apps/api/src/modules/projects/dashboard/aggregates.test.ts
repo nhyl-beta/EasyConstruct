@@ -178,6 +178,13 @@ describe("dashboard aggregates equal the browser-side logic", () => {
     assert.deepEqual(agg.overBudgetCount(grouped(projects.map((p) => ({ budget: p.budget > 100 ? 101 : 0 })), ["budget"])), clientOverBudget(projects));
   });
 
+  test("over budget: total above 100%, or any one budget line over, counted once per project (B-43)", () => {
+    const rows = [{ code: "A", budget: 120 }, { code: "B", budget: 40 }, { code: "C", budget: 0 }];
+    assert.equal(agg.overBudgetProjects(rows, []), 1);
+    assert.equal(agg.overBudgetProjects(rows, ["B", "A"]), 2);
+    assert.equal(agg.overBudgetProjects([], []), 0);
+  });
+
   test("attention order: risk, then budget, ties keep the list's own order", () => {
     assert.deepEqual(
       agg.attentionSorted(projects).map((p) => p.code),
