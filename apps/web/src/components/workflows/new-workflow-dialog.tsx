@@ -54,8 +54,6 @@ interface NewWorkflowDialogProps {
   lockPreset?: boolean;
   /** Pre-fill the title (e.g. a change order raised from an RFI). */
   presetTitle?: string;
-  /** Pre-fill the amount. */
-  presetAmount?: number;
 }
 
 export function NewWorkflowDialog({
@@ -69,14 +67,12 @@ export function NewWorkflowDialog({
   presetProjectCode,
   lockPreset,
   presetTitle,
-  presetAmount,
 }: NewWorkflowDialogProps) {
   const { user } = useAuth();
   const { projects } = useProjects();
   const [title, setTitle] = useState("");
   const [projectCode, setProjectCode] = useState("");
   const [templateId, setTemplateId] = useState<string>("");
-  const [amount, setAmount] = useState("");
   const [type, setType] = useState("");
   // Keyed by stage sequence (1-based, matching stageAssignments/service.ts),
   // value is the assignee's display name (assignedTo is a free-text varchar,
@@ -97,12 +93,11 @@ export function NewWorkflowDialog({
     if (!open) return;
     if (presetProjectCode) setProjectCode(presetProjectCode);
     if (presetTitle) setTitle(presetTitle);
-    if (presetAmount != null) setAmount(String(presetAmount));
     if (presetTemplateName) {
       const match = templates.find((t) => t.name === presetTemplateName);
       if (match) setTemplateId(String(match.id));
     }
-  }, [open, presetProjectCode, presetTemplateName, presetTitle, presetAmount, templates]);
+  }, [open, presetProjectCode, presetTemplateName, presetTitle, templates]);
 
   const role = user?.role;
   const selectedProject = useMemo(
@@ -170,7 +165,6 @@ export function NewWorkflowDialog({
     setTitle("");
     setProjectCode("");
     setTemplateId("");
-    setAmount("");
     setType("");
     setStageAssignments({});
     setBudgetId("");
@@ -192,7 +186,6 @@ export function NewWorkflowDialog({
       title,
       projectCode,
       templateId: Number(templateId),
-      amount: amount ? Number(amount) : undefined,
       type: type || undefined,
       stageAssignments: Object.keys(cleanedAssignments).length ? cleanedAssignments : undefined,
       budgetId: isBudgetChangeRequest && budgetId ? Number(budgetId) : undefined,
@@ -348,17 +341,7 @@ export function NewWorkflowDialog({
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="grid gap-1.5">
-              <Label htmlFor="wf-amount">Amount (optional)</Label>
-              <Input
-                id="wf-amount"
-                type="number"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="1240000"
-              />
-            </div>
+          <div className="grid gap-4">
             <div className="grid gap-1.5">
               <Label htmlFor="wf-type">Type (optional)</Label>
               <Input

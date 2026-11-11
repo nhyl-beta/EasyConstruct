@@ -360,7 +360,6 @@ export function RequestDetailSheet({
               presetTemplateName="Change Order Request"
               presetProjectCode={r.projectCode}
               presetTitle={`Change order — ${r.number}: ${r.subject}`.slice(0, 255)}
-              presetAmount={undefined}
             />
           )}
         </>
