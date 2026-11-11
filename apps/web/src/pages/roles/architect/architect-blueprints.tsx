@@ -185,13 +185,14 @@ function NewBlueprintDialog({
 }
 
 // shortcut: a PDF card fetches its whole file to show page 1, at most 12 cards per page; upgrade to a thumbnail made at upload if files get huge.
+// pointer-events-none and scrollbar=0 make it a still snapshot of page 1, not a scrollable viewer.
 // DWG and other types stay a placeholder, since browsers cannot draw them.
 function DrawingPreview({ b }: { b: Blueprint }) {
   const { objectUrl } = useFileObjectUrl(b.fileUrl, b.fileType.toUpperCase() === "PDF");
   return (
     <div className="flex aspect-[4/3] items-center justify-center overflow-hidden rounded-xl border bg-muted/40 text-xs text-muted-foreground">
       {objectUrl ? (
-        <iframe title={`Preview of ${b.drawingNumber}`} src={`${objectUrl}#page=1&toolbar=0&navpanes=0&view=FitH`} className="h-full w-full border-0 bg-white" />
+        <iframe title={`Preview of ${b.drawingNumber}`} src={`${objectUrl}#page=1&toolbar=0&navpanes=0&scrollbar=0&view=Fit`} scrolling="no" tabIndex={-1} className="pointer-events-none h-full w-full border-0 bg-white" />
       ) : (
         <><FileText className="mr-1 h-3.5 w-3.5" /> {b.fileType}</>
       )}
