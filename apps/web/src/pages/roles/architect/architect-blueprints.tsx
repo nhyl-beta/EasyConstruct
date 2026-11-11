@@ -21,7 +21,8 @@ import {
 import { validateBlueprintForm, type BlueprintFormValues } from "@/features/blueprint/lib/blueprint-form";
 import { Download, FileText, Folder, Paperclip, Plus, Search, Star, User } from "lucide-react";
 import { checkUploadable, formatBytes, getMaxUploadBytes, uploadLargeFile } from "@/features/uploads/lib/upload-file";
-import { downloadFileUrl, useFileObjectUrl } from "@/lib/file-url";
+import { downloadFileUrl } from "@/lib/file-url";
+import { pdfThumbnail } from "@/features/blueprint/lib/pdf-thumbnail";
 import type { Blueprint, CreateBlueprintInput } from "@/features/blueprint/types/blueprint.types";
 import { architectFolders, filesIn, projectFolders, type DirectoryEntry } from "@/features/blueprint/lib/blueprint-directory";
 import { useBlueprints } from "@/features/blueprint/hooks/useBlueprints";
@@ -97,11 +98,13 @@ function NewBlueprintDialog({
         setUploadPct(null);
       }
     }
+    const thumbnail = file?.name.toLowerCase().endsWith(".pdf") ? await pdfThumbnail(file) : null;
     const ok = await onCreate({
       drawingNumber: drawingNumber.trim(),
       title: title.trim(),
       folder: folder.trim(),
       projectCode: projectCode || undefined,
+      ...(thumbnail ? { thumbnail } : {}),
       ...(file && stored
         ? { fileUrl: stored.url, fileType: file.name.split(".").pop()!.toUpperCase().slice(0, 20), sizeKb: Math.max(1, Math.round(stored.sizeBytes / 1024)) }
         : {}),
@@ -184,15 +187,12 @@ function NewBlueprintDialog({
   );
 }
 
-// shortcut: a PDF card fetches its whole file to show page 1, at most 12 cards per page; upgrade to a thumbnail made at upload if files get huge.
-// pointer-events-none and scrollbar=0 make it a still snapshot of page 1, not a scrollable viewer.
-// DWG and other types stay a placeholder, since browsers cannot draw them.
+// A PDF shows the page-1 image made at upload; DWG and other types (or older rows) keep the file-type placeholder.
 function DrawingPreview({ b }: { b: Blueprint }) {
-  const { objectUrl } = useFileObjectUrl(b.fileUrl, b.fileType.toUpperCase() === "PDF");
   return (
     <div className="flex aspect-[4/3] items-center justify-center overflow-hidden rounded-xl border bg-muted/40 text-xs text-muted-foreground">
-      {objectUrl ? (
-        <iframe title={`Preview of ${b.drawingNumber}`} src={`${objectUrl}#page=1&toolbar=0&navpanes=0&scrollbar=0&view=Fit`} scrolling="no" tabIndex={-1} className="pointer-events-none h-full w-full border-0 bg-white" />
+      {b.thumbnail ? (
+        <img src={b.thumbnail} alt={`Preview of ${b.drawingNumber}`} className="h-full w-full bg-white object-contain" />
       ) : (
         <><FileText className="mr-1 h-3.5 w-3.5" /> {b.fileType}</>
       )}

@@ -29,6 +29,8 @@ export const blueprints = pgTable("blueprints", {
   sizeKb: integer("size_kb").notNull().default(0),
   // Stored file (DWG, PDF, ...) from POST /uploads; null for a drawing registered without one.
   fileUrl: text("file_url"),
+  // Small JPEG data URL of page 1, made in the browser at upload (PDFs only); null for other types.
+  thumbnail: text("thumbnail"),
   favorite: boolean("favorite").notNull().default(false),
   tags: text("tags"), // comma-separated — no tag table yet
   issueDate: timestamp("issue_date").defaultNow(),

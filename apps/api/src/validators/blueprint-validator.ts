@@ -14,6 +14,8 @@ export const createBlueprintSchema = z.object({
   fileType: z.string().max(20).optional(),
   sizeKb: z.number().int().nonnegative().optional(),
   fileUrl: z.string().max(2000).nullable().optional(),
+  // Only a JPEG data URL, so the value is safe to use as an <img src>. shortcut: stored in the row (about 30 KB), move to file storage if the list grows large.
+  thumbnail: z.string().max(150_000).regex(/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/).nullable().optional(),
   favorite: z.boolean().optional(),
   tags: z.string().optional(),
   projectCode: z.string().max(50).nullable().optional(),

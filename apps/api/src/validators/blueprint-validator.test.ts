@@ -14,6 +14,12 @@ test("a drawing can carry the url of its uploaded DWG", () => {
   assert.equal(parsed.fileUrl, "/uploads/generic/1-2-plan.dwg");
 });
 
+test("the thumbnail must be a JPEG data url, nothing else", () => {
+  assert.ok(createBlueprintSchema.safeParse({ ...base, thumbnail: "data:image/jpeg;base64,/9j/4AAQ" }).success);
+  assert.equal(createBlueprintSchema.safeParse({ ...base, thumbnail: "javascript:alert(1)" }).success, false);
+  assert.equal(createBlueprintSchema.safeParse({ ...base, thumbnail: "data:text/html;base64,PHNjcmlwdD4=" }).success, false);
+});
+
 test("an architect cannot approve or re-author a drawing through PATCH", () => {
   const parsed = updateBlueprintSchema.parse({ title: "New title", approval: "Approved", author: "Someone else" });
   assert.deepEqual(parsed, { title: "New title" });

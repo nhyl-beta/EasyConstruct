@@ -13,6 +13,7 @@ export interface BlueprintRecord {
   fileType: string;
   sizeKb: number;
   fileUrl: string | null;
+  thumbnail: string | null;
   favorite: boolean;
   tags: string | null;
   projectCode: string | null;
@@ -34,6 +35,7 @@ export interface CreateBlueprintInput {
   fileType?: string;
   sizeKb?: number;
   fileUrl?: string | null;
+  thumbnail?: string | null;
   favorite?: boolean;
   tags?: string;
   projectCode?: string | null;
