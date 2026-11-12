@@ -3,6 +3,7 @@ import { HTTP } from "../../../core/config/http-status.js";
 import { formatSuccess } from "../../../core/utils/response.js";
 import { ValidationError } from "../../../core/utils/errors.js";
 import * as service from "./service.js";
+import { todayManila } from "../../../core/utils/dates.js";
 import { byString, paginateRows, parsePageRequest, respondList } from "../../../core/utils/pagination.js";
 import { cached } from "../../../core/cache/index.js";
 import {
@@ -87,7 +88,7 @@ export const listAttendance = async (req: Request, res: Response, next: NextFunc
 export const attendanceSummary = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const date = parseQuery(attendanceQuerySchema, { date: req.query.date }).date
-      ?? new Date().toISOString().slice(0, 10);
+      ?? todayManila();
     // Today's attendance counts only (no rows), same for every caller. 15 s.
     const summary = await cached("attendance", "all", 15, () => service.attendanceSummary(date), { query: { date }, deps: ["employees"] });
     res.json(formatSuccess(summary, "Attendance summary retrieved"));

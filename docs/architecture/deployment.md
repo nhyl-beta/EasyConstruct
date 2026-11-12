@@ -55,6 +55,7 @@ R = required, O = optional. S = secret (never commit, never put in the web build
 | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | O | yes | shared cache; in-memory cache is used when unset (fine for one instance) |
 | `DB_POOL_MAX` | O | no | default 5 |
 | `MAX_UPLOAD_MB` | O | no | default 500 |
+| `ALLOW_LOCAL_UPLOADS` | O | no | leave unset on Render. The API refuses to start in production without S3 (or Blob) storage, because the local disk is wiped on every deploy; `true` allows it on a host with a persistent disk |
 | `BLOB_READ_WRITE_TOKEN` | **leave unset** | yes | with it unset, old Vercel Blob URLs answer "file not available" instead of calling Blob |
 
 `PORT` is set by Render itself.

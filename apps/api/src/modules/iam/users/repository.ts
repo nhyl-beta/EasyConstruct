@@ -156,6 +156,11 @@ export const update = async (id: number, data: UpdateUserInput) => {
   return updated ?? null;
 };
 
+/** Signs the account out everywhere: every token issued before now stops working. */
+export const revokeTokens = async (id: number) => {
+  await db.update(users).set({ tokensValidAfter: new Date() }).where(eq(users.id, id));
+};
+
 /**
  * Writes a bcrypt hash that the caller has already produced — this layer
  * never hashes, and PUBLIC_COLUMNS means the hash is still never read back.

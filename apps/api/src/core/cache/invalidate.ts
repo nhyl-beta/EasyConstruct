@@ -22,6 +22,7 @@ const NARROW_WRITES: Array<{ prefix: string; domains: string[] }> = [
   { prefix: "/api/employees", domains: ["employees"] },
   { prefix: "/api/hr/employees", domains: ["employees"] },
   { prefix: "/api/roles", domains: ["config"] },
+  { prefix: "/api/auth", domains: [] },
 ];
 
 export const domainsForWrite = (path: string): string[] => {
@@ -39,7 +40,9 @@ export function cacheInvalidation(req: Request, res: Response, next: NextFunctio
     ended = true;
     // 4xx: the request was refused, nothing changed. Anything else may have.
     if (res.statusCode >= 400 && res.statusCode < 500) return end(...args);
-    void bumpVersions(...domainsForWrite(req.originalUrl.split("?")[0] ?? "")).finally(() => end(...args));
+    const domains = domainsForWrite(req.originalUrl.split("?")[0] ?? "");
+    if (domains.length === 0) return end(...args); // a write that touches no cached data (sign-in)
+    void bumpVersions(...domains).finally(() => end(...args));
     return res;
   }) as typeof res.end;
   next();

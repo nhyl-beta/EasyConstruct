@@ -313,6 +313,7 @@ describe("write invalidation middleware", () => {
     assert.deepEqual(domainsForWrite("/api/attendance/12"), ["attendance"]);
     assert.deepEqual(domainsForWrite("/api/hr/employees/3"), ["employees"]);
     assert.deepEqual(domainsForWrite("/api/roles/1"), ["config"]);
+    assert.deepEqual(domainsForWrite("/api/auth/login"), [], "sign-in touches no cached data");
     assert.deepEqual(domainsForWrite("/api/tasks/5/status"), [...CACHE_DOMAINS]);
     assert.deepEqual(domainsForWrite("/api/attendance-extra"), [...CACHE_DOMAINS], "prefix match is whole-segment");
     assert.deepEqual(domainsForWrite("/api/projects/1/lifecycle/advance"), [...CACHE_DOMAINS]);

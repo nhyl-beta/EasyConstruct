@@ -10,6 +10,7 @@ import { hitLimiter } from "../../../core/auth/throttle.js";
 import { AppError, ValidationError } from "../../../core/utils/errors.js";
 import { formatSuccess } from "../../../core/utils/response.js";
 import * as publicReply from "./public-reply.js";
+import { TOKEN_MESSAGES, TOKEN_PATTERN } from "./reply-tokens.js";
 
 const router = Router();
 
@@ -36,22 +37,29 @@ export const resetPublicReplyLimits = () => {
   writeHits.clear();
 };
 
-const upload = multer({
-  storage: multer.memoryStorage(),
-  // The real limits are checked in the service with friendly messages; these are the hard ceiling.
-  limits: { fileSize: 50 * 1024 * 1024, files: 10, fields: 10, fieldSize: 64 * 1024 },
-}).array("files", 10);
+// Files are held in memory and this route needs no login, so the ceiling is the real limit (RFI_REPLY_MAX_*),
+// not a generous one: 10 x 50 MB from a stranger would exhaust the server's memory.
+const upload = () => {
+  const { maxFiles, maxFileBytes } = publicReply.limits();
+  return multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: maxFileBytes, files: maxFiles, fields: 10, fieldSize: 64 * 1024 },
+  }).array("files", 10);
+};
 
 const formSchema = z.object({ answer: z.string().max(20_000), name: z.string().max(200), position: z.string().max(200) });
 
-const parseUpload = (req: Request, res: Response, next: NextFunction) =>
-  upload(req, res, (err: unknown) => {
+const parseUpload = (req: Request, res: Response, next: NextFunction) => {
+  // A token of the wrong shape is refused before any file is read.
+  if (!TOKEN_PATTERN.test(String(req.params.token))) return next(new AppError(404, TOKEN_MESSAGES.missing.code, TOKEN_MESSAGES.missing.message));
+  upload()(req, res, (err: unknown) => {
     if (!err) return next();
     const code = (err as { code?: string }).code;
     if (code === "LIMIT_FILE_SIZE") return next(new ValidationError("One of the files is too large."));
     if (code === "LIMIT_FILE_COUNT" || code === "LIMIT_UNEXPECTED_FILE") return next(new ValidationError("Too many files were attached."));
     next(new ValidationError("The form could not be read. Please try again."));
   });
+};
 
 // Open the request: 60 per minute per address.
 router.get("/:token", limit(readHits, 60, 60_000), async (req, res, next) => {

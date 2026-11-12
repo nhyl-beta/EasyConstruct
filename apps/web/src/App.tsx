@@ -128,6 +128,7 @@ import ArchitectDesignCreate from "./pages/roles/architect/architect-design-crea
 import ArchitectDesignDetail from "./pages/roles/architect/architect-design-detail";
 import FinanceExpenses from "./pages/roles/finance/finance-expenses";
 import NotFoundPage from "./pages/not-found";
+import { ErrorBoundary } from "./components/error-boundary";
 
 function App() {
   return (
@@ -157,6 +158,7 @@ function App() {
                 }
               }}
             >
+                <ErrorBoundary>
                 <Routes>
                   <Route element={<PublicAuthRoute />}>
                     <Route path="/login" element={<LoginPage />} />
@@ -573,6 +575,7 @@ function App() {
 
                   
                 </Routes>
+                </ErrorBoundary>
                  <Toaster />
                 <RefineKbar />
                 <UnsavedChangesNotifier />
