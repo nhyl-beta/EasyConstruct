@@ -31,6 +31,8 @@ export const proposalController = {
             projectCode: text(req.query.projectCode),
             status: text(req.query.status),
             search: text(req.query.search),
+            submittedBy: text(req.query.submittedBy),
+            reviewer: text(req.query.reviewer),
             excludeStatus: text(req.query.excludeStatus),
             reviewQueue: req.query.queue === "consultant",
           },
@@ -41,11 +43,12 @@ export const proposalController = {
             ...(isAssignedScoped(auth) ? { codes: [...(await assignedCodesFor(auth))] } : {}),
             projectCode: text(req.query.projectCode),
           };
-          const [statusCounts, failedValidation] = await Promise.all([
+          const [statusCounts, failedValidation, facets] = await Promise.all([
             proposalService.statusCounts(scope),
             proposalService.failedValidationCount(scope),
+            proposalService.filterFacets(scope),
           ]);
-          return { data: items, meta: { ...meta, statusCounts, failedValidation } };
+          return { data: items, meta: { ...meta, statusCounts, failedValidation, facets } };
         }
         return { data: items, meta };
       }

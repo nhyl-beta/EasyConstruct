@@ -70,22 +70,27 @@ export interface ProposalsListOptions {
 interface ProposalsExtra {
   statusCounts: { status: string; count: number }[];
   failedValidation: number;
+  facets: { submitters: string[]; reviewers: string[] };
 }
 
 export const useProposalsController = (options: ProposalsListOptions = {}) => {
   const { queue, hideArchived = false, pageSize = 10 } = options;
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState("all");
+  const [submittedBy, setSubmittedBy] = useState("all");
+  const [reviewer, setReviewer] = useState("all");
   const [mutationError, setMutationError] = useState<string | null>(null);
 
   const list = useServerList<Proposal, ProposalsExtra>({
     key: (params) => qk.proposals.list({ ...params, queue }),
-    filters: { status, queue: queue ?? "", hideArchived },
+    filters: { status, submittedBy, reviewer, queue: queue ?? "", hideArchived },
     initialPageSize: pageSize,
     fetchPage: async (params, signal) => {
       const qs = new URLSearchParams({ page: String(params.page), limit: String(params.limit), counts: "1" });
       if (params.search) qs.set("search", params.search);
       if (status !== "all") qs.set("status", status);
+      if (submittedBy !== "all") qs.set("submittedBy", submittedBy);
+      if (reviewer !== "all") qs.set("reviewer", reviewer);
       if (queue) qs.set("queue", queue);
       if (hideArchived) qs.set("excludeStatus", "Archived");
       const json = await apiClient.get(`/proposals?${qs.toString()}`, { signal });
@@ -93,7 +98,7 @@ export const useProposalsController = (options: ProposalsListOptions = {}) => {
         items: (json?.data ?? []) as Proposal[],
         total: json?.meta?.total ?? 0,
         pages: json?.meta?.pages,
-        extra: { statusCounts: json?.meta?.statusCounts ?? [], failedValidation: json?.meta?.failedValidation ?? 0 },
+        extra: { statusCounts: json?.meta?.statusCounts ?? [], failedValidation: json?.meta?.failedValidation ?? 0, facets: json?.meta?.facets ?? { submitters: [], reviewers: [] } },
       };
     },
   });
@@ -286,6 +291,11 @@ export const useProposalsController = (options: ProposalsListOptions = {}) => {
 
     status,
     setStatus,
+    submittedBy,
+    setSubmittedBy,
+    reviewer,
+    setReviewer,
+    facets: list.extra?.facets ?? { submitters: [], reviewers: [] },
 
     kpis,
 

@@ -1,4 +1,5 @@
 import { ProposalStatusFilter } from "./ProposalStatusFilter";
+import { NameFilter } from "./NameFilter";
 import { useCallback, useState } from "react";
 import { AlertTriangle, CheckCircle2, FileText, Search } from "lucide-react";
 
@@ -23,7 +24,7 @@ interface ProposalsRegisterProps {
 
 /** The read-only proposals register (Owner, IT Designer): list on the left, details in a right-hand panel. */
 export function ProposalsRegister({ title, description, sortable = true }: ProposalsRegisterProps) {
-  const { proposals, loading, error, kpis, query: search, setQuery: setSearch, status, setStatus, pagination } = useProposals();
+  const { proposals, loading, error, kpis, query: search, setQuery: setSearch, status, setStatus, submittedBy, setSubmittedBy, reviewer, setReviewer, facets, pagination } = useProposals();
   const [selectedId, select] = useSelectedParam();
   const [order, setOrder] = useState<number[]>([]);
 
@@ -70,6 +71,8 @@ export function ProposalsRegister({ title, description, sortable = true }: Propo
                 <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search proposals…" aria-label="Search proposals" className="h-9 pl-9 text-xs" />
               </div>
               <ProposalStatusFilter value={status} onChange={setStatus} />
+              <NameFilter label="Submitted by" allLabel="All submitters" value={submittedBy} onChange={setSubmittedBy} names={facets.submitters} />
+              <NameFilter label="Reviewer" allLabel="All reviewers" value={reviewer} onChange={setReviewer} names={facets.reviewers} />
             </div>
 
             {loading && <p className="text-sm text-muted-foreground">Loading proposals…</p>}

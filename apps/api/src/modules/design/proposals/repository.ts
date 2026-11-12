@@ -12,6 +12,9 @@ export interface ProposalFilters {
   codes?: string[];
   projectCode?: string;
   status?: string;
+  /** B-79: exact name in the Submitted by / Reviewer columns. */
+  submittedBy?: string;
+  reviewer?: string;
   search?: string;
   /** Hide this status (the architect register hides Archived). */
   excludeStatus?: string;
@@ -25,6 +28,8 @@ const buildConditions = (filters: ProposalFilters): SQL[] => {
   if (filters.projectCode) conditions.push(eq(proposals.projectCode, filters.projectCode));
   if (filters.status && filters.status !== "all") conditions.push(eq(proposals.status, filters.status));
   if (filters.excludeStatus) conditions.push(ne(proposals.status, filters.excludeStatus));
+  if (filters.submittedBy) conditions.push(eq(proposals.submittedBy, filters.submittedBy));
+  if (filters.reviewer) conditions.push(eq(proposals.reviewerName, filters.reviewer));
   if (filters.reviewQueue) {
     conditions.push(sql`lower(trim(${proposals.status})) = 'pending'`);
     conditions.push(or(isNull(proposals.assignedReviewer), sql`trim(${proposals.assignedReviewer}) = ''`, sql`lower(trim(${proposals.assignedReviewer})) = 'consultant'`)!);
@@ -64,6 +69,20 @@ export const failedValidationCount = async (filters: ProposalFilters = {}) => {
   conditions.push(sql`${proposals.aiValidation} ~ '"passed"\\s*:\\s*false'`);
   const [row] = await db.select({ count: sql<number>`count(*)::int` }).from(proposals).where(and(...conditions));
   return row?.count ?? 0;
+};
+
+/** B-79: the names the Submitted by and Reviewer dropdowns offer (same scope as statusCounts). */
+export const filterFacets = async (filters: ProposalFilters = {}) => {
+  const conditions = buildConditions({ codes: filters.codes, projectCode: filters.projectCode, excludeStatus: filters.excludeStatus });
+  const where = conditions.length ? and(...conditions) : undefined;
+  const [submitters, reviewers] = await Promise.all([
+    db.selectDistinct({ name: proposals.submittedBy }).from(proposals).where(where).orderBy(proposals.submittedBy),
+    db.selectDistinct({ name: proposals.reviewerName }).from(proposals).where(where).orderBy(proposals.reviewerName),
+  ]);
+  return {
+    submitters: submitters.map((r) => r.name).filter((n): n is string => !!n),
+    reviewers: reviewers.map((r) => r.name).filter((n): n is string => !!n),
+  };
 };
 
 export const proposalRepository = {

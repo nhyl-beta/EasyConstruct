@@ -17,6 +17,7 @@ import {
   defaultProposalOrder,
   statusCounts,
   failedValidationCount,
+  filterFacets,
   type ProposalFilters,
 } from "./repository.js";
 import { proposals as proposalsTable } from "../../../core/db/schema/proposals.js";
@@ -44,6 +45,7 @@ export const proposalService = {
 
   statusCounts: (filters: ProposalFilters) => statusCounts(filters),
   failedValidationCount: (filters: ProposalFilters) => failedValidationCount(filters),
+  filterFacets: (filters: ProposalFilters) => filterFacets(filters),
 
   async getById(id: number) {
     const proposal =
