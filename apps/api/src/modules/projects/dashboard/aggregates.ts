@@ -5,7 +5,7 @@
 // piece of client logic (named in its comment) and aggregates.test.ts runs
 // both on the same fixed sample, so the dashboards keep showing the same
 // figures now that the server computes them.
-import { roleNeedsEmployee } from "../../iam/users/linking.js";
+import { roleNeedsEmployee } from "../../iam/index.js";
 
 /**
  * Rows may be single records or SQL GROUP BY results: `n` is how many records
