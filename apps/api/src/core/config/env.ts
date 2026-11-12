@@ -16,6 +16,9 @@ const envSchema = z.object({
   PORT: integerFromEnv(8000).pipe(z.number().positive()),
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
   NODE_ENV: z.string().default("development"),
+  // Neon Realtime (beta). Both unset = live queries off; the SSE stream keeps working.
+  NEON_REALTIME_URL: z.string().optional(),
+  NEON_REALTIME_SECRET: z.string().optional(),
   JWT_SECRET: z.string().optional(),
   CORS_ORIGIN: z.string().default("http://localhost:5173"),
   APP_URL: z.string().optional(),
@@ -71,6 +74,8 @@ export const env = {
   PORT: values.PORT,
   DATABASE_URL: values.DATABASE_URL,
   NODE_ENV: values.NODE_ENV,
+  NEON_REALTIME_URL: values.NEON_REALTIME_URL || undefined,
+  NEON_REALTIME_SECRET: values.NEON_REALTIME_SECRET || undefined,
   JWT_SECRET: values.JWT_SECRET ?? "dev-secret-change-in-prod",
   CORS_ORIGIN: values.CORS_ORIGIN,
   APP_URL: (values.APP_URL ?? values.CLIENT_URL ?? values.CORS_ORIGIN).replace(/\/+$/, ""),

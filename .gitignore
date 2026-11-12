@@ -27,3 +27,5 @@ docs/*
 !docs/adr/
 !docs/setup/
 !docs/TEST_ACCOUNTS.md
+.neon
+.env.local
