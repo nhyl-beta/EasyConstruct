@@ -39,7 +39,7 @@ export default function ConsultantDesigns() {
     <div className="flex-1 space-y-6 p-4 md:p-8">
       <PageHeader
         title="Designs"
-        description="Read-only register of designs across all projects, for advisory review."
+        description="Register of designs across all projects. Open a design that is In Review to mark it reviewed."
       />
 
       <KpiStrip
@@ -145,7 +145,7 @@ export default function ConsultantDesigns() {
         </div>
       )}
 
-      <DesignDetailDialog design={selected} onOpenChange={(open) => !open && setSelected(null)} />
+      <DesignDetailDialog design={selected} onOpenChange={(open) => !open && setSelected(null)} onReview={(d, decision) => c.review(d.id, decision)} />
     </div>
   );
 }
