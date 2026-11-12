@@ -323,6 +323,13 @@
       "when": 1792836800000,
       "tag": "0045_blueprint_thumbnail",
       "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1792923200000,
+      "tag": "0046_catch_up_schema",
+      "breakpoints": true
     }
   ]
 }
