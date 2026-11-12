@@ -1,4 +1,4 @@
-import { createRealtime } from "@neon/realtime/server";
+import { createRealtime, type RealtimeServer } from "@neon/realtime/server";
 import { drizzleAdapter } from "@neon/realtime-drizzle";
 import { env } from "../config/env.js";
 
@@ -7,7 +7,8 @@ import { env } from "../config/env.js";
 // ids ("ep-icy-meadow-xxxx") and switch Realtime off on a mismatch instead of failing quietly.
 const endpointId = (host: string) => (host.split(".")[0] ?? "").replace(/-pooler$/, "");
 
-function setup() {
+// Annotated: the inferred adapter type is not exported by the package, which breaks declaration emit in the build.
+function setup(): { rt: RealtimeServer<unknown> | null; reason: string } {
   const { NEON_REALTIME_URL: url, NEON_REALTIME_SECRET: secret } = env;
   if (!url || !secret) return { rt: null, reason: "NEON_REALTIME_URL / NEON_REALTIME_SECRET not set" };
   const db = new URL(env.DATABASE_URL);
