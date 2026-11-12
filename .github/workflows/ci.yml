@@ -86,10 +86,10 @@ jobs:
         run: npm run db:bootstrap --workspace=@easyconstruct/api -- --yes
       - name: Schema, sequences and indexes match the code
         run: npm run db:verify-schema --workspace=@easyconstruct/api
+      - name: Seed the demo accounts (the database tests need an Owner and an Engineer)
+        run: npm run db:seed --workspace=@easyconstruct/api
       - name: Real-database tests
         run: npm run test:db --workspace=@easyconstruct/api
-      - name: Seed the demo accounts
-        run: npm run db:seed --workspace=@easyconstruct/api
       - run: npm run build:server
       - name: Start the built server and smoke test it
         working-directory: apps/api
