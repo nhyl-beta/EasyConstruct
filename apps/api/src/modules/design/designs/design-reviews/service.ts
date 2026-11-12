@@ -90,4 +90,4 @@ export const remove = async (id: number) => {
   if (!deleted) throw new NotFoundError('Design review', String(id));
   await refreshForDesign(existing.designId);
   return deleted;
-};
+};
