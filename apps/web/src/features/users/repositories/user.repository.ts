@@ -65,11 +65,6 @@ export const UserRepository = {
     return unwrap<unknown>(apiClient.post(`/users/${id}/link-employee`, { employeeId }));
   },
 
-  /** Make an employee record from an account that has none (HR completes pay rate, department and site). */
-  async createEmployeeFromAccount(id: number): Promise<unknown> {
-    return unwrap<unknown>(apiClient.post(`/users/${id}/create-employee`, {}));
-  },
-
   // Updates, password resets, (de)activation and deletion of the OWNER account are held for the Owner's approval by
   // email: the server answers 202 with a PendingApproval instead of the changed account, and nothing has changed yet.
   async update(id: number, input: UpdateUserInput): Promise<PublicUser | PendingApproval> {

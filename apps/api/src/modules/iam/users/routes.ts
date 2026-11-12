@@ -30,7 +30,8 @@ router.get("/linkable-employees", canManageAccounts, controller.getLinkableEmplo
 router.post("/", canManageAccounts, validate(createUserSchema), controller.create);
 // Part 2: tie an account that predates the strict link to an employee record.
 router.post("/:id/link-employee", canManageAccounts, validate(linkEmployeeSchema), controller.linkEmployee);
-router.post("/:id/create-employee", canManageAccounts, controller.createEmployeeFromAccount);
+// B-78: employee records are HR's to create; IT Designer only links accounts to them.
+router.post("/:id/create-employee", requireRole("human-resources"), controller.createEmployeeFromAccount);
 router.patch("/:id", canManageAccounts, validate(updateUserSchema), controller.update);
 router.patch(
   "/:id/status",

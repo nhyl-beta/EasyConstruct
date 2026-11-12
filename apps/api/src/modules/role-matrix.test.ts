@@ -136,7 +136,7 @@ const WRITES: Case[] = [
   // accounts: IT Designer only
   users("post", "/", ["it-designer"]),
   users("post", "/5/link-employee", ["it-designer"]),
-  users("post", "/5/create-employee", ["it-designer"]),
+  users("post", "/5/create-employee", ["human-resources"]),
   users("patch", "/5", ["it-designer"]),
   users("patch", "/5/status", ["it-designer"]),
   users("patch", "/5/password", ["it-designer"]),

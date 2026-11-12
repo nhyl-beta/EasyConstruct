@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link2, Pencil, Plus, Search, Trash2, UserCheck, UserPlus, UserX, UsersRound } from "lucide-react";
+import { Link2, Pencil, Plus, Search, Trash2, UserCheck, UserX, UsersRound } from "lucide-react";
 import { useSearchParams } from "react-router";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ROLE_HIERARCHY } from "@/features/roles/role-hierarchy";
@@ -27,7 +27,7 @@ import { OwnerApprovalStatus } from "@/features/owner-approvals/components/Owner
 export default function ITDesignerUsersPage() {
   const [roleFilter, setRoleFilter] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
-  const { list, create, update, setPassword, setActive, remove, linkEmployee, createEmployeeFromAccount } = useUsersPaged(roleFilter, statusFilter);
+  const { list, create, update, setPassword, setActive, remove, linkEmployee } = useUsersPaged(roleFilter, statusFilter);
   const { roles } = useRoles();
   // B-75: role filters follow the organisation chart (Owner first), not the order the API returns them.
   const roleRank = (name: string) => {
@@ -59,8 +59,6 @@ export default function ITDesignerUsersPage() {
   const [linkable, setLinkable] = useState<LinkableEmployee[]>([]);
   const [linkableLoading, setLinkableLoading] = useState(false);
   const [linking, setLinking] = useState<PublicUser | null>(null);
-  const [makingEmployee, setMakingEmployee] = useState<PublicUser | null>(null);
-  const [makingBusy, setMakingBusy] = useState(false);
 
   const loadLinkable = useCallback(async () => {
     setLinkableLoading(true);
@@ -109,21 +107,6 @@ export default function ITDesignerUsersPage() {
   const openLink = (user: PublicUser) => {
     setLinking(user);
     void loadLinkable();
-  };
-
-  const confirmMakeEmployee = async () => {
-    if (!makingEmployee) return;
-    setMakingBusy(true);
-    setStatusError(null);
-    try {
-      await createEmployeeFromAccount(makingEmployee.id);
-      setMakingEmployee(null);
-    } catch (err) {
-      setStatusError(err instanceof Error ? err.message : "Couldn't create the employee record");
-      setMakingEmployee(null);
-    } finally {
-      setMakingBusy(false);
-    }
   };
 
   const openEdit = (user: PublicUser) => {
@@ -301,16 +284,10 @@ export default function ITDesignerUsersPage() {
                     <td className="px-5 py-3.5">
                       <div className="flex items-center justify-end gap-2">
                         {!isLinked(user) && (
-                          <>
-                            <Button variant="outline" size="sm" className="text-xs" onClick={() => openLink(user)}>
-                              <Link2 className="mr-1 h-3.5 w-3.5" />
-                              Link to employee
-                            </Button>
-                            <Button variant="outline" size="sm" className="text-xs" onClick={() => setMakingEmployee(user)}>
-                              <UserPlus className="mr-1 h-3.5 w-3.5" />
-                              Create employee
-                            </Button>
-                          </>
+                          <Button variant="outline" size="sm" className="text-xs" onClick={() => openLink(user)}>
+                            <Link2 className="mr-1 h-3.5 w-3.5" />
+                            Link to employee
+                          </Button>
                         )}
                         <Button
                           variant="ghost"
@@ -365,16 +342,6 @@ export default function ITDesignerUsersPage() {
         destructive
         loading={removing}
         onConfirm={() => void confirmDelete()}
-      />
-
-      <ConfirmDialog
-        open={makingEmployee !== null}
-        onOpenChange={(open) => !open && setMakingEmployee(null)}
-        title={`Create an employee record for ${makingEmployee?.name ?? "this account"}?`}
-        description="Name, email and role are copied from the account. HR completes the pay rate, department and site afterwards."
-        confirmLabel="Create employee"
-        loading={makingBusy}
-        onConfirm={() => void confirmMakeEmployee()}
       />
 
       <LinkEmployeeDialog
