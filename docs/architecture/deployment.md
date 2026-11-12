@@ -85,6 +85,8 @@ R = required, O = optional. S = secret (never commit, never put in the web build
 
 - New **Web Service**, runtime **Docker**, Dockerfile path `infra/docker/api.Dockerfile`, Docker build context = repo root (`.`).
 - Health check path `/api/health`. Instances: **1** (notification streams and rate limits live in memory).
+- Uptime monitor (UptimeRobot): point it at `/api/health/ready`, which also checks the database (503 when it does not answer). Keep `/api/health` for Render so a slow database never restarts the server.
+- Live smoke test (`.github/workflows/smoke.yml`): set the repository secrets `SMOKE_BASE_URL` (API address ending in `/api`), `SMOKE_EMAIL` and `SMOKE_PASSWORD` (a least-access account made for this). Run it by hand from the Actions tab before a presentation.
 - Auto-deploy from `thesis-final-staging` (or the branch you promote), env vars as above.
 - The free plan sleeps after idle time. The first request after a sleep takes a while to answer; the cron workflow retries
   for that reason, and open notification streams reconnect on their own. Upgrade the plan if that is not acceptable.

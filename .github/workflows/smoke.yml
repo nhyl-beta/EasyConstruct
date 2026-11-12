@@ -1,0 +1,40 @@
+name: Live smoke test
+
+# Every 30 minutes, and on demand before a presentation: checks that the deployed API and its database
+# answer, that sign-in works and that the first pages load (apps/api/scripts/ops/smoke.mjs). Read-only.
+# Needs three repository secrets: SMOKE_BASE_URL (the API address ending in /api), SMOKE_EMAIL and
+# SMOKE_PASSWORD (an account with the least access, e.g. a Site Personnel account made for this).
+# Until they are set the run is skipped. GitHub emails the repository owner when a run fails, and
+# disables schedules after 60 days without repository activity.
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: live-smoke
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SMOKE_BASE_URL: ${{ secrets.SMOKE_BASE_URL }}
+      SMOKE_EMAIL: ${{ secrets.SMOKE_EMAIL }}
+      SMOKE_PASSWORD: ${{ secrets.SMOKE_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Smoke test the deployed API
+        run: |
+          if [ -z "$SMOKE_BASE_URL" ] || [ -z "$SMOKE_EMAIL" ] || [ -z "$SMOKE_PASSWORD" ]; then
+            echo "::notice::Skipped: set the SMOKE_BASE_URL, SMOKE_EMAIL and SMOKE_PASSWORD secrets to turn this on."
+            exit 0
+          fi
+          node apps/api/scripts/ops/smoke.mjs
