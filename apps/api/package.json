@@ -12,6 +12,7 @@
     "db:seed": "tsx scripts/demo/ensure-demo-schema.ts && tsx scripts/demo/seed-demo-accounts.ts",
     "db:reset": "tsx scripts/ops/migrate.ts && tsx scripts/demo/db-reset.ts && npm run db:seed",
     "db:generate": "drizzle-kit generate",
+    "realtime:smoke": "tsx scripts/ops/realtime-smoke.ts",
     "db:migrate": "tsx scripts/ops/migrate.ts",
     "db:bootstrap": "tsx scripts/ops/bootstrap-db.ts",
     "db:verify-schema": "tsx scripts/ops/verify-schema.ts",
@@ -47,6 +48,8 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1155.0",
     "@aws-sdk/lib-storage": "^3.1155.0",
+    "@neon/realtime": "^0.2.1",
+    "@neon/realtime-drizzle": "^0.2.0",
     "@neondatabase/serverless": "^1.1.0",
     "@upstash/redis": "^1.39.0",
     "@vercel/blob": "^2.8.0",

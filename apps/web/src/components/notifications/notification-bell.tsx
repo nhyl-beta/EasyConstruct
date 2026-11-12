@@ -13,6 +13,7 @@ import { useNavigate } from "react-router";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { NotificationLiveSync } from "@/features/notifications/components/NotificationLiveSync";
 import { useNotifications } from "@/features/notifications/hooks/useNotifications";
 import {
   actionLabel,
@@ -87,6 +88,8 @@ export function NotificationBell() {
   };
 
   return (
+    <>
+    <NotificationLiveSync onChange={() => void reload()} />
     <Popover
       open={open}
       onOpenChange={(next) => {
@@ -239,6 +242,7 @@ export function NotificationBell() {
         </div>
       </PopoverContent>
     </Popover>
+    </>
   );
 }
 

@@ -6,6 +6,7 @@ import { parseIdParam } from "../../../core/utils/params.js";
 import type { AuthedRequest } from "../../../core/auth/middleware.js";
 import * as service from "./service.js";
 import * as stream from "./stream.js";
+import { sealInbox } from "./live.js";
 
 export const getAll = async (req: AuthedRequest, res: Response, next: NextFunction) => {
   try {
@@ -37,5 +38,16 @@ export const stream_ = (req: AuthedRequest, res: Response, next: NextFunction) =
     const userId = req.authUser.id;
 
     stream.open(userId, res, req);
+  } catch (err) { next(err); }
+};
+
+// Sealed live query over the caller's own inbox. The browser subscribes to it with Neon Realtime
+// and refetches when it changes. 503 when Realtime is off or points at the wrong database.
+export const live = async (req: AuthedRequest, res: Response, next: NextFunction) => {
+  try {
+    if (!req.authUser) throw new UnauthorizedError();
+    const sealed = await sealInbox({ userId: req.authUser.id, role: req.authUser.role });
+    if (!sealed) { res.status(503).json({ success: false, message: "Realtime is not available" }); return; }
+    res.json(formatSuccess(sealed, MSG.notifications.retrieved));
   } catch (err) { next(err); }
 };
