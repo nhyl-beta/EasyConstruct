@@ -38,7 +38,7 @@ describe("canAccessPath", () => {
   });
 
   it("leaves unowned shared pages open", () => {
-    expect(canAccessPath("human_resources", "/reports")).toBe(true);
+    expect(canAccessPath("human_resources", "/settings")).toBe(true);
     expect(canAccessPath("human_resources", "/dashboard")).toBe(true);
   });
 
