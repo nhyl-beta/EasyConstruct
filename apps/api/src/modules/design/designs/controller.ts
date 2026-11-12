@@ -3,6 +3,7 @@ import { HTTP } from "../../../core/config/http-status.js";
 import { MSG }  from "../../../core/config/messages.js";
 import { formatSuccess } from "../../../core/utils/response.js";
 import * as service from "./service.js";
+import * as reviewService from "./design-reviews/service.js";
 import type { DesignFilters } from "./types.js";
 import type { AuthedRequest } from "../../../core/auth/middleware.js";
 import { assertAssignedToProject, assignedCodesFor, isAssignedScoped, scopeRowsToAssigned } from "../../projects/index.js";
@@ -65,5 +66,14 @@ export const remove = async (req: Request, res: Response, next: NextFunction) =>
     await assertAssignedToProject((req as AuthedRequest).authUser, existing.projectCode, "designs");
     const data = await service.remove(parseIdParam(req.params.id, "id"));
     res.json(formatSuccess(data, MSG.designs.deleted));
+  } catch (err) { next(err); }
+};
+
+export const review = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const existing = await service.getById(parseIdParam(req.params.id, "id"));
+    await assertAssignedToProject((req as AuthedRequest).authUser, existing.projectCode, "designs");
+    const data = await reviewService.decideForDesign(existing.id, req.body.decision);
+    res.json(formatSuccess(data, MSG.designs.updated));
   } catch (err) { next(err); }
 };

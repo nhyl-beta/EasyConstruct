@@ -5,7 +5,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { useState } from "react";
+import { toast } from "sonner";
 import type { Design } from "../types/design.types";
 import { DesignFileLinks } from "./DesignFileLinks";
 
@@ -17,16 +20,33 @@ const Field = ({ label, children }: { label: string; children: React.ReactNode }
 );
 
 /**
- * Read-only design detail for the Consultant register: no editing, and no link
- * into the Architect's editable design page.
+ * Design detail for the Consultant register: no editing, and no link into the
+ * Architect's editable design page. The only action is the review decision.
  */
 export function DesignDetailDialog({
   design,
   onOpenChange,
+  onReview,
 }: {
   design: Design | null;
   onOpenChange: (open: boolean) => void;
+  /** Consultant's decision on a design that is In Review; the dialog closes once it is saved. */
+  onReview?: (design: Design, decision: "Approved" | "Changes Requested" | "Rejected") => Promise<void>;
 }) {
+  const [busy, setBusy] = useState(false);
+  const decide = async (decision: "Approved" | "Changes Requested" | "Rejected") => {
+    if (!design || !onReview) return;
+    setBusy(true);
+    try {
+      await onReview(design, decision);
+      toast.success(`Design marked ${decision === "Approved" ? "Approved" : "Revision Required"}`);
+      onOpenChange(false);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not save the review");
+    } finally {
+      setBusy(false);
+    }
+  };
   return (
     <Dialog open={design !== null} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
@@ -63,6 +83,14 @@ export function DesignDetailDialog({
               <div className="text-xs text-muted-foreground">Files</div>
               <DesignFileLinks files={design.fileUrls} />
             </div>
+            {onReview && design.status === "In Review" && (
+              <div className="flex flex-wrap items-center gap-2 border-t pt-3">
+                <span className="mr-1 text-xs font-medium text-muted-foreground">Mark as reviewed:</span>
+                <Button size="sm" disabled={busy} onClick={() => decide("Approved")}>Approve</Button>
+                <Button size="sm" variant="outline" disabled={busy} onClick={() => decide("Changes Requested")}>Request changes</Button>
+                <Button size="sm" variant="destructive" disabled={busy} onClick={() => decide("Rejected")}>Reject</Button>
+              </div>
+            )}
           </>
         )}
       </DialogContent>

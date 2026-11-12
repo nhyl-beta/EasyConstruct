@@ -40,7 +40,14 @@ export const useDesignsController = () => {
     };
   }, [list.extra]);
 
+  // Consultant marks a design as reviewed (POST /designs/:id/review).
+  const review = async (id: number, decision: "Approved" | "Changes Requested" | "Rejected") => {
+    await apiClient.post(`/designs/${id}/review`, { decision });
+    await list.reload();
+  };
+
   return {
+    review,
     designs: list.pageItems,
     loading: list.loading,
     query: list.searchInput,
