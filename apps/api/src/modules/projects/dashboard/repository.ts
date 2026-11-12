@@ -291,8 +291,9 @@ export const recentAuditForEntity = async (entityType: string, limit: number) =>
 
 export const userRows = async () =>
   db
-    .select({ id: users.id, name: users.name, email: users.email, role: users.role, isActive: users.isActive })
+    .select({ id: users.id, name: users.name, email: users.email, role: users.role, isActive: users.isActive, employeeKey: employees.id })
     .from(users)
+    .leftJoin(employees, eq(employees.userId, users.id))
     .orderBy(asc(users.id));
 
 export const roleRows = async () =>

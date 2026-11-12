@@ -84,6 +84,7 @@ export interface ItDesignerSummary {
     deactivated: number;
     byRole: { name: string; label: string; count: number }[];
     orphaned: { id: number; name: string; email: string; role: string; isActive: boolean }[];
+    unlinked: { id: number; name: string; email: string; role: string; isActive: boolean }[];
   };
   roles: { count: number };
   audit: { total: number; sensitive: number; recent: AuditLog[]; accountEvents: AuditLog[] };

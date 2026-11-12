@@ -21,6 +21,8 @@ import * as projectsRepo from "../projects/repository.js";
 import * as projectMemberRepo from "../project-members/repository.js";
 import { workflowsRepo } from "../../workflow/index.js";
 import * as repo from "./repository.js";
+import * as dashboardRepo from "../dashboard/repository.js";
+import { unlinkedAccounts } from "../dashboard/aggregates.js";
 import { evaluateGate } from "./gates.js";
 import { isSequencedPhase, type SequencedPhase } from "./phases.js";
 import { PROJECT_MEMBER_ROLES } from "../../../core/db/schema/project-members.js";
@@ -155,7 +157,21 @@ export const getMyActions = async (actor: {
     link: "/workflows",
   }));
 
-  return [...gateItems, ...signalItems, ...workflowItems];
+  // The IT Designer owns no project gate or workflow stage, so its queue was always empty: what
+  // waits on it is account housekeeping (B-106). Link it on User Accounts.
+  const accountItems: MyActionItem[] =
+    actor.role === "it-designer"
+      ? unlinkedAccounts(await dashboardRepo.userRows()).map((u) => ({
+          projectCode: "",
+          projectName: "Accounts",
+          kind: "gate" as const,
+          title: `Link ${u.name} to an employee record`,
+          detail: "Attendance and payroll skip this account until it is linked.",
+          link: "/it-designer/users",
+        }))
+      : [];
+
+  return [...gateItems, ...signalItems, ...workflowItems, ...accountItems];
 };
 
 /**

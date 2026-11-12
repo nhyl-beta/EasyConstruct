@@ -227,6 +227,16 @@ describe("dashboard aggregates equal the browser-side logic", () => {
     assert.deepEqual(agg.orphanedRoleUsers(users, []), []);
   });
 
+  test("IT designer: unlinked accounts are active, in an employee role, with no employee record (B-77)", () => {
+    const users = [
+      { role: "engineer", isActive: true, employeeKey: null },
+      { role: "engineer", isActive: true, employeeKey: 4 },
+      { role: "engineer", isActive: false, employeeKey: null },
+      { role: "admin", isActive: true, employeeKey: null },
+    ];
+    assert.deepEqual(agg.unlinkedAccounts(users), [users[0]]);
+  });
+
   test("HR: workforce snapshot", () => {
     const employees = [
       { employeeId: "E1", site: "North", status: "Active" },

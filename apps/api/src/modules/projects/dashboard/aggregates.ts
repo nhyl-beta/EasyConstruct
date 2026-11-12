@@ -5,6 +5,7 @@
 // piece of client logic (named in its comment) and aggregates.test.ts runs
 // both on the same fixed sample, so the dashboards keep showing the same
 // figures now that the server computes them.
+import { roleNeedsEmployee } from "../../iam/users/linking.js";
 
 /**
  * Rows may be single records or SQL GROUP BY results: `n` is how many records
@@ -286,6 +287,10 @@ export const usersByRole = (
     .map((role) => ({ name: role.name, label: role.label ?? role.name, count: counts.get(role.name) ?? 0 }))
     .sort((a, b) => b.count - a.count);
 };
+
+/** B-77: active accounts in a role that clocks in or is paid but has no employee record (payroll and attendance skip them). */
+export const unlinkedAccounts = <T extends { role: string; isActive: boolean; employeeKey: number | null }>(users: T[]): T[] =>
+  users.filter((u) => u.isActive && u.employeeKey == null && roleNeedsEmployee(u.role));
 
 export const orphanedRoleUsers = <T extends { role: string }>(users: T[], roles: { name: string }[]): T[] => {
   if (roles.length === 0) return [];

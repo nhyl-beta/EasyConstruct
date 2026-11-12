@@ -16,6 +16,7 @@ export const useITDesignerDashboardController = () => {
     deactivatedUserCount: summary?.users.deactivated ?? 0,
     usersByRole: summary?.users.byRole ?? [],
     orphanedRoleUsers: summary?.users.orphaned ?? [],
+    unlinkedUsers: summary?.users.unlinked ?? [],
 
     rolesLoading: loading,
     rolesError: error,

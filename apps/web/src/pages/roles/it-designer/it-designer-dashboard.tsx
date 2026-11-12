@@ -139,26 +139,34 @@ export default function ITDesignerDashboardPage() {
             <CardTitle className="text-lg">Configuration check</CardTitle>
             <p className="text-xs text-muted-foreground">
               Accounts whose role matches no configured role can't pass any
-              authorization check.
+              authorization check. Staff accounts with no employee record are skipped by attendance and payroll.
             </p>
           </CardHeader>
           <CardContent className="space-y-3">
             {c.loading ? (
               <p className="text-sm text-muted-foreground">Loading…</p>
-            ) : c.orphanedRoleUsers.length === 0 ? (
+            ) : c.orphanedRoleUsers.length === 0 && c.unlinkedUsers.length === 0 ? (
               <div className="flex items-center gap-2 text-sm text-success-strong">
                 <ShieldCheck className="h-4 w-4" />
-                Every account maps to a configured role.
+                Every account maps to a configured role and, where needed, an employee record.
               </div>
             ) : (
-              c.orphanedRoleUsers.map((user) => (
-                <div key={user.id} className="border-b border-border pb-3 last:border-0 last:pb-0">
-                  <p className="text-sm font-medium leading-tight">{user.name}</p>
-                  <p className="text-xs text-destructive-strong">
-                    Unknown role <span className="font-mono">{user.role}</span>
-                  </p>
-                </div>
-              ))
+              <>
+                {c.orphanedRoleUsers.map((user) => (
+                  <div key={`role-${user.id}`} className="border-b border-border pb-3 last:border-0 last:pb-0">
+                    <p className="text-sm font-medium leading-tight">{user.name}</p>
+                    <p className="text-xs text-destructive-strong">
+                      Unknown role <span className="font-mono">{user.role}</span>
+                    </p>
+                  </div>
+                ))}
+                {c.unlinkedUsers.map((user) => (
+                  <div key={`link-${user.id}`} className="border-b border-border pb-3 last:border-0 last:pb-0">
+                    <p className="text-sm font-medium leading-tight">{user.name}</p>
+                    <p className="text-xs text-warning-strong">No employee record — link it on User Accounts.</p>
+                  </div>
+                ))}
+              </>
             )}
           </CardContent>
         </Card>
