@@ -2,7 +2,8 @@ import express from "express";
 import { env } from "./core/config/env.js";
 import { cacheInvalidation } from "./core/cache/invalidate.js";
 import { corsMiddleware } from "./core/http/cors.js";
-import { healthHandler } from "./core/http/health.js";
+import { healthHandler, readyHandler } from "./core/http/health.js";
+import { pool } from "./core/db/connection.js";
 import { errorMiddleware } from "./core/http/error.js";
 import { logger } from "./core/http/logger.js";
 import { requestId } from "./core/http/request-id.js";
@@ -22,6 +23,7 @@ app.disable("x-powered-by");
 app.use(securityHeaders);
 // Liveness probe for the host / Docker HEALTHCHECK: before auth, no database or cache call.
 app.get("/api/health", healthHandler);
+app.get("/api/health/ready", readyHandler(() => pool.query("SELECT 1")));
 app.use(corsMiddleware);
 app.use(requestId);
 app.use(logger);

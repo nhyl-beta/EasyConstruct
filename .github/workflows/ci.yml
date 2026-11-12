@@ -52,3 +52,53 @@ jobs:
             cat api-typecheck.log
             exit 1
           fi
+
+  # Proves the build can actually run: a fresh database is built from the schema, the real-database tests run
+  # on it, then the built server is started and scripts/ops/smoke.mjs signs in and loads the first pages.
+  boot:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: ci_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci -d ci_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://ci:ci@localhost:5432/ci_test
+      JWT_SECRET: ci-test-secret
+      ALLOW_DEMO_RESET: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Build a fresh database from the schema
+        run: npm run db:bootstrap --workspace=@easyconstruct/api -- --yes
+      - name: Schema, sequences and indexes match the code
+        run: npm run db:verify-schema --workspace=@easyconstruct/api
+      - name: Real-database tests
+        run: npm run test:db --workspace=@easyconstruct/api
+      - name: Seed the demo accounts
+        run: npm run db:seed --workspace=@easyconstruct/api
+      - run: npm run build:server
+      - name: Start the built server and smoke test it
+        working-directory: apps/api
+        env:
+          PORT: 8123
+          DISABLE_SCHEDULER: "true"
+          SMOKE_BASE_URL: http://127.0.0.1:8123/api
+          SMOKE_EMAIL: admin@easyconstruct.demo
+          SMOKE_PASSWORD: Demo@12345
+        run: |
+          node dist/src/main.js > server.log 2>&1 &
+          node scripts/ops/smoke.mjs || { cat server.log; exit 1; }
