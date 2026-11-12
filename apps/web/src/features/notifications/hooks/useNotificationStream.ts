@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { streamUrl } from "@/services/api.client";
+import { getToken } from "@/auth/session";
 import type { Notification } from "../types/notification.types";
 
 /**
@@ -10,18 +11,38 @@ import type { Notification } from "../types/notification.types";
  */
 export function useNotificationStream(onNotification: (notification: Notification) => void) {
   useEffect(() => {
-    const source = new EventSource(streamUrl("/notifications/stream"));
+    let source: EventSource | undefined;
+    let retry: ReturnType<typeof setTimeout> | undefined;
+    let delay = 5_000;
 
-    source.addEventListener("notification", (event) => {
-      try {
-        const data = JSON.parse((event as MessageEvent).data) as Notification;
-        onNotification(data);
-      } catch {
-        // malformed event — ignore, next one will still come through
-      }
-    });
+    const connect = () => {
+      if (!getToken()) return; // signed out: nothing to listen to
+      // A new url each time, so a reconnect carries the current token, not the one from page load.
+      source = new EventSource(streamUrl("/notifications/stream"));
+      source.onopen = () => {
+        delay = 5_000;
+      };
+      source.addEventListener("notification", (event) => {
+        try {
+          onNotification(JSON.parse((event as MessageEvent).data) as Notification);
+        } catch {
+          // malformed event — ignore, next one will still come through
+        }
+      });
+      // The browser gives up for good when the server answers with an error (a restart, a sleeping host),
+      // so reconnect ourselves, waiting longer each time up to a minute.
+      source.onerror = () => {
+        source?.close();
+        retry = setTimeout(connect, delay);
+        delay = Math.min(delay * 2, 60_000);
+      };
+    };
+    connect();
 
-    return () => source.close();
+    return () => {
+      clearTimeout(retry);
+      source?.close();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 }

@@ -6,6 +6,7 @@
 // is scoped like the list endpoints it replaces (a PM sees their own projects,
 // a staffed role its assignments, an architect its assigned proposals and
 // designs, and so on).
+import { todayManila } from "../../../core/utils/dates.js";
 import * as aggregates from "./aggregates.js";
 import * as repo from "./repository.js";
 import { assignedCodesFor, isAssignedScoped } from "../projects/scope.js";
@@ -259,7 +260,7 @@ const financeManager = async () => {
 };
 
 const sitePersonnel = async (actor: SummaryActor) => {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayManila();
   const [employee, taskCounts, tasks, openIssues, documents] = await Promise.all([
     employeesRepo.findByUserId(actor.id).then((e) => e ?? employeesRepo.findByEmail(actor.email)),
     repo.taskCountsForUser(actor.id),

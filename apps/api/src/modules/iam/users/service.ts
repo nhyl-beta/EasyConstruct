@@ -206,6 +206,11 @@ const applyUpdate = async (id: number, input: UpdateUserInput) => {
   await validateUpdate(id, input, current);
   const updated = await repo.update(id, input);
   if (!updated) throw new NotFoundError("User", String(id));
+  // The token carries the role, so a role change must end the sessions issued with the old one.
+  if (input.role !== undefined && input.role !== current.role) {
+    await repo.revokeTokens(id);
+    invalidateSessionCache(id);
+  }
   return updated;
 };
 

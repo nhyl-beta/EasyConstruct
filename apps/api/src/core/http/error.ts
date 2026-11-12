@@ -21,7 +21,7 @@ export function errorMiddleware(
     res.status(statusCode).json(
       formatError(
         err.code === "LIMIT_FILE_SIZE"
-          ? "The uploaded file is too large. Maximum size is 10 MB."
+          ? "The uploaded file is too large."
           : err.message,
         err.code === "LIMIT_FILE_SIZE"
           ? "FILE_TOO_LARGE"
@@ -52,7 +52,7 @@ export function errorMiddleware(
   if ((err as { type?: string }).type === "entity.too.large") {
     res.status(413).json(
       formatError(
-        "The uploaded file is too large. Maximum size is 8 MB.",
+        "The uploaded file is too large for this kind of upload.",
         "FILE_TOO_LARGE",
       ),
     );

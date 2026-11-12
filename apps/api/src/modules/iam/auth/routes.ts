@@ -37,11 +37,13 @@ router.post("/logout", authenticate, controller.logout);
 // someone who cannot sign in.
 router.post(
   "/forgot-password",
+  loginAddressLimit,
   validate(forgotPasswordSchema),
   controller.forgotPassword,
 );
 router.post(
   "/reset-password",
+  loginAddressLimit,
   validate(resetPasswordSchema),
   controller.resetPassword,
 );

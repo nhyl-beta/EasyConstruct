@@ -57,8 +57,14 @@ if (!parsed.success) {
 }
 
 const values = parsed.data;
-if (values.NODE_ENV === "production" && !values.JWT_SECRET) {
-  throw new Error("Invalid environment configuration: JWT_SECRET is required in production");
+// Only an explicit development or test run may use the built-in secret; a typo in NODE_ENV must not.
+if (!["development", "test"].includes(values.NODE_ENV) && !values.JWT_SECRET) {
+  throw new Error("Invalid environment configuration: JWT_SECRET is required outside development and test");
+}
+// Without a bucket, uploads fall back to the server's disk, which the host wipes on every deploy.
+const hasS3 = Boolean(values.S3_ENDPOINT && values.S3_BUCKET && values.S3_ACCESS_KEY_ID && values.S3_SECRET_ACCESS_KEY);
+if (values.NODE_ENV === "production" && !hasS3 && !values.BLOB_READ_WRITE_TOKEN && process.env.ALLOW_LOCAL_UPLOADS !== "true") {
+  throw new Error("Invalid environment configuration: file storage is not configured (set the S3_* variables, or ALLOW_LOCAL_UPLOADS=true for a host with a persistent disk)");
 }
 
 export const env = {

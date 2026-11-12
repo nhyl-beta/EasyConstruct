@@ -4,7 +4,8 @@ import { eq, sql } from "drizzle-orm";
 import { db } from "../../../core/db/connection.js";
 import { expenses, procurementOrders, reimbursements } from "../../../core/db/schema/finance.js";
 import { canReadFinanceFile, type FinanceFileKind } from "../../finance/index.js";
-import { assertProjectVisible } from "../../projects/index.js";
+import { assertProjectVisible, assignedCodesFor, canAccessCode, isAssignedScoped } from "../../projects/index.js";
+import { documents } from "../../../core/db/schema/documents.js";
 import { ForbiddenError } from "../../../core/utils/errors.js";
 
 interface FinanceFileOwner {
@@ -42,7 +43,16 @@ export async function assertCanOpenFile(
 ): Promise<void> {
   if (!auth) return;
   const owner = await findFinanceFileOwner(url);
-  if (!owner) return;
+  if (!owner) {
+    // Not a finance file. If it is a project document, the caller must be able to see that project's
+    // documents (the same rule as the documents list); without this, knowing the url was enough.
+    if (!isAssignedScoped(auth)) return;
+    const [doc] = await db.select({ project: documents.project }).from(documents).where(eq(documents.fileUrl, url)).limit(1);
+    if (doc && !canAccessCode(await assignedCodesFor(auth), doc.project)) {
+      throw new ForbiddenError("You can only open documents of projects you are assigned to");
+    }
+    return;
+  }
   if (!canReadFinanceFile(auth.role, owner.kind)) {
     throw new ForbiddenError("You do not have access to finance files");
   }
