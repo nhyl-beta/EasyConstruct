@@ -1,4 +1,4 @@
-import { and, eq, isNull, or } from "drizzle-orm";
+import { and, eq, isNull, or, sql } from "drizzle-orm";
 import { db } from "../../../core/db/connection.js";
 import { notifications } from "../../../core/db/schema/index.js";
 import { realtime } from "../../../core/realtime/index.js";
@@ -8,7 +8,8 @@ import { realtime } from "../../../core/realtime/index.js";
 export async function sealInbox(scope: { userId: number; role: string }) {
   if (!realtime) return null;
   const query = db
-    .select({ id: notifications.id, isRead: notifications.isRead })
+    // Realtime needs the SQL column name to equal the key, so isRead is aliased explicitly.
+    .select({ id: notifications.id, isRead: sql<boolean>`${notifications.isRead}`.as("isRead") })
     .from(notifications)
     .where(or(
       eq(notifications.recipientUserId, scope.userId),
