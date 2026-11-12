@@ -35,6 +35,10 @@ const assertWritableForDesign = async (designId: number) => {
 export const create = async (input: CreateDesignReviewInput) => {
   await assertWritableForDesign(input.designId);
   const created = await repo.create(input);
+  // B-150: asking for a review moves the design into review, so the register and the Consultant queue agree.
+  // An Approved design stays Approved.
+  const design = await designsRepo.findById(input.designId);
+  if (design && design.status !== "Approved") await designsRepo.update(design.id, { status: "In Review" });
   await refreshForDesign(input.designId);
   return created;
 };

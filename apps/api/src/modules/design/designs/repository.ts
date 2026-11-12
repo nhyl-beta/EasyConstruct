@@ -3,6 +3,7 @@ import { countRows, inCodes, selectPage } from "../../../core/db/paged.js";
 import { db } from "../../../core/db/connection.js";
 import { designEngineers } from "../../../core/db/schema/design-engineers.js";
 import { designs } from "../../../core/db/schema/designs.js";
+import { designReviews } from "../../../core/db/schema/design-reviews.js";
 import { statusesFor } from "./status-group.js";
 import type {
   CreateDesignInput,
@@ -111,13 +112,15 @@ export const update = async (id: number, data: UpdateDesignInput) => {
   return updated ?? null;
 };
 
-export const remove = async (id: number) => {
-  const [deleted] = await db
-    .delete(designs)
-    .where(eq(designs.id, id))
-    .returning();
-  return deleted ?? null;
-};
+// B-151: a design's own review requests only make sense with the design, and design_reviews.design_id has no
+// cascade, so a design with a review could never be deleted. Blueprints, documents and revisions still block it
+// (409 from the FK) because they are work product.
+export const remove = async (id: number) =>
+  db.transaction(async (tx) => {
+    await tx.delete(designReviews).where(eq(designReviews.designId, id));
+    const [deleted] = await tx.delete(designs).where(eq(designs.id, id)).returning();
+    return deleted ?? null;
+  });
 
 // ── Assigned engineers (many-to-many) ───────────────────────────────────────
 

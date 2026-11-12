@@ -7,6 +7,8 @@ export const useDesignDetailController = (id: string) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  // Kept apart from `error`: a refused delete must not replace the page with "Design not found".
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // Was raw `fetch('/api/designs/${id}')` — unlike apiClient, that sends no
   // Authorization header and skips VITE_API_BASE, so every request 401'd
@@ -28,16 +30,17 @@ export const useDesignDetailController = (id: string) => {
 
   const remove = async () => {
     setDeleting(true);
+    setDeleteError(null);
     try {
       await apiClient.del(`/designs/${id}`);
       return true;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete design");
+      setDeleteError(err instanceof Error ? err.message : "Failed to delete design");
       return false;
     } finally {
       setDeleting(false);
     }
   };
 
-  return { design, loading, error, deleting, remove, refetch: fetchDesign };
+  return { design, loading, error, deleting, deleteError, remove, refetch: fetchDesign };
 };

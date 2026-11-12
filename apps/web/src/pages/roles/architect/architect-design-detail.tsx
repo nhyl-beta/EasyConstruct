@@ -104,6 +104,12 @@ export default function ArchitectDesignDetail() {
         <ChevronLeft className="mr-1 h-4 w-4" /> All designs
       </Button>
 
+      {c.deleteError && (
+        <p role="alert" className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive-strong">
+          Couldn't delete this design. {c.deleteError}
+        </p>
+      )}
+
       <PageHeader
         title={d.name}
         breadcrumbLabel={d.name}
