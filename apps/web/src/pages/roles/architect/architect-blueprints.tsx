@@ -31,10 +31,13 @@ function NewBlueprintDialog({
   creating,
   createError,
   onCreate,
+  folders,
 }: {
   creating: boolean;
   createError: string | null;
   onCreate: (input: CreateBlueprintInput) => Promise<boolean>;
+  /** Folders already in use, offered as suggestions in the Folder field. */
+  folders: string[];
 }) {
   const [open, setOpen] = useState(false);
   useOpenOnAction("new-blueprint", () => setOpen(true));
@@ -135,7 +138,8 @@ function NewBlueprintDialog({
             </div>
             <div className="space-y-1.5">
               <Label>Folder</Label>
-              <Input value={folder} onChange={(e) => setFolder(e.target.value)} placeholder="Architectural" {...fieldProps("folder")} />
+              <Input value={folder} onChange={(e) => setFolder(e.target.value)} placeholder="Pick a folder or type a new one" list="blueprint-folders" {...fieldProps("folder")} />
+              <datalist id="blueprint-folders">{folders.map((f) => <option key={f} value={f} />)}</datalist>
               <FieldError name="folder" />
             </div>
           </div>
@@ -229,7 +233,7 @@ export default function ArchitectBlueprints() {
       <PageHeader
         title="Blueprint library"
         description="One folder per project, and inside it one folder per architect."
-        actions={<NewBlueprintDialog creating={c.creating} createError={c.createError} onCreate={c.create} />}
+        actions={<NewBlueprintDialog creating={c.creating} createError={c.createError} onCreate={c.create} folders={[...new Set(c.blueprints.map((b) => b.folder).filter(Boolean))].sort()} />}
       />
 
       <div className="flex flex-wrap items-center gap-2">

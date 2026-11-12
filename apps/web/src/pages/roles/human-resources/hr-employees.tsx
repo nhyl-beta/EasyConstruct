@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   Dialog,
   DialogContent,
@@ -175,6 +176,8 @@ export default function HREmployeesPage() {
   const [reassignDept, setReassignDept] = useState("");
   const [reassignRole, setReassignRole] = useState("");
   const [busy, setBusy] = useState(false);
+  // B-105: the app's own confirm dialog, not the browser's window.confirm.
+  const [pending, setPending] = useState<{ title: string; description: string; confirmLabel: string; run: () => Promise<void> } | null>(null);
   // Search (debounced), the two filters and paging all go to the server; the
   // total headcount in the card header is the shared workforce figure.
   const pagination = useServerList<Employee>({
@@ -223,20 +226,27 @@ export default function HREmployeesPage() {
     });
 
   // Bulk archive: each employee's status becomes Archived on the server.
-  const handleBulkArchive = async () => {
+  const handleBulkArchive = () => {
     const targets = chosen.filter((e) => e.status !== "Archived");
     if (targets.length === 0) {
       toast.info("The selected employees are already archived.");
       return;
     }
-    if (!window.confirm(`Archive ${targets.length} employee${targets.length === 1 ? "" : "s"}?`)) return;
-    setBusy(true);
-    const results = await Promise.allSettled(targets.map((e) => deactivateEmployee(e.dbId)));
-    setBusy(false);
-    const failed = results.filter((r) => r.status === "rejected").length;
-    if (failed > 0) toast.error(`${failed} of ${targets.length} could not be archived.`);
-    else toast.success(`Archived ${targets.length} employee${targets.length === 1 ? "" : "s"}.`);
-    setSelected(new Map());
+    const plural = `${targets.length} employee${targets.length === 1 ? "" : "s"}`;
+    setPending({
+      title: `Archive ${plural}?`,
+      description: "Archived employees stop appearing in active lists. You can reassign them later.",
+      confirmLabel: "Archive",
+      run: async () => {
+        setBusy(true);
+        const results = await Promise.allSettled(targets.map((e) => deactivateEmployee(e.dbId)));
+        setBusy(false);
+        const failed = results.filter((r) => r.status === "rejected").length;
+        if (failed > 0) toast.error(`${failed} of ${targets.length} could not be archived.`);
+        else toast.success(`Archived ${plural}.`);
+        setSelected(new Map());
+      },
+    });
   };
 
   // Bulk reassign: new department (and optionally role). An archived employee who is
@@ -265,10 +275,15 @@ export default function HREmployeesPage() {
     setSelected(new Map());
   };
 
-  const handleDelete = async (e: Employee) => {
-    if (!window.confirm(`Delete ${e.name}? This cannot be undone.`)) return;
-    await deleteEmployee(e.dbId);
-  };
+  const handleDelete = (e: Employee) =>
+    setPending({
+      title: `Delete ${e.name}?`,
+      description: "This cannot be undone.",
+      confirmLabel: "Delete",
+      run: async () => {
+        await deleteEmployee(e.dbId);
+      },
+    });
 
   const handleExportCsv = async () => {
     // Export covers everything the filters select, not just the page on screen.
@@ -496,6 +511,20 @@ export default function HREmployeesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={pending !== null}
+        onOpenChange={(open) => !open && setPending(null)}
+        title={pending?.title ?? ""}
+        description={pending?.description ?? ""}
+        confirmLabel={pending?.confirmLabel ?? "Confirm"}
+        loading={busy}
+        onConfirm={() => {
+          const action = pending;
+          setPending(null);
+          void action?.run();
+        }}
+      />
     </div>
   );
 }

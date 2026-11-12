@@ -158,7 +158,7 @@ export default function ITDesignerUsersPage() {
         <div className="mb-4">
           <StaffingGapsCard />
         </div>
-        <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="mb-4 flex flex-col gap-3">
           <div className="flex flex-wrap gap-2">
             <Badge
               variant="outline"
@@ -178,7 +178,7 @@ export default function ITDesignerUsersPage() {
               </Badge>
             ))}
           </div>
-          <div className="flex w-full flex-wrap items-center gap-2 md:w-auto">
+          <div className="flex w-full flex-wrap items-center gap-2">
             <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
               <SelectTrigger aria-label="Account status" className="h-9 w-36 text-sm">
                 <SelectValue />
@@ -189,7 +189,7 @@ export default function ITDesignerUsersPage() {
                 <SelectItem value="inactive">Deactivated</SelectItem>
               </SelectContent>
             </Select>
-            <div className="relative w-full md:w-72">
+            <div className="relative min-w-56 flex-1">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Search name, email or employee ID…"

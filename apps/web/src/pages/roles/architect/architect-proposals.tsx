@@ -316,6 +316,19 @@ export default function ArchitectProposals() {
             icon: Clock,
             tone: "warn",
           },
+          // B-153: the strip is four cards wide; two left half of it empty.
+          {
+            label: "Approved",
+            value: `${c.kpis.approved}`,
+            icon: CheckCircle2,
+            tone: "good",
+          },
+          {
+            label: "Failed validation",
+            value: `${c.kpis.failedValidation}`,
+            icon: AlertTriangle,
+            tone: c.kpis.failedValidation > 0 ? "warn" : "neutral",
+          },
         ]}
       />
 
@@ -538,11 +551,11 @@ export default function ArchitectProposals() {
                 Amount
               </TableHead>
 
-              <TableHead className="w-[10%]">Status</TableHead>
+              <TableHead className="w-[13%]">Status</TableHead>
 
-              {FEATURES.ai && <TableHead className="w-[16%]">Validation</TableHead>}
+              {FEATURES.ai && <TableHead className="w-[14%]">Validation</TableHead>}
 
-              <TableHead className={FEATURES.ai ? "w-[16%]" : "w-[32%]"}>Review</TableHead>
+              <TableHead className={FEATURES.ai ? "w-[13%]" : "w-[32%]"}>Review</TableHead>
 
               <TableHead className="w-[6%]" />
             </TableRow>
