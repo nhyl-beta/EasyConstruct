@@ -1,28 +1,13 @@
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { qk } from "@/lib/query-keys";
 import { LifecycleRepository } from "../repositories/lifecycle.repository";
-import type { MyActionItem } from "../types/my-actions.types";
 
-// K1
+// K1. A query (not local state) so the live inbox sync can invalidate it.
 export function useMyActions() {
-  const [actions, setActions] = useState<MyActionItem[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    LifecycleRepository.getMyActions()
-      .then((data) => {
-        if (!cancelled) setActions(data);
-      })
-      .catch(() => {
-        if (!cancelled) setActions([]);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  return { actions, loading };
+  const query = useQuery({
+    queryKey: qk.lifecycle.myActions,
+    queryFn: () => LifecycleRepository.getMyActions(),
+    retry: false,
+  });
+  return { actions: query.data ?? [], loading: query.isLoading };
 }

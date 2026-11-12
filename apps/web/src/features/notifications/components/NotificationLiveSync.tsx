@@ -1,7 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createRealtimeClient, type SealedLiveQuery } from "@neon/realtime/client";
 import { drizzleParsers } from "@neon/realtime-drizzle/client";
 import { RealtimeProvider, useLiveQuery } from "@neon/realtime-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { qk } from "@/lib/query-keys";
 import { apiClient } from "@/services/api.client";
 
 type Row = { id: number; isRead: boolean };
@@ -32,6 +34,14 @@ function Watch({ sealed, onChange }: { sealed: Sealed; onChange: () => void }) {
 export function NotificationLiveSync({ onChange }: { onChange: () => void }) {
   const client = useMemo(() => (url ? createRealtimeClient({ url, parsers: drizzleParsers }) : null), []);
   const [sealed, setSealed] = useState<Sealed | null>(null);
+  const queryClient = useQueryClient();
+  // shortcut: most domain events also write a notification, so a new row stands in for "something changed".
+  // Anything that changes without one still waits for the next page load; upgrade = one sealed query per table.
+  const changed = useCallback(() => {
+    onChange();
+    void queryClient.invalidateQueries({ queryKey: qk.approvals.stats });
+    void queryClient.invalidateQueries({ queryKey: qk.lifecycle.myActions });
+  }, [onChange, queryClient]);
 
   useEffect(() => {
     if (!client) return;
@@ -43,7 +53,7 @@ export function NotificationLiveSync({ onChange }: { onChange: () => void }) {
   if (!client || !sealed) return null;
   return (
     <RealtimeProvider client={client}>
-      <Watch sealed={sealed} onChange={onChange} />
+      <Watch sealed={sealed} onChange={changed} />
     </RealtimeProvider>
   );
 }
