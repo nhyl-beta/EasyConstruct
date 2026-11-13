@@ -4,8 +4,8 @@ assertDemoEnvironment();
 // apps/api/scripts/demo/reset-demo-data.ts
 //
 // Clean-slate reset: removes EVERY project and all project-scoped data, then
-// resets the employees table to exactly 100 rows (50 account-linked rows kept
-// untouched + 50 deterministic roster rows). Accounts are read-only: users,
+// resets the employees table to the account-linked rows (kept untouched) plus the
+// 50 deterministic roster rows (a roster row already linked to an account counts once). Accounts are read-only: users,
 // password_reset_tokens and roles are never written, and their checksums are
 // recorded before and compared after.
 //
@@ -101,7 +101,12 @@ async function main() {
       await c.query(`DELETE FROM employees WHERE user_id IS NULL`);
       const n = await upsertRoster(c);
       const total = (await c.query(`SELECT count(*)::int n FROM employees`)).rows[0].n;
-      if (total !== 100) throw new Error(`Employee count is ${total}, expected 100 — rolling back.`);
+      // A roster employee that has since been linked to an account is kept as it is (not replaced), so it counts once.
+      const rosterIds = buildRoster().map((r) => r.employeeId);
+      const linked = (await c.query(`SELECT count(*)::int n FROM employees WHERE user_id IS NOT NULL`)).rows[0].n;
+      const linkedRoster = (await c.query(`SELECT count(*)::int n FROM employees WHERE user_id IS NOT NULL AND employee_id = ANY($1)`, [rosterIds])).rows[0].n;
+      const expected = linked + rosterIds.length - linkedRoster;
+      if (total !== expected) throw new Error(`Employee count is ${total}, expected ${expected} — rolling back.`);
       const mid = await checksums(c);
       for (const k of Object.keys(before)) if (before[k] !== mid[k]) throw new Error(`Checksum changed for ${k} — rolling back.`);
       await c.query("COMMIT");
