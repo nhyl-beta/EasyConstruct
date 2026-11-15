@@ -8,10 +8,13 @@
 //   * an APPROVED payroll batch (employer cost, gross for legacy batches), in
 //     the month of the approving decision.
 // Pending and rejected expenses, and budget changes, are not cash.
+// Cash IN has exactly one source: a recorded client payment (client_payments),
+// in the month it was received. There is no approval step for a payment —
+// recording one means the money is already in hand.
 import { and, eq } from "drizzle-orm";
 
 import { db } from "../../../core/db/connection.js";
-import { expenses, payrollBatches } from "../../../core/db/schema/finance.js";
+import { clientPayments, expenses, payrollBatches } from "../../../core/db/schema/finance.js";
 import { payrollBatchDecisions } from "../../../core/db/schema/payroll.js";
 import { bucketByMonth, monthKey, payrollCost, round2 } from "./months.js";
 
@@ -48,6 +51,14 @@ const approvedPayrollRows = async (exec: Executor) =>
 export const expenseOutflowByMonth = async (exec: Executor = db) => bucketByMonth(await approvedExpenseRows(exec));
 
 export const payrollOutflowByMonth = async (exec: Executor = db) => bucketByMonth(await approvedPayrollRows(exec));
+
+/** Client payments received, as (month, amount) rows — the one source of cash inflow. */
+const clientPaymentRows = async (exec: Executor) =>
+  (
+    await exec.select({ amount: clientPayments.amount, at: clientPayments.receivedAt }).from(clientPayments)
+  ).map((r) => ({ amount: Number(r.amount), at: r.at }));
+
+export const paymentInflowByMonth = async (exec: Executor = db) => bucketByMonth(await clientPaymentRows(exec));
 
 /** Approved expenses of the month `now` falls in. */
 export const currentMonthExpenseOutflow = async (now: Date = new Date(), exec: Executor = db) =>

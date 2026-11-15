@@ -33,7 +33,7 @@ import {
 } from "@/components/ui/dialog";
 import { ProjectPicker } from "@/components/shared/project-picker";
 import { openFileUrl } from "@/lib/file-url";
-import { Receipt, Search, Plus, Truck, ListChecks, Sparkles, Paperclip, Download } from "lucide-react";
+import { Receipt, Search, Plus, Truck, ListChecks, Sparkles, Paperclip, Download, HandCoins } from "lucide-react";
 import { formatAxisCurrency, formatCurrency } from "@/lib/format-currency";
 import { downloadCsv } from "@/lib/export-csv";
 import { FEATURES } from "@/config/features";
@@ -43,6 +43,8 @@ import { DataTablePagination } from "@/components/refine-ui/data-table/data-tabl
 import { useExpensesController, type CreateExpenseInput } from "@/features/finance/hooks/use-expenses";
 import { usePurchaseRequests } from "@/features/finance/hooks/use-purchase-requests";
 import { useProcurement } from "@/features/finance/hooks/use-procurement";
+import { usePayments } from "@/features/finance/hooks/use-payments";
+import type { CreateClientPaymentInput } from "@/features/finance/types/payments.types";
 import { PurchaseRequestsPanel, type Notice } from "@/features/finance/components/PurchaseRequestsPanel";
 import { ProcurementPanel } from "@/features/finance/components/ProcurementPanel";
 import { CategorySelect } from "@/features/finance/components/CategorySelect";
@@ -132,8 +134,74 @@ function RecordExpenseDialog({
   );
 }
 
+function RecordPaymentDialog({
+  creating,
+  error,
+  onCreate,
+}: {
+  creating: boolean;
+  error: string | null;
+  onCreate: (input: CreateClientPaymentInput) => Promise<boolean>;
+}) {
+  const [open, setOpen] = useState(false);
+  const [project, setProject] = useState("");
+  const [amount, setAmount] = useState("");
+  const [note, setNote] = useState("");
+
+  const reset = () => {
+    setProject("");
+    setAmount("");
+    setNote("");
+  };
+
+  const canSubmit = project !== "" && Number(amount) > 0;
+
+  const handleSubmit = async () => {
+    const ok = await onCreate({ project, amount: Number(amount), note: note.trim() || undefined });
+    if (ok) {
+      reset();
+      setOpen(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline">
+          <HandCoins className="h-3.5 w-3.5" /> Record payment
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Record a client payment</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <Label>Project</Label>
+            <ProjectPicker value={project} onChange={setProject} className="w-full" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Amount received</Label>
+            <Input type="number" min={0} value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="50000" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Note (optional)</Label>
+            <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. Down payment, Progress billing #2" />
+          </div>
+        </div>
+        {error && <p className="text-sm text-destructive-strong">{error}</p>}
+        <DialogFooter>
+          <Button disabled={!canSubmit || creating} onClick={handleSubmit}>
+            {creating ? "Recording…" : "Record payment"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // An old link such as ?tab=reimbursements is not in this list, so it falls back to Tracking.
-const TABS = ["tracking", "purchase-requests", "procurement", "analytics"] as const;
+const TABS = ["tracking", "purchase-requests", "procurement", "payments", "analytics"] as const;
 type Tab = (typeof TABS)[number];
 
 export default function FinanceExpensesPage() {
@@ -155,6 +223,18 @@ export default function FinanceExpensesPage() {
     );
   const purchaseRequests = usePurchaseRequests();
   const procurement = useProcurement();
+  const payments = usePayments();
+  const [creatingPayment, setCreatingPayment] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+  const createPayment = async (input: CreateClientPaymentInput) => {
+    setCreatingPayment(true);
+    setPaymentError(null);
+    const r = await payments.create(input);
+    setCreatingPayment(false);
+    if (!r.ok) setPaymentError(r.error);
+    else toast.success(`Payment of ${formatCurrency(input.amount)} recorded`);
+    return r.ok;
+  };
   const { user } = useAuth();
   // The server enforces this too (403); the buttons are simply not offered to other roles.
   // Admin reads the ledger; recording, approving and paying are Finance Manager only (the API refuses Admin).
@@ -247,6 +327,7 @@ export default function FinanceExpensesPage() {
             <TabsTrigger value="tracking">Tracking</TabsTrigger>
             <TabsTrigger value="purchase-requests">Purchase Requests</TabsTrigger>
             <TabsTrigger value="procurement">Procurement</TabsTrigger>
+            <TabsTrigger value="payments">Payments</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
 
@@ -444,6 +525,51 @@ export default function FinanceExpensesPage() {
           <TabsContent value="procurement" className="mt-4">
             <SectionCard title="Procurement orders" subtitle="Order, ship, receive on site, then pay. Payment books one approved expense.">
               <ProcurementPanel procurement={procurement} canAct={canDecide} onNotice={setNotice} onOpenExpense={openExpense} />
+            </SectionCard>
+          </TabsContent>
+
+          <TabsContent value="payments" className="mt-4">
+            <SectionCard
+              title="Client payments"
+              subtitle="Money actually received from clients. The only source of cash flow inflow."
+              actions={canDecide && <RecordPaymentDialog creating={creatingPayment} error={paymentError} onCreate={createPayment} />}
+            >
+              {payments.loading ? (
+                <div className="space-y-2 p-2">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="h-10 animate-pulse rounded-lg bg-muted/40" />
+                  ))}
+                </div>
+              ) : payments.payments.length === 0 ? (
+                <div className="p-6 text-center text-sm text-muted-foreground">
+                  No client payments recorded yet.
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>ID</TableHead>
+                      <TableHead>Project</TableHead>
+                      <TableHead className="text-right">Amount</TableHead>
+                      <TableHead>Received</TableHead>
+                      <TableHead>Note</TableHead>
+                      <TableHead>Recorded by</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {payments.payments.map((p) => (
+                      <TableRow key={p.id}>
+                        <TableCell className="font-mono text-xs">{p.id}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{p.project}</TableCell>
+                        <TableCell className="text-right text-sm">{formatCurrency(p.amount)}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{p.receivedAt}</TableCell>
+                        <TableCell className="text-xs">{p.note ?? ""}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{p.createdBy ?? ""}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </SectionCard>
           </TabsContent>
         </Tabs>

@@ -268,6 +268,24 @@ export const cashFlowEntries = pgTable("cash_flow_entries", {
   }).notNull(),
 });
 
+// ── Client payments (cash flow inflow) ─────────────────────────────────────
+// A payment actually received from a client. Unlike an expense, there is no
+// approval step: recording one means the money is already in hand, so it
+// books straight to cash flow inflow for the month of `receivedAt`.
+export const clientPayments = pgTable("client_payments", {
+  id: varchar("id", { length: 32 }).primaryKey(), // e.g. "PAY-0001"
+  project: varchar("project", { length: 255 }).notNull(),
+  amount: numeric("amount", {
+    precision: 14,
+    scale: 2,
+    mode: "number",
+  }).notNull(),
+  receivedAt: timestamp("received_at").defaultNow().notNull(),
+  note: text("note"),
+  createdBy: varchar("created_by", { length: 255 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // ── Scheduled reports ──────────────────────────────────────────────────────
 export const scheduledReports = pgTable("scheduled_reports", {
   id: serial("id").primaryKey(),

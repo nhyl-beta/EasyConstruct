@@ -23,7 +23,7 @@ export const DELETE_ORDER = [
   "procurement_orders", "purchase_requests", "reimbursements",
   "milestone_links", "milestones", "tasks", "issues", "requirements",
   "architect_documents", "blueprints", "design_reviews", "design_revisions", "design_engineers", "designs",
-  "revisions", "engineering_reports", "documents", "expenses", "financial_risks", "cash_flow_entries",
+  "revisions", "engineering_reports", "documents", "expenses", "client_payments", "financial_risks", "cash_flow_entries",
   "ai_insights", "approvals_queue",
   "scheduled_reports", "payroll", "payroll_batch_decisions", "payroll_batch_acknowledgements", "payroll_batches", "attendance",
   "transmittal_acknowledgements", "transmittal_items", "transmittals",
