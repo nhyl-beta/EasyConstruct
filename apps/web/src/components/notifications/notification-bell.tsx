@@ -198,8 +198,8 @@ export function NotificationBell() {
                     />
                     <h3 className="text-sm font-medium leading-snug">{n.title}</h3>
                     {n.message && <p className="mt-1 line-clamp-3 text-xs text-muted-foreground">{n.message}</p>}
-                    <div className="mt-3 flex items-end justify-between gap-3">
-                      <div className="flex flex-wrap gap-2">
+                    <div className="mt-3 space-y-2">
+                      <div className="flex flex-nowrap gap-2">
                         {label ? (
                           <Button size="sm" className="rounded-xl" disabled={busy} onClick={() => openItem(n)}>
                             <ArrowUpRight className="mr-1 h-3.5 w-3.5" aria-hidden /> {label}
@@ -215,7 +215,7 @@ export function NotificationBell() {
                           <CircleX className="mr-1 h-3.5 w-3.5" aria-hidden /> Dismiss
                         </Button>
                       </div>
-                      <span className="shrink-0 text-xs text-muted-foreground">{formatStamp(n.createdAt)}</span>
+                      <span className="block text-xs text-muted-foreground">{formatStamp(n.createdAt)}</span>
                     </div>
                   </article>
                 );

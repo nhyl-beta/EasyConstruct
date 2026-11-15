@@ -12,6 +12,40 @@ import { attendance, employees } from "../../../core/db/schema/index.js";
 // regardless of the database's locale.
 const isLate = sql`${attendance.clockIn} COLLATE "C" > '08:00'`;
 
+
+// By site = the employee's live project (B-110): the project of their latest attendance row, while it still
+// exists, is not finished and is not demo data; everyone else is "Unassigned". The free-text employees.site
+// is not used because it outlives resets and project edits.
+const LIVE_PROJECT = sql`p.code not ilike 'demo%' and p.name not ilike 'demo%' and p.status not in ('Completed', 'Cancelled', 'Archived')`;
+
+const headcountBySite = async () =>
+  (
+    await db.execute<{ site: string; headcount: number }>(sql`
+      select coalesce(p.name, 'Unassigned') as site, count(*)::int as headcount
+      from employees e
+      left join lateral (
+        select a.project_code from attendance a
+        where a.employee_id = e.employee_id and a.project_code is not null
+        order by a.log_date desc, a.id desc limit 1
+      ) last on true
+      left join projects p on p.code = last.project_code and ${LIVE_PROJECT}
+      where e.employee_id not ilike 'demo%'
+      group by 1
+      order by 1`)
+  ).rows;
+
+const presentByProject = async (column: "status" | "attendance_status", value: string, from?: string, to?: string) =>
+  (
+    await db.execute<{ site: string; present: number }>(sql`
+      select p.name as site, count(*)::int as present
+      from attendance a
+      join projects p on p.code = a.project_code and ${LIVE_PROJECT}
+      where a.${sql.raw(column)} = ${value}
+        ${from ? sql`and a.log_date >= ${from}` : sql``}
+        ${to ? sql`and a.log_date <= ${to}` : sql``}
+      group by 1`)
+  ).rows;
+
 export async function activeEmployeeCount(): Promise<number> {
   const [row] = await db
     .select({ n: sql<number>`count(*)::int` })
@@ -65,23 +99,8 @@ export async function workforceAggregates(from?: string, to?: string) {
       .from(employees)
       .groupBy(employees.department)
       .orderBy(sql`min(${employees.name})`),
-    db
-      .select({
-        site: employees.site,
-        headcount: sql<number>`count(*)::int`,
-      })
-      .from(employees)
-      .groupBy(employees.site)
-      .orderBy(sql`min(${employees.name})`),
-    db
-      .select({
-        site: employees.site,
-        present: sql<number>`count(*)::int`,
-      })
-      .from(attendance)
-      .innerJoin(employees, eq(employees.employeeId, attendance.employeeId))
-      .where(and(eq(attendance.status, "Verified"), inRange))
-      .groupBy(employees.site),
+    headcountBySite(),
+    presentByProject("status", "Verified", from, to),
     db
       .select({
         date: attendance.logDate,
@@ -134,15 +153,8 @@ export async function workforceBoard(from?: string, to?: string) {
       })
       .from(employees)
       .groupBy(employees.department),
-    db
-      .select({ site: employees.site, headcount: sql<number>`count(*)::int` })
-      .from(employees)
-      .groupBy(employees.site),
-    db
-      .select({ site: attendance.site, present: sql<number>`count(*)::int` })
-      .from(attendance)
-      .where(and(eq(attendance.attendanceStatus, "Present"), inRange))
-      .groupBy(attendance.site),
+    headcountBySite(),
+    presentByProject("attendance_status", "Present", from, to),
     db
       .select({
         date: attendance.logDate,

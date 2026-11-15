@@ -6,6 +6,7 @@ export const PROPOSAL_STATUS_FILTERS = [
   { value: "Approved", label: "Approved" },
   { value: "Revision Requested", label: "Revision requested" },
   { value: "Rejected", label: "Rejected" },
+  { value: "Archived", label: "Archived" },
 ] as const;
 
 /** Status dropdown shared by every proposals page (B-40); the value is what the server filter takes. */

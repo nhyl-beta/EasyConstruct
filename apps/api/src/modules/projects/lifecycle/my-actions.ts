@@ -13,6 +13,9 @@
 // (assertProjectWritable/refreshProjectProgress), so this instead reads
 // workflows/repository.ts directly — a leaf module neither side imports.
 import { Router } from "express";
+import { inArray } from "drizzle-orm";
+import { db } from "../../../core/db/connection.js";
+import { supportRequests } from "../../../core/db/schema/support-requests.js";
 import { authenticate } from "../../../core/auth/middleware.js";
 import type { AuthedRequest } from "../../../core/auth/middleware.js";
 import { formatSuccess } from "../../../core/utils/response.js";
@@ -161,14 +164,29 @@ export const getMyActions = async (actor: {
   // waits on it is account housekeeping (B-106). Link it on User Accounts.
   const accountItems: MyActionItem[] =
     actor.role === "it-designer"
-      ? unlinkedAccounts(await dashboardRepo.userRows()).map((u) => ({
-          projectCode: "",
-          projectName: "Accounts",
-          kind: "gate" as const,
-          title: `Link ${u.name} to an employee record`,
-          detail: "Attendance and payroll skip this account until it is linked.",
-          link: "/it-designer/users",
-        }))
+      ? [
+          ...(await db
+            .select()
+            .from(supportRequests)
+            .where(inArray(supportRequests.status, ["open", "in_progress"]))
+            .orderBy(supportRequests.createdAt)
+            .limit(20)).map((r) => ({
+            projectCode: "",
+            projectName: "User Support",
+            kind: "gate" as const,
+            title: r.subject,
+            detail: `From ${r.requesterName} (${r.requesterRole}) - ${r.status === "open" ? "not yet handled" : "in progress"}.`,
+            link: "/it-designer/support",
+          })),
+          ...unlinkedAccounts(await dashboardRepo.userRows()).map((u) => ({
+            projectCode: "",
+            projectName: "Accounts",
+            kind: "gate" as const,
+            title: `Link ${u.name} to an employee record`,
+            detail: "Attendance and payroll skip this account until it is linked.",
+            link: "/it-designer/users",
+          })),
+        ]
       : [];
 
   return [...gateItems, ...signalItems, ...workflowItems, ...accountItems];

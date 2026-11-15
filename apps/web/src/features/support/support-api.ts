@@ -2,7 +2,6 @@ import { apiClient } from "@/services/api.client";
 
 export const SUPPORT_CATEGORIES = [
   { value: "password_reset", label: "Password reset" },
-  { value: "email_name_change", label: "Email or name change" },
   { value: "role_access", label: "Role or access change" },
   { value: "cannot_sign_in", label: "Can't sign in" },
   { value: "other_account", label: "Other account issue" },

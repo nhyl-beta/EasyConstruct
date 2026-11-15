@@ -238,5 +238,3 @@ The full procedure, environment matrix, backup, restore and rollback instruction
 - Uploaded files are served through an authenticated route.
 - Demo seed and reset scripts are guarded against production use.
 - Review [`docs/architecture/SECURITY_CHECKLIST.md`](docs/architecture/SECURITY_CHECKLIST.md) before each release.
-
-
