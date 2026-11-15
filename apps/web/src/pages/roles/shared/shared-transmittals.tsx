@@ -121,6 +121,12 @@ export default function SharedTransmittals() {
                   <TableCell className="hidden text-sm sm:table-cell">{formatDate(t.dateIssued)}</TableCell>
                   <TableCell>
                     <Badge variant="outline" className="rounded-full text-overline capitalize">{t.status}</Badge>
+                    {t.emailStatus === "sent" && (
+                      <span className="mt-1 block text-overline text-muted-foreground">Emailed to {t.toName}</span>
+                    )}
+                    {t.emailStatus === "failed" && (
+                      <span className="mt-1 block text-overline text-destructive-strong">Email to {t.toName} failed</span>
+                    )}
                   </TableCell>
                   <TableCell>
                     <div className="flex justify-end gap-1">

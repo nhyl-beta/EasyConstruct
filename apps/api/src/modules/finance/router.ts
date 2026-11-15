@@ -6,6 +6,7 @@ import { budgetApprovalStepsRoutes } from "./budget-approval-steps/routes.js";
 import { budgetsRoutes } from "./budget/routes.js";
 import { cashFlowRouter } from "./cash-flow/routes.js";
 import { expensesRouter } from "./expenses/routes.js";
+import { paymentsRouter } from "./payments/routes.js";
 import { projectProfitabilityRouter } from "./project-profitability/routes.js";
 import { approvalsRouter } from "./approvals/routes.js";
 
@@ -21,6 +22,7 @@ export const financeRouter = Router();
 financeRouter.use("/budgets", budgetsRoutes);
 financeRouter.use("/budget-adjustments", budgetAdjustmentsRoutes);
 financeRouter.use("/expenses", expensesRouter);
+financeRouter.use("/payments", paymentsRouter);
 financeRouter.use("/cash-flow", cashFlowRouter);
 financeRouter.use("/project-profitability", projectProfitabilityRouter);
 financeRouter.use("/summary", summaryRouter);

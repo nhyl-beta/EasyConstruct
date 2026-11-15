@@ -243,6 +243,8 @@ export interface Transmittal {
   transmittedByName: string;
   receivedByName: string | null;
   status: "draft" | "issued" | "acknowledged";
+  /** Set once issuing tries to mail it, when `toName` looks like an email address. */
+  emailStatus?: "sent" | "failed" | null;
   items?: TransmittalItem[];
   acknowledgements?: TransmittalAck[];
 }

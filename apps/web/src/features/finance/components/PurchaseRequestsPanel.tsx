@@ -166,7 +166,8 @@ function CreateOrderDialog({
               <TableHeader>
                 <TableRow>
                   <TableHead>Item</TableHead>
-                  <TableHead className="w-24 text-right">Qty</TableHead>
+                  {/* B-133: w-24 clipped a 3-digit qty against the number spinner; matches Unit cost's width. */}
+                  <TableHead className="w-32 text-right">Qty</TableHead>
                   <TableHead className="w-32 text-right">Unit cost</TableHead>
                   <TableHead className="text-right">Total</TableHead>
                 </TableRow>

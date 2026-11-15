@@ -9,6 +9,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
+import { UserRepository } from "@/features/users/repositories/user.repository";
 import { useRequests } from "../hooks/useRequests";
 import { TransmittalRepository } from "../repositories/request.repository";
 import { TRANSMITTAL_PURPOSES, type Transmittal } from "../types/request.types";
@@ -46,6 +48,27 @@ export function TransmittalBuilderDialog({
 
   const { requests } = useRequests({ projectCode: project || undefined });
   const candidates = useMemo(() => (project ? requests.filter((r) => r.status !== "draft") : []), [requests, project]);
+
+  // B-94: "To"/"Thru" stayed free text with no way to pick a known recipient's
+  // email. Directory stays additive — a dropdown suggestion beside the field,
+  // not a replacement — so a plain office name (the paper cover-sheet
+  // convention this form already supports) still works exactly as before.
+  const [directory, setDirectory] = useState<{ value: string; label: string; description: string }[]>([]);
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    UserRepository.list()
+      .then((users) => {
+        if (cancelled) return;
+        setDirectory(users.filter((u) => u.isActive).map((u) => ({ value: u.email, label: u.name, description: u.email })));
+      })
+      .catch(() => {
+        if (!cancelled) setDirectory([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -115,10 +138,30 @@ export function TransmittalBuilderDialog({
             <div className="space-y-1.5">
               <Label htmlFor="tr-to">To <span className="text-destructive-strong">*</span></Label>
               <Input id="tr-to" value={toName} onChange={(e) => setToName(e.target.value)} disabled={busy} aria-invalid={tried && toName.trim().length < 2} />
+              <SearchableSelect
+                value={undefined}
+                onValueChange={setToName}
+                options={directory}
+                placeholder="Or pick a person…"
+                searchPlaceholder="Search people…"
+                emptyText="No one found."
+                disabled={busy || directory.length === 0}
+                className="h-8 text-xs"
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="tr-thru">Thru</Label>
               <Input id="tr-thru" value={thruName} onChange={(e) => setThruName(e.target.value)} disabled={busy} />
+              <SearchableSelect
+                value={undefined}
+                onValueChange={setThruName}
+                options={directory}
+                placeholder="Or pick a person…"
+                searchPlaceholder="Search people…"
+                emptyText="No one found."
+                disabled={busy || directory.length === 0}
+                className="h-8 text-xs"
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="tr-type">Type</Label>

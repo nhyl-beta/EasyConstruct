@@ -3,6 +3,7 @@ export * as budgetService from "./budget/service.js";
 export type { FinanceFileKind } from "./shared/access.js";
 export { approvalsService } from "./approvals/service.js";
 export { canReadFinanceFile } from "./shared/access.js";
+export { resolveActiveCategory } from "./categories/service.js";
 export { cashFlowRepository } from "./cash-flow/repository.js";
 export { decidePayrollBatchSchema } from "./payroll-review/validators.js";
 export { default as reviewRouter } from "./payroll-review/routes.js";

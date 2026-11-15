@@ -12,6 +12,7 @@ import type { LineItemValidationSummary } from "../../insights/index.js";
 import { FEATURES } from "../../../core/config/features.js";
 import { budgetService } from "../../finance/index.js";
 import { budgetAdjustmentsService } from "../../finance/index.js";
+import { resolveActiveCategory } from "../../finance/index.js";
 import { projectsRepo } from "../../projects/index.js";
 import { expensesRepository } from "../../finance/index.js";
 import * as repo from "./repository.js";
@@ -322,6 +323,32 @@ export const deleteWorkflow = async (
   return existing;
 };
 
+// G4 follow-up (TC5 B-129/B-179/B-180): a "Budget Change Request" never got
+// a budgetId, so a full approval had nowhere to move the money (see
+// syncLinkedBudgetChange below) — it just silently did nothing. There is no
+// budget picker in the submission form, only a category per line item, so
+// this resolves the one budget row that already matches (project, category)
+// the same best-effort way expenses/payroll do. A mixed-category request,
+// or a category with no existing budget row, is left without one — exactly
+// today's behavior — rather than guessing or blocking the submission.
+export const resolveBudgetIdForLineItems = async (
+  projectCode: string,
+  lineItems: { category: string }[] | undefined,
+): Promise<number | null> => {
+  if (!lineItems?.length) return null;
+  const categories = new Set(lineItems.map((item) => item.category));
+  if (categories.size !== 1) return null;
+  const [only] = categories;
+  try {
+    const canonical = await resolveActiveCategory(only!);
+    const match = await budgetService.findByProjectAndCategory(projectCode, canonical);
+    return match?.id ?? null;
+  } catch (err) {
+    console.warn(`[workflows] no budget found for ${projectCode}/${only}:`, err instanceof Error ? err.message : err);
+    return null;
+  }
+};
+
 export const createWorkflow = async (
   input: CreateWorkflowInput,
   createdBy: string,
@@ -384,6 +411,8 @@ export const createWorkflow = async (
 
   const seq = await repo.nextWorkflowSeq();
   const code = `WF-${1000 + seq}`;
+  const budgetId =
+    input.budgetId ?? (await resolveBudgetIdForLineItems(input.projectCode, input.lineItems));
 
   const workflow = await repo.insertWorkflow({
     code,
@@ -392,7 +421,7 @@ export const createWorkflow = async (
     templateId: template.id,
     amount: input.amount !== undefined ? String(input.amount) : null,
     type: input.type ?? null,
-    budgetId: input.budgetId ?? null,
+    budgetId,
     severity: "medium",
     aiNote: null,
     status: "active",

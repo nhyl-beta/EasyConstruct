@@ -36,7 +36,9 @@ import { useDesignProposalSubmission } from "@/features/proposals/hooks/useDesig
 import { WorkflowInitiationActions } from "@/components/workflows/workflow-initiation-actions";
 import { useAuth } from "@/auth/auth-context";
 import { ProjectPicker } from "@/components/shared/project-picker";
-import { AlertTriangle, Archive, CheckCircle2, Paperclip, Pencil } from "lucide-react";
+import { AlertTriangle, Archive, CheckCircle2, Paperclip, Pencil, RotateCcw } from "lucide-react";
+import { WorkflowRepository } from "@/features/workflows/repositories/workflow.repository";
+import { canAttachFile, canEditProposal, canRespond } from "@/features/proposals/lib/proposal-actions";
 import {
   Dialog,
   DialogContent,
@@ -111,6 +113,37 @@ function AttachFileButton({ proposal, busy, onPick }: { proposal: Proposal; busy
         <Paperclip className="h-3.5 w-3.5" />
       </Button>
     </>
+  );
+}
+
+/**
+ * B-160: a proposal the consultant sent back ("Revision Requested") had no
+ * way to resubmit it — the generic workflow resubmit action only lived on
+ * the PM's Workflows page. Looks up the workflow's revision-required stage
+ * and resubmits it, same as pm-workflows.tsx does.
+ */
+function RespondButton({ proposal }: { proposal: Proposal }) {
+  const [busy, setBusy] = useState(false);
+
+  const handleClick = async () => {
+    if (proposal.workflowId == null) return;
+    setBusy(true);
+    try {
+      const workflow = await WorkflowRepository.getById(proposal.workflowId);
+      const stage = workflow.stages.find((s) => s.status === "revision-required");
+      if (stage) {
+        await WorkflowRepository.resubmitStage(workflow.id, stage.id);
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Button variant="outline" size="sm" className="h-7 text-xs" disabled={busy} title="Resubmit for review" onClick={() => void handleClick()}>
+      <RotateCcw className="h-3 w-3" />
+      {busy ? "Resubmitting…" : "Respond"}
+    </Button>
   );
 }
 
@@ -643,20 +676,21 @@ export default function ArchitectProposals() {
 
                   <TableCell onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center gap-1">
-                      {!proposal.reviewedAt && !proposal.reviewComment && (
+                      {canEditProposal(proposal) && (
                         <EditProposalDialog
                           proposal={proposal}
                           saving={c.saving}
                           onUpdate={c.updateProposal}
                         />
                       )}
-                      {proposal.workflowId != null && (
+                      {canAttachFile(proposal) && (
                         <AttachFileButton
                           proposal={proposal}
                           busy={designSubmission.uploading}
                           onPick={(picked) => void designSubmission.attachFile(proposal.proposalId, proposal.workflowId as number, picked)}
                         />
                       )}
+                      {canRespond(proposal) && <RespondButton proposal={proposal} />}
                       <Button
                         variant="ghost"
                         size="icon"

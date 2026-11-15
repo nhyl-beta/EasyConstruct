@@ -10,6 +10,7 @@ const SEQUENCES = {
   PR: "purchase_request_seq",
   PO: "procurement_order_seq",
   EXP: "expense_seq",
+  PAY: "payment_seq",
 } as const;
 
 export type IdPrefix = keyof typeof SEQUENCES;

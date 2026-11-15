@@ -13,6 +13,10 @@ import type {
 
 export const getAll = async (filters: BudgetFilters) => repo.findAll(filters);
 
+// G4 follow-up: the only existing (project, category) match a caller outside
+// this module needs — see workflows/service.ts's syncLinkedBudgetChange.
+export const findByProjectAndCategory = repo.findByProjectAndCategory;
+
 export const getById = async (id: number) => {
   const budget = await repo.findById(id);
   if (!budget) throw new NotFoundError("Budget", String(id));
