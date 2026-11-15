@@ -9,10 +9,7 @@ import { hasAllowedExtension, maxUploadBytes } from "../../documents/index.js";
 import { assignedCodesFor } from "../projects/scope.js";
 import { projectCodesForPm } from "../projects/service.js";
 import * as projectsRepo from "../projects/repository.js";
-import * as designsRepo from "../../design/designs/repository.js";
-import * as designReviewsRepo from "../../design/designs/design-reviews/repository.js";
-import { REVISION_STATUSES as DESIGN_REVISION_STATUSES } from "../../design/designs/status-group.js";
-import * as blueprintsRepo from "../../design/blueprints/repository.js";
+import { designsRepo, designReviewsRepo, blueprintsRepo, DESIGN_REVISION_STATUSES } from "../../design/index.js";
 import * as repo from "./repository.js";
 import {
   REVISION_READ_ROLES,

@@ -20,8 +20,7 @@ import { blueprints } from "../../../core/db/schema/blueprints.js";
 import { revisions } from "../../../core/db/schema/revisions.js";
 import { assertDemoDatabase } from "../../../../scripts/demo/demo-guard.js";
 import { create as createRevision } from "./service.js";
-import * as designReviewsRepo from "../../design/designs/design-reviews/repository.js";
-import { decide as decideBlueprint } from "../../design/blueprints/service.js";
+import { designReviewsRepo, decideBlueprint } from "../../design/index.js";
 import type { RevisionActor } from "./types.js";
 
 const tag = `DBR${Date.now().toString(36)}`;
