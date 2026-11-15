@@ -262,6 +262,14 @@ export default function FinanceBudget() {
   // projects can carry different currencies — picking one project sidesteps
   // ever having to add amounts in different currencies together).
   const [allocationProjectCode, setAllocationProjectCode] = useState("");
+  // B-214: projects load async, so on first render (and whenever nothing is
+  // picked yet) this was blank — with only one project in the system that
+  // looked like the field couldn't show it at all. Default to the first one.
+  useEffect(() => {
+    if (!allocationProjectCode && projects.length > 0) {
+      setAllocationProjectCode(projects[0].code);
+    }
+  }, [projects, allocationProjectCode]);
   const allocationProject = useMemo(
     () => projects.find((p) => p.code === allocationProjectCode) ?? null,
     [projects, allocationProjectCode],
