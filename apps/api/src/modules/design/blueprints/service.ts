@@ -54,6 +54,10 @@ export const decide = async (input: DecideBlueprintInput) => {
     // drawing/design — the same "Current" gate D3 checks alongside
     // approval — an approval left Superseded/Draft would never satisfy it.
     ...(input.approval === "Approved" ? { status: "Current" } : {}),
+    // Rejected/Revision Required left `status` exactly as it was — the
+    // library card kept showing "Current" (or whatever it was before) with
+    // no sign the consultant sent it back.
+    ...(input.approval === "Rejected" || input.approval === "Revision Required" ? { status: "Needs Revision" } : {}),
   });
   if (!updated) throw new NotFoundError("Blueprint", String(input.id));
 
