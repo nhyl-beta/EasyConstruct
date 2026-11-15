@@ -75,7 +75,7 @@ export function QuickSearchPalette() {
       <Dialog open={open} onOpenChange={(next) => !next && closePalette()}>
         <DialogContent
           showCloseButton={false}
-          className="top-[12%] translate-y-0 gap-0 overflow-hidden p-0 motion-reduce:animate-none motion-reduce:transition-none sm:max-w-xl"
+          className="top-[12%] translate-y-0 gap-0 overflow-hidden rounded-none p-0 motion-reduce:animate-none motion-reduce:transition-none sm:max-w-xl"
           onKeyDown={(e) => {
             // Refine's kbar (mounted in App.tsx) listens for these keys on
             // window and would activate its own first result. They are ours.
@@ -95,7 +95,7 @@ export function QuickSearchPalette() {
             <DialogTitle>Search or jump to</DialogTitle>
             <DialogDescription>Find a page, start an action or open a record.</DialogDescription>
           </DialogHeader>
-          <Command shouldFilter={false} loop className="max-h-[70vh]">
+          <Command shouldFilter={false} loop className="max-h-[70vh] rounded-none">
             <CommandInput
               value={query}
               onValueChange={setQuery}
