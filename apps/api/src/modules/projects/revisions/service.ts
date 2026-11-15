@@ -9,6 +9,9 @@ import { hasAllowedExtension, maxUploadBytes } from "../../documents/index.js";
 import { assignedCodesFor } from "../projects/scope.js";
 import { projectCodesForPm } from "../projects/service.js";
 import * as projectsRepo from "../projects/repository.js";
+import * as designsRepo from "../../design/designs/repository.js";
+import * as designReviewsRepo from "../../design/designs/design-reviews/repository.js";
+import { REVISION_STATUSES as DESIGN_REVISION_STATUSES } from "../../design/designs/status-group.js";
 import * as repo from "./repository.js";
 import {
   REVISION_READ_ROLES,
@@ -136,6 +139,28 @@ export const create = async (input: CreateRevisionInput, actor: RevisionActor): 
     body: `${created.itemTitle} — version ${created.versionNumber}${created.versionLabel ? ` (${created.versionLabel})` : ""} on ${created.projectCode}`,
     link: "/revisions",
   });
+
+  // This is the only place the UI lets an architect submit a new revision of
+  // a design — same bug as B-211, just in this module instead of the
+  // (unused by the frontend) design-revisions one: a revision answering a
+  // "Revision Needed"/"Revision Required" design must reopen it and go back
+  // to the consultant, or the design's own status and review queue never
+  // reflect that a fix was sent.
+  if (input.itemType === "design" && input.itemId != null) {
+    const design = await designsRepo.findById(input.itemId);
+    if (design && (DESIGN_REVISION_STATUSES as readonly string[]).includes(design.status)) {
+      const [last] = await designReviewsRepo.findAll({ designId: design.id });
+      await designReviewsRepo.create({
+        code: `REV-${design.code}-${Date.now().toString(36).toUpperCase()}`.slice(0, 20),
+        designId: design.id,
+        discipline: last?.discipline ?? undefined,
+        priority: last?.priority ?? undefined,
+        reviewers: last?.reviewers ?? undefined,
+        requestedBy: actor.name,
+      });
+      await designsRepo.update(design.id, { status: "Under Review" });
+    }
+  }
   return created;
 };
 
