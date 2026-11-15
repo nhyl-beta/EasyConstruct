@@ -39,7 +39,7 @@ export default function ForgotPasswordPage() {
             Forgot your password?
           </CardTitle>
           <CardDescription>
-            Enter your work email and we will send reset instructions.
+            Enter your work email and we will send a password reset request to IT.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
@@ -88,10 +88,10 @@ export default function ForgotPasswordPage() {
                 {busy ? (
                   <>
                     <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                    Sending reset link...
+                    Sending request...
                   </>
                 ) : (
-                  "Send reset link"
+                  "Send request to IT"
                 )}
               </Button>
             </form>

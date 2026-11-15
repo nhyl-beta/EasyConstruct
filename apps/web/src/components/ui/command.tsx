@@ -71,7 +71,7 @@ function CommandInput({
       // the container's curve instead of hugging it. `inherit` picks up
       // whatever radius the actual container uses, so this stays correct
       // wherever CommandInput is placed.
-      className="flex h-9 items-center gap-2 rounded-t-[inherit] border-b px-3 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-ring"
+      className="flex h-9 items-center gap-2 rounded-t-[inherit] border-b px-3 focus-within:outline-1 focus-within:-outline-offset-1 focus-within:outline-ring"
     >
       <SearchIcon className="size-4 shrink-0 opacity-50" />
       <CommandPrimitive.Input

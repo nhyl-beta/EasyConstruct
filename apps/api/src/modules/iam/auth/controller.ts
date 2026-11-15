@@ -34,7 +34,7 @@ export const forgotPassword = async (
       res,
       null,
       200,
-      "If that email is registered, a reset link has been sent.",
+      "If that email is registered, a reset request has been sent to IT.",
     );
   } catch (err) {
     next(err);

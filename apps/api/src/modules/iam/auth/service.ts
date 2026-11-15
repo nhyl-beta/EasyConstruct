@@ -1,8 +1,11 @@
 import bcrypt from "bcryptjs";
+import { and, eq, inArray } from "drizzle-orm";
 import crypto from "node:crypto";
 import jwt from "jsonwebtoken";
 import * as repo from "./repository.js";
 import { AppError, NotFoundError, UnauthorizedError, ValidationError } from "../../../core/utils/errors.js";
+import { db } from "../../../core/db/connection.js";
+import { supportRequests } from "../../../core/db/schema/support-requests.js";
 import { env } from "../../../core/config/env.js";
 import { logAudit } from "../../../core/audit/audit.js";
 import { assertMailConfigured, sendMail } from "../../../core/mail/mailer.js";
@@ -164,32 +167,46 @@ const resetEmailBody = (opts: {
 });
 
 export const requestPasswordReset = async (input: ForgotPasswordInput) => {
-  // Checked before the account lookup, so an unconfigured server fails the
-  // same way for every address instead of revealing which ones exist.
-  assertMailConfigured();
-
   const user = await repo.findByEmail(input.email);
 
   // Always report success. Telling an anonymous caller whether an address is
   // registered turns this endpoint into an account-enumeration oracle.
   if (!user || !user.isActive) return;
 
-  const { url } = await issueResetToken(user.id, user.id);
+  // IT resets the password: this files a ticket in IT's User Support inbox
+  // instead of emailing a link. One open ticket per account, so repeated
+  // submits cannot flood the inbox.
+  const [existing] = await db
+    .select({ id: supportRequests.id })
+    .from(supportRequests)
+    .where(
+      and(
+        eq(supportRequests.requesterUserId, user.id),
+        eq(supportRequests.category, "password_reset"),
+        inArray(supportRequests.status, ["open", "in_progress"]),
+      ),
+    )
+    .limit(1);
+  if (existing) return;
 
-  const body = resetEmailBody({
-    greeting: `Hello ${user.name},`,
-    explanation:
-      "We received a request to reset the password for your EasyConstruct account. Use the link below to choose a new one.",
-    url,
-  });
-  await sendMail({ to: user.email, subject: "Reset your EasyConstruct password", ...body });
+  const [created] = await db
+    .insert(supportRequests)
+    .values({
+      requesterUserId: user.id,
+      requesterName: user.name,
+      requesterRole: user.role,
+      category: "password_reset",
+      subject: `Password reset requested by ${user.name}`,
+      details: `${user.name} (${user.email}) asked for a password reset from the sign-in page and cannot sign in. Reset the account password in Users, then reply here.`,
+    })
+    .returning();
 
   await logAudit({
-    entityType: "user",
-    entityId: String(user.id),
-    action: "updated",
+    entityType: "support_request",
+    entityId: String(created!.id),
+    action: "created",
     actor: user.name,
-    summary: `Requested a password reset link for ${user.email}`,
+    summary: `Password reset request sent to IT for ${user.email}`,
   });
 };
 
