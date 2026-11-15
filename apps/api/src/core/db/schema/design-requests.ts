@@ -156,6 +156,9 @@ export const transmittals = pgTable("transmittals", {
   transmittedByName: varchar("transmitted_by_name", { length: 100 }).notNull(),
   receivedByName: varchar("received_by_name", { length: 255 }),
   status: varchar("status", { length: 20 }).notNull().default("draft"), // draft | issued | acknowledged
+  // Set when `toName` looks like an email address and issuing tries to mail it there.
+  // null: toName isn't an email (an office/person name, the common case) — nothing to send.
+  emailStatus: varchar("email_status", { length: 10 }), // sent | failed | null
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

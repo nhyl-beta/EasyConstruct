@@ -330,6 +330,13 @@
       "when": 1792923200000,
       "tag": "0046_catch_up_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1793009600000,
+      "tag": "0047_transmittal_email_status",
+      "breakpoints": true
     }
   ]
 }
