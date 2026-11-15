@@ -143,10 +143,19 @@ describe("evaluateGate — Design (D1-D3)", () => {
   });
 });
 
-describe("evaluateGate — Pre-Construction (C1-C5)", () => {
+describe("evaluateGate — Pre-Construction (C1-C6)", () => {
   test("empty snapshot fails every check", () => {
     const checks = evaluateGate("Pre-Construction", emptySnapshot());
-    assert.deepEqual(failing(checks), ["C1", "C2", "C3", "C4", "C5"]);
+    assert.deepEqual(failing(checks), ["C1", "C2", "C3", "C4", "C5", "C6"]);
+  });
+
+  // B-27: purchasing had no gate at all, so a project could reach Construction
+  // with no purchase request ever raised and nothing on screen said so.
+  test("no purchase requests fails C6", () => {
+    const checks = evaluateGate("Pre-Construction", emptySnapshot());
+    const c6 = checks.find((c) => c.key === "C6")!;
+    assert.equal(c6.passed, false);
+    assert.match(c6.detail ?? "", /No purchase requests/);
   });
 
   test("approved requirements/budget, dated active milestone, staffed+linked crew, NTP+coords all pass", () => {
@@ -163,6 +172,7 @@ describe("evaluateGate — Pre-Construction (C1-C5)", () => {
       tasks: [{ id: 1, status: "Pending", assignedToUserId: 9 }],
       milestoneLinks: [{ milestoneId: 1, linkType: "task", linkId: 1 }],
       documents: [{ type: "Notice to Proceed" }],
+      purchaseRequests: [{ id: "PR-1", project: "TEST-000", status: "Approved" }],
     } as any);
     snapshot.project.siteLatitude = "14.5";
     snapshot.project.siteLongitude = "121.0";

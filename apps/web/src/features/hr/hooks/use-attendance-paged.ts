@@ -15,9 +15,11 @@ export interface AttendanceFilterState {
   verification: string;
   /** Working-day status: all | Present | Late | Absent | On Leave | Half Day. */
   status: string;
+  /** B-108: project code, or "all". The API already supports this filter end to end. */
+  project: string;
 }
 
-const NO_FILTERS: AttendanceFilterState = { verification: "all", status: "all" };
+const NO_FILTERS: AttendanceFilterState = { verification: "all", status: "all", project: "all" };
 
 /**
  * HR attendance log: server-side search, filters and pagination. The page goes
@@ -65,7 +67,21 @@ export function useAttendancePaged(scope?: AttendanceScope) {
     setLoading(true);
     setError(null);
     try {
-      setData(await listAttendancePage({ page, pageSize, search: scope?.search ?? search, dateFrom: scope?.dateFrom ?? (dateFrom || undefined), dateTo: scope?.dateTo ?? (dateTo || undefined), ...filters }, names));
+      const { project, ...restFilters } = filters;
+      setData(
+        await listAttendancePage(
+          {
+            page,
+            pageSize,
+            search: scope?.search ?? search,
+            dateFrom: scope?.dateFrom ?? (dateFrom || undefined),
+            dateTo: scope?.dateTo ?? (dateTo || undefined),
+            ...restFilters,
+            projectCode: project,
+          },
+          names,
+        ),
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load attendance");
     } finally {

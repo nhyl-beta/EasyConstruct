@@ -35,6 +35,8 @@ import { AttendanceVerificationDialog } from "@/components/hr/attendance-verific
 import { DateRangeFields, FilterBar, FilterChips } from "@/components/shared/filter-bar";
 import { AttendanceExceptionsPanel } from "@/features/hr/components/AttendanceExceptionsPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useProjects } from "@/features/projects/hooks/useProjects";
 
 import {
   Camera,
@@ -71,6 +73,8 @@ export default function HRAttendancePage() {
     };
   }, [highlightId]);
   const a = useAttendancePaged(focus ? { search: focus.employeeId, dateFrom: focus.logDate, dateTo: focus.logDate } : undefined);
+  // B-108: a dedicated project filter, alongside the existing employee/site search.
+  const { projects } = useProjects();
   useEffect(() => {
     if (!highlightId || a.loading) return;
     document.getElementById(`attendance-row-${highlightId}`)?.scrollIntoView({ block: "center", behavior: "smooth" });
@@ -205,6 +209,19 @@ export default function HRAttendancePage() {
           >
             <FilterChips label="Filter by verification" options={VERIFICATION_OPTIONS} value={a.filters.verification} onChange={(v) => a.setFilter("verification", v)} allLabel="All verification" />
             <FilterChips label="Filter by attendance status" options={DAY_STATUS_OPTIONS} value={a.filters.status} onChange={(v) => a.setFilter("status", v)} allLabel="All attendance" />
+            <Select value={a.filters.project} onValueChange={(v) => a.setFilter("project", v)}>
+              <SelectTrigger aria-label="Filter by project" className="h-8 w-40 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All projects</SelectItem>
+                {projects.map((p) => (
+                  <SelectItem key={p.code} value={p.code}>
+                    {p.code} · {p.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <DateRangeFields from={a.dateFrom} to={a.dateTo} onChange={a.setDateRange} />
           </FilterBar>
 

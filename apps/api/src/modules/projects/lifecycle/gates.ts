@@ -18,9 +18,6 @@ export interface GateCheck {
   link?: string;
 }
 
-const projectLink = (snapshot: LifecycleSnapshot, path: string) =>
-  `/projects/${encodeURIComponent(snapshot.project.code)}${path}`;
-
 // ── Proposal ─────────────────────────────────────────────────────────────
 
 const p1 = (s: LifecycleSnapshot): GateCheck => {
@@ -31,7 +28,6 @@ const p1 = (s: LifecycleSnapshot): GateCheck => {
     ownerRoles: ["project-manager"],
     passed: has,
     detail: has ? "Architect staffed" : "No architect staffed on this project",
-    link: projectLink(s, ""),
   };
 };
 
@@ -43,7 +39,6 @@ const p2 = (s: LifecycleSnapshot): GateCheck => {
     ownerRoles: ["project-manager"],
     passed: has,
     detail: has ? "Consultant staffed" : "No consultant staffed on this project",
-    link: projectLink(s, ""),
   };
 };
 
@@ -98,7 +93,6 @@ const p5 = (s: LifecycleSnapshot): GateCheck => {
         ]
           .filter(Boolean)
           .join("; "),
-    link: projectLink(s, ""),
   };
 };
 
@@ -242,7 +236,6 @@ const c3 = (s: LifecycleSnapshot): GateCheck => {
           : !noneDraft
             ? "A milestone is still in draft"
             : "No milestone is active yet",
-    link: projectLink(s, ""),
   };
 };
 
@@ -323,11 +316,30 @@ const c5 = (s: LifecycleSnapshot): GateCheck => {
         ]
           .filter(Boolean)
           .join("; "),
-    link: projectLink(s, ""),
   };
 };
 
-const evaluatePreConstruction = (s: LifecycleSnapshot): GateCheck[] => [c1(s), c2(s), c3(s), c4(s), c5(s)];
+// B-27: purchasing had no gate check at all here, so a project could pass
+// through Pre-Construction with nothing raised and nobody would see it was
+// skipped. Reuses the same purchase-request rows the Closeout gate already
+// loads (s.purchaseRequests), just checking "has any" instead of "none
+// unsettled".
+const c6 = (s: LifecycleSnapshot): GateCheck => {
+  const requests = s.purchaseRequests ?? [];
+  const passed = requests.length > 0;
+  return {
+    key: "C6",
+    label: "Procurement initiated",
+    ownerRoles: ["project-manager", "finance-manager", "engineer"],
+    passed,
+    detail: passed
+      ? `${requests.length} purchase request(s) raised`
+      : "No purchase requests raised yet",
+    link: "/expenses",
+  };
+};
+
+const evaluatePreConstruction = (s: LifecycleSnapshot): GateCheck[] => [c1(s), c2(s), c3(s), c4(s), c5(s), c6(s)];
 
 // ── Construction (exit checks — progress comes from tasks) ─────────────────
 
@@ -359,7 +371,6 @@ const k2 = (s: LifecycleSnapshot): GateCheck => {
     detail: passed
       ? "Every milestone is completed or cancelled"
       : `${s.milestones.filter((m) => m.status !== "completed" && m.status !== "cancelled").length} milestone(s) still open`,
-    link: projectLink(s, ""),
   };
 };
 
@@ -418,7 +429,6 @@ const x2 = (s: LifecycleSnapshot): GateCheck => {
     ownerRoles: ["project-manager", "admin"],
     passed: has,
     detail: has ? "Certificate of Completion is on file" : "Certificate of Completion is missing",
-    link: projectLink(s, ""),
   };
 };
 
@@ -532,7 +542,6 @@ const dp1 = (s: LifecycleSnapshot): GateCheck => {
       : sets.length === 0
         ? "No plan sets yet"
         : `No lead on: ${missingLead.map((d) => d.discipline).join(", ")}`,
-    link: projectLink(s, ""),
   };
 };
 
@@ -574,7 +583,6 @@ const t1 = (s: LifecycleSnapshot): GateCheck => {
     ownerRoles: ["architect", "project-manager"],
     passed: has,
     detail: has ? "Turnover Document is on file" : "Turnover Document is missing",
-    link: projectLink(s, ""),
   };
 };
 
@@ -586,7 +594,6 @@ const t2 = (s: LifecycleSnapshot): GateCheck => {
     ownerRoles: ["project-manager", "admin"],
     passed: has,
     detail: has ? "Client Acceptance is on file" : "Client Acceptance document is missing",
-    link: projectLink(s, ""),
   };
 };
 

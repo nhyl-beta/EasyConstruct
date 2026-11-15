@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { ReferencePicker } from "@/features/reference/components/ReferencePicker";
 import { expenseCategoryForRequirement } from "@/config/expense-categories";
@@ -13,6 +14,7 @@ import { todayIso } from "@/lib/today-iso";
 import { useExpenseCategories } from "../hooks/use-expense-categories";
 import type { ActionResult, CreatePurchaseRequestInput, LineItem } from "../types/purchasing.types";
 import { CategorySelect } from "./CategorySelect";
+import { LINE_ITEM_UNITS } from "@/components/workflows/initiate-workflow-dialog";
 
 /** The slice of a requirement the dialog needs. */
 export interface PurchasableRequirement {
@@ -112,7 +114,9 @@ export function RequestPurchaseDialog({ requirement, onClose, onSubmit, routingH
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="pr-needed">Needed by</Label>
-              <Input id="pr-needed" type="date" min={todayIso()} value={neededBy} onChange={(e) => setNeededBy(e.target.value)} />
+              {/* B-176: this was a full grid column (the same width as the Title
+                  field above it) for a date box that never needs it. */}
+              <Input id="pr-needed" type="date" min={todayIso()} value={neededBy} onChange={(e) => setNeededBy(e.target.value)} className="max-w-[180px]" />
             </div>
           </div>
 
@@ -120,14 +124,15 @@ export function RequestPurchaseDialog({ requirement, onClose, onSubmit, routingH
             <legend className="text-sm font-medium">Line items</legend>
             {/* B-90: the inputs' labels are screen-reader only and placeholders vanish once filled, so name the columns. */}
             <div aria-hidden className="grid grid-cols-12 gap-2 text-xs text-muted-foreground">
-              <span className="col-span-12 sm:col-span-5">Description</span>
+              <span className="col-span-12 sm:col-span-4">Description</span>
               <span className="col-span-3 sm:col-span-2">Qty</span>
-              <span className="col-span-4 sm:col-span-2">Unit</span>
-              <span className="col-span-5 sm:col-span-3">Unit cost</span>
+              {/* B-176: was col-span-1 — too narrow for a real unit name, and now a dropdown, not free text. */}
+              <span className="col-span-4 sm:col-span-3">Unit</span>
+              <span className="col-span-5 sm:col-span-2">Unit cost</span>
             </div>
             {lines.map((l, i) => (
               <div key={i} className="grid grid-cols-12 items-end gap-2">
-                <div className="col-span-12 sm:col-span-5">
+                <div className="col-span-12 sm:col-span-4">
                   <Label className="sr-only" htmlFor={`pr-desc-${i}`}>Description</Label>
                   <Input id={`pr-desc-${i}`} placeholder="Description" value={l.description} onChange={(e) => patch(i, { description: e.target.value })} />
                 </div>
@@ -135,11 +140,22 @@ export function RequestPurchaseDialog({ requirement, onClose, onSubmit, routingH
                   <Label className="sr-only" htmlFor={`pr-qty-${i}`}>Quantity</Label>
                   <Input id={`pr-qty-${i}`} type="number" min={0} placeholder="Qty" value={l.qty} onChange={(e) => patch(i, { qty: Number(e.target.value) || 0 })} />
                 </div>
-                <div className="col-span-3 sm:col-span-1">
-                  <Label className="sr-only" htmlFor={`pr-unit-${i}`}>Unit</Label>
-                  <Input id={`pr-unit-${i}`} placeholder="Unit" value={l.unit} onChange={(e) => patch(i, { unit: e.target.value })} />
-                </div>
                 <div className="col-span-4 sm:col-span-3">
+                  <Label className="sr-only" htmlFor={`pr-unit-${i}`}>Unit</Label>
+                  <Select value={l.unit} onValueChange={(v) => patch(i, { unit: v })}>
+                    <SelectTrigger id={`pr-unit-${i}`} className="h-9">
+                      <SelectValue placeholder="Unit" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {LINE_ITEM_UNITS.map((u) => (
+                        <SelectItem key={u.value} value={u.value}>
+                          {u.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="col-span-4 sm:col-span-2">
                   <Label className="sr-only" htmlFor={`pr-cost-${i}`}>Unit cost</Label>
                   <Input id={`pr-cost-${i}`} type="number" min={0} placeholder="Unit cost" value={l.unitCost} onChange={(e) => patch(i, { unitCost: Number(e.target.value) || 0 })} />
                 </div>

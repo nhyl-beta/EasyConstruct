@@ -7,7 +7,7 @@ import { RevisionLink } from "@/features/revisions/components/RevisionLink";
 import { useCurrentRevisions } from "@/features/revisions/hooks/useCurrentRevisions";
 import { useDesignReviews } from "@/features/design-reviews/hooks/useDesignReviews";
 import { useAuth } from "@/auth/auth-context";
-import { ChevronLeft, Eye, MessageSquareQuote, Trash2 } from "lucide-react";
+import { Eye, MessageSquareQuote, Trash2 } from "lucide-react";
 import { CreateRequestDialog } from "@/features/requests/components/CreateRequestDialog";
 import { ImpactAwarenessCard } from "@/features/lifecycle/components/ImpactAwarenessCard";
 import { useMemo, useState } from "react";
@@ -54,14 +54,6 @@ export default function ArchitectDesignDetail() {
     return (
       <div className="flex-1 space-y-4 p-4 md:p-8">
         <PageHeader title="Design not found" breadcrumbLabel="Design" />
-        <Button
-          variant="ghost"
-          size="sm"
-         
-          onClick={() => navigate("/designs")}
-        >
-          <ChevronLeft className="mr-1 h-4 w-4" /> All designs
-        </Button>
         <div className="rounded-2xl border border-dashed p-10 text-center text-sm text-muted-foreground">
           {c.error ?? "Design not found."}
         </div>
@@ -95,15 +87,9 @@ export default function ArchitectDesignDetail() {
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-8">
-      <Button
-        variant="ghost"
-        size="sm"
-        className="-mb-2"
-        onClick={() => navigate("/designs")}
-      >
-        <ChevronLeft className="mr-1 h-4 w-4" /> All designs
-      </Button>
-
+      {/* B-57/B-155: this back-link duplicated the PageHeader's own
+          breadcrumb (Home > Designs > this design) below — removed rather
+          than kept in sync with it. */}
       {c.deleteError && (
         <p role="alert" className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive-strong">
           Couldn't delete this design. {c.deleteError}
@@ -151,30 +137,31 @@ export default function ArchitectDesignDetail() {
         <p className="text-sm text-destructive-strong">{reviewError}</p>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <SectionCard title="Design details" className="lg:col-span-2">
-          <dl className="grid gap-4 md:grid-cols-2">
-            <Field label="Discipline" value={d.discipline} />
-            <Field label="Category" value={d.category} />
-            <Field label="Phase" value={d.phase} />
-            <Field label="Version" value={`${d.version} · rev ${d.revision}`} />
-            <Field label="Lead architect" value={d.leadArchitect} />
-            <Field label="Client" value={d.client ?? "—"} />
-            <Field label="Building" value={d.building ?? "—"} />
-            <Field label="Floor" value={d.floor ?? "—"} />
-            <Field label="Zone" value={d.zone ?? "—"} />
-            <Field label="Files" value={`${d.fileCount}`} />
-          </dl>
-          {d.description && (
-            <div className="mt-4 border-t border-border pt-4">
-              <div className="text-xs uppercase tracking-wider text-muted-foreground">
-                Description
-              </div>
-              <p className="mt-1 text-sm">{d.description}</p>
+      {/* B-58/B-156: was a 3-col grid holding one 2-col card, leaving a dead
+          column and a narrower card than the full-width ImpactAwarenessCard
+          below it. Only one card here — no grid needed. */}
+      <SectionCard title="Design details">
+        <dl className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <Field label="Discipline" value={d.discipline} />
+          <Field label="Category" value={d.category} />
+          <Field label="Phase" value={d.phase} />
+          <Field label="Version" value={`${d.version} · rev ${d.revision}`} />
+          <Field label="Lead architect" value={d.leadArchitect} />
+          <Field label="Client" value={d.client ?? "—"} />
+          <Field label="Building" value={d.building ?? "—"} />
+          <Field label="Floor" value={d.floor ?? "—"} />
+          <Field label="Zone" value={d.zone ?? "—"} />
+          <Field label="Files" value={`${d.fileCount}`} />
+        </dl>
+        {d.description && (
+          <div className="mt-4 border-t border-border pt-4">
+            <div className="text-xs uppercase tracking-wider text-muted-foreground">
+              Description
             </div>
-          )}
-        </SectionCard>
-      </div>
+            <p className="mt-1 text-sm">{d.description}</p>
+          </div>
+        )}
+      </SectionCard>
 
       {/* Read-only advisories for this design's project (cost, change, schedule, quality). */}
       <ImpactAwarenessCard projectCode={d.projectCode} />

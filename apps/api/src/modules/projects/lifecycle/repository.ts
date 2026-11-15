@@ -275,6 +275,10 @@ export const loadSnapshots = async (projectCodes: string[]) => {
         requests: purchaseRequestsBy.get(code) ?? none<StatusRow>(),
         orders: ordersBy.get(code) ?? none<StatusRow>(),
       }),
+      // Pre-Construction gate C6 (B-27): purchase requests raised so far —
+      // just the ids/status pair already loaded above, reused rather than a
+      // second query.
+      purchaseRequests: purchaseRequestsBy.get(code) ?? none<StatusRow>(),
       // Design delivery: the plan sets and the Design Turnover template (gate T3).
       deliverables: deliverablesBy.get(code) ?? none<(typeof deliverableRows)[number]>(),
       designTurnoverTemplateId: turnoverTemplate?.id ?? null,

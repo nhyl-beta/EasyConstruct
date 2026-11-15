@@ -257,6 +257,20 @@ export default function FinanceBudget() {
     [projects],
   );
 
+  // B-133: Allocation by project — contract value vs. spent so far, one
+  // project at a time (a project selector, not a cross-project total, since
+  // projects can carry different currencies — picking one project sidesteps
+  // ever having to add amounts in different currencies together).
+  const [allocationProjectCode, setAllocationProjectCode] = useState("");
+  const allocationProject = useMemo(
+    () => projects.find((p) => p.code === allocationProjectCode) ?? null,
+    [projects, allocationProjectCode],
+  );
+  const allocationSpent = useMemo(
+    () => c.budgets.filter((b) => b.project === allocationProjectCode).reduce((sum, b) => sum + b.spent, 0),
+    [c.budgets, allocationProjectCode],
+  );
+
   // Approvals tab: find a budget by what a person remembers about it — its
   // name (category), project code, who requested it (the owning department) —
   // and narrow by where it sits in the pipeline.
@@ -393,7 +407,11 @@ export default function FinanceBudget() {
               No budgets match your filters.
             </div>
           ) : (
-            <>
+            // B-175: this table rendered bare — every other list page in the
+            // app wraps its Table in this rounded/bordered card (see e.g.
+            // consultant-projects.tsx) instead of letting it float on the
+            // page background.
+            <div className="overflow-hidden rounded-xl border border-border bg-card">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -456,7 +474,7 @@ export default function FinanceBudget() {
             <div className="border-t px-4 py-3">
               <DataTablePagination {...budgetPagination} />
             </div>
-            </>
+            </div>
           )}
         </TabsContent>
 
@@ -548,6 +566,59 @@ export default function FinanceBudget() {
                 </ResponsiveContainer>
               </div>
             </div>
+          </div>
+
+          {/* B-133: contract value vs. spent, one project at a time. */}
+          <div className="mt-4 rounded-2xl border border-border p-5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-sm font-medium">Allocation by project</h3>
+              <Select value={allocationProjectCode} onValueChange={setAllocationProjectCode}>
+                <SelectTrigger className="h-8 w-56 text-xs">
+                  <SelectValue placeholder="Select a project" />
+                </SelectTrigger>
+                <SelectContent>
+                  {projects.map((p) => (
+                    <SelectItem key={p.code} value={p.code}>
+                      {p.code} · {p.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {!allocationProject ? (
+              <p className="mt-3 text-sm text-muted-foreground">Pick a project to compare its contract value against what has been spent on it.</p>
+            ) : !allocationProject.contractValue ? (
+              <p className="mt-3 text-sm text-muted-foreground">
+                {allocationProject.name} has no contract value on file, so spend can't be compared against it. Spent so far:{" "}
+                {formatCurrency(allocationSpent, allocationProject.currency)}.
+              </p>
+            ) : (
+              (() => {
+                const contractValue = Number(allocationProject.contractValue);
+                const pct = contractValue > 0 ? Math.min(100, Math.round((allocationSpent / contractValue) * 100)) : 0;
+                return (
+                  <div className="mt-3 space-y-3">
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <div className="text-xs text-muted-foreground">Contract value</div>
+                        <div className="text-lg font-semibold">{formatCurrency(contractValue, allocationProject.currency)}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-muted-foreground">Spent so far</div>
+                        <div className="text-lg font-semibold">{formatCurrency(allocationSpent, allocationProject.currency)}</div>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="mb-1 flex items-center justify-between text-xs text-muted-foreground">
+                        <span>Spent against contract value</span>
+                        <span>{pct}%</span>
+                      </div>
+                      <Progress value={pct} className="h-2" />
+                    </div>
+                  </div>
+                );
+              })()
+            )}
           </div>
         </TabsContent>
 

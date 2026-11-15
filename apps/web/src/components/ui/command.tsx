@@ -71,7 +71,10 @@ function CommandInput({
       <CommandPrimitive.Input
         data-slot="command-input"
         className={cn(
-          "placeholder:text-muted-foreground flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-hidden disabled:cursor-not-allowed disabled:opacity-50",
+          // B-28: was h-10 py-3, 4px taller than the h-9 wrapper the focus
+          // ring is drawn on — the ring cut through the text instead of
+          // hugging the field. h-full matches the wrapper exactly.
+          "placeholder:text-muted-foreground flex h-full w-full rounded-md bg-transparent text-sm outline-hidden disabled:cursor-not-allowed disabled:opacity-50",
           className
         )}
         {...props}
