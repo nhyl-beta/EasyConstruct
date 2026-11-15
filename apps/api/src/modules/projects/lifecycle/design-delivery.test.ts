@@ -148,7 +148,9 @@ describe("Construction projects are unchanged", () => {
   test("gate keys per phase are unchanged", () => {
     const c = (p: Parameters<typeof evaluateGate>[0]) => keys(evaluateGate(p, construction({}, p)));
     assert.deepEqual(c("Design"), ["D1", "D2", "D3"]);
-    assert.deepEqual(c("Pre-Construction"), ["C1", "C2", "C3", "C4", "C5"]);
+    // B-27: C6 (procurement initiated) added so purchasing can no longer be
+    // silently skipped through Pre-Construction.
+    assert.deepEqual(c("Pre-Construction"), ["C1", "C2", "C3", "C4", "C5", "C6"]);
     assert.deepEqual(c("Construction"), ["K1", "K2", "K3", "K4"]);
     assert.deepEqual(c("Closeout"), ["X1", "X2", "X3", "X4", "X5", "X6"]);
   });
