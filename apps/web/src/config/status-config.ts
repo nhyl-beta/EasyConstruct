@@ -26,6 +26,8 @@ export const STATUS_CONFIG: Record<string, StatusTone> = {
   // Proposals use "Revision Requested", engineering reports "Revision Required".
   "Revision Requested": "danger",
   "Revision Required": "danger",
+  // Blueprints' own status field, set when a consultant rejects/requests changes.
+  "Needs Revision": "danger",
 
   // ==========================
   // Employee

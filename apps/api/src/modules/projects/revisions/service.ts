@@ -12,6 +12,7 @@ import * as projectsRepo from "../projects/repository.js";
 import * as designsRepo from "../../design/designs/repository.js";
 import * as designReviewsRepo from "../../design/designs/design-reviews/repository.js";
 import { REVISION_STATUSES as DESIGN_REVISION_STATUSES } from "../../design/designs/status-group.js";
+import * as blueprintsRepo from "../../design/blueprints/repository.js";
 import * as repo from "./repository.js";
 import {
   REVISION_READ_ROLES,
@@ -159,6 +160,18 @@ export const create = async (input: CreateRevisionInput, actor: RevisionActor): 
         requestedBy: actor.name,
       });
       await designsRepo.update(design.id, { status: "Under Review" });
+    }
+  }
+
+  // Same gap, for blueprints: a rejected/changes-requested blueprint has no
+  // separate review-request record (unlike designs) — the consultant's
+  // "Blueprint reviews" queue just reads blueprints.approval directly, so
+  // the only thing needed to put it back in front of the consultant is
+  // resetting `approval` off of Rejected/Revision Required.
+  if (input.itemType === "blueprint" && input.itemId != null) {
+    const blueprint = await blueprintsRepo.findById(input.itemId);
+    if (blueprint && (blueprint.approval === "Rejected" || blueprint.approval === "Revision Required")) {
+      await blueprintsRepo.update(blueprint.id, { approval: "Pending" });
     }
   }
   return created;
