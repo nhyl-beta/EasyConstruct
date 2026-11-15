@@ -257,27 +257,21 @@ export default function FinanceBudget() {
     [projects],
   );
 
-  // B-133: Allocation by project — contract value vs. spent so far, one
-  // project at a time (a project selector, not a cross-project total, since
-  // projects can carry different currencies — picking one project sidesteps
-  // ever having to add amounts in different currencies together).
-  const [allocationProjectCode, setAllocationProjectCode] = useState("");
-  // B-214: projects load async, so on first render (and whenever nothing is
-  // picked yet) this was blank — with only one project in the system that
-  // looked like the field couldn't show it at all. Default to the first one.
-  useEffect(() => {
-    if (!allocationProjectCode && projects.length > 0) {
-      setAllocationProjectCode(projects[0].code);
-    }
-  }, [projects, allocationProjectCode]);
-  const allocationProject = useMemo(
-    () => projects.find((p) => p.code === allocationProjectCode) ?? null,
-    [projects, allocationProjectCode],
+  // B-133/B-214: Allocation by project — contract value vs. spent so far,
+  // one row per project. A table rather than a one-project-at-a-time picker,
+  // since each row stays in that project's own currency — nothing here ever
+  // sums across currencies.
+  const allocationRows = useMemo(
+    () =>
+      projects.map((p) => {
+        const spent = c.budgets.filter((b) => b.project === p.code).reduce((sum, b) => sum + b.spent, 0);
+        const contractValue = p.contractValue != null ? Number(p.contractValue) : null;
+        const pct = contractValue && contractValue > 0 ? Math.min(100, Math.round((spent / contractValue) * 100)) : null;
+        return { code: p.code, name: p.name, currency: p.currency, contractValue, spent, pct };
+      }),
+    [projects, c.budgets],
   );
-  const allocationSpent = useMemo(
-    () => c.budgets.filter((b) => b.project === allocationProjectCode).reduce((sum, b) => sum + b.spent, 0),
-    [c.budgets, allocationProjectCode],
-  );
+  const allocationPagination = usePagination(allocationRows, 10);
 
   // Approvals tab: find a budget by what a person remembers about it — its
   // name (category), project code, who requested it (the owning department) —
@@ -576,56 +570,55 @@ export default function FinanceBudget() {
             </div>
           </div>
 
-          {/* B-133: contract value vs. spent, one project at a time. */}
+          {/* B-133/B-214: contract value vs. spent, one row per project. */}
           <div className="mt-4 rounded-2xl border border-border p-5">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <h3 className="text-sm font-medium">Allocation by project</h3>
-              <Select value={allocationProjectCode} onValueChange={setAllocationProjectCode}>
-                <SelectTrigger className="h-8 w-56 text-xs">
-                  <SelectValue placeholder="Select a project" />
-                </SelectTrigger>
-                <SelectContent>
-                  {projects.map((p) => (
-                    <SelectItem key={p.code} value={p.code}>
-                      {p.code} · {p.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            {!allocationProject ? (
-              <p className="mt-3 text-sm text-muted-foreground">Pick a project to compare its contract value against what has been spent on it.</p>
-            ) : !allocationProject.contractValue ? (
-              <p className="mt-3 text-sm text-muted-foreground">
-                {allocationProject.name} has no contract value on file, so spend can't be compared against it. Spent so far:{" "}
-                {formatCurrency(allocationSpent, allocationProject.currency)}.
-              </p>
+            <h3 className="mb-3 text-sm font-medium">Allocation by project</h3>
+            {allocationRows.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No projects yet.</p>
             ) : (
-              (() => {
-                const contractValue = Number(allocationProject.contractValue);
-                const pct = contractValue > 0 ? Math.min(100, Math.round((allocationSpent / contractValue) * 100)) : 0;
-                return (
-                  <div className="mt-3 space-y-3">
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <div>
-                        <div className="text-xs text-muted-foreground">Contract value</div>
-                        <div className="text-lg font-semibold">{formatCurrency(contractValue, allocationProject.currency)}</div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-muted-foreground">Spent so far</div>
-                        <div className="text-lg font-semibold">{formatCurrency(allocationSpent, allocationProject.currency)}</div>
-                      </div>
-                    </div>
-                    <div>
-                      <div className="mb-1 flex items-center justify-between text-xs text-muted-foreground">
-                        <span>Spent against contract value</span>
-                        <span>{pct}%</span>
-                      </div>
-                      <Progress value={pct} className="h-2" />
-                    </div>
-                  </div>
-                );
-              })()
+              <div className="overflow-hidden rounded-xl border border-border bg-card">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Project</TableHead>
+                      <TableHead className="text-right">Contract value</TableHead>
+                      <TableHead className="text-right">Spent so far</TableHead>
+                      <TableHead className="w-48">Spent against contract</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {allocationPagination.pageItems.map((row) => (
+                      <TableRow key={row.code}>
+                        <TableCell className="font-medium">
+                          {row.code}
+                          <div className="text-xs font-normal text-muted-foreground">{row.name}</div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {row.contractValue != null ? (
+                            formatCurrency(row.contractValue, row.currency)
+                          ) : (
+                            <span className="text-muted-foreground">Not set</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">{formatCurrency(row.spent, row.currency)}</TableCell>
+                        <TableCell>
+                          {row.pct == null ? (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          ) : (
+                            <div className="space-y-1">
+                              <Progress value={row.pct} className="h-1.5" />
+                              <div className="text-overline text-muted-foreground">{row.pct}%</div>
+                            </div>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                <div className="border-t px-4 py-3">
+                  <DataTablePagination {...allocationPagination} />
+                </div>
+              </div>
             )}
           </div>
         </TabsContent>
