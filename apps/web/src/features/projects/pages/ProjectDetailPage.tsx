@@ -28,6 +28,8 @@ import { ProjectRevisionsPanel } from "@/features/designs/components/ProjectRevi
 import { ProjectRequestsSection } from "@/features/requests/components/ProjectRequestsSection";
 import { PlanSetsSection } from "../components/PlanSetsSection";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { Progress } from "@/components/ui/progress";
+import { formatDue } from "@/features/projects/lib/project-format";
 import { documentsRepository, type DocumentRecord } from "@/features/documents/repositories/documents.repository";
 import { ProjectLifecyclePanel } from "@/features/lifecycle/components/ProjectLifecyclePanel";
 import { RequirementsPanel } from "@/features/requirements/components/RequirementsPanel";
@@ -226,6 +228,57 @@ export default function ProjectDetailPage() {
         <PageHeader title="Project not found" />
         <p className="text-sm text-destructive-strong">{error ?? "Project not found."}</p>
         <Button asChild variant="outline"><Link to={listRoute}>Back to projects</Link></Button>
+      </div>
+    );
+  }
+
+  // B-184: Site Personnel's project visibility is already correctly scoped
+  // server-side to the one project they're staffed on (project-visibility.ts
+  // / assertProjectVisible) — no cross-project leak. But the one project they
+  // can open was still rendering the full PM/Architect detail page (every
+  // tab: team, stakeholders, documents, requirements, reports...). Consultant
+  // gets a dedicated high-level, read-only view for the same reason; this
+  // mirrors that instead of building a second routed page for one role.
+  if (role === "site-personnel") {
+    const riskLabel =
+      RISK_LEVELS.find((level) => level.value === project.risk)?.label ?? project.risk;
+    return (
+      <div className="flex-1 space-y-6 p-4 md:p-8">
+        <Button asChild variant="ghost">
+          <Link to={listRoute}><ArrowLeft className="mr-2 h-4 w-4" />Back to projects</Link>
+        </Button>
+        <PageHeader title={project.name} description={project.code} breadcrumbLabel={project.name} />
+        <div className="max-w-2xl space-y-4 rounded-xl border border-border bg-card p-6">
+          <div className="flex items-center justify-between">
+            <StatusBadge status={project.status} />
+            <span className="text-xs capitalize text-muted-foreground">{riskLabel}</span>
+          </div>
+          <div>
+            <div className="mb-1 flex items-center justify-between text-xs text-muted-foreground">
+              <span>Progress</span>
+              <span>{project.progress}%</span>
+            </div>
+            <Progress value={project.progress} className="h-1.5" />
+          </div>
+          <dl className="grid gap-4 text-sm sm:grid-cols-2">
+            <div>
+              <dt className="text-xs text-muted-foreground">Due</dt>
+              <dd>{formatDue(project.due)}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-muted-foreground">Project manager</dt>
+              <dd>{project.pm ?? "—"}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-muted-foreground">Location</dt>
+              <dd>{project.location}</dd>
+            </div>
+          </dl>
+        </div>
+        <p className="max-w-2xl text-sm text-muted-foreground">
+          This is a high-level progress view. Team, documents and other
+          details aren't part of this role's scope.
+        </p>
       </div>
     );
   }

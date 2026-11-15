@@ -1072,7 +1072,12 @@ function StepTeam({
         Architect and Consultant are required. Others can be added later.
       </p>
 
-      <StakeholderDraftEditor value={stakeholders} onChange={setStakeholders} ownerHint={data.client.trim() || undefined} />
+      <StakeholderDraftEditor
+        value={stakeholders}
+        onChange={setStakeholders}
+        ownerHint={data.client.trim() || undefined}
+        ownerEmailHint={data.clientEmail.trim() || undefined}
+      />
     </div>
   );
 }

@@ -323,6 +323,12 @@ export default function ConsultantProposalsPage() {
   );
 
   // Sticky footer of the detail panel: the required comment and the three decisions.
+  // B-213: once the decision is made (the proposal has moved past Pending —
+  // the consultant's own approval already pushed it to "In Review" or
+  // beyond, as a non-final stage, or the whole thing is Approved/Rejected/
+  // Revision Requested), the buttons stayed fully colored and clickable with
+  // nothing to show the decision was already recorded.
+  const alreadyDecided = selectedProposal?.status !== "Pending";
   const reviewActions = selectedProposal && (
     <div className="w-full space-y-2">
       <label htmlFor="consultant-review-comment" className="block text-sm font-medium">
@@ -334,8 +340,11 @@ export default function ConsultantProposalsPage() {
         onChange={(event) => setComment(event.target.value)}
         placeholder="Please revise the structural details before final approval."
         className="min-h-20"
+        disabled={alreadyDecided}
       />
-      <p className="text-xs text-muted-foreground">Required. The decision buttons unlock once this is filled in.</p>
+      <p className="text-xs text-muted-foreground">
+        {alreadyDecided ? "This proposal has already been reviewed." : "Required. The decision buttons unlock once this is filled in."}
+      </p>
       {actionError && (
         <p role="alert" className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive-strong">
           {actionError}
@@ -350,8 +359,8 @@ export default function ConsultantProposalsPage() {
               type="button"
               size="sm"
               variant={decision.variant}
-              disabled={reviewing || !comment.trim()}
-              title={!comment.trim() ? "Enter a review comment first" : undefined}
+              disabled={reviewing || !comment.trim() || alreadyDecided}
+              title={alreadyDecided ? "This proposal has already been reviewed" : !comment.trim() ? "Enter a review comment first" : undefined}
               onClick={() => setPendingDecision(decision.status)}
               className="gap-2"
             >

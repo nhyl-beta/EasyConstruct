@@ -76,7 +76,10 @@ const emptyLineItem = (): DraftLineItem => ({
 // convert between — anything else is accepted as free-form text elsewhere,
 // but a comparison against the cost catalog needs one of these to have any
 // chance of matching a reference item's unit.
-const LINE_ITEM_UNITS = [
+// B-176: also used by RequestPurchaseDialog's "Unit" field, so the two
+// purchase-raising forms offer the same preset units instead of one being a
+// free-text box.
+export const LINE_ITEM_UNITS = [
   { value: "sqm", label: "sq m" },
   { value: "sqft", label: "sq ft" },
   { value: "m", label: "m" },
@@ -87,6 +90,9 @@ const LINE_ITEM_UNITS = [
   { value: "lb", label: "lb" },
   { value: "each", label: "each" },
   { value: "bag", label: "bag" },
+  // "lot" is RequestPurchaseDialog's default unit for a new line — kept here
+  // too so that default renders as a real option, not a blank dropdown.
+  { value: "lot", label: "lot" },
 ];
 
 export interface InitiateWorkflowDialogProps {

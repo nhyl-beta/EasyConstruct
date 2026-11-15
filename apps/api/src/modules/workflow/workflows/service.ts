@@ -636,7 +636,15 @@ export const decideStage = async (
   };
   const recordProposalReview = async () => {
     const linked = await proposalRepository.findByWorkflowId(workflowId);
-    if (linked) await proposalRepository.update(linked.id, reviewFields);
+    if (!linked) return;
+    // B-212: a non-final approval leaves status alone (true by design — the
+    // proposal is only "Approved" once every stage has signed off), but
+    // "Pending" gave the reviewer who just approved no sign anything
+    // happened. "In Review" is an existing ProposalStatus already counted
+    // alongside "Pending" in the KPI card (proposal.controller.ts) — just
+    // never set anywhere until now.
+    const status = linked.status === "Pending" ? "In Review" : undefined;
+    await proposalRepository.update(linked.id, { ...reviewFields, ...(status ? { status } : {}) });
   };
 
   // Fix 3.1: an approved proposal gets a draft plan for the PM to review. It is

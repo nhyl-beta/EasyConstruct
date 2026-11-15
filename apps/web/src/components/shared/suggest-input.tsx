@@ -81,7 +81,7 @@ export function SuggestInput({
         </PopoverTrigger>
         <PopoverContent align="end" className="w-64 p-0">
           <Command>
-            <CommandInput placeholder="Search…" className="h-9" />
+            <CommandInput placeholder="Search…" />
             <CommandList>
               <CommandEmpty>{emptyMessage}</CommandEmpty>
               <CommandGroup>

@@ -12,14 +12,20 @@ export function StakeholderDraftEditor({
   value,
   onChange,
   ownerHint,
+  ownerEmailHint,
 }: {
   value: StakeholderInput[];
   onChange: (next: StakeholderInput[]) => void;
   /** The client entered on the first step; it becomes the Owner automatically when no Owner is listed. */
   ownerHint?: string;
+  ownerEmailHint?: string;
 }) {
   const [adding, setAdding] = useState(value.length === 0);
   const hasOwner = value.some((s) => s.role === "Owner");
+  // B-56: the note below said the client "will be added as the Owner" but
+  // nothing ever put the client's details into the form — Name/Company/Email
+  // stayed blank even with Owner selected (its default role). Seed them.
+  const ownerInitial = !hasOwner && ownerHint ? { name: ownerHint, company: ownerHint, email: ownerEmailHint, role: "Owner" as const } : undefined;
 
   return (
     <div className="space-y-3">
@@ -63,6 +69,7 @@ export function StakeholderDraftEditor({
 
       {adding ? (
         <StakeholderForm
+          initial={ownerInitial}
           onCancel={value.length > 0 ? () => setAdding(false) : undefined}
           onSubmit={(input) => {
             onChange([...value, input]);

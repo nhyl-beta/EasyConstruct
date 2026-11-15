@@ -34,6 +34,8 @@ export interface AttendanceQuery {
   status?: string;
   dateFrom?: string;
   dateTo?: string;
+  /** B-108: the API already filters by this (attendance/repository.ts); only the paged list wires it up. */
+  projectCode?: string;
 }
 
 export interface CreateAttendanceInput {
@@ -155,6 +157,7 @@ export async function listAttendancePage(
   if (query.status && query.status !== "all") params.set("status", query.status);
   if (query.dateFrom) params.set("dateFrom", query.dateFrom);
   if (query.dateTo) params.set("dateTo", query.dateTo);
+  if (query.projectCode && query.projectCode !== "all") params.set("projectCode", query.projectCode);
   const json = (await apiClient.get(`/attendance?${params.toString()}`)) as {
     data: BackendAttendance[];
     meta: Omit<AttendancePage, "items">;
