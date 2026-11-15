@@ -331,7 +331,11 @@ export default function HRAttendancePage() {
                       >
                         <Badge
                           variant="outline"
-                          className={`rounded-full text-overline ${
+                          // B-214: Badge is whitespace-nowrap + w-fit by
+                          // default, so in this narrow table-fixed column it
+                          // was overflowing straight into the Attendance
+                          // column next to it instead of wrapping.
+                          className={`h-auto whitespace-normal rounded-full text-overline ${
                             l.photo === "Verified"
                               ? "border-success/30 text-success-strong"
                               : l.photo === "Pending"
@@ -341,12 +345,12 @@ export default function HRAttendancePage() {
                               : "border-destructive/30 text-destructive-strong"
                           }`}
                         >
-                          <Camera className="mr-1 h-3 w-3" /> {l.photo}
+                          <Camera className="mr-1 h-3 w-3 shrink-0" /> {l.photo}
                         </Badge>
                       </button>
                     </TableCell>
                     <TableCell>
-                      <StatusBadge status={l.attendanceStatus} />
+                      <StatusBadge status={l.attendanceStatus} className="h-auto whitespace-normal" />
                     </TableCell>
                     <TableCell className="min-w-[88px] text-right">
                       {!readOnly && (
