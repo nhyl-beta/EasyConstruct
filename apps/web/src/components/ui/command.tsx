@@ -65,13 +65,10 @@ function CommandInput({
   return (
     <div
       data-slot="command-input-wrapper"
-      // B-214: this wrapper sits flush against its container's rounded top
-      // corners (e.g. DialogContent, PopoverContent — both overflow-hidden).
-      // Without a matching radius the focus ring's square corners poked past
-      // the container's curve instead of hugging it. `inherit` picks up
-      // whatever radius the actual container uses, so this stays correct
-      // wherever CommandInput is placed.
-      className="flex h-9 items-center gap-2 rounded-t-[inherit] border-b px-3 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-ring"
+      // B-214: no focus ring here at all now — it never sat flush with the
+      // rounded container around it, so just drop it instead of chasing the
+      // radius match.
+      className="flex h-9 items-center gap-2 border-b px-3"
     >
       <SearchIcon className="size-4 shrink-0 opacity-50" />
       <CommandPrimitive.Input
