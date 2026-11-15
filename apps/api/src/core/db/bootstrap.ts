@@ -25,7 +25,11 @@ export const bootstrapRefusal = (state: DbState): string | null => {
 // Found by building one database with drizzle-kit push and one by replaying every migration statement, then diffing the
 // catalogs (see docs/client-demo-changes-progress.md, "Fresh database setup"). All are IF NOT EXISTS, so running twice is safe.
 
-export const EXTRA_SEQUENCES = ["purchase_request_seq", "procurement_order_seq", "reimbursement_seq", "expense_seq"] as const;
+// payment_seq (0048_client_payments.sql): missed when that migration was added, so
+// a bootstrap-built database (fresh CI run) never got it and nextId("PAY", ...)
+// failed with "payment_seq" does not exist, even though db:migrate on an existing
+// database was always fine (migration 0048 creates it directly).
+export const EXTRA_SEQUENCES = ["purchase_request_seq", "procurement_order_seq", "reimbursement_seq", "expense_seq", "payment_seq"] as const;
 
 export const EXTRA_INDEXES: readonly { name: string; sql: string }[] = [
   { name: "design_requests_assignee_idx", sql: 'CREATE INDEX IF NOT EXISTS "design_requests_assignee_idx" ON "design_requests" ("assigned_to_user_id")' },
