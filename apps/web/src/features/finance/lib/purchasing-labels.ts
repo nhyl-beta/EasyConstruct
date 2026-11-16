@@ -17,7 +17,8 @@ export const ORDER_LABELS: Record<OrderStatus, Label> = {
   "in-transit": { label: "In transit", tone: "info" },
   delivered: { label: "Delivered", tone: "warning" },
   paid: { label: "Paid", tone: "success" },
-  cancelled: { label: "Cancelled", tone: "neutral" },
+  // B-135: shown as "On hold"; the order is stopped and its request goes back to Approved.
+  cancelled: { label: "On hold", tone: "warning" },
 };
 
 /** "2026-10-09" or an ISO timestamp becomes "Oct 9, 2026"; an em dash when empty. */
