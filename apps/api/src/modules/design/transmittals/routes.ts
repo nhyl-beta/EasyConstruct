@@ -19,6 +19,7 @@ const writers = requireRole("project-manager", "engineer", "architect", "admin")
 router.post("/", writers, validate(createTransmittalSchema), controller.create);
 router.patch("/:id", writers, validate(updateTransmittalSchema), controller.update);
 router.post("/:id/issue", writers, controller.issue);
+router.post("/:id/resend-email", writers, controller.resendEmail);
 router.post("/:id/acknowledgements", writers, validate(acknowledgeTransmittalSchema), controller.acknowledge);
 
 export default router;

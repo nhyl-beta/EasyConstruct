@@ -236,6 +236,7 @@ export interface Transmittal {
   location: string | null;
   toName: string;
   thruName: string | null;
+  sentMode?: "Email" | "Hard copy" | null;
   type: "inter-office" | "inter-agency";
   subject: string;
   purposes: string[];
@@ -254,7 +255,7 @@ export interface CreateTransmittalInput {
   dateIssued?: string;
   location?: string;
   toName: string;
-  thruName?: string;
+  sentMode?: "Email" | "Hard copy";
   type: "inter-office" | "inter-agency";
   subject: string;
   purposes: string[];

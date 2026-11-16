@@ -148,6 +148,8 @@ export const transmittals = pgTable("transmittals", {
   location: varchar("location", { length: 255 }),
   toName: varchar("to_name", { length: 255 }).notNull(),
   thruName: varchar("thru_name", { length: 255 }),
+  // B-181: "Email" | "Hard copy"; null on rows made before it existed. Hard copy is never emailed.
+  sentMode: varchar("sent_mode", { length: 10 }),
   type: varchar("type", { length: 20 }).notNull().default("inter-office"), // inter-office | inter-agency
   subject: varchar("subject", { length: 255 }).notNull(),
   purposes: jsonb("purposes").$type<string[]>().notNull().default([]),

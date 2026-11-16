@@ -12,7 +12,7 @@
 // One component means a fix to what an approver can see before deciding lands
 // for every role at the same time.
 import { STATUS_TONES } from "@/config/status-tone";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   CheckCircle2,
   Clock,
@@ -21,6 +21,7 @@ import {
   ListTree,
   Paperclip,
   PenLine,
+  RotateCcw,
   Search,
   Upload,
   X,
@@ -53,7 +54,7 @@ import { useApprovalsPaged } from "@/features/workflows/hooks/useWorkflows";
 import { WorkflowRepository } from "@/features/workflows/repositories/workflow.repository";
 import { WorkflowFormatService } from "@/features/workflows/services/workflow.service";
 import { formatRelativeTime } from "@/lib/format-relative-time";
-import type { ApprovalScope } from "@/features/workflows/types/workflow.types";
+import type { ApprovalScope, Workflow } from "@/features/workflows/types/workflow.types";
 
 const ALL = "all";
 
@@ -179,6 +180,44 @@ export function ApprovalQueuePanel({
   // silent failures on buttons that were never going to work for this role.
   const canDecide = user?.role !== "it-designer";
 
+  // B-31: a reviewer sending a workflow back for revision ("revise") never
+  // notified the originator, and this queue only ever showed items pending
+  // *your* decision or decided *by* you — a workflow you started had nowhere
+  // to resurface once a stage came back "revision-required", so you had no
+  // way to see that or to resubmit it. pm-workflows.tsx already has this
+  // exact "my item, sent back, resubmit" card for PM/Admin; this mirrors it
+  // for every other role that reaches a workflow only through this panel.
+  const [myRevisions, setMyRevisions] = useState<Workflow[]>([]);
+  const [resubmittingStageId, setResubmittingStageId] = useState<number | null>(null);
+  const loadMyRevisions = useCallback(async () => {
+    if (!user?.name) return;
+    try {
+      const all = await WorkflowRepository.listActive();
+      setMyRevisions(
+        all.filter(
+          (w) => w.createdBy === user.name && w.stages.some((s) => s.status === "revision-required"),
+        ),
+      );
+    } catch {
+      // Best-effort: the main queue below still works if this fails.
+    }
+  }, [user?.name]);
+  useEffect(() => {
+    void loadMyRevisions();
+  }, [loadMyRevisions]);
+  const resubmitMyStage = async (workflowId: number, stageId: number) => {
+    setResubmittingStageId(stageId);
+    try {
+      await WorkflowRepository.resubmitStage(workflowId, stageId);
+      await loadMyRevisions();
+      toast.success("Resubmitted for review");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not resubmit.");
+    } finally {
+      setResubmittingStageId(null);
+    }
+  };
+
   const pageItemsForBulk = pagination.pageItems;
   const selectedItems = pageItemsForBulk.filter((a) => selected.has(a.stageId));
   const toggleSelected = (stageId: number, on: boolean) =>
@@ -219,6 +258,42 @@ export function ApprovalQueuePanel({
           here; every other role sees nothing. */}
       {showInitiationActions && user?.role !== "architect" && (
         <WorkflowInitiationActions role={user?.role ?? ""} onCreated={() => void reload()} />
+      )}
+
+      {myRevisions.length > 0 && (
+        <Card className="border-warning/30 bg-warning/5">
+          <CardContent className="space-y-2 p-4">
+            <p className="text-xs font-medium text-warning-strong">
+              Sent back to you for revision
+            </p>
+            {myRevisions.map((workflow) =>
+              workflow.stages
+                .filter((stage) => stage.status === "revision-required")
+                .map((stage) => (
+                  <div
+                    key={stage.id}
+                    className="flex items-center justify-between gap-3 rounded-xl border border-warning/30 bg-background px-3 py-2 text-xs"
+                  >
+                    <span>
+                      <span className="font-medium">{workflow.code}</span> &middot; {workflow.title} &mdash;{" "}
+                      {stage.roleLabel} asked for a revision
+                      {stage.comments ? `: ${stage.comments}` : "."}
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 shrink-0 text-xs"
+                      disabled={resubmittingStageId === stage.id}
+                      onClick={() => void resubmitMyStage(workflow.id, stage.id)}
+                    >
+                      <RotateCcw className="h-3 w-3" />
+                      {resubmittingStageId === stage.id ? "Resubmitting…" : "Resubmit"}
+                    </Button>
+                  </div>
+                )),
+            )}
+          </CardContent>
+        </Card>
       )}
 
       {showStats && stats && <ApprovalStatCards stats={stats} />}

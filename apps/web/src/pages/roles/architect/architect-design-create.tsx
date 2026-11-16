@@ -40,7 +40,7 @@ const STEPS: Step[] = [
   {
     number: 3,
     title: "Version information",
-    subtitle: "Version, phase & status",
+    subtitle: "Phase & status",
   },
   { number: 4, title: "Team", subtitle: "Lead architect" },
   { number: 5, title: "Files", subtitle: "Expected drawing count" },
@@ -321,31 +321,10 @@ function StepVersion({
       <div>
         <h3 className="text-base font-semibold">Version information</h3>
         <p className="mt-1 text-sm text-muted-foreground">
-          Version, construction phase, and current status.
+          Construction phase and current status.
         </p>
       </div>
       <div className="grid grid-cols-2 gap-5">
-        <div className="space-y-1.5">
-          <Label>
-            Version <span className="text-destructive-strong">*</span>
-          </Label>
-          <Input
-            value={data.version}
-            onChange={(e) => set("version", e.target.value)}
-            placeholder="v0.1"
-           
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label>Revision number</Label>
-          <Input
-            type="number"
-            min={0}
-            value={data.revision}
-            onChange={(e) => set("revision", Number(e.target.value) || 0)}
-           
-          />
-        </div>
         <div className="space-y-1.5">
           <Label>Phase</Label>
           <Select value={data.phase} onValueChange={(v) => set("phase", v)}>
@@ -578,7 +557,6 @@ function StepReview({ data }: { data: DesignFormData }) {
     ["Project code", data.projectCode || "—"],
     ["Discipline", data.discipline || "—"],
     ["Category", data.category || "—"],
-    ["Version", `${data.version} · rev ${data.revision}`],
     ["Phase", data.phase],
     ["Status", data.status],
     ["Lead architect", data.leadArchitect || "—"],

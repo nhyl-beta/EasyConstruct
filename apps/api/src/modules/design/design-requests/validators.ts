@@ -127,6 +127,7 @@ export const createTransmittalSchema = z.object({
   location: z.string().max(255).optional(),
   toName: z.string().min(2).max(255),
   thruName: z.string().max(255).optional(),
+  sentMode: z.enum(["Email", "Hard copy"]).optional(),
   type: z.enum(["inter-office", "inter-agency"]).default("inter-office"),
   subject: z.string().min(3).max(255),
   purposes: z.array(z.enum(TRANSMITTAL_PURPOSES)).default([]),

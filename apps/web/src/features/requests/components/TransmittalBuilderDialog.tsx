@@ -21,7 +21,7 @@ interface Row {
   remarks: string;
 }
 
-/** Cover-sheet builder: pick the project's requests to send out, then fill To / Thru / purposes. */
+/** Cover-sheet builder: pick the project's requests to send out, then fill To / Sent mode / purposes. */
 export function TransmittalBuilderDialog({
   open,
   onOpenChange,
@@ -35,7 +35,7 @@ export function TransmittalBuilderDialog({
 }) {
   const [project, setProject] = useState("");
   const [toName, setToName] = useState("");
-  const [thruName, setThruName] = useState("");
+  const [sentMode, setSentMode] = useState<"Email" | "Hard copy">("Email");
   const [type, setType] = useState<"inter-office" | "inter-agency">("inter-office");
   const [subject, setSubject] = useState("");
   const [location, setLocation] = useState("");
@@ -49,7 +49,7 @@ export function TransmittalBuilderDialog({
   const { requests } = useRequests({ projectCode: project || undefined });
   const candidates = useMemo(() => (project ? requests.filter((r) => r.status !== "draft") : []), [requests, project]);
 
-  // B-94: "To"/"Thru" stayed free text with no way to pick a known recipient's
+  // B-94: "To" stayed free text with no way to pick a known recipient's
   // email. Directory stays additive — a dropdown suggestion beside the field,
   // not a replacement — so a plain office name (the paper cover-sheet
   // convention this form already supports) still works exactly as before.
@@ -74,7 +74,7 @@ export function TransmittalBuilderDialog({
     if (!open) return;
     setProject(initialProject ?? "");
     setToName("");
-    setThruName("");
+    setSentMode("Email");
     setType("inter-office");
     setSubject("");
     setLocation("");
@@ -101,7 +101,7 @@ export function TransmittalBuilderDialog({
       const created = await TransmittalRepository.create({
         projectCode: project,
         toName: toName.trim(),
-        thruName: thruName.trim() || undefined,
+        sentMode,
         type,
         subject: subject.trim(),
         location: location.trim() || undefined,
@@ -150,18 +150,16 @@ export function TransmittalBuilderDialog({
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="tr-thru">Thru</Label>
-              <Input id="tr-thru" value={thruName} onChange={(e) => setThruName(e.target.value)} disabled={busy} />
-              <SearchableSelect
-                value={undefined}
-                onValueChange={setThruName}
-                options={directory}
-                placeholder="Or pick a person…"
-                searchPlaceholder="Search people…"
-                emptyText="No one found."
-                disabled={busy || directory.length === 0}
-                className="h-8 text-xs"
-              />
+              <Label htmlFor="tr-sent-mode">Sent mode</Label>
+              <Select value={sentMode} onValueChange={(v) => setSentMode(v as typeof sentMode)} disabled={busy}>
+                <SelectTrigger id="tr-sent-mode" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Email">Email</SelectItem>
+                  <SelectItem value="Hard copy">Hard copy</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="tr-type">Type</Label>
