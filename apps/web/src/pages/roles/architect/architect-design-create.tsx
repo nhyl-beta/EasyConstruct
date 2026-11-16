@@ -23,6 +23,7 @@ import {
 } from "@/features/designs/hooks/useDesignCreate.ts";
 import { useProjectMembers } from "@/features/project-members/hooks/use-project-members";
 import { openFileUrl } from "@/lib/file-url";
+import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { FileIntegrityBadge } from "@/features/uploads/components/FileIntegrityBadge";
 
@@ -530,7 +531,7 @@ function StepFiles({
               >
                 <button
                   type="button"
-                  onClick={() => void openFileUrl(f.url).catch(() => undefined)}
+                  onClick={() => void openFileUrl(f.url).catch(() => toast.error("Could not open that file."))}
                   className="truncate text-left text-primary-strong underline-offset-2 hover:underline"
                 >
                   {f.name}

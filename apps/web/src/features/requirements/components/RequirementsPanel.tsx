@@ -2,6 +2,7 @@ import { DataTablePagination } from "@/components/refine-ui/data-table/data-tabl
 import { usePagination } from "@/hooks/use-pagination";
 import { Check, ClipboardList, Paperclip, X } from "lucide-react";
 import { openFileUrl } from "@/lib/file-url";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useProjectRequirements } from "../hooks/useProjectRequirements";
@@ -83,7 +84,7 @@ export function RequirementsPanel({
                       <button
                         type="button"
                         className="flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-xs text-primary-strong hover:bg-muted/40"
-                        onClick={() => void openFileUrl(a.url).catch(() => undefined)}
+                        onClick={() => void openFileUrl(a.url).catch(() => toast.error("Could not open that file."))}
                       >
                         <Paperclip className="h-3 w-3" /> {a.filename}
                       </button>
