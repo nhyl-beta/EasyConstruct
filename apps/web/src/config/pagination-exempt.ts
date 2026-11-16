@@ -37,6 +37,7 @@ export const PAGINATION_EXEMPT: PaginationExemption[] = [
   { file: "features/owner-approvals/components/OwnerPendingApprovalsCard.tsx", reason: "Dashboard widget: the Owner's pending requests (at most one per action) and the last five answered." },
 
   // ── Forms, dialogs and per-item detail
+  { file: "features/employees/pages/EmployeeCreatePage.tsx", reason: "Form step: the files attached to one employee while registering (a handful)." },
   { file: "components/workflows/WorkflowCard.tsx", reason: "Stages of one workflow; a fixed short pipeline." },
   { file: "components/workflows/workflow-stage-pipeline.tsx", reason: "Stages of one workflow; a fixed short pipeline." },
   { file: "components/workflows/new-workflow-dialog.tsx", reason: "Form: stage and option editors in a dialog." },

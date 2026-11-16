@@ -499,13 +499,18 @@ function StepFiles({
         </label>
 
         {uploadProgress && (
-          <div className="space-y-1" role="status" aria-live="polite">
-            <div className="flex justify-between text-xs text-muted-foreground">
+          <div
+            role="progressbar"
+            aria-label={`Uploading ${uploadProgress.name}`}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={uploadProgress.pct}
+            className="relative h-11 overflow-hidden rounded-xl border border-border bg-muted/40"
+          >
+            <div className="absolute inset-y-0 left-0 bg-primary/20 transition-all" style={{ width: `${uploadProgress.pct}%` }} />
+            <div className="relative flex h-full items-center justify-between gap-3 px-4 text-sm">
               <span className="truncate">{uploadProgress.name}</span>
-              <span className="tabular-nums">{uploadProgress.pct}%</span>
-            </div>
-            <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-              <div className="h-full bg-primary transition-all" style={{ width: `${uploadProgress.pct}%` }} />
+              <span className="shrink-0 tabular-nums text-muted-foreground">{uploadProgress.pct}%</span>
             </div>
           </div>
         )}

@@ -133,6 +133,9 @@ const WRITES: Case[] = [
   employees("patch", "/5", HR),
   employees("patch", "/5/deactivate", HR),
   employees("delete", "/5", HR),
+  // employee documents (B-111): HR writes
+  employees("post", "/5/documents", HR),
+  employees("delete", "/5/documents/9", HR),
   // accounts: IT Designer only
   users("post", "/", ["it-designer"]),
   users("post", "/5/link-employee", ["it-designer"]),

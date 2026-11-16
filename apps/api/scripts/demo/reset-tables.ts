@@ -8,7 +8,7 @@
 /** Never written. Checksummed before/after. */
 export const ACCOUNT_TABLES = ["users", "password_reset_tokens", "roles"];
 /** Never deleted (config / reference / history). */
-export const PRESERVE = [...ACCOUNT_TABLES, "workflow_templates", "reference_snapshots", "audit_logs", "expense_categories", "document_types", "owner_action_requests", "support_requests"];
+export const PRESERVE = [...ACCOUNT_TABLES, "workflow_templates", "reference_snapshots", "audit_logs", "expense_categories", "document_types", "owner_action_requests", "support_requests", "employee_documents"];
 /** Handled specially. */
 export const SPECIAL = ["notifications", "employees"];
 

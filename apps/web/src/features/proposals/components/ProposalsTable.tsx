@@ -96,7 +96,9 @@ export function ProposalsTable({
 
   return (
     <div className="overflow-x-auto rounded-xl border border-border">
-      <Table>
+      {/* B-159: with the details panel open the table gets ~60% of the page; a minimum width keeps the columns
+          from being crushed into each other, and the card scrolls sideways instead. */}
+      <Table className="min-w-[1000px]">
         <TableHeader>
           <TableRow>
             {COLUMNS.map((column) =>
@@ -147,7 +149,7 @@ export function ProposalsTable({
               <TableCell className="align-top whitespace-normal break-words text-xs">
                 {p.submittedBy}
               </TableCell>
-              <TableCell className="align-top">
+              <TableCell className="align-top whitespace-nowrap">
                 <StatusBadge status={p.status} />
               </TableCell>
               <TableCell className="align-top text-xs tabular-nums">

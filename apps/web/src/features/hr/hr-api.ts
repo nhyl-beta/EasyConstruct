@@ -142,3 +142,28 @@ export interface EmployeeHistoryEntry {
 export async function getEmployeeHistory(id: number): Promise<EmployeeHistoryEntry[]> {
   return unwrap<EmployeeHistoryEntry[]>(apiClient.get(`/employees/${id}/history`));
 }
+
+
+// B-111: files HR keeps on an employee (the file itself is uploaded first; this stores its link).
+export const EMPLOYEE_DOCUMENT_TYPES = [
+  { value: "resume", label: "Resume" },
+  { value: "cv", label: "Curriculum vitae" },
+  { value: "certificate", label: "Certificate" },
+  { value: "id", label: "ID" },
+  { value: "contract", label: "Contract" },
+  { value: "other", label: "Other" },
+] as const;
+export type EmployeeDocumentType = (typeof EMPLOYEE_DOCUMENT_TYPES)[number]["value"];
+
+export interface EmployeeDocument {
+  id: number;
+  docType: EmployeeDocumentType;
+  name: string;
+  url: string;
+}
+
+export const listEmployeeDocuments = (id: number) => unwrap<EmployeeDocument[]>(apiClient.get(`/employees/${id}/documents`));
+export const addEmployeeDocument = (id: number, doc: Omit<EmployeeDocument, "id">) =>
+  unwrap<EmployeeDocument>(apiClient.post(`/employees/${id}/documents`, doc));
+export const removeEmployeeDocument = (id: number, docId: number) =>
+  unwrap<EmployeeDocument>(apiClient.del(`/employees/${id}/documents/${docId}`));

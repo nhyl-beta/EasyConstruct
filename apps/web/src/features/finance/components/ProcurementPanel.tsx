@@ -214,7 +214,7 @@ export function ProcurementPanel({ procurement, canAct, onNotice, onOpenExpense 
                           )}
                           {(o.status === "ordered" || o.status === "in-transit") && (
                             <Button size="sm" variant="outline" className="h-7 px-2 text-xs border-destructive/40 text-destructive-strong" onClick={() => setDialog({ kind: "cancel", order: o })}>
-                              Cancel
+                              On hold
                             </Button>
                           )}
                         </div>
@@ -249,12 +249,12 @@ export function ProcurementPanel({ procurement, canAct, onNotice, onOpenExpense 
       <DecisionDialog
         open={dialog?.kind === "cancel"}
         onOpenChange={(open) => !open && setDialog(null)}
-        title={`Cancel ${dialog?.order.id ?? ""}?`}
+        title={`Put ${dialog?.order.id ?? ""} on hold?`}
         description="The request goes back to Approved and holds its full amount on the budget again."
-        confirmLabel="Cancel order"
+        confirmLabel="Put on hold"
         destructive
         hideNote
-        onSubmit={async () => (dialog ? report(await procurement.cancel(dialog.order.id), "Order cancelled. Its request is Approved again.") : null)}
+        onSubmit={async () => (dialog ? report(await procurement.cancel(dialog.order.id), "Order on hold. Its request is Approved again.") : null)}
       />
 
       <PayDialog
