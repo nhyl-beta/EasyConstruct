@@ -567,7 +567,7 @@ export default function ArchitectProposals() {
         }
       >
       <div className="overflow-hidden rounded-2xl border">
-        <Table className="table-fixed">
+        <Table className="table-fixed min-w-[1100px]">
           <TableHeader>
             <TableRow>
               <TableHead className="w-[8%]">ID</TableHead>
@@ -638,11 +638,11 @@ export default function ArchitectProposals() {
                     {proposal.submittedBy}
                   </TableCell>
 
-                  <TableCell className="text-right text-sm">
+                  <TableCell className="whitespace-nowrap text-right text-sm">
                     {proposal.amount ?? "—"}
                   </TableCell>
 
-                  <TableCell>
+                  <TableCell className="whitespace-nowrap">
                     <StatusBadge
                       status={proposal.status}
                     />
