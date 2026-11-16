@@ -142,6 +142,31 @@ export const issue = async (id: number, actor: Actor) => {
   return getById(id, actor);
 };
 
+// B-178/B-182: issuing a transmittal whose email failed (e.g. the mail
+// transport was briefly unreachable) left it permanently "issued" with
+// emailStatus "failed" and no way to try again short of a brand-new
+// transmittal. Mirrors design-requests/service.ts's resendEmail.
+export const resendEmail = async (id: number, actor: Actor) => {
+  assertWriter(actor);
+  const row = await require(id);
+  await assertProjectVisible(vis(actor), row.projectCode, "transmittals");
+  if (row.status === "draft") throw new ConflictError("Issue the transmittal before sending its email");
+  if (!EMAIL_RE.test(row.toName.trim())) {
+    throw new ValidationError(`"${row.toName}" is not an email address — nothing to resend`);
+  }
+  const emailFields = await attemptEmail(row, actor);
+  await repo.updateTransmittal(id, emailFields);
+  await logAudit({
+    entityType: "transmittal",
+    entityId: String(id),
+    action: "resent",
+    actor: actor.name,
+    summary: `Transmittal ${row.controlNo} email resent to ${row.toName} (${emailFields.emailStatus ?? "skipped"})`,
+    projectCode: row.projectCode,
+  });
+  return getById(id, actor);
+};
+
 export const acknowledge = async (id: number, ack: { name: string; signature?: string; office?: string }, actor: Actor) => {
   assertWriter(actor);
   const row = await require(id);

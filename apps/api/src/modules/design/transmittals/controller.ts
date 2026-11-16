@@ -47,6 +47,9 @@ export const update = wrap(async (req, res) => {
 export const issue = wrap(async (req, res) => {
   res.json(formatSuccess(await service.issue(id(req), actorOf(req)), "Transmittal issued"));
 });
+export const resendEmail = wrap(async (req, res) => {
+  res.json(formatSuccess(await service.resendEmail(id(req), actorOf(req)), "Email resent"));
+});
 export const acknowledge = wrap(async (req, res) => {
   res.status(HTTP.CREATED).json(formatSuccess(await service.acknowledge(id(req), req.body, actorOf(req)), "Receipt logged"));
 });
