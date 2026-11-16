@@ -1,6 +1,7 @@
 import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
 import { usePagination } from "@/hooks/use-pagination";
 import { CheckSquare, Clock, ListTodo, Plus, ShieldAlert } from "lucide-react";
+import { toast } from "sonner";
 
 import { PageContainer } from "@/components/refine-ui/views/page-container";
 import { PageHeader } from "@/components/refine-ui/views/page-header";
@@ -142,7 +143,7 @@ export default function TasksPage() {
                                 <button
                                   type="button"
                                   className="text-primary-strong underline-offset-2 hover:underline"
-                                  onClick={() => void openFileUrl(t.completionFileUrl).catch(() => undefined)}
+                                  onClick={() => void openFileUrl(t.completionFileUrl).catch(() => toast.error("Could not open that file."))}
                                 >
                                   attachment
                                 </button>
@@ -166,7 +167,7 @@ export default function TasksPage() {
                             onClick={() =>
                               t.status === "In Progress"
                                 ? setCompleting(t)
-                                : void advance(t).catch(() => {})
+                                : void advance(t).catch((e) => toast.error(e instanceof Error ? e.message : "Could not update that task."))
                             }
                           >
                             <CheckSquare className="h-3.5 w-3.5" />

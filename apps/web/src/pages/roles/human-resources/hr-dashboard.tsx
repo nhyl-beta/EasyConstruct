@@ -266,15 +266,17 @@ function PayrollSection() {
   const [batches, setBatches] = useState<PayrollBatch[]>([]);
   const [lines, setLines] = useState<PayrollLine[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
+    setError(null);
     Promise.all([listPayrollBatches(), listPayroll()])
       .then(([b, l]) => {
         setBatches(b);
         setLines(l);
       })
-      .catch(() => {})
+      .catch((e) => setError(e instanceof Error ? e.message : "Could not load payroll data."))
       .finally(() => setLoading(false));
   }, []);
 
@@ -287,6 +289,10 @@ function PayrollSection() {
 
   if (loading) {
     return <p className="py-8 text-center text-sm text-muted-foreground">Loading payroll data…</p>;
+  }
+
+  if (error) {
+    return <p className="py-8 text-center text-sm text-destructive-strong">Couldn't load payroll data. {error}</p>;
   }
 
   return (
