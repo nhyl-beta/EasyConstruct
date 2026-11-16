@@ -2,7 +2,7 @@ import { DataTablePagination } from "@/components/refine-ui/data-table/data-tabl
 import { usePagination } from "@/hooks/use-pagination";
 import { useState } from "react";
 import { Link } from "react-router";
-import { Plus, Printer } from "lucide-react";
+import { Plus, Printer, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 
 import { useAuth } from "@/auth/auth-context";
@@ -72,6 +72,22 @@ export default function SharedTransmittals() {
   const pg = usePagination(transmittals, 10);
   const [building, setBuilding] = useState(false);
   const [receiving, setReceiving] = useState<Transmittal | null>(null);
+  const [resendingId, setResendingId] = useState<number | null>(null);
+
+  const resendEmail = async (t: Transmittal) => {
+    setResendingId(t.id);
+    try {
+      const updated = await TransmittalRepository.resendEmail(t.id);
+      toast[updated.emailStatus === "sent" ? "success" : "error"](
+        updated.emailStatus === "sent" ? `Email resent to ${t.toName}` : `Email to ${t.toName} failed again`,
+      );
+      reload();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not resend the email");
+    } finally {
+      setResendingId(null);
+    }
+  };
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-8">
@@ -151,6 +167,18 @@ export default function SharedTransmittals() {
                       {canWrite && t.status !== "draft" && (
                         <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => setReceiving(t)}>
                           Log receipt
+                        </Button>
+                      )}
+                      {canWrite && t.emailStatus === "failed" && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 px-2 text-xs"
+                          disabled={resendingId === t.id}
+                          onClick={() => void resendEmail(t)}
+                        >
+                          <RotateCcw className="h-3 w-3" />
+                          {resendingId === t.id ? "Resending…" : "Resend email"}
                         </Button>
                       )}
                       <Button size="icon" variant="ghost" className="h-7 w-7" asChild aria-label={`Print ${t.controlNo}`}>

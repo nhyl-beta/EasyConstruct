@@ -136,6 +136,10 @@ export const TransmittalRepository = {
   async issue(id: number): Promise<Transmittal> {
     return unwrap<Transmittal>(apiClient.post(`/transmittals/${id}/issue`, {}));
   },
+  /** Retries the email for an already-issued transmittal whose send failed. */
+  async resendEmail(id: number): Promise<Transmittal> {
+    return unwrap<Transmittal>(apiClient.post(`/transmittals/${id}/resend-email`, {}));
+  },
   async acknowledge(id: number, ack: { name: string; signature?: string; office?: string }): Promise<Transmittal> {
     return unwrap<Transmittal>(apiClient.post(`/transmittals/${id}/acknowledgements`, ack));
   },

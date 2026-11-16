@@ -259,8 +259,8 @@ function TransmittalForm({ t, project }: { t: Transmittal; project: { name: stri
           <tr>
             <th>To</th>
             <td>{t.toName}</td>
-            <th>Thru</th>
-            <td>{t.thruName ?? ""}</td>
+            <th>Sent mode</th>
+            <td>{t.sentMode ?? ""}</td>
           </tr>
           <tr>
             <th>Type</th>
