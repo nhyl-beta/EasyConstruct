@@ -2,7 +2,7 @@ import { Router } from "express";
 import * as controller from "./controller.js";
 import { validate } from "../../../core/http/validate.js";
 import { authenticate, requireRole } from "../../../core/auth/middleware.js";
-import documentsRouter from "./documents.js";
+import * as documents from "./documents.js";
 import {
   createEmployeeSchema,
   updateEmployeeSchema,
@@ -27,6 +27,9 @@ router.patch("/:id", canWriteEmployees, validate(updateEmployeeSchema), controll
 router.patch("/:id/deactivate", canWriteEmployees, controller.deactivate);
 router.delete("/:id", canWriteEmployees, controller.remove);
 // B-111: resume, CV, certificates and other files HR keeps on an employee.
-router.use("/:id/documents", documentsRouter);
+// Personal files: HR writes, Admin reads.
+router.get("/:id/documents", requireRole("human-resources", "admin"), documents.list);
+router.post("/:id/documents", canWriteEmployees, validate(documents.createDocumentSchema), documents.create);
+router.delete("/:id/documents/:docId", canWriteEmployees, documents.remove);
 
 export default router;
