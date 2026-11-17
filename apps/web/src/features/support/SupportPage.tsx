@@ -104,7 +104,7 @@ export default function SupportPage() {
     <PageContainer>
       <PageHeader
         title="User support"
-        description={isIt ? "Account requests sent by users. Reply to each one, then resolve or decline it." : "Account help only: password resets, email or name changes, role or access changes and sign-in problems. IT makes the changes."}
+        description={isIt ? "Account requests sent by users. Reply to each one, then resolve or decline it." : "Account help only: password resets, email changes, role or access changes and sign-in problems. IT makes the changes."}
       />
       <PageContent className="space-y-6 p-6 md:p-8">
         {!isIt && (
@@ -246,6 +246,11 @@ export default function SupportPage() {
           </DialogHeader>
           <div className="space-y-3">
             <p className="whitespace-pre-wrap break-words rounded-lg bg-muted/50 p-3 text-sm">{replying?.details}</p>
+            {isIt && replying?.category === "email_change" && (
+              <Link to="/it-designer/users" className="inline-block text-sm text-primary underline-offset-2 hover:underline">
+                Change the email in User accounts
+              </Link>
+            )}
             {replying && (replying.status === "open" || replying.status === "in_progress") ? (
               <div className="grid gap-1.5">
                 <Label htmlFor="support-reply">Your reply</Label>

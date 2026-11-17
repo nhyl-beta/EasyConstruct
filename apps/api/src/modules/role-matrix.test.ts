@@ -143,6 +143,7 @@ const WRITES: Case[] = [
   users("patch", "/5", ["it-designer"]),
   users("patch", "/5/status", ["it-designer"]),
   users("patch", "/5/password", ["it-designer"]),
+  users("patch", "/5/email", ["it-designer"]),
   users("delete", "/5", ["it-designer"]),
   // HR router writes
   hr("post", "/employees", HR_IT),

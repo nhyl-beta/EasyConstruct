@@ -78,6 +78,11 @@ export const UserRepository = {
     return unwrap<PublicUser | PendingApproval>(apiClient.patch(`/users/${id}/password`, { password }));
   },
 
+  // IT Designer changes the sign-in email; the server also updates the linked employee record and signs the person out.
+  async changeEmail(id: number, email: string): Promise<PublicUser | PendingApproval> {
+    return unwrap<PublicUser | PendingApproval>(apiClient.patch(`/users/${id}/email`, { email }));
+  },
+
   async setActive(id: number, isActive: boolean): Promise<PublicUser | PendingApproval> {
     return unwrap<PublicUser | PendingApproval>(apiClient.patch(`/users/${id}/status`, { isActive }));
   },

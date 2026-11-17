@@ -35,9 +35,10 @@ export function useUsersPaged(role: string | null, status: "all" | "active" | "i
   const create = useCallback((input: CreateUserInput) => UserRepository.create(input), []);
   const update = useCallback((id: number, input: UpdateUserInput) => UserRepository.update(id, input), []);
   const setPassword = useCallback((id: number, password: string) => UserRepository.setPassword(id, password), []);
+  const changeEmail = useCallback((id: number, email: string) => UserRepository.changeEmail(id, email), []);
   const setActive = useCallback((id: number, isActive: boolean) => UserRepository.setActive(id, isActive), []);
   const remove = useCallback((id: number) => UserRepository.remove(id), []);
   const linkEmployee = useCallback((id: number, employeeId: number) => UserRepository.linkEmployee(id, employeeId), []);
 
-  return { list, create, update, setPassword, setActive, remove, linkEmployee };
+  return { list, create, update, setPassword, changeEmail, setActive, remove, linkEmployee };
 }

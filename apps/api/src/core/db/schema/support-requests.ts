@@ -9,7 +9,7 @@ export const supportRequests = pgTable(
     requesterUserId: integer("requester_user_id").references(() => users.id, { onDelete: "set null" }),
     requesterName: varchar("requester_name", { length: 100 }).notNull(),
     requesterRole: varchar("requester_role", { length: 50 }).notNull(),
-    // password_reset | email_name_change | role_access | cannot_sign_in | other_account
+    // password_reset | email_change (older rows: email_name_change) | role_access | cannot_sign_in | other_account
     category: varchar("category", { length: 30 }).notNull(),
     subject: varchar("subject", { length: 150 }).notNull(),
     details: text("details").notNull(),
