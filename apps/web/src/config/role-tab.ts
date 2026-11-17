@@ -293,7 +293,7 @@ export const ROLE_CONFIGS: Record<string, RoleConfig> = {
       { label: "Attendance", icon: UserCheck, route: "/attendance" },
       { label: "Payroll", icon: DollarSign, route: "/payroll" },
       { label: "Approvals", icon: CheckSquare, route: "/approvals" },
-      { label: "Site Reports", icon: BarChart2, route: "/reports" },
+      { label: "Workforce Reports", icon: BarChart2, route: "/workforce-reports" },
     ],
 
     sections: [
