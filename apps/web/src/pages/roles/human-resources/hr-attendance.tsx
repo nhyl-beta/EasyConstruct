@@ -92,8 +92,8 @@ export default function HRAttendancePage() {
 
   const { reload } = a;
   const verify = useCallback(
-    async (id: number, status: "Verified" | "Flagged", remarks: string) => {
-      await setAttendanceVerification(id, status, remarks || undefined);
+    async (id: number, status: "Verified" | "Flagged", remarks: string, clockOut?: string) => {
+      await setAttendanceVerification(id, status, remarks || undefined, clockOut);
       await reload();
     },
     [reload],

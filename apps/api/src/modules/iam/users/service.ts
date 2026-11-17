@@ -189,7 +189,7 @@ const validateUpdate = async (id: number, input: UpdateUserInput, current: Await
   const changesIdentity =
     (input.name !== undefined && input.name !== current.name) || (input.email !== undefined && input.email !== current.email);
   if (changesIdentity && (await repo.findEmployeeByUserId(id))) {
-    throw new ValidationError("This account is linked to an employee record. Change the name or email on the employee record instead");
+    throw new ValidationError("This account is linked to an employee record. Change the name on the employee record, or use Change email for the sign-in email");
   }
 
   if (input.email) {
@@ -268,6 +268,38 @@ export const setPassword = async (id: number, password: string, actor: Actor) =>
     return ownerApprovals.request({ targetUserId: id, action: "password_reset", payload: { passwordHash }, requester: actor });
   }
   return applySetPassword(id, passwordHash);
+};
+
+/**
+ * IT Designer changes the email an account signs in with, for a person who asked through a support request.
+ * It also updates the linked employee record, so the two never disagree. The Owner account waits for the Owner's approval.
+ */
+export const changeEmail = async (id: number, email: string, actor: Actor) => {
+  const current = await getById(id);
+  await assertEmailChangeable(id, current.email, email);
+  if (needsOwnerApproval(current, actor)) {
+    return ownerApprovals.request({
+      targetUserId: id,
+      action: "change_identity",
+      payload: { email, from: { name: current.name, email: current.email } },
+      requester: actor,
+    });
+  }
+  return applyEmailChange(id, email);
+};
+
+const assertEmailChangeable = async (id: number, currentEmail: string, email: string) => {
+  if (email.toLowerCase() === currentEmail.toLowerCase()) throw new ValidationError("That is already this account's email");
+  if (await repo.emailTakenByOthers(email, id)) throw new ConflictError(`A user or employee with email ${email} already exists`);
+};
+
+const applyEmailChange = async (id: number, email: string) => {
+  const current = await getById(id);
+  await assertEmailChangeable(id, current.email, email);
+  const updated = await repo.changeEmail(id, email);
+  if (!updated) throw new NotFoundError("User", String(id));
+  invalidateSessionCache(id);
+  return updated;
 };
 
 const applySetPassword = async (id: number, passwordHash: string) => {
@@ -396,6 +428,7 @@ registerExecutor("change_role", async (r) => {
 });
 registerExecutor("change_identity", async (r) => {
   const p = (r.payload ?? {}) as { name?: string; email?: string };
-  await applyUpdate(r.targetUserId, { ...(p.name !== undefined ? { name: p.name } : {}), ...(p.email !== undefined ? { email: p.email } : {}) });
+  if (p.email !== undefined) await applyEmailChange(r.targetUserId, p.email);
+  if (p.name !== undefined) await applyUpdate(r.targetUserId, { name: p.name });
 });
 registerExecutor("delete", async (r) => void (await applyRemove(r.targetUserId)));

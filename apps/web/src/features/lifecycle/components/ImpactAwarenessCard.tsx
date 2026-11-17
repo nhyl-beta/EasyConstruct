@@ -80,7 +80,8 @@ export function ImpactAwarenessCard({ projectCode, className }: { projectCode?: 
       ) : projects.length === 0 ? (
         <p className="text-sm text-muted-foreground">Nothing needs your attention on your projects right now.</p>
       ) : (
-        <div className="space-y-4">
+        // B-16: long advisory text scrolls inside the card instead of stretching the dashboard.
+        <div className="max-h-96 space-y-4 overflow-y-auto pr-1">
           {(showAll ? pg.pageItems : previewProjects(projects, PREVIEW_SIGNALS)).map((p) => (
             <section key={p.projectCode} aria-label={`${p.projectName} advisories`}>
               <h4 className="mb-1.5 flex flex-wrap items-baseline gap-2 text-sm font-medium">

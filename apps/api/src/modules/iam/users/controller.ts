@@ -197,3 +197,21 @@ export const remove = async (
     next(err);
   }
 };
+
+export const changeEmail = async (req: AuthedRequest, res: Response, next: NextFunction) => {
+  try {
+    const { email } = req.body as { email: string };
+    const data = await service.changeEmail(parseIdParam(req.params.id, "id"), email, req.authUser!);
+    if (heldForOwner(res, data)) return;
+    await logAudit({
+      entityType: "user",
+      entityId: String(req.params.id),
+      action: "updated",
+      actor: req.authUser?.name ?? "unknown",
+      summary: `Changed the sign-in email on account ${data.name} to ${data.email}`,
+    });
+    res.json(formatSuccess(data, "Email updated"));
+  } catch (err) {
+    next(err);
+  }
+};

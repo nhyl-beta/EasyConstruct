@@ -209,15 +209,21 @@ export async function createAttendance(input: CreateAttendanceInput): Promise<vo
  * Records HR's verification outcome for a clock-in. `status` is the review
  * verdict (Verified | Flagged | Pending), distinct from `attendanceStatus`
  * (Present | Absent | …) which describes the working day itself.
+ *
+ * `clockOut` is optional and only for a record missing one (e.g. a Manual
+ * entry logged with no time out) — the server recomputes `hours` from it, so
+ * a verified-but-zero-hours record isn't silently left out of payroll.
  */
 export async function setAttendanceVerification(
   id: number,
   status: "Verified" | "Flagged" | "Pending",
   remarks?: string,
+  clockOut?: string,
 ): Promise<void> {
   await apiClient.patch(`/attendance/${id}`, {
     status,
     ...(remarks !== undefined ? { remarks } : {}),
+    ...(clockOut ? { clockOut } : {}),
   });
 }
 

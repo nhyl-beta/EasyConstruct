@@ -61,6 +61,11 @@ router.get(
   requireRole("finance-manager", "project-manager", "admin", "it-designer", "engineer"),
   controller.getBudgetChangeRequests,
 );
+router.get(
+  "/budget-baseline",
+  requireRole("engineer", "project-manager", "finance-manager", "admin"),
+  controller.getBudgetBaseline,
+);
 router.get("/", controller.getAll);
 router.get("/:id", controller.getById);
 // Fix 3.2: read-only forecast of a cost change, same project scoping as the workflow.

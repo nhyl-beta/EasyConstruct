@@ -5,6 +5,7 @@ import { validate } from "../../../core/http/validate.js";
 import {
   createUserSchema,
   linkEmployeeSchema,
+  changeUserEmailSchema,
   setUserPasswordSchema,
   setUserStatusSchema,
   updateUserSchema,
@@ -39,6 +40,9 @@ router.patch(
   validate(setUserStatusSchema),
   controller.setStatus,
 );
+
+// IT changes the sign-in email (updates the linked employee record too). The generic PATCH refuses this on linked accounts.
+router.patch("/:id/email", canManageAccounts, validate(changeUserEmailSchema), controller.changeEmail);
 
 // Administrative password reset. Same gate as the rest of account management:
 // the account holder's own route is POST /api/auth/forgot-password.

@@ -14,6 +14,7 @@ import { projectMembers } from "../../../core/db/schema/project-members.js";
 import { attendance } from "../../../core/db/schema/attendance.js";
 import { assertDemoDatabase } from "../../../../scripts/demo/demo-guard.js";
 import * as service from "./service.js";
+import * as payrollService from "../payroll/service.js";
 
 const tag = `MAN${Date.now().toString(36)}`;
 const P = `ZZ-${tag}`;
@@ -53,6 +54,30 @@ describe("createManualAttendance", () => {
     assert.equal(created.source, "Manual");
     assert.equal(created.photoUrl, "/uploads/test-photo.jpg");
     assert.equal(created.hours, "9.0");
+  });
+
+  test("a verified entry with no time out earns no payroll hours until HR adds one", async () => {
+    // Quick attendance entry's "Time out" is optional, so a Manual record can
+    // reach HR with hours null — and HR's verify dialog can now fill in the
+    // missing clock-out so the day isn't silently dropped from payroll.
+    const logDate = "2026-06-10";
+    const created = await service.createManualAttendance(
+      { employeeId: EMP, projectCode: P, logDate, clockIn: "08:00", photoUrl: "/uploads/no-timeout.jpg" },
+      { role: "site-personnel", userId: sitePersonnel.id, name: sitePersonnel.name },
+    );
+    assert.ok(created, "the record must be created");
+    assert.equal(created.hours, null);
+
+    await service.update(created.id, { status: "Verified" });
+    const beforeFix = await payrollService.getAttendanceSummary(P, logDate, logDate);
+    assert.equal(beforeFix.find((e) => e.employeeId === EMP), undefined, "zero hours must not appear in payroll yet");
+
+    await service.update(created.id, { clockOut: "16:00" });
+    const afterFix = await payrollService.getAttendanceSummary(P, logDate, logDate);
+    const entry = afterFix.find((e) => e.employeeId === EMP);
+    assert.ok(entry, "the day must now count toward payroll");
+    assert.equal(entry!.hoursWorked, 8);
+    assert.equal(entry!.overtimeHours, 0);
   });
 
   test("rejects a second entry for the same worker on the same day", async () => {

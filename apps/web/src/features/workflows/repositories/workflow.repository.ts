@@ -136,6 +136,15 @@ export const WorkflowRepository = {
     return unwrap<Workflow[]>(apiClient.get("/workflows/budget-change-requests"));
   },
 
+  /** B-136: the budget's planned amount for a project + category, or null when no budget exists yet. */
+  async getBudgetBaseline(projectCode: string, category: string): Promise<{ budgetId: number; planned: number } | null> {
+    return unwrap<{ budgetId: number; planned: number } | null>(
+      apiClient.get(
+        `/workflows/budget-baseline?projectCode=${encodeURIComponent(projectCode)}&category=${encodeURIComponent(category)}`,
+      ),
+    );
+  },
+
   /** ai-signals C8: re-runs the decision-support cost comparison on demand. */
   async revalidate(workflowId: number): Promise<Workflow> {
     return unwrap<Workflow>(apiClient.post(`/workflows/${workflowId}/revalidate`, {}));

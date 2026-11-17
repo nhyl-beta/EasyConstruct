@@ -1,7 +1,7 @@
 import { db } from "../../../core/db/connection.js";
 import { users } from "../../../core/db/schema/users.js";
 import { employees } from "../../../core/db/schema/employees.js";
-import { and, asc, eq, ilike, inArray, isNull, isNotNull, or, SQL } from "drizzle-orm";
+import { and, asc, eq, ilike, inArray, isNull, isNotNull, ne, or, SQL } from "drizzle-orm";
 import { countRows } from "../../../core/db/paged.js";
 import { ConflictError } from "../../../core/utils/errors.js";
 import type { NewAccountRow, UpdateUserInput, UserFilters } from "./types.js";
@@ -173,6 +173,35 @@ export const setPassword = async (id: number, passwordHash: string) => {
     .returning(PUBLIC_COLUMNS);
   return updated ?? null;
 };
+
+/** True when another account or another employee record already uses this email (case-insensitive). */
+export const emailTakenByOthers = async (email: string, userId: number) => {
+  const [user] = await db.select({ id: users.id }).from(users).where(and(ilike(users.email, email), ne(users.id, userId))).limit(1);
+  if (user) return true;
+  const [employee] = await db
+    .select({ id: employees.id })
+    .from(employees)
+    .where(and(ilike(employees.email, email), or(isNull(employees.userId), ne(employees.userId, userId))))
+    .limit(1);
+  return !!employee;
+};
+
+/**
+ * Email is the sign-in name and every account belongs to an employee, so the account and its employee record change
+ * together or not at all. Existing sessions end: the person signs in again with the new address.
+ */
+export const changeEmail = async (id: number, email: string) =>
+  db.transaction(async (tx) => {
+    const now = new Date();
+    const [updated] = await tx
+      .update(users)
+      .set({ email, tokensValidAfter: now, updatedAt: now })
+      .where(eq(users.id, id))
+      .returning(PUBLIC_COLUMNS);
+    if (!updated) return null;
+    await tx.update(employees).set({ email, updatedAt: now }).where(eq(employees.userId, id));
+    return updated;
+  });
 
 export const setActive = async (id: number, isActive: boolean) => {
   const [updated] = await db

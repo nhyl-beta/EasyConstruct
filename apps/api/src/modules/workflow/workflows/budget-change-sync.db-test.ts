@@ -12,7 +12,7 @@ import { db } from "../../../core/db/connection.js";
 import { projects } from "../../../core/db/schema/projects.js";
 import { budgets, expenseCategories } from "../../../core/db/schema/finance.js";
 import { assertDemoDatabase } from "../../../../scripts/demo/demo-guard.js";
-import { resolveBudgetIdForLineItems } from "./service.js";
+import { getBudgetBaseline, resolveBudgetIdForLineItems } from "./service.js";
 
 const tag = `DBC${Date.now().toString(36)}`;
 const P = `ZZ-${tag}`;
@@ -60,5 +60,9 @@ describe("resolveBudgetIdForLineItems", () => {
     assert.equal(await resolveBudgetIdForLineItems(P, [{ category: "not-a-real-category" }]), null);
     assert.equal(await resolveBudgetIdForLineItems(P, undefined), null);
     assert.equal(await resolveBudgetIdForLineItems(P, []), null);
+  });
+  test("B-136: the baseline is the budget's planned amount, or null when there is no budget", async () => {
+    assert.deepEqual(await getBudgetBaseline(P, categoryName.toLowerCase()), { budgetId, planned: 1000 });
+    assert.equal(await getBudgetBaseline(P, "not-a-real-category"), null);
   });
 });

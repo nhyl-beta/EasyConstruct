@@ -367,3 +367,20 @@ export const getBudgetChangeRequests = async (
     next(err);
   }
 };
+
+// Pre-fills "Current amount" on a budget change request. The Engineer who raises it cannot read /api/budgets,
+// so this exposes just the planned figure for one project + category, on projects the caller can see.
+export const getBudgetBaseline = async (req: AuthedRequest, res: Response, next: NextFunction) => {
+  try {
+    const projectCode = String(req.query.projectCode ?? "").trim();
+    const category = String(req.query.category ?? "").trim();
+    if (!projectCode || !category) {
+      res.status(HTTP.BAD_REQUEST).json(formatError("projectCode and category are required"));
+      return;
+    }
+    await assertProjectVisible(req.authUser, projectCode, "workflows");
+    res.json(formatSuccess(await service.getBudgetBaseline(projectCode, category), MSG.workflows.retrieved));
+  } catch (err) {
+    next(err);
+  }
+};

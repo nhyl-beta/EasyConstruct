@@ -16,7 +16,7 @@ import { formatSuccess, parsePageRequest, paginate, sendPaged } from "../../../c
 // User Support: any signed-in user except IT files an account-related request and sees only their own. IT Designer
 // alone sees the whole inbox and answers requests (account changes are IT-only everywhere - see iam/users/routes.ts).
 // Admin has no access to other people's requests.
-export const SUPPORT_CATEGORIES = ["password_reset", "email_name_change", "role_access", "cannot_sign_in", "other_account"] as const;
+export const SUPPORT_CATEGORIES = ["password_reset", "email_change", "role_access", "cannot_sign_in", "other_account"] as const;
 export const SUPPORT_STATUSES = ["open", "in_progress", "resolved", "declined"] as const;
 
 const createSchema = z.object({

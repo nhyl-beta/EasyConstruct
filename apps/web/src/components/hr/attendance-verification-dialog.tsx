@@ -23,6 +23,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { AttendanceEntry } from "@/features/hr/attendance-api";
@@ -35,6 +36,7 @@ interface AttendanceVerificationDialogProps {
     id: number,
     status: "Verified" | "Flagged",
     remarks: string,
+    clockOut?: string,
   ) => Promise<void>;
 }
 
@@ -44,11 +46,13 @@ export function AttendanceVerificationDialog({
   onVerify,
 }: AttendanceVerificationDialogProps) {
   const [remarks, setRemarks] = useState("");
+  const [clockOut, setClockOut] = useState("");
   const [saving, setSaving] = useState<"Verified" | "Flagged" | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setRemarks(entry?.remarks ?? "");
+    setClockOut("");
     setError(null);
     setSaving(null);
   }, [entry]);
@@ -63,7 +67,7 @@ export function AttendanceVerificationDialog({
     setSaving(status);
     setError(null);
     try {
-      await onVerify(entry.id, status, remarks.trim());
+      await onVerify(entry.id, status, remarks.trim(), clockOut.trim() || undefined);
       onOpenChange(false);
     } catch (err) {
       setError(
@@ -169,6 +173,21 @@ export function AttendanceVerificationDialog({
                 </p>
               )}
             </section>
+
+            {!entry.clockOut && (
+              <div className="space-y-1.5 md:col-span-2">
+                <Label htmlFor="attendance-clock-out">
+                  Time out (missing — add it so this day counts toward payroll)
+                </Label>
+                <Input
+                  id="attendance-clock-out"
+                  type="time"
+                  value={clockOut}
+                  onChange={(e) => setClockOut(e.target.value)}
+                  className="w-40"
+                />
+              </div>
+            )}
 
             <div className="space-y-1.5 md:col-span-2">
               <Label htmlFor="attendance-remarks">Verification note</Label>
