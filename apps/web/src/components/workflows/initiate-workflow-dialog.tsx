@@ -36,6 +36,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { ProjectPicker } from "@/components/shared/project-picker";
 import { FEATURES } from "@/config/features";
+import { WorkflowRepository } from "@/features/workflows/repositories/workflow.repository";
 import { formatCurrency } from "@/lib/format-currency";
 import {
   useWorkflowInitiation,
@@ -173,6 +174,34 @@ export function InitiateWorkflowDialog({
     setFormError(null);
   }, [open, defaultProjectCode]);
 
+  // B-136: "Current amount" starts at the budget Finance approved for this project + category.
+  // Only empty fields are filled, so a figure the engineer typed is never overwritten.
+  const categoriesKey = lineItems.map((item) => item.category).join("|");
+  useEffect(() => {
+    if (!open || !showLineItems || !projectCode) return;
+    let active = true;
+    lineItems.forEach((item, index) => {
+      if (item.currentAmount.trim() !== "") return;
+      WorkflowRepository.getBudgetBaseline(projectCode, item.category)
+        .then((baseline) => {
+          if (!active || !baseline) return;
+          setLineItems((prev) =>
+            prev.map((row, i) =>
+              i === index && row.category === item.category && row.currentAmount.trim() === ""
+                ? { ...row, currentAmount: String(baseline.planned) }
+                : row,
+            ),
+          );
+        })
+        .catch(() => undefined);
+    });
+    return () => {
+      active = false;
+    };
+    // lineItems is read for the empty-field check only; re-running on every keystroke would refetch.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, showLineItems, projectCode, categoriesKey]);
+
   const updateLineItem = (index: number, patch: Partial<DraftLineItem>) =>
     setLineItems((prev) =>
       prev.map((item, i) => (i === index ? { ...item, ...patch } : item)),
@@ -269,6 +298,16 @@ export function InitiateWorkflowDialog({
             </p>
           )}
 
+          {/* B-180: the project comes first, so the rest of the form is about that project. */}
+          <div className="grid gap-1.5">
+            <Label>Project</Label>
+            <ProjectPicker
+              value={projectCode}
+              onChange={setProjectCode}
+              className="w-full"
+            />
+          </div>
+
           <div className="grid gap-1.5">
             <Label htmlFor="iw-title">{titleLabel}</Label>
             <Input
@@ -277,15 +316,6 @@ export function InitiateWorkflowDialog({
               onChange={(e) => setWorkflowTitle(e.target.value)}
               placeholder={titlePlaceholder}
               disabled={submitting}
-            />
-          </div>
-
-          <div className="grid gap-1.5">
-            <Label>Project</Label>
-            <ProjectPicker
-              value={projectCode}
-              onChange={setProjectCode}
-              className="w-full"
             />
           </div>
 

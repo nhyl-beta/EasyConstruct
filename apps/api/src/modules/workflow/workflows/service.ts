@@ -350,6 +350,16 @@ export const resolveBudgetIdForLineItems = async (
   }
 };
 
+/** B-136: the approved budget for a project + category, used to pre-fill "Current amount" on a budget change request. */
+export const getBudgetBaseline = async (projectCode: string, category: string) => {
+  try {
+    const match = await budgetService.findByProjectAndCategory(projectCode, await resolveActiveCategory(category));
+    return match ? { budgetId: match.id, planned: Number(match.planned) } : null;
+  } catch {
+    return null;
+  }
+};
+
 export const createWorkflow = async (
   input: CreateWorkflowInput,
   createdBy: string,
@@ -414,6 +424,16 @@ export const createWorkflow = async (
   const code = `WF-${1000 + seq}`;
   const budgetId =
     input.budgetId ?? (await resolveBudgetIdForLineItems(input.projectCode, input.lineItems));
+  // B-129/B-134: an approved budget change has to move a real budget, so a request that
+  // cannot be matched to one is refused now instead of completing and changing nothing.
+  if (template.name === "Budget Change Request" && input.lineItems?.length && !budgetId) {
+    const categories = new Set(input.lineItems.map((item) => item.category));
+    throw new ValidationError(
+      categories.size > 1
+        ? "A budget change covers one category. Raise a separate request for each category."
+        : `${[...categories][0]} has no budget on ${input.projectCode} yet. Ask Finance to add it first.`,
+    );
+  }
 
   const workflow = await repo.insertWorkflow({
     code,
@@ -694,14 +714,21 @@ export const decideStage = async (
   // budgets.planned, plus a budget_adjustments row recording the change —
   // rather than the change living only in the workflow's line items.
   const syncLinkedBudgetChange = async () => {
-    if (!owningWorkflow?.budgetId) return;
+    if (!owningWorkflow) return;
     const lineItems = await repo.findLineItemsForWorkflows([workflowId]);
+    // Requests raised before the budget was linked at submission have no budgetId; match it now.
+    const budgetId =
+      owningWorkflow.budgetId ??
+      (owningWorkflow.type === "Budget Change Request" || owningWorkflow.type === "Budget Change"
+        ? await resolveBudgetIdForLineItems(owningWorkflow.projectCode, lineItems)
+        : null);
+    if (!budgetId) return;
     const delta = lineItems.length
       ? lineItems.reduce((sum, item) => sum + (Number(item.requestedAmount) - Number(item.currentAmount)), 0)
       : Number(owningWorkflow.amount ?? 0);
     if (delta === 0) return;
 
-    const budget = await budgetService.getById(owningWorkflow.budgetId);
+    const budget = await budgetService.getById(budgetId);
     const newPlanned = budget.planned + delta;
     await budgetService.update(budget.id, { planned: newPlanned });
     await budgetAdjustmentsService.create({
