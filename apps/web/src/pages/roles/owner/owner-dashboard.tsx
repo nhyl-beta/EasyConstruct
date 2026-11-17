@@ -28,6 +28,7 @@ import { UsefulnessCard } from "@/features/decision-support/UsefulnessCard";
 import { CycleTimesCard } from "@/features/dashboard/components/CycleTimesCard";
 import { OwnerPendingApprovalsCard } from "@/features/owner-approvals/components/OwnerPendingApprovalsCard";
 import { ImpactAwarenessCard } from "@/features/lifecycle/components/ImpactAwarenessCard";
+import { WorkforceSnapshotCard } from "@/features/workforce/components/WorkforceSnapshotCard";
 
 const riskToneClasses: Record<string, string> = {
   high: "text-destructive-strong font-medium",
@@ -113,6 +114,9 @@ export default function OwnerDashboardPage() {
         loading={c.payrollLoading}
         error={c.payrollError}
       />
+
+      {/* Cross-project workforce summary — same card and data path as Admin/HR's dashboards */}
+      <WorkforceSnapshotCard />
 
       {/* ── Main grid — portfolio table + audit trail ── */}
       <section className="grid grid-cols-1 gap-6 xl:grid-cols-3">

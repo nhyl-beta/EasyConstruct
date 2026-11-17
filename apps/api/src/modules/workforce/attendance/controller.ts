@@ -94,6 +94,27 @@ export const markAbsent = async (req: AuthedRequest, res: Response, next: NextFu
   }
 };
 
+export const createManual = async (req: AuthedRequest, res: Response, next: NextFunction) => {
+  try {
+    const data = await service.createManualAttendance(req.body, {
+      role: req.authUser!.role,
+      userId: req.authUser!.id,
+      name: req.authUser!.name,
+    });
+    await logAudit({
+      entityType: "attendance",
+      entityId: String(data?.id ?? ""),
+      action: "created",
+      actor: req.authUser!.name,
+      summary: `Logged attendance for ${req.body.employeeId} on ${req.body.logDate} (${req.body.projectCode})`,
+      projectCode: req.body.projectCode,
+    });
+    res.status(HTTP.CREATED).json(formatSuccess(data, MSG.attendance.created));
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const bulkVerify = async (req: AuthedRequest, res: Response, next: NextFunction) => {
   try {
     const verified = await service.bulkVerify({

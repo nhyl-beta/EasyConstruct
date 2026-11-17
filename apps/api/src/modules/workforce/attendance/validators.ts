@@ -29,6 +29,23 @@ export const createAttendanceSchema = z.object({
   validatedOffline: z.boolean().optional(),
 });
 
+// Site Personnel logging one worker's attendance on their behalf, with a
+// photo attached on the spot — the in-app alternative to a spreadsheet row.
+export const manualAttendanceSchema = z.object({
+  employeeId: z.string().min(1, "Worker ID is required"),
+  projectCode: z.string().min(1, "Project is required").max(50),
+  logDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD"),
+  clockIn: z.string().regex(/^\d{2}:\d{2}$/, "Use HH:MM"),
+  clockOut: z.string().regex(/^\d{2}:\d{2}$/, "Use HH:MM").optional(),
+  attendanceStatus: attendanceStatusEnum.optional(),
+  remarks: z.string().max(500).optional(),
+  photoUrl: z.string().min(1, "A photo is required").max(500),
+  // Site Personnel's own location at the moment of entry, not the worker's
+  // — there's no way to measure where the worker themselves is.
+  latitude: z.number().min(-90).max(90).optional(),
+  longitude: z.number().min(-180).max(180).optional(),
+});
+
 // HR confirms a likely absence from the daily check (fix 2.3).
 export const markAbsentSchema = z.object({
   employeeId: z.string().min(1, "Employee is required"),

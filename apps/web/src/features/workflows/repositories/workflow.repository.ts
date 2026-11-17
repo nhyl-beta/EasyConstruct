@@ -9,6 +9,7 @@ import type {
   UpdateWorkflowInput,
   Workflow,
   WorkflowAttachmentInput,
+  WorkflowLineItemInput,
   WorkflowTemplate,
 } from "../types/workflow.types";
 
@@ -76,10 +77,16 @@ export const WorkflowRepository = {
     );
   },
 
-  /** Only the workflow's own initiator, or admin — enforced server-side. */
-  async resubmitStage(workflowId: number, stageId: number): Promise<Workflow> {
+  /** Only the workflow's own initiator, or admin — enforced server-side.
+   * `title`/`lineItems` are optional: a plain resubmit (no edits) sends
+   * neither, same as before this could carry edits at all. */
+  async resubmitStage(
+    workflowId: number,
+    stageId: number,
+    edits: { title?: string; lineItems?: WorkflowLineItemInput[] } = {},
+  ): Promise<Workflow> {
     return unwrap<Workflow>(
-      apiClient.post(`/workflows/${workflowId}/stages/${stageId}/resubmit`, {}),
+      apiClient.post(`/workflows/${workflowId}/stages/${stageId}/resubmit`, edits),
     );
   },
 

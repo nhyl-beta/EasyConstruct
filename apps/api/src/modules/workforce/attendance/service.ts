@@ -434,6 +434,96 @@ export const markAbsent = async (
 };
 
 /**
+ * Site Personnel logging one worker's attendance on their behalf, with a
+ * photo attached on the spot. Same roster lookup, project-staffing and
+ * duplicate checks as the spreadsheet import (import.ts). The location is
+ * Site Personnel's own device at the moment of entry, not the worker's —
+ * there is no way to measure where the worker themselves is — so it's
+ * evidence of where the entry was made, same spirit as a live clock-in's
+ * geofence check, computed the same way (see createAttendance above).
+ */
+export const createManualAttendance = async (
+  input: {
+    employeeId: string;
+    projectCode: string;
+    logDate: string;
+    clockIn: string;
+    clockOut?: string;
+    attendanceStatus?: string;
+    remarks?: string;
+    photoUrl: string;
+    latitude?: number;
+    longitude?: number;
+  },
+  actor: { role: string; userId: number; name: string },
+) => {
+  const employee = await employeesRepo.findByEmployeeId(input.employeeId);
+  if (!employee) throw new NotFoundError("Worker", input.employeeId);
+
+  const project = await db.select().from(projects).where(eq(projects.code, input.projectCode)).then((rows) => rows[0]);
+  if (!project) throw new NotFoundError("Project", input.projectCode);
+  await assertProjectWritable(input.projectCode);
+  if (!["Construction", "Closeout"].includes(project.status)) {
+    throw new ConflictError(
+      `Attendance can only be logged while the project is in Construction or Closeout (currently ${project.status})`,
+    );
+  }
+
+  // Scoped to the actor's own staffing, not the target worker's account —
+  // most site workers have none (see import.ts's loadProject).
+  if (actor.role === "site-personnel") {
+    const staffed = await projectMemberRepo.findAll({
+      projectCode: input.projectCode,
+      userId: actor.userId,
+      role: "site-personnel",
+    });
+    if (staffed.length === 0) {
+      throw new ForbiddenError(`You are not staffed on ${input.projectCode} as site personnel`);
+    }
+  }
+
+  const existing = await repo.findAll({ employeeId: input.employeeId, dateFrom: input.logDate, dateTo: input.logDate });
+  if (existing.length > 0) {
+    throw new ConflictError(`Attendance for ${employee.name} on ${input.logDate} is already recorded`);
+  }
+
+  const hours = input.clockOut ? computeHours(input.clockIn, input.clockOut) : undefined;
+
+  // Same "Unverified unless actually measured" rule as a live clock-in
+  // (see createAttendance above) — no coordinates, or a project with no
+  // registered site, leaves it Unverified rather than guessing a breach.
+  let geofence = "Unverified";
+  let distanceFromSiteM: number | undefined;
+  if (input.latitude != null && input.longitude != null && project.siteLatitude != null && project.siteLongitude != null) {
+    distanceFromSiteM = Math.round(
+      distanceMeters(input.latitude, input.longitude, Number(project.siteLatitude), Number(project.siteLongitude)),
+    );
+    const radius = project.geofenceRadiusM ?? 300;
+    geofence = distanceFromSiteM <= radius ? "Inside" : "Outside";
+  }
+
+  return repo.create({
+    employeeId: input.employeeId,
+    site: project.name,
+    projectCode: input.projectCode,
+    clockIn: input.clockIn,
+    clockOut: input.clockOut,
+    hours,
+    logDate: input.logDate,
+    attendanceStatus: input.attendanceStatus ?? "Present",
+    geofence,
+    latitude: input.latitude,
+    longitude: input.longitude,
+    distanceFromSiteM,
+    photo: "Pending",
+    photoUrl: input.photoUrl,
+    status: "Pending",
+    source: "Manual",
+    remarks: [`Entered by ${actor.name}`, input.remarks].filter(Boolean).join(" — "),
+  } as Parameters<typeof repo.create>[0]);
+};
+
+/**
  * Ownership + field scoping for Site Personnel.
  *
  * A worker may PATCH attendance only to close out their own still-open

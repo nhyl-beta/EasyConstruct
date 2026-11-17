@@ -25,7 +25,7 @@ export interface AttendanceEntry {
   latitude: number | null;
   longitude: number | null;
   distanceFromSiteM: number | null;
-  /** "Clock-in" (live, photo + geofence) or "Sheet" (imported from a site attendance spreadsheet). */
+  /** "Clock-in" (live, photo + geofence), "Sheet" (imported from a spreadsheet), or "Manual" (entered in-app by Site Personnel on a worker's behalf). */
   source: string;
 }
 
@@ -165,6 +165,19 @@ export async function listAttendancePage(
   return { items: json.data.map((r) => normalize(r, nameLookup)), ...json.meta };
 }
 
+/** Every record matching a filter, fetched a page of 100 at a time (for CSV export). */
+export async function listAttendanceAll(
+  query: Omit<AttendancePageQuery, "page" | "pageSize">,
+  nameLookup: Map<string, { name: string; initials: string }> = new Map(),
+): Promise<AttendanceEntry[]> {
+  const all: AttendanceEntry[] = [];
+  for (let page = 1; ; page++) {
+    const result = await listAttendancePage({ ...query, page, pageSize: 100 }, nameLookup);
+    all.push(...result.items);
+    if (page >= result.pages || result.items.length === 0) return all;
+  }
+}
+
 /** One attendance record by id (the record an "outside the radius" alert points at). */
 export async function getAttendanceRecord(id: number): Promise<{ id: number; employeeId: string; logDate: string }> {
   return unwrap<{ id: number; employeeId: string; logDate: string }>(apiClient.get(`/attendance/${id}`));
@@ -272,4 +285,21 @@ export async function markAbsent(input: {
   remarks?: string;
 }): Promise<void> {
   await apiClient.post("/attendance/mark-absent", input);
+}
+
+/** Site Personnel logging one worker's attendance on their behalf, with a photo attached on the spot. */
+export async function createManualAttendance(input: {
+  employeeId: string;
+  projectCode: string;
+  logDate: string;
+  clockIn: string;
+  clockOut?: string;
+  attendanceStatus?: AttendanceStatus;
+  remarks?: string;
+  photoUrl: string;
+  /** Site Personnel's own location at the moment of entry. */
+  latitude?: number;
+  longitude?: number;
+}): Promise<void> {
+  await apiClient.post("/attendance/manual", input);
 }

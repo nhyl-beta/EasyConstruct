@@ -28,6 +28,7 @@ import type {
   UpdateWorkflowInput,
   WorkflowAttachmentInput,
   WorkflowAttachmentRecord,
+  WorkflowLineItemInput,
   WorkflowLineItemRecord,
   WorkflowWithStages,
 } from "./types.js";
@@ -780,6 +781,11 @@ export const decideStage = async (
 
 export interface ResubmitStageInput {
   attachment?: WorkflowAttachmentInput;
+  /** D4 follow-up: lets the initiator correct the title before resending. */
+  title?: string;
+  /** D4 follow-up: replaces the workflow's cost lines wholesale (only sent
+   * when the resubmitter actually edited them — see the route's schema). */
+  lineItems?: WorkflowLineItemInput[];
 }
 
 /**
@@ -815,6 +821,34 @@ export const resubmitStage = async (
   await assertProjectWritable(workflow.projectCode);
 
   await repo.updateStage(stageId, { status: "current", decidedBy: null, decidedAt: null, comments: null });
+
+  if (input.title) {
+    await repo.updateWorkflow(workflowId, { title: input.title });
+  }
+
+  // Replace wholesale rather than diff — same "describe the whole set, not a
+  // patch to it" shape createWorkflow's own lineItems input uses.
+  if (input.lineItems?.length) {
+    await repo.deleteLineItemsForWorkflow(workflowId);
+    await repo.insertLineItems(
+      input.lineItems.map((item) => ({
+        workflowId,
+        category: item.category,
+        description: item.description,
+        currentAmount: (item.currentAmount ?? 0).toFixed(2),
+        requestedAmount: item.requestedAmount.toFixed(2),
+        quantity: item.quantity != null ? item.quantity.toFixed(3) : null,
+        unit: item.unit ?? null,
+      })),
+    );
+    // Keeps the queue's headline amount in sync with the edited lines —
+    // same formula createWorkflow uses to derive it the first time.
+    const amount = input.lineItems.reduce(
+      (sum, item) => sum + (item.requestedAmount - (item.currentAmount ?? 0)),
+      0,
+    );
+    await repo.updateWorkflow(workflowId, { amount: String(amount) });
+  }
 
   if (input.attachment) {
     await repo.insertAttachments([toAttachmentRow(input.attachment, workflowId, stageId, actor.name)]);

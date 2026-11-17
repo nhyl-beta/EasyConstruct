@@ -46,7 +46,7 @@ import type {
   WorkflowLineItemCategory,
 } from "@/features/workflows/types/workflow.types";
 
-const LINE_ITEM_CATEGORIES: { value: WorkflowLineItemCategory; label: string }[] = [
+export const LINE_ITEM_CATEGORIES: { value: WorkflowLineItemCategory; label: string }[] = [
   { value: "materials", label: "Materials" },
   { value: "labor", label: "Labour" },
   { value: "equipment", label: "Equipment" },

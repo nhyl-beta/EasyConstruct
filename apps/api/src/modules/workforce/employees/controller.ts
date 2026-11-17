@@ -70,6 +70,24 @@ export const getMe = async (req: AuthedRequest, res: Response, next: NextFunctio
   }
 };
 
+// Minimal name/ID lookup for roles that can't read the full employee list
+// (Site Personnel's Quick attendance entry) — only what's needed to resolve
+// a typed name to a Worker ID, none of the fields the full list exposes.
+export const lookup = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const q = String(req.query.q ?? "").trim();
+    if (q.length < 2) {
+      res.json(formatSuccess([], "Workers"));
+      return;
+    }
+    const rows = await service.getAll({ search: q });
+    const data = rows.slice(0, 10).map((e) => ({ employeeId: e.employeeId, name: e.name }));
+    res.json(formatSuccess(data, "Workers"));
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const create = async (
   req: AuthedRequest,
   res: Response,

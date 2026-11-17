@@ -9,6 +9,7 @@ import {
   createWorkflowSchema,
   createWorkflowTemplateSchema,
   decideStageSchema,
+  resubmitStageSchema,
   updateWorkflowSchema,
 } from "./validators.js";
 
@@ -123,6 +124,7 @@ router.patch(
 router.post(
   "/:id/stages/:stageId/resubmit",
   canInitiateWorkflow,
+  validate(resubmitStageSchema),
   controller.resubmitStage,
 );
 
