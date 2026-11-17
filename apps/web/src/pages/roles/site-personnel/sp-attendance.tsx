@@ -18,7 +18,6 @@ import { ProjectMemberRepository } from "@/features/project-members/repositories
 import { imageExtension } from "@/features/uploads/lib/image-extension";
 import { useOfflineAttendanceSync } from "@/features/attendance/offline/useOfflineSync";
 import { enqueueAttendance } from "@/features/attendance/offline/queue";
-import { AttendanceSheetImport } from "@/features/attendance/components/AttendanceSheetImport";
 import { QuickAttendanceEntry } from "@/features/attendance/components/QuickAttendanceEntry";
 
 interface CachedSiteGeofence {
@@ -389,11 +388,6 @@ export default function SPAttendancePage() {
 
         {/* One worker at a time, right now, with a photo. */}
         <QuickAttendanceEntry
-          projects={staffedProjects.filter((p) => ["Construction", "Closeout"].includes(p.status))}
-        />
-
-        {/* Several workers' attendance at once, from an Excel sheet. */}
-        <AttendanceSheetImport
           projects={staffedProjects.filter((p) => ["Construction", "Closeout"].includes(p.status))}
         />
       </PageContent>

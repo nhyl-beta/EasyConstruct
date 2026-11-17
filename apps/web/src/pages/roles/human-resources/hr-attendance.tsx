@@ -26,9 +26,12 @@ import { toast } from "sonner";
 import {
   bulkVerifyAttendance,
   getAttendanceRecord,
+  listAttendanceAll,
   setAttendanceVerification,
   type AttendanceEntry,
 } from "@/features/hr/attendance-api";
+import { listEmployees } from "@/features/hr/hr-api";
+import { downloadCsv } from "@/lib/export-csv";
 import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
 import { useAttendancePaged } from "@/features/hr/hooks/use-attendance-paged";
 import { AttendanceVerificationDialog } from "@/components/hr/attendance-verification-dialog";
@@ -42,6 +45,7 @@ import {
   Camera,
   CheckCircle2,
   Clock,
+  Download,
   FileSpreadsheet,
   MapPin,
   ShieldCheck,
@@ -84,6 +88,7 @@ export default function HRAttendancePage() {
   const [reviewing, setReviewing] = useState<AttendanceEntry | null>(null);
   const [confirmBulk, setConfirmBulk] = useState(false);
   const [bulkBusy, setBulkBusy] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   const { reload } = a;
   const verify = useCallback(
@@ -115,6 +120,49 @@ export default function HRAttendancePage() {
   };
 
   const heatmap = a.heatmap;
+
+  // Everything the current search/filters/date range select, not just the
+  // visible page — same pattern as hr-employees.tsx's Export. No photo column:
+  // just the verification status text (what the table shows), not the image.
+  const handleExportCsv = async () => {
+    setExporting(true);
+    try {
+      const employees = await listEmployees();
+      const nameLookup = new Map(employees.map((e) => [e.id, { name: e.name, initials: e.initials }]));
+      const rows = await listAttendanceAll(
+        {
+          search: a.query.trim() || undefined,
+          verification: a.filters.verification,
+          status: a.filters.status,
+          projectCode: a.filters.project,
+          dateFrom: a.dateFrom || undefined,
+          dateTo: a.dateTo || undefined,
+        },
+        nameLookup,
+      );
+      downloadCsv(
+        "attendance",
+        ["Employee ID", "Name", "Site", "Clock in", "Clock out", "Hours", "Geofence", "Photo status", "Attendance", "Verification", "Source", "Log date", "Remarks"],
+        rows.map((r) => [
+          r.employeeId,
+          r.name,
+          r.site,
+          r.clockIn,
+          r.clockOut ?? "",
+          r.hours,
+          r.geofence,
+          r.photo,
+          r.attendanceStatus,
+          r.status,
+          r.source,
+          r.logDate,
+          r.remarks ?? "",
+        ]),
+      );
+    } finally {
+      setExporting(false);
+    }
+  };
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-6">
@@ -166,11 +214,19 @@ export default function HRAttendancePage() {
               </p>
             </div>
             <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={exporting || a.total === 0}
+                onClick={() => void handleExportCsv()}
+              >
+                <Download className="h-4 w-4" /> {exporting ? "Exporting…" : "Export"}
+              </Button>
               {!readOnly && (<>
               <Button
                 size="sm"
                 variant="outline"
-               
+
                 disabled={a.loading || bulkCount === 0}
                 title={
                   bulkCount === 0

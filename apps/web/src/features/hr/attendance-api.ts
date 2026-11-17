@@ -165,6 +165,19 @@ export async function listAttendancePage(
   return { items: json.data.map((r) => normalize(r, nameLookup)), ...json.meta };
 }
 
+/** Every record matching a filter, fetched a page of 100 at a time (for CSV export). */
+export async function listAttendanceAll(
+  query: Omit<AttendancePageQuery, "page" | "pageSize">,
+  nameLookup: Map<string, { name: string; initials: string }> = new Map(),
+): Promise<AttendanceEntry[]> {
+  const all: AttendanceEntry[] = [];
+  for (let page = 1; ; page++) {
+    const result = await listAttendancePage({ ...query, page, pageSize: 100 }, nameLookup);
+    all.push(...result.items);
+    if (page >= result.pages || result.items.length === 0) return all;
+  }
+}
+
 /** One attendance record by id (the record an "outside the radius" alert points at). */
 export async function getAttendanceRecord(id: number): Promise<{ id: number; employeeId: string; logDate: string }> {
   return unwrap<{ id: number; employeeId: string; logDate: string }>(apiClient.get(`/attendance/${id}`));
