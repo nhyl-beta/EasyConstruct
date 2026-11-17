@@ -4,6 +4,7 @@ import { validate } from "../../../core/http/validate.js";
 import { authenticate, requireRole } from "../../../core/auth/middleware.js";
 import {
   createAttendanceSchema,
+  manualAttendanceSchema,
   markAbsentSchema,
   updateAttendanceSchema,
 } from "./validators.js";
@@ -42,6 +43,10 @@ router.post("/bulk-verify", requireRole("human-resources"), controller.bulkVerif
 // Fix 2.3: exception flags and the one-click "Mark absent". Before "/:id".
 router.get("/exceptions", requireRole("human-resources", "admin"), controller.exceptions);
 router.post("/mark-absent", requireRole("human-resources"), validate(markAbsentSchema), controller.markAbsent);
+// Site Personnel logging one worker's attendance on their behalf, photo
+// attached on the spot — the in-app alternative to a spreadsheet row.
+// Before "/:id" for the same reason as the routes above.
+router.post("/manual", requireRole("site-personnel"), validate(manualAttendanceSchema), controller.createManual);
 router.get("/:id", controller.getById);
 router.post(
   "/",

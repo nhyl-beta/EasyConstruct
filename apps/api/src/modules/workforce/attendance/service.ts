@@ -434,6 +434,76 @@ export const markAbsent = async (
 };
 
 /**
+ * Site Personnel logging one worker's attendance on their behalf, with a
+ * photo attached on the spot. Same roster lookup, project-staffing and
+ * duplicate checks as the spreadsheet import (import.ts), but for a single
+ * worker instead of a bulk upload — no GPS stands behind it either way, only
+ * the photo and HR's own review.
+ */
+export const createManualAttendance = async (
+  input: {
+    employeeId: string;
+    projectCode: string;
+    logDate: string;
+    clockIn: string;
+    clockOut?: string;
+    attendanceStatus?: string;
+    remarks?: string;
+    photoUrl: string;
+  },
+  actor: { role: string; userId: number; name: string },
+) => {
+  const employee = await employeesRepo.findByEmployeeId(input.employeeId);
+  if (!employee) throw new NotFoundError("Worker", input.employeeId);
+
+  const project = await db.select().from(projects).where(eq(projects.code, input.projectCode)).then((rows) => rows[0]);
+  if (!project) throw new NotFoundError("Project", input.projectCode);
+  await assertProjectWritable(input.projectCode);
+  if (!["Construction", "Closeout"].includes(project.status)) {
+    throw new ConflictError(
+      `Attendance can only be logged while the project is in Construction or Closeout (currently ${project.status})`,
+    );
+  }
+
+  // Scoped to the actor's own staffing, not the target worker's account —
+  // most site workers have none (see import.ts's loadProject).
+  if (actor.role === "site-personnel") {
+    const staffed = await projectMemberRepo.findAll({
+      projectCode: input.projectCode,
+      userId: actor.userId,
+      role: "site-personnel",
+    });
+    if (staffed.length === 0) {
+      throw new ForbiddenError(`You are not staffed on ${input.projectCode} as site personnel`);
+    }
+  }
+
+  const existing = await repo.findAll({ employeeId: input.employeeId, dateFrom: input.logDate, dateTo: input.logDate });
+  if (existing.length > 0) {
+    throw new ConflictError(`Attendance for ${employee.name} on ${input.logDate} is already recorded`);
+  }
+
+  const hours = input.clockOut ? computeHours(input.clockIn, input.clockOut) : undefined;
+
+  return repo.create({
+    employeeId: input.employeeId,
+    site: project.name,
+    projectCode: input.projectCode,
+    clockIn: input.clockIn,
+    clockOut: input.clockOut,
+    hours,
+    logDate: input.logDate,
+    attendanceStatus: input.attendanceStatus ?? "Present",
+    geofence: "Unverified",
+    photo: "Pending",
+    photoUrl: input.photoUrl,
+    status: "Pending",
+    source: "Manual",
+    remarks: [`Entered by ${actor.name}`, input.remarks].filter(Boolean).join(" — "),
+  } as Parameters<typeof repo.create>[0]);
+};
+
+/**
  * Ownership + field scoping for Site Personnel.
  *
  * A worker may PATCH attendance only to close out their own still-open

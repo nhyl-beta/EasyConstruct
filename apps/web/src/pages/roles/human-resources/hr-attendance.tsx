@@ -297,6 +297,15 @@ export default function HRAttendancePage() {
                           <FileSpreadsheet className="h-3 w-3" /> Sheet
                         </Badge>
                       )}
+                      {l.source === "Manual" && (
+                        <Badge
+                          variant="outline"
+                          className="mt-1 flex w-fit items-center gap-1 rounded-full text-overline"
+                          title="Logged in-app by Site Personnel, with a photo — no GPS behind it, needs verification"
+                        >
+                          <Camera className="h-3 w-3" /> Manual
+                        </Badge>
+                      )}
                     </TableCell>
                     <TableCell className="font-mono text-xs">{l.clockIn}</TableCell>
                     <TableCell className="font-mono text-xs">{l.clockOut ?? "—"}</TableCell>

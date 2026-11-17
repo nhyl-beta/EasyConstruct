@@ -25,7 +25,7 @@ export interface AttendanceEntry {
   latitude: number | null;
   longitude: number | null;
   distanceFromSiteM: number | null;
-  /** "Clock-in" (live, photo + geofence) or "Sheet" (imported from a site attendance spreadsheet). */
+  /** "Clock-in" (live, photo + geofence), "Sheet" (imported from a spreadsheet), or "Manual" (entered in-app by Site Personnel on a worker's behalf). */
   source: string;
 }
 
@@ -272,4 +272,18 @@ export async function markAbsent(input: {
   remarks?: string;
 }): Promise<void> {
   await apiClient.post("/attendance/mark-absent", input);
+}
+
+/** Site Personnel logging one worker's attendance on their behalf, with a photo attached on the spot. */
+export async function createManualAttendance(input: {
+  employeeId: string;
+  projectCode: string;
+  logDate: string;
+  clockIn: string;
+  clockOut?: string;
+  attendanceStatus?: AttendanceStatus;
+  remarks?: string;
+  photoUrl: string;
+}): Promise<void> {
+  await apiClient.post("/attendance/manual", input);
 }
