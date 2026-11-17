@@ -301,7 +301,7 @@ export default function HRAttendancePage() {
                         <Badge
                           variant="outline"
                           className="mt-1 flex w-fit items-center gap-1 rounded-full text-overline"
-                          title="Logged in-app by Site Personnel, with a photo — no GPS behind it, needs verification"
+                          title="Logged in-app by Site Personnel, with a photo and their own location — needs verification"
                         >
                           <Camera className="h-3 w-3" /> Manual
                         </Badge>

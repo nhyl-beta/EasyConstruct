@@ -284,6 +284,9 @@ export async function createManualAttendance(input: {
   attendanceStatus?: AttendanceStatus;
   remarks?: string;
   photoUrl: string;
+  /** Site Personnel's own location at the moment of entry. */
+  latitude?: number;
+  longitude?: number;
 }): Promise<void> {
   await apiClient.post("/attendance/manual", input);
 }

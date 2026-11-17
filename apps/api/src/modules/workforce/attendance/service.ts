@@ -436,9 +436,11 @@ export const markAbsent = async (
 /**
  * Site Personnel logging one worker's attendance on their behalf, with a
  * photo attached on the spot. Same roster lookup, project-staffing and
- * duplicate checks as the spreadsheet import (import.ts), but for a single
- * worker instead of a bulk upload — no GPS stands behind it either way, only
- * the photo and HR's own review.
+ * duplicate checks as the spreadsheet import (import.ts). The location is
+ * Site Personnel's own device at the moment of entry, not the worker's —
+ * there is no way to measure where the worker themselves is — so it's
+ * evidence of where the entry was made, same spirit as a live clock-in's
+ * geofence check, computed the same way (see createAttendance above).
  */
 export const createManualAttendance = async (
   input: {
@@ -450,6 +452,8 @@ export const createManualAttendance = async (
     attendanceStatus?: string;
     remarks?: string;
     photoUrl: string;
+    latitude?: number;
+    longitude?: number;
   },
   actor: { role: string; userId: number; name: string },
 ) => {
@@ -485,6 +489,19 @@ export const createManualAttendance = async (
 
   const hours = input.clockOut ? computeHours(input.clockIn, input.clockOut) : undefined;
 
+  // Same "Unverified unless actually measured" rule as a live clock-in
+  // (see createAttendance above) — no coordinates, or a project with no
+  // registered site, leaves it Unverified rather than guessing a breach.
+  let geofence = "Unverified";
+  let distanceFromSiteM: number | undefined;
+  if (input.latitude != null && input.longitude != null && project.siteLatitude != null && project.siteLongitude != null) {
+    distanceFromSiteM = Math.round(
+      distanceMeters(input.latitude, input.longitude, Number(project.siteLatitude), Number(project.siteLongitude)),
+    );
+    const radius = project.geofenceRadiusM ?? 300;
+    geofence = distanceFromSiteM <= radius ? "Inside" : "Outside";
+  }
+
   return repo.create({
     employeeId: input.employeeId,
     site: project.name,
@@ -494,7 +511,10 @@ export const createManualAttendance = async (
     hours,
     logDate: input.logDate,
     attendanceStatus: input.attendanceStatus ?? "Present",
-    geofence: "Unverified",
+    geofence,
+    latitude: input.latitude,
+    longitude: input.longitude,
+    distanceFromSiteM,
     photo: "Pending",
     photoUrl: input.photoUrl,
     status: "Pending",

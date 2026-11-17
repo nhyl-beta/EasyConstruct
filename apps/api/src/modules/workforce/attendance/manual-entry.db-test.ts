@@ -77,6 +77,66 @@ describe("createManualAttendance", () => {
     );
   });
 
+  test("computes geofence from the site personnel's own coordinates, not the worker's", async () => {
+    // A project with a registered site: Inside within the radius, Outside past it —
+    // same haversine check createAttendance (live clock-in) already uses.
+    const geoProject = `${P}-GEO`;
+    await db.insert(projects).values({
+      name: "Manual attendance geofence test",
+      code: geoProject,
+      pm: "Test PM",
+      due: "2099-12-31",
+      status: "Construction",
+      siteLatitude: "14.5995",
+      siteLongitude: "120.9842",
+      geofenceRadiusM: 300,
+    });
+    await db.insert(projectMembers).values({
+      projectCode: geoProject,
+      userId: sitePersonnel.id,
+      userName: sitePersonnel.name,
+      role: "site-personnel",
+      addedBy: "test",
+    });
+    try {
+      const inside = await service.createManualAttendance(
+        {
+          employeeId: EMP,
+          projectCode: geoProject,
+          logDate: "2026-06-02",
+          clockIn: "08:00",
+          photoUrl: "/uploads/geo-inside.jpg",
+          latitude: 14.5995,
+          longitude: 120.9842,
+        },
+        { role: "site-personnel", userId: sitePersonnel.id, name: sitePersonnel.name },
+      );
+      assert.ok(inside, "the inside-radius record must be created");
+      assert.equal(inside.geofence, "Inside");
+      assert.equal(inside.status, "Pending");
+
+      const outside = await service.createManualAttendance(
+        {
+          employeeId: EMP,
+          projectCode: geoProject,
+          logDate: "2026-06-03",
+          clockIn: "08:00",
+          photoUrl: "/uploads/geo-outside.jpg",
+          latitude: 14.65,
+          longitude: 121.05,
+        },
+        { role: "site-personnel", userId: sitePersonnel.id, name: sitePersonnel.name },
+      );
+      assert.ok(outside, "the outside-radius record must be created");
+      assert.equal(outside.geofence, "Outside");
+      assert.equal(outside.status, "Pending");
+    } finally {
+      await db.delete(attendance).where(eq(attendance.projectCode, geoProject));
+      await db.delete(projectMembers).where(eq(projectMembers.projectCode, geoProject));
+      await db.delete(projects).where(eq(projects.code, geoProject));
+    }
+  });
+
   test("rejects a site-personnel actor who isn't staffed on the project", async () => {
     // The same site-personnel user used throughout this file — staffed on P,
     // but never added to this second project, so the staffing check alone

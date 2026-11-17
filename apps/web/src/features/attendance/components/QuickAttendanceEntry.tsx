@@ -6,7 +6,7 @@
 // is rejected rather than silently creating a bogus record. Logged for
 // today only: a quick entry made right now shouldn't be able to backdate.
 import { useEffect, useRef, useState } from "react";
-import { Camera, CheckCircle2, Loader2, UserPlus } from "lucide-react";
+import { AlertTriangle, Camera, CheckCircle2, Loader2, MapPin, UserPlus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +25,8 @@ import { createManualAttendance, type AttendanceStatus } from "@/features/hr/att
 // statuses belong to HR's separate "Mark absent" flow, not here.
 const STATUSES: AttendanceStatus[] = ["Present", "Late", "Half Day"];
 const today = () => new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
+
+type GeoState = "idle" | "requesting" | "granted" | "denied";
 
 export function QuickAttendanceEntry({
   projects,
@@ -52,6 +54,27 @@ export function QuickAttendanceEntry({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const resetTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  // Site Personnel's own location, at the moment they're making this entry —
+  // not the worker's, which there is no way to measure. Same device-GPS
+  // request the self clock-in page already uses.
+  const [geoState, setGeoState] = useState<GeoState>("idle");
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+
+  const requestLocation = () => {
+    if (!navigator.geolocation) {
+      setGeoState("denied");
+      return;
+    }
+    setGeoState("requesting");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setGeoState("granted");
+      },
+      () => setGeoState("denied"),
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
+  };
 
   // A worker already in the roster: looking up their name fills in the ID,
   // so it doesn't have to be typed (or remembered) from scratch.
@@ -89,10 +112,11 @@ export function QuickAttendanceEntry({
     reader.readAsDataURL(file);
   };
 
-  const canSubmit = !!projectCode && !!employeeId.trim() && !!clockIn && !!photoFile && !saving && !uploading;
+  const canSubmit =
+    !!projectCode && !!employeeId.trim() && !!clockIn && !!photoFile && geoState === "granted" && !saving && !uploading;
 
   const submit = async () => {
-    if (!photoFile) return;
+    if (!photoFile || !coords) return;
     setSaving(true);
     setError(null);
     setSuccess(null);
@@ -107,6 +131,8 @@ export function QuickAttendanceEntry({
         attendanceStatus,
         remarks: remarks.trim() || undefined,
         photoUrl,
+        latitude: coords.lat,
+        longitude: coords.lng,
       });
       setSuccess(`Attendance logged for ${employeeId.trim().toUpperCase()}. Pending until HR verifies it.`);
       setWorkerName("");
@@ -118,6 +144,8 @@ export function QuickAttendanceEntry({
       setRemarks("");
       setPhotoDataUrl(null);
       setPhotoFile(null);
+      setGeoState("idle");
+      setCoords(null);
       onLogged?.();
       clearTimeout(resetTimer.current);
       resetTimer.current = setTimeout(() => setSuccess(null), 6000);
@@ -213,6 +241,24 @@ export function QuickAttendanceEntry({
             <Label className="text-xs font-medium text-muted-foreground">Remarks (optional)</Label>
             <Input value={remarks} onChange={(e) => setRemarks(e.target.value)} placeholder="Any notes" />
           </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <Button
+            type="button"
+            variant={geoState === "granted" ? "outline" : "default"}
+            onClick={requestLocation}
+            disabled={geoState === "requesting"}
+          >
+            <MapPin className="mr-2 h-4 w-4" />
+            {geoState === "granted" ? "Location verified" : "Verify location"}
+          </Button>
+          {geoState === "granted" && <CheckCircle2 className="h-5 w-5 text-success-strong" />}
+          {geoState === "denied" && (
+            <span className="flex items-center gap-1 text-xs text-destructive-strong">
+              <AlertTriangle className="h-4 w-4" /> Location permission denied — this entry needs it to record where it was made.
+            </span>
+          )}
         </div>
 
         <div className="flex items-center gap-3">

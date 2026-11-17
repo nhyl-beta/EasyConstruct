@@ -40,6 +40,10 @@ export const manualAttendanceSchema = z.object({
   attendanceStatus: attendanceStatusEnum.optional(),
   remarks: z.string().max(500).optional(),
   photoUrl: z.string().min(1, "A photo is required").max(500),
+  // Site Personnel's own location at the moment of entry, not the worker's
+  // — there's no way to measure where the worker themselves is.
+  latitude: z.number().min(-90).max(90).optional(),
+  longitude: z.number().min(-180).max(180).optional(),
 });
 
 // HR confirms a likely absence from the daily check (fix 2.3).
