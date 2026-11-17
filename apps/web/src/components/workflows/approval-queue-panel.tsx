@@ -48,6 +48,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
 import { useAuth } from "@/auth/auth-context";
 import { ApprovalStatCards } from "@/components/workflows/approval-stats-strip";
+import { ResubmitWorkflowDialog } from "@/components/workflows/resubmit-workflow-dialog";
 import { WorkflowDetailDialog } from "@/components/workflows/workflow-detail-dialog";
 import { WorkflowInitiationActions } from "@/components/workflows/workflow-initiation-actions";
 import { useApprovalsPaged } from "@/features/workflows/hooks/useWorkflows";
@@ -188,7 +189,11 @@ export function ApprovalQueuePanel({
   // exact "my item, sent back, resubmit" card for PM/Admin; this mirrors it
   // for every other role that reaches a workflow only through this panel.
   const [myRevisions, setMyRevisions] = useState<Workflow[]>([]);
-  const [resubmittingStageId, setResubmittingStageId] = useState<number | null>(null);
+  // Bug sheet (16 Nov): "Resubmit" used to resend the stage as-is with no
+  // chance to see or change what the reviewer asked for — now it opens
+  // ResubmitWorkflowDialog on the workflow/stage below, which does the
+  // actual resubmitStage call once the engineer confirms (or edits) it.
+  const [resubmitTarget, setResubmitTarget] = useState<{ workflow: Workflow; stageId: number } | null>(null);
   const loadMyRevisions = useCallback(async () => {
     if (!user?.name) return;
     try {
@@ -205,18 +210,6 @@ export function ApprovalQueuePanel({
   useEffect(() => {
     void loadMyRevisions();
   }, [loadMyRevisions]);
-  const resubmitMyStage = async (workflowId: number, stageId: number) => {
-    setResubmittingStageId(stageId);
-    try {
-      await WorkflowRepository.resubmitStage(workflowId, stageId);
-      await loadMyRevisions();
-      toast.success("Resubmitted for review");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not resubmit.");
-    } finally {
-      setResubmittingStageId(null);
-    }
-  };
 
   const pageItemsForBulk = pagination.pageItems;
   const selectedItems = pageItemsForBulk.filter((a) => selected.has(a.stageId));
@@ -283,11 +276,10 @@ export function ApprovalQueuePanel({
                       size="sm"
                       variant="outline"
                       className="h-7 shrink-0 text-xs"
-                      disabled={resubmittingStageId === stage.id}
-                      onClick={() => void resubmitMyStage(workflow.id, stage.id)}
+                      onClick={() => setResubmitTarget({ workflow, stageId: stage.id })}
                     >
                       <RotateCcw className="h-3 w-3" />
-                      {resubmittingStageId === stage.id ? "Resubmitting…" : "Resubmit"}
+                      Resubmit
                     </Button>
                   </div>
                 )),
@@ -637,6 +629,18 @@ export function ApprovalQueuePanel({
         workflowId={detailWorkflowId}
         onOpenChange={(next) => {
           if (!next) setDetailWorkflowId(null);
+        }}
+      />
+
+      <ResubmitWorkflowDialog
+        workflow={resubmitTarget?.workflow ?? null}
+        stageId={resubmitTarget?.stageId ?? null}
+        onOpenChange={(open) => {
+          if (!open) setResubmitTarget(null);
+        }}
+        onResubmitted={() => {
+          void loadMyRevisions();
+          toast.success("Resubmitted for review");
         }}
       />
     </div>

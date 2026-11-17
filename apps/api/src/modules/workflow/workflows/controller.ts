@@ -197,7 +197,7 @@ export const resubmitStage = async (req: AuthedRequest, res: Response, next: Nex
     const data = await service.resubmitStage(
       parseIdParam(req.params.id, "id"),
       parseIdParam(req.params.stageId, "stageId"),
-      { attachment: req.body?.attachment },
+      { attachment: req.body?.attachment, title: req.body?.title, lineItems: req.body?.lineItems },
       actor,
     );
     await logAudit({

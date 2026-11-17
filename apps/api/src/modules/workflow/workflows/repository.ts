@@ -377,6 +377,12 @@ export const insertLineItems = async (
   return db.insert(workflowLineItems).values(rows).returning();
 };
 
+// D4 follow-up: lets resubmitStage replace a workflow's line items wholesale
+// (delete, then insertLineItems) when the resubmitter edited them.
+export const deleteLineItemsForWorkflow = async (workflowId: number) => {
+  await db.delete(workflowLineItems).where(eq(workflowLineItems.workflowId, workflowId));
+};
+
 // ── Workflows by template ──────────────────────────────────────────────────
 
 // Finance's budget-change review lists every request raised from the

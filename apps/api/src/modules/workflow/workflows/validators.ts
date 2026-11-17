@@ -40,6 +40,16 @@ export const createWorkflowSchema = z.object({
 
 export const addAttachmentSchema = workflowAttachmentSchema;
 
+// D4 follow-up: resubmitting a "revision-required" stage can now also carry
+// the edited title/line items, instead of only re-sending the same request
+// that was just sent back. Both optional — a plain resubmit with neither
+// still works exactly as before.
+export const resubmitStageSchema = z.object({
+  attachment: workflowAttachmentSchema.optional(),
+  title: z.string().min(2).max(255).optional(),
+  lineItems: z.array(workflowLineItemSchema).min(1).max(100).optional(),
+});
+
 // One step of a custom workflow template: which role decides at this point,
 // the label shown for it, and the icon key the stage-pipeline UI already
 // knows how to render (see apps/web/src/components/workflows/
