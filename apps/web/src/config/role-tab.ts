@@ -131,6 +131,7 @@ export const ROLE_CONFIGS: Record<string, RoleConfig> = {
     primaryAction: { label: "Audit Trail", icon: ShieldCheck },
 
     tabs: [
+      { label: "Workforce Reports", icon: BarChart2, route: "/workforce-reports" },
       { label: "Portfolio", icon: FolderKanban, route: "/owner/portfolio" },
       { label: "Proposals", icon: FileText, route: "/owner/proposals" },
       { label: "Oversight", icon: ShieldAlert, route: "/owner/oversight" },
@@ -157,6 +158,7 @@ export const ROLE_CONFIGS: Record<string, RoleConfig> = {
       {
         label: "Intelligence",
         items: [
+          { label: "Workforce Reports", icon: BarChart2, route: "/workforce-reports" },
           { label: "Site Reports", icon: BarChart2, route: "/reports" },
         ],
       },

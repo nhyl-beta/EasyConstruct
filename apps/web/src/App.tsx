@@ -285,7 +285,7 @@ function App() {
                   />
                   <Route path="/attendance" element={<AttendanceRouter />} />
                   <Route path="/payroll" element={<RequireRole allow={["human_resources","admin","it_designer"]}><HRPayroll /></RequireRole>} />
-                  <Route path="/workforce-reports" element={<RequireRole allow={["human_resources","admin","it_designer"]}><HRWorkforce /></RequireRole>} />
+                  <Route path="/workforce-reports" element={<RequireRole allow={["human_resources","admin","it_designer","owner"]}><HRWorkforce /></RequireRole>} />
 
                   {/* ── Finance Routes ── */}
                   <Route path="/budget" element={<RequireRole allow={["finance_manager","admin"]}><FinanceBudget /></RequireRole>} />
