@@ -19,6 +19,9 @@ const canReadEmployees = requireRole("human-resources", "finance-manager", "admi
 const canWriteEmployees = requireRole("human-resources");
 
 router.get("/me", controller.getMe);
+// Name lookup for Quick attendance entry (Site Personnel can't read the full
+// list) — before "/:id" for the same reason as "/me".
+router.get("/lookup", requireRole("site-personnel", "human-resources", "finance-manager", "admin", "it-designer"), controller.lookup);
 router.get("/", canReadEmployees, controller.getAll);
 router.post("/", canWriteEmployees, validate(createEmployeeSchema), controller.create);
 router.get("/:id", canReadEmployees, controller.getById);

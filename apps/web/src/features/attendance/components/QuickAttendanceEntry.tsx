@@ -5,7 +5,7 @@
 // against the real roster server-side (same as the sheet import), so a typo
 // is rejected rather than silently creating a bogus record. Logged for
 // today only: a quick entry made right now shouldn't be able to backdate.
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Camera, CheckCircle2, Loader2, UserPlus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -16,9 +16,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { SectionCard } from "@/components/ui/section-card";
 import { CameraCapture } from "@/components/shared/CameraCapture";
 import { useUploadFile } from "@/features/uploads/hooks/use-upload-file";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
+import { employeesRepository, type EmployeeLookupResult } from "@/features/employees/repositories/employees.repository";
 import { createManualAttendance, type AttendanceStatus } from "@/features/hr/attendance-api";
 
-const STATUSES: AttendanceStatus[] = ["Present", "Late", "Absent", "On Leave", "Half Day"];
+// Absent/On Leave don't fit a form that requires a photo and a clock-in time
+// for every entry — a worker who isn't there can't be photographed. Those
+// statuses belong to HR's separate "Mark absent" flow, not here.
+const STATUSES: AttendanceStatus[] = ["Present", "Late", "Half Day"];
 const today = () => new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
 
 export function QuickAttendanceEntry({
@@ -30,7 +35,11 @@ export function QuickAttendanceEntry({
   onLogged?: () => void;
 }) {
   const [projectCode, setProjectCode] = useState("");
+  const [workerName, setWorkerName] = useState("");
   const [employeeId, setEmployeeId] = useState("");
+  const [matches, setMatches] = useState<EmployeeLookupResult[]>([]);
+  const [matchesOpen, setMatchesOpen] = useState(false);
+  const debouncedName = useDebouncedValue(workerName, 300);
   const [clockIn, setClockIn] = useState("");
   const [clockOut, setClockOut] = useState("");
   const [attendanceStatus, setAttendanceStatus] = useState<AttendanceStatus>("Present");
@@ -43,6 +52,34 @@ export function QuickAttendanceEntry({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const resetTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  // A worker already in the roster: looking up their name fills in the ID,
+  // so it doesn't have to be typed (or remembered) from scratch.
+  useEffect(() => {
+    if (debouncedName.trim().length < 2) {
+      setMatches([]);
+      return;
+    }
+    let cancelled = false;
+    employeesRepository
+      .lookup(debouncedName.trim())
+      .then((res) => {
+        if (!cancelled) setMatches(res.data);
+      })
+      .catch(() => {
+        if (!cancelled) setMatches([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedName]);
+
+  const pickMatch = (m: EmployeeLookupResult) => {
+    setWorkerName(m.name);
+    setEmployeeId(m.employeeId);
+    setMatches([]);
+    setMatchesOpen(false);
+  };
 
   const handlePhotoCaptured = (file: File) => {
     setCameraOpen(false);
@@ -72,7 +109,9 @@ export function QuickAttendanceEntry({
         photoUrl,
       });
       setSuccess(`Attendance logged for ${employeeId.trim().toUpperCase()}. Pending until HR verifies it.`);
+      setWorkerName("");
       setEmployeeId("");
+      setMatches([]);
       setClockIn("");
       setClockOut("");
       setAttendanceStatus("Present");
@@ -107,12 +146,43 @@ export function QuickAttendanceEntry({
               emptyText="You are not staffed on any project as site personnel"
             />
           </div>
+          <div className="relative space-y-1.5">
+            <Label className="text-xs font-medium text-muted-foreground">Worker name</Label>
+            <Input
+              value={workerName}
+              onChange={(e) => {
+                setWorkerName(e.target.value);
+                setEmployeeId("");
+              }}
+              onFocus={() => setMatchesOpen(true)}
+              onBlur={() => setTimeout(() => setMatchesOpen(false), 150)}
+              placeholder="Start typing a name…"
+              autoComplete="off"
+            />
+            {matchesOpen && matches.length > 0 && (
+              <ul className="absolute z-10 mt-1 w-full max-h-48 overflow-auto rounded-lg border border-border bg-popover text-sm shadow-md">
+                {matches.map((m) => (
+                  <li key={m.employeeId}>
+                    <button
+                      type="button"
+                      className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left hover:bg-muted/60"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => pickMatch(m)}
+                    >
+                      <span>{m.name}</span>
+                      <span className="font-mono text-overline text-muted-foreground">{m.employeeId}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
           <div className="space-y-1.5">
             <Label className="text-xs font-medium text-muted-foreground">Worker ID</Label>
             <Input
               value={employeeId}
               onChange={(e) => setEmployeeId(e.target.value)}
-              placeholder="e.g. EMP-DEMO-01"
+              placeholder="Fills in from the name, or type it directly"
               className="font-mono"
             />
           </div>
