@@ -86,7 +86,7 @@ export default function AdminDashboardPage() {
       <KpiStrip
         items={[
           { label: "Active workflows", value: `${c.activeWorkflowCount}`, icon: GitBranch, to: "/admin/workflows" },
-          { label: "Completed workflows", value: `${c.completedWorkflowCount}`, icon: FileCheck2, tone: "good", to: "/admin/workflows" },
+          { label: "Completed workflows", value: `${c.completedWorkflowCount}`, icon: FileCheck2, tone: "good", to: "/admin/completed-workflows" },
           {
             label: "Unread notifications",
             value: `${c.unreadNotificationCount}`,

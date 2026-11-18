@@ -22,6 +22,16 @@ import type {
   WorkflowTemplate,
 } from "../types/workflow.types";
 
+/** Completed workflows, a page at a time: the records the dashboard "Completed workflows" card counts. */
+export function useCompletedWorkflows() {
+  const list = useServerList<Workflow>({
+    key: (params) => qk.workflows.list(params),
+    fetchPage: (params) => WorkflowRepository.listActivePage(params),
+    filters: { status: "completed" },
+  });
+  return { workflows: list.pageItems, pagination: list, loading: list.loading } as const;
+}
+
 /**
  * =========================================================
  * Workflow Templates

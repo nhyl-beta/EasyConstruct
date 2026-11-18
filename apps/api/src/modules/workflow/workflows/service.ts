@@ -273,8 +273,9 @@ export const getActiveWorkflows = async (): Promise<WorkflowWithStages[]> => {
 export const getActiveWorkflowsPage = async (
   filters: Omit<repo.WorkflowListFilters, "status">,
   request: PageRequest,
+  status: "active" | "completed" = "active",
 ) => {
-  const scoped = { ...filters, status: "active" };
+  const scoped = { ...filters, status };
   const { items: rows, meta } = await paginate(
     request,
     () => repo.countWorkflows(scoped),
