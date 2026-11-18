@@ -120,9 +120,7 @@ npm run db:migrate --workspace=@easyconstruct/api
 ALLOW_DEMO_RESET=true npm run db:seed
 ```
 
-On Render, do not run migrations by hand: set the API service's **Pre-Deploy Command** to `npm run db:migrate --workspace=@easyconstruct/api`. Each deploy then applies what is pending first, and a failed migration stops the deploy before the new code goes live.
-
-To run them on demand (for example from a phone), use the **Run database migrations** workflow in the Actions tab. It needs the `DATABASE_URL` repository secret, and it defaults to a dry run that only lists what is pending.
+On Render, do not run migrations by hand. The **Run database migrations** workflow (Actions tab) applies what is pending to Neon on every merge to `thesis-final`, and can be run on demand (for example from a phone; it defaults to a dry run that only lists what is pending). It needs the `DATABASE_URL` repository secret. Render's free Docker service has no pre-deploy hook and the production image has no `tsx`, so the migration cannot run there.
 
 The seed command creates demo accounts, one per role. Credentials are listed in [`docs/TEST_ACCOUNTS.md`](docs/TEST_ACCOUNTS.md) and are intended for local development only.
 

@@ -1,9 +1,15 @@
 name: Run database migrations
 
 # Applies the SQL migrations in apps/api/drizzle that the Neon database has not recorded (same script as
-# `npm run db:migrate`). Run it from the Actions tab (works from a phone): leave "dry run" on to only list what
-# is pending. Secret used (name only): DATABASE_URL (the Neon connection string).
+# `npm run db:migrate`). It runs by itself on every merge to thesis-final (the same push that makes Render deploy),
+# and by hand from the Actions tab, where "dry run" (on by default) only lists what is pending. Migrations are
+# additive, so the old API keeps working while the new one builds. Render's free Docker service has no
+# pre-deploy hook and the production image has no tsx, so this is where migrations run.
+# Secret used (name only): DATABASE_URL (the Neon connection string).
 on:
+  push:
+    branches:
+      - thesis-final
   workflow_dispatch:
     inputs:
       dry_run:
@@ -32,8 +38,10 @@ jobs:
       - name: Migrate
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          DRY_RUN: ${{ inputs.dry_run }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || 'false' }}
         run: |
-          test -n "$DATABASE_URL" || { echo "Add the DATABASE_URL repository secret first"; exit 1; }
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::Add the DATABASE_URL repository secret, then re-run this workflow"; exit 1
+          fi
           if [ "$DRY_RUN" = "true" ]; then npm run db:migrate --workspace=@easyconstruct/api -- --dry-run
           else npm run db:migrate --workspace=@easyconstruct/api; fi
