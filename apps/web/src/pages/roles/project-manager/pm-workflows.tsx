@@ -148,7 +148,7 @@ export default function WorkflowsPage() {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <WorkflowStagePipeline stages={workflow.stages} />
+                  <WorkflowStagePipeline stages={workflow.stages} waitingOn={workflow.createdBy} />
                   {canManage &&
                     workflow.stages
                       .filter((stage) => stage.status === "revision-required")

@@ -165,7 +165,7 @@ export default function AdminWorkflowsPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <WorkflowStagePipeline stages={workflow.stages} />
+                <WorkflowStagePipeline stages={workflow.stages} waitingOn={workflow.createdBy} />
               </CardContent>
             </Card>
           ))}
