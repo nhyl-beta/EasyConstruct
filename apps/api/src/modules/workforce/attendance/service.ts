@@ -340,6 +340,8 @@ export const create = async (
 
   const created = await repo.create({
     ...input,
+    // The project's name, so HR can tell two sites on one day apart (the page used to send a fixed "Assigned Site").
+    site: project.name,
     geofence,
     distanceFromSiteM,
     photo: "Verified",

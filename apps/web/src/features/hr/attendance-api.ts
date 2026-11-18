@@ -29,6 +29,9 @@ export interface AttendanceEntry {
   distanceFromSiteM: number | null;
   /** "Clock-in" (live, photo + geofence), "Sheet" (imported from a spreadsheet), or "Manual" (entered in-app by Site Personnel on a worker's behalf). */
   source: string;
+  projectCode: string | null;
+  /** Where the worker clocked out from: Inside | Outside | Unverified, or null when not measured. */
+  clockOutGeofence: string | null;
 }
 
 export interface AttendanceQuery {
@@ -70,6 +73,8 @@ interface BackendAttendance {
   longitude: string | number | null;
   distanceFromSiteM: number | null;
   source?: string;
+  projectCode?: string | null;
+  clockOutGeofence?: string | null;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -103,6 +108,8 @@ function normalize(raw: BackendAttendance, nameLookup: Map<string, { name: strin
     longitude: raw.longitude != null ? Number(raw.longitude) : null,
     distanceFromSiteM: raw.distanceFromSiteM ?? null,
     source: raw.source ?? "Clock-in",
+    projectCode: raw.projectCode ?? null,
+    clockOutGeofence: raw.clockOutGeofence ?? null,
   };
 }
 
