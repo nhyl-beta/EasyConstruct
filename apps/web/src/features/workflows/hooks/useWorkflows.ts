@@ -452,6 +452,8 @@ export interface InitiateWorkflowInput {
   type?: string;
   attachments?: WorkflowAttachmentInput[];
   lineItems?: WorkflowLineItemInput[];
+  /** The budget line a budget change moves, when the category has more than one on the project. */
+  budgetId?: number;
   /** Uploaded after creation — a file needs the workflow id to attach to. */
   file?: File | null;
 }
@@ -523,6 +525,7 @@ export function useWorkflowInitiation(templateName: string) {
           type: input.type,
           attachments: input.attachments,
           lineItems: input.lineItems,
+          budgetId: input.budgetId,
         });
 
         // The upload needs an existing workflow id, so it is a second call.

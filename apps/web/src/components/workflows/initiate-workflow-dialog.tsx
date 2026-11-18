@@ -36,7 +36,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { ProjectPicker } from "@/components/shared/project-picker";
 import { FEATURES } from "@/config/features";
-import { WorkflowRepository } from "@/features/workflows/repositories/workflow.repository";
+import { WorkflowRepository, type BudgetBaseline } from "@/features/workflows/repositories/workflow.repository";
 import { formatCurrency } from "@/lib/format-currency";
 import {
   useWorkflowInitiation,
@@ -202,6 +202,32 @@ export function InitiateWorkflowDialog({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, showLineItems, projectCode, categoriesKey]);
 
+  // A budget change covers one category, so the first line's category decides which
+  // budget lines the Engineer can pick from (a project can hold several per category).
+  const [budgetLines, setBudgetLines] = useState<BudgetBaseline["lines"]>([]);
+  const [budgetId, setBudgetId] = useState("");
+  const firstCategory = lineItems[0]?.category;
+  useEffect(() => {
+    if (!open || !showLineItems || !projectCode || !firstCategory) return;
+    let active = true;
+    WorkflowRepository.getBudgetBaseline(projectCode, firstCategory)
+      .then((baseline) => {
+        if (!active) return;
+        setBudgetLines(baseline?.lines ?? []);
+        setBudgetId(baseline ? String(baseline.budgetId) : "");
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [open, showLineItems, projectCode, firstCategory]);
+
+  const pickBudgetLine = (id: string) => {
+    setBudgetId(id);
+    const line = budgetLines.find((l) => String(l.budgetId) === id);
+    if (line) updateLineItem(0, { currentAmount: String(line.planned) });
+  };
+
   const updateLineItem = (index: number, patch: Partial<DraftLineItem>) =>
     setLineItems((prev) =>
       prev.map((item, i) => (i === index ? { ...item, ...patch } : item)),
@@ -257,6 +283,7 @@ export function InitiateWorkflowDialog({
       }));
       // The headline amount is the net movement the line items add up to, so
       // the queue's amount column and the line items can never disagree.
+      if (budgetLines.length > 1 && budgetId) input.budgetId = Number(budgetId);
       input.amount = input.lineItems.reduce(
         (sum, item) => sum + (item.requestedAmount - (item.currentAmount ?? 0)),
         0,
@@ -522,6 +549,27 @@ export function InitiateWorkflowDialog({
                   </div>
                 );
               })}
+            </div>
+          )}
+
+          {showLineItems && budgetLines.length > 1 && (
+            <div className="grid gap-1.5">
+              <Label>Budget line to change</Label>
+              <Select value={budgetId} onValueChange={pickBudgetLine} disabled={submitting}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a budget line" />
+                </SelectTrigger>
+                <SelectContent>
+                  {budgetLines.map((l) => (
+                    <SelectItem key={l.budgetId} value={String(l.budgetId)}>
+                      {`${formatCurrency(l.planned)} · ${l.owner} · FY ${l.fiscalYear}`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                This project has {budgetLines.length} {firstCategory} budget lines. The approved change is applied to the one you pick.
+              </p>
             </div>
           )}
 

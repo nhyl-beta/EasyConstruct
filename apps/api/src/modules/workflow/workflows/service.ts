@@ -354,8 +354,11 @@ export const resolveBudgetIdForLineItems = async (
 /** B-136: the approved budget for a project + category, used to pre-fill "Current amount" on a budget change request. */
 export const getBudgetBaseline = async (projectCode: string, category: string) => {
   try {
-    const match = await budgetService.findByProjectAndCategory(projectCode, await resolveActiveCategory(category));
-    return match ? { budgetId: match.id, planned: Number(match.planned) } : null;
+    const lines = await budgetService.findAllByProjectAndCategory(projectCode, await resolveActiveCategory(category));
+    const [match] = lines; // newest first
+    return match
+      ? { budgetId: match.id, planned: Number(match.planned), lines: lines.map((b) => ({ budgetId: b.id, planned: Number(b.planned), fiscalYear: b.fiscalYear, owner: b.owner })) }
+      : null;
   } catch {
     return null;
   }
@@ -423,6 +426,11 @@ export const createWorkflow = async (
 
   const seq = await repo.nextWorkflowSeq();
   const code = `WF-${1000 + seq}`;
+  if (input.budgetId) {
+    // The Engineer picks the line, so it must be one of this project's.
+    const picked = await budgetService.getById(input.budgetId);
+    if (picked.project !== input.projectCode) throw new ValidationError("That budget line belongs to a different project");
+  }
   const budgetId =
     input.budgetId ?? (await resolveBudgetIdForLineItems(input.projectCode, input.lineItems));
   // B-129/B-134: an approved budget change has to move a real budget, so a request that
