@@ -43,7 +43,8 @@ export default function ArchitectDesignDetail() {
   // loading/error early returns below rather than after them.
   const designId = c.design?.id;
   const pendingReview = useMemo(
-    () => reviews.find((r) => r.designId === designId && (r.status === "Pending" || r.status === "Changes Requested")),
+    // A review already sent back for changes is decided, not pending: once the revision goes in, the architect asks again.
+    () => reviews.find((r) => r.designId === designId && r.status === "Pending"),
     [reviews, designId],
   );
 
