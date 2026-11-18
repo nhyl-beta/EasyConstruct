@@ -12,6 +12,8 @@ import { projectCodesForPm } from "../projects/service.js";
 import type { CreateIssueInput, IssueFilters } from "./types.js";
 import { FEATURES } from "../../../core/config/features.js";
 import { rankPrecedents, type RankedPrecedent } from "./precedents.js";
+import { suggestResolution, type IssueSuggestions } from "./suggestions.js";
+import { todayManila } from "../../../core/utils/dates.js";
 
 // ai-signals E5: decision support, read-only, never gates issue status.
 export interface IssuePrecedent {
@@ -30,11 +32,10 @@ export const getPrecedentsByCategory = async (category: string): Promise<IssuePr
 // B2: similarity-ranked precedents for one issue (replaces the category-only
 // lookup on the Engineer page). [] when the AI flag is off or nothing clears
 // the similarity floor.
-export const getPrecedentsForIssue = async (
-  issueId: number,
-  actor?: { id: number; name: string; role: string },
-): Promise<RankedPrecedent[]> => {
-  if (!FEATURES.ai) return [];
+type Actor = { id: number; name: string; role: string };
+
+// A PM only sees issues on their own projects.
+const loadIssueFor = async (issueId: number, actor?: Actor) => {
   const issue = await getById(issueId);
   if (actor?.role === "project-manager") {
     const mine = await projectCodesForPm({ role: actor.role, userId: actor.id, name: actor.name });
@@ -42,7 +43,20 @@ export const getPrecedentsForIssue = async (
       throw new ForbiddenError("You can only view issues on projects assigned to you");
     }
   }
+  return issue;
+};
+
+export const getPrecedentsForIssue = async (issueId: number, actor?: Actor): Promise<RankedPrecedent[]> => {
+  if (!FEATURES.ai) return [];
+  const issue = await loadIssueFor(issueId, actor);
   return rankPrecedents(issue, await repo.findResolvedWithNotes());
+};
+
+// Rule-based suggested resolution (playbook, urgency, project context). null when the AI flag is off.
+export const getSuggestionsForIssue = async (issueId: number, actor?: Actor): Promise<IssueSuggestions | null> => {
+  if (!FEATURES.ai) return null;
+  const issue = await loadIssueFor(issueId, actor);
+  return suggestResolution(issue, await repo.suggestionContext(issue, todayManila()));
 };
 
 export const getAll =async (filters: IssueFilters) => repo.findAll(filters);

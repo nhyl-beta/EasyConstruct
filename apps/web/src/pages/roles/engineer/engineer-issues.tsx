@@ -3,7 +3,7 @@ import { DataTablePagination } from "@/components/refine-ui/data-table/data-tabl
 import { useEffect, useState } from "react";
 import { AlertTriangle, CheckCircle2, Clock, ShieldAlert, Sparkles } from "lucide-react";
 import { FEATURES } from "@/config/features";
-import { issuesRepository, type SimilarResolvedIssue } from "@/features/issues/repositories/issues.repository";
+import { issuesRepository, type IssueSuggestions, type SimilarResolvedIssue } from "@/features/issues/repositories/issues.repository";
 import { ReportIssueDialog } from "@/features/issues/components/ReportIssueDialog";
 import { useStaffedProjectCodes } from "@/features/project-members/hooks/use-staffed-project-codes";
 
@@ -83,6 +83,29 @@ function IssueRow({
     };
   }, [issue.id, isOpen]);
 
+  // Rule-based suggested resolution (playbook, urgency, project context). Shows even with no history.
+  const [suggestions, setSuggestions] = useState<IssueSuggestions | null>(null);
+  const [dismissed, setDismissed] = useState(false);
+  useEffect(() => {
+    if (!FEATURES.ai || !isOpen) {
+      setSuggestions(null);
+      return;
+    }
+    let cancelled = false;
+    issuesRepository
+      .suggestionsForIssue(issue.id)
+      .then((res) => {
+        if (!cancelled) setSuggestions(res.data);
+      })
+      .catch(() => {
+        if (!cancelled) setSuggestions(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [issue.id, isOpen]);
+  const canAccept = dirty && nextStatus === "Resolved";
+
   return (
     <div className="space-y-3 border-b border-border p-4 last:border-0">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -161,6 +184,68 @@ function IssueRow({
 
       {issue.status === "Resolved" && issue.siteContext && (
         <p className="text-xs text-muted-foreground">Location: {issue.siteContext}</p>
+      )}
+
+      {FEATURES.ai && isOpen && suggestions && !dismissed && (
+        <div className="rounded-lg border border-ai/20 bg-ai-soft/30 p-2.5 text-xs" aria-label="Suggested resolution">
+          <p className="flex items-center gap-1.5 font-medium text-foreground">
+            <Sparkles className="h-3 w-3 text-ai" />
+            Suggested resolution
+            <DecisionSupportLabel className="ml-auto" />
+          </p>
+          <div className="mt-1.5 space-y-2 text-muted-foreground">
+            <div>
+              <div className="font-medium text-foreground">How urgent</div>
+              <div>{suggestions.urgency.text}</div>
+              <div className="font-mono text-overline">{suggestions.urgency.basis}</div>
+            </div>
+            <div>
+              <div className="font-medium text-foreground">First steps</div>
+              <ul className="space-y-1.5">
+                {suggestions.firstSteps.map((step) => (
+                  <li key={step.text}>
+                    <div>{step.text}</div>
+                    <div className="font-mono text-overline">{step.basis}</div>
+                    {canAccept && (
+                      <button
+                        type="button"
+                        className="mt-0.5 text-primary-strong hover:underline"
+                        onClick={() => {
+                          setNotes((prev) => (prev.trim() ? `${prev.trim()}\n${step.text}` : step.text));
+                          setLocalError(null);
+                          onEdit();
+                        }}
+                      >
+                        Accept into resolution notes
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            {suggestions.context.length > 0 && (
+              <div>
+                <div className="font-medium text-foreground">On this project</div>
+                <ul className="space-y-1.5">
+                  {suggestions.context.map((c) => (
+                    <li key={c.basis}>
+                      <div>{c.text}</div>
+                      <div className="font-mono text-overline">{c.basis}</div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+          <div className="mt-2 flex items-center justify-between gap-2">
+            <span className="text-overline text-muted-foreground">
+              {canAccept ? "" : "Set the status to Resolved to add a step to the notes."}
+            </span>
+            <button type="button" className="text-muted-foreground hover:underline" onClick={() => setDismissed(true)}>
+              Dismiss
+            </button>
+          </div>
+        </div>
       )}
 
       {/* B2: decision support only — never changes what status this issue
