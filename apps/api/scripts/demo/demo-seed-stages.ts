@@ -252,6 +252,7 @@ const TASK_PLAN: { milestone: string; tasks: string[] }[] = [
 async function buildPreConstruction(c: Ctx, opts: { complete: boolean; taskCount: number }) {
   const { engineer, pm, architect } = c.team;
   const eng = engineer!;
+  let materialsRequirementId = 0;
   for (const category of ["Materials", "Specifications"] as const) {
     const f = await pdf(eng, `${c.code}-${category.toLowerCase()}-requirement.pdf`, `${category} requirement - ${c.p.subtitle}`, fileLines(c, `${category} requirement`));
     const req = await api<{ id: number }>("/requirements", eng.token, {
@@ -266,6 +267,7 @@ async function buildPreConstruction(c: Ctx, opts: { complete: boolean; taskCount
       },
     });
     await api(`/requirements/${req.id}`, pm.token, { method: "PATCH", body: { status: "Approved" } });
+    if (category === "Materials") materialsRequirementId = req.id;
   }
 
   // Budget: four lines that add up to the contract value, each through the full approval chain.
@@ -341,6 +343,22 @@ async function buildPreConstruction(c: Ctx, opts: { complete: boolean; taskCount
 
   if (opts.complete) {
     await docRecord(c, "Notice to Proceed", "Notice to Proceed", pm);
+    // C6 (gates.ts): Pre-Construction cannot advance without at least one purchase
+    // request raised. Reuses the Materials requirement approved just above, then
+    // cancels it right away so it never shows up as "unsettled" for the Closeout/
+    // Design-Turnover gate (X6/T5) further down the line — C6 only checks that one
+    // was ever raised, any status counts, per gates.ts's `requests.length > 0`.
+    const pr = await api<{ id: string }>("/finance/purchase-requests", eng.token, {
+      method: "POST",
+      body: {
+        requirementId: materialsRequirementId,
+        title: `Materials procurement - ${c.p.subtitle}`,
+        category: "Materials",
+        lineItems: [{ description: "Rebar, 16mm", qty: 10, unit: "ton", unitCost: 52_000 }],
+        justification: "Initial procurement to begin construction mobilization.",
+      },
+    });
+    await api(`/finance/purchase-requests/${pr.id}/cancel`, eng.token, { method: "POST" });
   }
   await api(`/projects/${c.projectId}`, pm.token, {
     method: "PATCH",
