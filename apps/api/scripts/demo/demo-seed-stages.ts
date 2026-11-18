@@ -49,11 +49,17 @@ const step = (label: string) => console.log(`  ▶ ${label}`);
 async function cleanup(code: string) {
   const q = (sql: string) => pool.query(sql, [code]);
   await q("DELETE FROM validation_results WHERE project_code = $1");
+  // plan_suggestions.proposal_id -> proposals.id has no ON DELETE CASCADE.
+  await q("DELETE FROM plan_suggestions WHERE project_code = $1");
   await q("DELETE FROM proposals WHERE project_code = $1");
   await q("DELETE FROM workflows WHERE project_code = $1");
   await q("DELETE FROM milestones WHERE project_code = $1");
   await q("DELETE FROM tasks WHERE project_code = $1");
   await q("DELETE FROM issues WHERE project_code = $1");
+  // purchase_requests.requirement_id -> requirements.id has no ON DELETE CASCADE either
+  // (buildPreConstruction raises one against the Materials requirement; see gates.ts C6).
+  await q("DELETE FROM procurement_orders WHERE project = $1");
+  await q("DELETE FROM purchase_requests WHERE project = $1");
   await q("DELETE FROM requirements WHERE project = $1");
   await q("DELETE FROM documents WHERE project = $1");
   await q("DELETE FROM engineering_reports WHERE project = $1");
