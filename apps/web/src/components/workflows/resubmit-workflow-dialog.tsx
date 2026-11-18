@@ -66,6 +66,8 @@ export function ResubmitWorkflowDialog({
 }: ResubmitWorkflowDialogProps) {
   const [title, setTitle] = useState("");
   const [lineItems, setLineItems] = useState<DraftLineItem[]>([]);
+  const [file, setFile] = useState<File | null>(null);
+  const [uploaded, setUploaded] = useState(false); // uploaded but the resubmit failed: a retry must not upload twice
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -77,6 +79,8 @@ export function ResubmitWorkflowDialog({
     if (!workflow) return;
     setTitle(workflow.title);
     setLineItems(toDraft(workflow.lineItems));
+    setFile(null);
+    setUploaded(false);
     setFormError(null);
   }, [workflow]);
 
@@ -101,6 +105,10 @@ export function ResubmitWorkflowDialog({
 
     setSubmitting(true);
     try {
+      if (file && !uploaded) {
+        await WorkflowRepository.uploadAttachment(workflow.id, file, file.name);
+        setUploaded(true);
+      }
       await WorkflowRepository.resubmitStage(workflow.id, stageId, {
         title: title.trim(),
         lineItems: hasLineItems
@@ -149,6 +157,20 @@ export function ResubmitWorkflowDialog({
                 onChange={(e) => setTitle(e.target.value)}
                 disabled={submitting}
               />
+            </div>
+
+            <div className="grid gap-1.5">
+              <Label htmlFor="rw-file">Attachment (optional)</Label>
+              <Input
+                id="rw-file"
+                type="file"
+                onChange={(e) => {
+                  setFile(e.target.files?.[0] ?? null);
+                  setUploaded(false);
+                }}
+                disabled={submitting}
+              />
+              <p className="text-xs text-muted-foreground">The revised document or proof the reviewers should see.</p>
             </div>
 
             {hasLineItems && (

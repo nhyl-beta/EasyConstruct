@@ -22,7 +22,7 @@ describe("resubmitStage restarts the review", () => {
 
   before(async () => {
     assertDemoDatabase();
-    for (const role of ["engineer", "finance-manager", "admin"]) {
+    for (const role of ["engineer", "finance-manager", "project-manager", "admin"]) {
       const [row] = await db.select().from(users).where(eq(users.role, role)).limit(1);
       assert.ok(row, `a ${role} user must exist`);
       actors[role] = { id: row!.id, name: row!.name, role };
@@ -57,4 +57,32 @@ describe("resubmitStage restarts the review", () => {
     assert.deepEqual(after.map((s) => s.status), after.map((s) => (s.sequence === 1 ? "done" : s.sequence === 2 ? "current" : "upcoming")));
     assert.ok(after.filter((s) => s.sequence > 1).every((s) => s.decidedBy === null && s.comments === null));
   });
+
+  // Whoever raised the request (Finance and PM can raise one for the Engineer), a revision from the
+  // Finance stage must come back through the chain in order, never straight to the PM stage.
+  for (const initiator of ["finance-manager", "project-manager"]) {
+    test(`raised by ${initiator}: revise at Finance then resubmit restarts in order`, async () => {
+      const admin = actors.admin!;
+      const who = actors[initiator]!;
+      const template = (await repo.findAllTemplates()).find((t) => t.name === "Budget Change Request");
+      const created = await service.createWorkflow(
+        { title: `Order ${initiator} ${tag}`, projectCode: P, templateId: template!.id, type: "Budget Change Request", lineItems: [{ category: "materials", description: "x", currentAmount: 1000, requestedAmount: 1500 }] },
+        who.name, who.role, who.id,
+      );
+      const stages = await repo.findStagesByWorkflow(created.id);
+      const names = stages.map((s) => s.role);
+      const financeIdx = names.indexOf("finance-manager");
+      for (const s of stages.slice(0, financeIdx)) {
+        if ((await repo.findStageById(s.id))!.status === "current") await service.decideStage(created.id, s.id, { decision: "approve", decidedBy: admin.name }, admin.role);
+      }
+      await service.decideStage(created.id, stages[financeIdx]!.id, { decision: "revise", decidedBy: admin.name, comments: "redo" }, admin.role);
+      await service.resubmitStage(created.id, stages[financeIdx]!.id, {}, { role: who.role, name: who.name });
+      const now = await repo.findStagesByWorkflow(created.id);
+      const current = now.filter((s) => s.status === "current");
+      assert.equal(current.length, 1);
+      assert.ok(current[0]!.sequence <= stages[financeIdx]!.sequence, `current stage is ${current[0]!.role}, not past Finance`);
+      assert.ok(now.filter((s) => s.sequence > current[0]!.sequence).every((s) => s.status === "upcoming"));
+      assert.ok(now.filter((s) => s.sequence < current[0]!.sequence).every((s) => s.status === "done"), "only the initiator's auto-approved step precedes the current one");
+    });
+  }
 });
