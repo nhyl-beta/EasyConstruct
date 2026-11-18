@@ -59,15 +59,19 @@ async function main() {
     const recorded = new Set<string>(
       tableExists ? (await client.query(`SELECT hash FROM drizzle.__drizzle_migrations`)).rows.map((r) => r.hash as string) : [],
     );
-    const schemaExists = (await client.query(`SELECT to_regclass('public.projects') AS t`)).rows[0].t !== null;
+    const publicTables = Number((await client.query(`SELECT count(*) AS n FROM pg_tables WHERE schemaname = 'public'`)).rows[0].n);
+    const schemaExists = publicTables > 0;
+    console.log(`Bookkeeping rows: ${recorded.size}; tables in public: ${publicTables}`);
 
     const baselineTag = option("baseline-through");
-    if (recorded.size === 0 && schemaExists && !baselineTag) {
+    // The early migrations (0000 to 0026) cannot run on a database that was built another way, whatever the
+    // bookkeeping says (a half-filled table would otherwise let 0000 run and fail at 0001).
+    const early = all.filter((m) => m.idx <= 26 && !recorded.has(m.hash));
+    if (schemaExists && early.length > 0 && !baselineTag) {
       console.error(
-        "The migration table is empty but the schema already exists, so migrations 0000 onward cannot be run.\n" +
-          "If the older migrations were applied another way, record them as done first:\n" +
-          "  npm --prefix server run db:migrate -- --baseline-through=0026_expense_categories\n" +
-          "(writes bookkeeping rows only), then run db:migrate again.",
+        `The schema already exists but ${early.length} early migration(s) (0000 to 0026) are not recorded, so they cannot be run.\n` +
+          "If they were applied another way, record them as done first (writes bookkeeping rows only), then run again:\n" +
+          "  npm run db:migrate --workspace=@easyconstruct/api -- --baseline-through=<tag of the last migration already applied>",
       );
       process.exit(1);
     }
