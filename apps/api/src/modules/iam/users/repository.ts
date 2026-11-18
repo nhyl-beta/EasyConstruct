@@ -1,7 +1,7 @@
 import { db } from "../../../core/db/connection.js";
 import { users } from "../../../core/db/schema/users.js";
 import { employees } from "../../../core/db/schema/employees.js";
-import { and, asc, eq, ilike, inArray, isNull, isNotNull, ne, or, SQL } from "drizzle-orm";
+import { and, asc, eq, ilike, inArray, isNull, isNotNull, ne, or, sql, SQL } from "drizzle-orm";
 import { countRows } from "../../../core/db/paged.js";
 import { ConflictError } from "../../../core/utils/errors.js";
 import type { NewAccountRow, UpdateUserInput, UserFilters } from "./types.js";
@@ -82,6 +82,12 @@ export const findByEmail = async (email: string) => {
 export const findEmployeeById = async (id: number) => {
   const [employee] = await db.select().from(employees).where(eq(employees.id, id));
   return employee ?? null;
+};
+
+/** Is there an employee record with this name (ignoring case and surrounding spaces)? */
+export const employeeNameExists = async (name: string): Promise<boolean> => {
+  const [row] = await db.select({ id: employees.id }).from(employees).where(sql`lower(trim(${employees.name})) = lower(trim(${name}))`).limit(1);
+  return !!row;
 };
 
 export const findEmployeeByUserId = async (userId: number) => {

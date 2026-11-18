@@ -192,6 +192,11 @@ const validateUpdate = async (id: number, input: UpdateUserInput, current: Await
     throw new ValidationError("This account is linked to an employee record. Change the name on the employee record, or use Change email for the sign-in email");
   }
 
+  // The name of an account is the name of a person on the employee list, never free text.
+  if (input.name !== undefined && input.name !== current.name && !(await repo.employeeNameExists(input.name))) {
+    throw new ValidationError(`${input.name.trim()} is not an employee. Pick a name from the employee list`);
+  }
+
   if (input.email) {
     const owner = await repo.findByEmail(input.email);
     if (owner && owner.id !== id) {

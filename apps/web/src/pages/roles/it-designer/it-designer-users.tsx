@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link2, Mail, Pencil, Plus, Search, Trash2, UserCheck, UserX, UsersRound } from "lucide-react";
+import { Link2, Pencil, Plus, Search, Trash2, UserCheck, UserX, UsersRound } from "lucide-react";
 import { useSearchParams } from "react-router";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ROLE_HIERARCHY } from "@/features/roles/role-hierarchy";
@@ -14,7 +14,6 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { UserAccountDialog } from "@/components/users/user-account-dialog";
 import { LinkEmployeeDialog } from "@/components/users/link-employee-dialog";
-import { ChangeEmailDialog } from "@/components/users/change-email-dialog";
 import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
 import { useRoles } from "@/features/roles/hooks/useRoles";
 import { useUsersPaged } from "@/features/users/hooks/use-users-paged";
@@ -60,7 +59,6 @@ export default function ITDesignerUsersPage() {
   const [linkable, setLinkable] = useState<LinkableEmployee[]>([]);
   const [linkableLoading, setLinkableLoading] = useState(false);
   const [linking, setLinking] = useState<PublicUser | null>(null);
-  const [changingEmail, setChangingEmail] = useState<PublicUser | null>(null);
 
   const loadLinkable = useCallback(async () => {
     setLinkableLoading(true);
@@ -291,10 +289,6 @@ export default function ITDesignerUsersPage() {
                             Link to employee
                           </Button>
                         )}
-                        <Button variant="outline" size="sm" className="text-xs" onClick={() => setChangingEmail(user)}>
-                          <Mail className="mr-1 h-3.5 w-3.5" />
-                          Change email
-                        </Button>
                         <Button
                           variant="ghost"
                           size="sm"
@@ -358,12 +352,6 @@ export default function ITDesignerUsersPage() {
         onLink={linkEmployee}
       />
 
-      <ChangeEmailDialog
-        user={changingEmail}
-        onOpenChange={(open) => !open && setChangingEmail(null)}
-        onChange={async (id, email) => noteIfHeld(await changeEmail(id, email))}
-      />
-
       <UserAccountDialog
         open={dialogOpen}
         user={editing}
@@ -377,6 +365,7 @@ export default function ITDesignerUsersPage() {
           return created;
         }}
         onUpdate={async (id, input) => noteIfHeld(await update(id, input))}
+        onChangeEmail={async (id, email) => noteIfHeld(await changeEmail(id, email))}
         onSetPassword={async (id, password) => noteIfHeld(await setPassword(id, password))}
       />
     </PageContainer>
