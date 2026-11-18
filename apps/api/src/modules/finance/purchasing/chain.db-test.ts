@@ -126,6 +126,11 @@ describe("purchasing chain", () => {
     await assert.rejects(orders.resume(finance, order.id), ConflictError, "already ordered");
 
     await orders.cancel(finance, order.id);
+    await assert.rejects(
+      orders.create(finance, { purchaseRequestId: id, vendor: "Other Co" }),
+      /resume it instead/,
+      "a held order's request cannot get a second order",
+    );
     await prs.cancel(finance, id);
   });
 

@@ -50,6 +50,9 @@ export const procurementService = {
     assertTransition("purchase-request", pr.id, pr.status, "ordered");
     await assertProjectWritable(pr.project);
     if (!pr.category) throw new ValidationError("The request has no category");
+    // A request keeps one order for good (unique index); a held order is reopened with Resume.
+    const existing = await repo.findByRequest(pr.id);
+    if (existing) throw new ConflictError(`${pr.id} already has order ${existing.id} (${existing.status === "cancelled" ? "on hold: resume it instead" : existing.status})`);
 
     const lines = input.lineItems ?? pr.lineItems;
     assertValidLineItems(lines);
