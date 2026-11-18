@@ -21,6 +21,8 @@ const P = `ZZ-${tag}`;
 const EMP = `ZZ-EMP-${tag}`;
 
 let sitePersonnel: { id: number; name: string };
+let selfEmployeeId: string; // the Site Personnel's own employee record
+let createdSelfEmployee = false;
 
 describe("createManualAttendance", () => {
   before(async () => {
@@ -28,6 +30,15 @@ describe("createManualAttendance", () => {
     const [row] = await db.select().from(users).where(eq(users.role, "site-personnel")).limit(1);
     assert.ok(row, "a site-personnel user must exist");
     sitePersonnel = { id: row!.id, name: row!.name };
+
+    const [self] = await db.select().from(employees).where(eq(employees.userId, sitePersonnel.id)).limit(1);
+    if (self) {
+      selfEmployeeId = self.employeeId;
+    } else {
+      selfEmployeeId = `ZZ-SELF-${tag}`;
+      await db.insert(employees).values({ employeeId: selfEmployeeId, name: sitePersonnel.name, initials: "SP", role: "Site Personnel", department: "Construction", site: "Test Site", hiredOn: "2026-01-01", userId: sitePersonnel.id });
+      createdSelfEmployee = true;
+    }
 
     await db.insert(projects).values({ name: "Manual attendance test", code: P, pm: "Test PM", due: "2099-12-31", status: "Construction" });
     await db.insert(employees).values({ employeeId: EMP, name: "Test Worker", initials: "TW", role: "Laborer", department: "Construction", site: "Test Site", hiredOn: "2026-01-01" });
@@ -38,6 +49,7 @@ describe("createManualAttendance", () => {
     await db.delete(attendance).where(eq(attendance.projectCode, P));
     await db.delete(projectMembers).where(eq(projectMembers.projectCode, P));
     await db.delete(employees).where(eq(employees.employeeId, EMP));
+    if (createdSelfEmployee) await db.delete(employees).where(eq(employees.employeeId, selfEmployeeId));
     await db.delete(projects).where(eq(projects.code, P));
   });
 
@@ -102,6 +114,10 @@ describe("createManualAttendance", () => {
     );
   });
 
+  // The Site Personnel's own attendance for a day on a project, as a clock-in would have saved it.
+  const ownAttendance = (projectCode: string, logDate: string, status: string) =>
+    db.insert(attendance).values({ employeeId: selfEmployeeId, site: "Test Site", projectCode, clockIn: "07:30", logDate, geofence: status === "Verified" ? "Inside" : "Unverified", status });
+
   test("computes geofence from the site personnel's own coordinates, not the worker's", async () => {
     // A project with a registered site: Inside within the radius, Outside past it —
     // same haversine check createAttendance (live clock-in) already uses.
@@ -124,6 +140,7 @@ describe("createManualAttendance", () => {
       addedBy: "test",
     });
     try {
+      await ownAttendance(geoProject, "2026-06-02", "Verified");
       const inside = await service.createManualAttendance(
         {
           employeeId: EMP,
@@ -155,6 +172,34 @@ describe("createManualAttendance", () => {
       assert.ok(outside, "the outside-radius record must be created");
       assert.equal(outside.geofence, "Outside");
       assert.equal(outside.status, "Pending");
+    } finally {
+      await db.delete(attendance).where(eq(attendance.projectCode, geoProject));
+      await db.delete(projectMembers).where(eq(projectMembers.projectCode, geoProject));
+      await db.delete(projects).where(eq(projects.code, geoProject));
+    }
+  });
+
+  test("a worker is not verified to the site when the Site Personnel's own attendance is not verified", async () => {
+    const geoProject = `${P}-UNV`;
+    await db.insert(projects).values({ name: "Unverified personnel test", code: geoProject, pm: "Test PM", due: "2099-12-31", status: "Construction", siteLatitude: "14.5995", siteLongitude: "120.9842", geofenceRadiusM: 300 });
+    await db.insert(projectMembers).values({ projectCode: geoProject, userId: sitePersonnel.id, userName: sitePersonnel.name, role: "site-personnel", addedBy: "test" });
+    const atSite = { latitude: 14.5995, longitude: 120.9842 }; // the device is inside the radius either way
+    const actor = { role: "site-personnel", userId: sitePersonnel.id, name: sitePersonnel.name };
+    try {
+      // No attendance of their own that day.
+      const none = await service.createManualAttendance({ employeeId: EMP, projectCode: geoProject, logDate: "2026-06-04", clockIn: "08:00", photoUrl: "/uploads/a.jpg", ...atSite }, actor);
+      assert.equal(none!.geofence, "Unverified");
+      assert.match(none!.remarks ?? "", /not counted/i);
+
+      // Their own record exists but is only Pending (not verified).
+      await ownAttendance(geoProject, "2026-06-05", "Pending");
+      const pending = await service.createManualAttendance({ employeeId: EMP, projectCode: geoProject, logDate: "2026-06-05", clockIn: "08:00", photoUrl: "/uploads/b.jpg", ...atSite }, actor);
+      assert.equal(pending!.geofence, "Unverified");
+
+      // Verified, but on a different project: it does not vouch for this one.
+      await ownAttendance(P, "2026-06-06", "Verified");
+      const elsewhere = await service.createManualAttendance({ employeeId: EMP, projectCode: geoProject, logDate: "2026-06-06", clockIn: "08:00", photoUrl: "/uploads/c.jpg", ...atSite }, actor);
+      assert.equal(elsewhere!.geofence, "Unverified");
     } finally {
       await db.delete(attendance).where(eq(attendance.projectCode, geoProject));
       await db.delete(projectMembers).where(eq(projectMembers.projectCode, geoProject));

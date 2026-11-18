@@ -433,6 +433,14 @@ export const markAbsent = async (
   } as Parameters<typeof repo.create>[0]);
 };
 
+/** True when this person's own attendance for the day, on this project, is Verified (inside the radius or confirmed by HR). */
+const isVerifiedOnSite = async (userId: number, projectCode: string, logDate: string) => {
+  const self = await employeesRepo.findByUserId(userId);
+  if (!self) return false;
+  const own = await repo.findAll({ employeeId: self.employeeId, projectCode, dateFrom: logDate, dateTo: logDate });
+  return own.some((r) => r.status === "Verified");
+};
+
 /**
  * Site Personnel logging one worker's attendance on their behalf, with a
  * photo attached on the spot. Same roster lookup, project-staffing and
@@ -502,6 +510,14 @@ export const createManualAttendance = async (
     geofence = distanceFromSiteM <= radius ? "Inside" : "Outside";
   }
 
+  // The location above is the Site Personnel's own device, so it only vouches for the worker when the Site Personnel
+  // is verified on this project that day. If not, the worker is not verified to the site either; HR confirms it.
+  let notCounted: string | undefined;
+  if (geofence === "Inside" && actor.role === "site-personnel" && !(await isVerifiedOnSite(actor.userId, input.projectCode, input.logDate))) {
+    geofence = "Unverified";
+    notCounted = "Location not counted: the Site Personnel's own attendance is not verified yet";
+  }
+
   return repo.create({
     employeeId: input.employeeId,
     site: project.name,
@@ -519,7 +535,7 @@ export const createManualAttendance = async (
     photoUrl: input.photoUrl,
     status: "Pending",
     source: "Manual",
-    remarks: [`Entered by ${actor.name}`, input.remarks].filter(Boolean).join(" — "),
+    remarks: [`Entered by ${actor.name}`, notCounted, input.remarks].filter(Boolean).join(" — "),
   } as Parameters<typeof repo.create>[0]);
 };
 
