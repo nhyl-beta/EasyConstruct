@@ -21,7 +21,7 @@ import {
 import { validateBlueprintForm, type BlueprintFormValues } from "@/features/blueprint/lib/blueprint-form";
 import { Download, FileText, Folder, Paperclip, Plus, Search, Star, User } from "lucide-react";
 import { checkUploadable, formatBytes, getMaxUploadBytes, uploadLargeFile } from "@/features/uploads/lib/upload-file";
-import { downloadFileUrl } from "@/lib/file-url";
+import { downloadFileUrl, useFileObjectUrl } from "@/lib/file-url";
 import { pdfThumbnail } from "@/features/blueprint/lib/pdf-thumbnail";
 import type { Blueprint, CreateBlueprintInput } from "@/features/blueprint/types/blueprint.types";
 import { architectFolders, filesIn, projectFolders, type DirectoryEntry } from "@/features/blueprint/lib/blueprint-directory";
@@ -191,12 +191,16 @@ function NewBlueprintDialog({
   );
 }
 
-// A PDF shows the page-1 image made at upload; DWG and other types (or older rows) keep the file-type placeholder.
+// A PDF shows the page-1 image made at upload; an image file is shown as itself (read with the caller's token);
+// DWG and other types (or older PDF rows) keep the file-type placeholder.
 function DrawingPreview({ b }: { b: Blueprint }) {
+  const isImage = /^(png|jpe?g|gif|webp|bmp)$/i.test(b.fileType);
+  const { objectUrl } = useFileObjectUrl(b.fileUrl, !b.thumbnail && isImage);
+  const src = b.thumbnail || objectUrl;
   return (
     <div className="flex aspect-[4/3] items-center justify-center overflow-hidden rounded-xl border bg-muted/40 text-xs text-muted-foreground">
-      {b.thumbnail ? (
-        <img src={b.thumbnail} alt={`Preview of ${b.drawingNumber}`} className="h-full w-full bg-white object-contain" />
+      {src ? (
+        <img src={src} alt={`Preview of ${b.drawingNumber}`} className="h-full w-full bg-white object-contain" />
       ) : (
         <><FileText className="mr-1 h-3.5 w-3.5" /> {b.fileType}</>
       )}
