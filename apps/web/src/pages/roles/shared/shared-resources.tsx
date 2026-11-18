@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router";
 import { Download, ExternalLink, FileText, ListChecks } from "lucide-react";
 
 import { PageContainer } from "@/components/refine-ui/views/page-container";
@@ -212,14 +211,6 @@ const TEMPLATES: Template[] = [
 
 // ── Links ──────────────────────────────────────────────────────────────────
 
-const INTERNAL_LINKS = [
-  { to: "/requests", label: "Requests (RFI / RFA)" },
-  { to: "/transmittals", label: "Transmittals" },
-  { to: "/approvals", label: "Approvals" },
-  { to: "/workflows", label: "Workflows" },
-  { to: "/documents", label: "Documents" },
-];
-
 const EXTERNAL_LINKS = [
   { href: "https://www.dpwh.gov.ph", label: "DPWH — Department of Public Works and Highways" },
   { href: "https://www.pcab.gov.ph", label: "PCAB — Philippine Contractors Accreditation Board" },
@@ -264,21 +255,10 @@ export default function SharedResourcesPage() {
           </div>
         </section>
 
-        <section aria-labelledby="res-links" className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <section aria-labelledby="res-links" className="space-y-3">
           <h2 id="res-links" className="sr-only">
             Links
           </h2>
-          <SectionCard title="In this system" subtitle="Jump to the places this guidance refers to.">
-            <ul className="space-y-1.5 text-sm">
-              {INTERNAL_LINKS.map((l) => (
-                <li key={l.to}>
-                  <Link to={l.to} className="text-primary-strong hover:underline">
-                    {l.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </SectionCard>
           <SectionCard title="Government and regulatory" subtitle="Official sites; opens in a new tab.">
             <ul className="space-y-1.5 text-sm">
               {EXTERNAL_LINKS.map((l) => (
