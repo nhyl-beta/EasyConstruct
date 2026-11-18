@@ -1,7 +1,10 @@
 // apps/api/src/issues/repository.ts — NEW
-import { and, desc, eq, isNotNull, ne, SQL } from "drizzle-orm";
+import { and, count, desc, eq, inArray, isNotNull, lt, ne, SQL } from "drizzle-orm";
 import { db } from "../../../core/db/connection.js";
 import { issues } from "../../../core/db/schema/issues.js";
+import { tasks } from "../../../core/db/schema/task.js";
+import { milestones } from "../../../core/db/schema/milestones.js";
+import type { SuggestionContext } from "./suggestions.js";
 import { countRows, groupCount, inCodes, selectPage } from "../../../core/db/paged.js";
 import type { CreateIssueInput, IssueFilters } from "./types.js";
 
@@ -105,6 +108,39 @@ export const findResolvedWithNotes = async () =>
     })
     .from(issues)
     .where(and(eq(issues.status, "Resolved"), isNotNull(issues.resolutionNotes)));
+
+// Project context for the suggestions (suggestions.ts): three counts, no rows.
+export const suggestionContext = async (issue: { id: number; projectCode: string; category: string }, today: string): Promise<SuggestionContext> => {
+  const [[sameCategory], [overdue], [slipping]] = await Promise.all([
+    db
+      .select({ n: count() })
+      .from(issues)
+      .where(
+        and(
+          eq(issues.projectCode, issue.projectCode),
+          eq(issues.category, issue.category),
+          inArray(issues.status, ["Submitted", "Under Review"]),
+          ne(issues.id, issue.id),
+        ),
+      ),
+    db
+      .select({ n: count() })
+      .from(tasks)
+      .where(and(eq(tasks.projectCode, issue.projectCode), ne(tasks.status, "Completed"), isNotNull(tasks.dueDate), lt(tasks.dueDate, today))),
+    db
+      .select({ n: count() })
+      .from(milestones)
+      .where(
+        and(
+          eq(milestones.projectCode, issue.projectCode),
+          inArray(milestones.status, ["active", "at-risk"]),
+          isNotNull(milestones.estimatedCompletionDate),
+          lt(milestones.estimatedCompletionDate, today),
+        ),
+      ),
+  ]);
+  return { sameCategoryOpen: sameCategory!.n, overdueTasks: overdue!.n, slippingMilestones: slipping!.n };
+};
 
 export const updateStatus =async (id: number, status: string, resolutionNotes?: string) => {
   const [updated] = await db

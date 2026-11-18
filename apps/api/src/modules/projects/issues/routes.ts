@@ -17,6 +17,11 @@ router.get(
   requireRole("engineer", "project-manager", "admin"),
   controller.getPrecedentsForIssue,
 );
+router.get(
+  "/:id/suggestions",
+  requireRole("engineer", "project-manager", "admin"),
+  controller.getSuggestionsForIssue,
+);
 router.get("/:id", controller.getById);
 router.post(
   "/",

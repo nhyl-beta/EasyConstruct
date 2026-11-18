@@ -58,6 +58,15 @@ export const getPrecedentsForIssue = async (req: AuthedRequest, res: Response, n
   }
 };
 
+export const getSuggestionsForIssue = async (req: AuthedRequest, res: Response, next: NextFunction) => {
+  try {
+    const data = await service.getSuggestionsForIssue(parseIdParam(req.params.id, "id"), req.authUser);
+    res.json(formatSuccess(data, "Suggested resolution retrieved"));
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const getById =async (req: AuthedRequest, res: Response, next: NextFunction) => {
   try {
     const data = await service.getById(parseIdParam(req.params.id, "id"));

@@ -48,6 +48,13 @@ export interface SimilarResolvedIssue {
   score: number;
 }
 
+/** Rule-based suggested resolution for one open issue; every line names the rule behind it. */
+export interface IssueSuggestions {
+  firstSteps: { text: string; basis: string }[];
+  urgency: { text: string; basis: string };
+  context: { text: string; basis: string }[];
+}
+
 export const issuesRepository = {
   listMine: (): Promise<{ data: IssueRecord[] }> => apiClient.get("/issues"),
   /** ai-signals E5: [] whenever FEATURES.ai is off server-side. */
@@ -56,6 +63,9 @@ export const issuesRepository = {
   /** B2: [] when FEATURES.ai is off server-side or nothing clears the similarity floor. */
   precedentsForIssue: (id: number): Promise<{ data: SimilarResolvedIssue[] }> =>
     apiClient.get(`/issues/${id}/precedents`),
+  /** null when FEATURES.ai is off server-side. */
+  suggestionsForIssue: (id: number): Promise<{ data: IssueSuggestions | null }> =>
+    apiClient.get(`/issues/${id}/suggestions`),
   list: (filters?: { projectCode?: string; status?: string }): Promise<{ data: IssueRecord[] }> => {
     const params = new URLSearchParams();
     if (filters?.projectCode) params.set("projectCode", filters.projectCode);
