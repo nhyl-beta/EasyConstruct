@@ -26,7 +26,7 @@ interface Props {
   onOpenExpense: (expenseId: string) => void;
 }
 
-type Dialog = { kind: "ship" | "pay" | "cancel" | "resume"; order: ProcurementOrder } | null;
+type Dialog = { kind: "ship" | "pay" | "cancel" | "resume" | "void"; order: ProcurementOrder } | null;
 
 /** The payment dialog: invoice number, amount, optional invoice file, and a note when the amount differs. */
 function PayDialog({
@@ -217,6 +217,11 @@ export function ProcurementPanel({ procurement, canAct, onNotice, onOpenExpense 
                               Resume
                             </Button>
                           )}
+                          {o.status === "cancelled" && (
+                            <Button size="sm" variant="outline" className="h-7 px-2 text-xs border-destructive/40 text-destructive-strong" onClick={() => setDialog({ kind: "void", order: o })}>
+                              Cancel order
+                            </Button>
+                          )}
                           {(o.status === "ordered" || o.status === "in-transit") && (
                             <Button size="sm" variant="outline" className="h-7 px-2 text-xs border-destructive/40 text-destructive-strong" onClick={() => setDialog({ kind: "cancel", order: o })}>
                               On hold
@@ -260,6 +265,17 @@ export function ProcurementPanel({ procurement, canAct, onNotice, onOpenExpense 
         destructive
         hideNote
         onSubmit={async () => (dialog ? report(await procurement.cancel(dialog.order.id), "Order on hold. Its request is Approved again.") : null)}
+      />
+
+      <DecisionDialog
+        open={dialog?.kind === "void"}
+        onOpenChange={(open) => !open && setDialog(null)}
+        title={`Cancel ${dialog?.order.id ?? ""}?`}
+        description="The order is cancelled for good and its request is cancelled too. The money it held goes back to the budget. This cannot be undone."
+        confirmLabel="Cancel order"
+        destructive
+        hideNote
+        onSubmit={async () => (dialog ? report(await procurement.voidOrder(dialog.order.id), "Order cancelled. Its request is cancelled too.") : null)}
       />
 
       <DecisionDialog

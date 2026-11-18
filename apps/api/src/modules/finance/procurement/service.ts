@@ -285,4 +285,25 @@ export const procurementService = {
     await logAudit({ entityType: ENTITY, entityId: id, action: "resumed", actor: actor.name, projectCode: order.project });
     return updated;
   },
+
+  /** Cancels a held order for good. Its request is cancelled too and the money it held goes back to the budget. */
+  async voidOrder(actor: Actor, id: string) {
+    requireFinance(actor);
+    const order = await mustFind(id);
+    assertTransition("procurement-order", id, order.status, "voided");
+    await assertProjectWritable(order.project);
+
+    const updated = await db.transaction(async (tx) => {
+      const o = await repo.transition(id, ["cancelled"], { status: "voided" }, tx);
+      if (!o) return undefined;
+      const pr = o.purchaseRequestId ? await prRepo.findById(o.purchaseRequestId, tx) : null;
+      if (pr && (await prRepo.transition(pr.id, ["approved"], { status: "cancelled", committedAmount: 0 }, tx)) && o.category && pr.committedAmount > 0) {
+        await adjustCommitted(tx, o.project, o.category, -pr.committedAmount);
+      }
+      return o;
+    });
+    if (!updated) return lost(id, "cancelled");
+    await logAudit({ entityType: ENTITY, entityId: id, action: "voided", actor: actor.name, projectCode: order.project });
+    return updated;
+  },
 };

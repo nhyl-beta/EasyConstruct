@@ -134,6 +134,19 @@ describe("purchasing chain", () => {
     await prs.cancel(finance, id);
   });
 
+  test("cancel order: a held order is cancelled for good, its request too, and the budget hold is released", async () => {
+    const before = (await line()).committed;
+    const id = await raiseApproved(4); // 4,000
+    const order = await orders.create(finance, { purchaseRequestId: id, vendor: "Void Co" });
+    await assert.rejects(orders.voidOrder(finance, order.id), ConflictError, "only a held order can be cancelled for good");
+    await orders.cancel(finance, order.id);
+    assert.equal((await line()).committed, before + 4_000);
+    const voided = await orders.voidOrder(finance, order.id);
+    assert.equal(voided.status, "voided");
+    assert.equal((await line()).committed, before, "nothing is held any more");
+    await assert.rejects(orders.resume(finance, order.id), ConflictError, "cannot resume a cancelled order");
+  });
+
   test("delivery: the order's creator cannot confirm it; staff on the project can", async () => {
     const id = await raiseApproved(5);
     const order = await orders.create(finance, { purchaseRequestId: id, vendor: "Cement Co" });

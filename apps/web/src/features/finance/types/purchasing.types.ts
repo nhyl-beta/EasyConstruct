@@ -5,7 +5,7 @@
 export const PR_STATUSES = ["pending-pm", "pending-finance", "approved", "rejected", "ordered", "cancelled"] as const;
 export type PurchaseRequestStatus = (typeof PR_STATUSES)[number];
 
-export const ORDER_STATUSES = ["ordered", "in-transit", "delivered", "paid", "cancelled"] as const;
+export const ORDER_STATUSES = ["ordered", "in-transit", "delivered", "paid", "cancelled", "voided"] as const;
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
 
 
