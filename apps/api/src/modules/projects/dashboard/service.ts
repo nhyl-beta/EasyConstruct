@@ -270,8 +270,14 @@ const sitePersonnel = async (actor: SummaryActor) => {
     repo.documentCount(),
   ]);
   const attendanceToday = employee ? await repo.attendanceOn(employee.employeeId, today) : null;
+  const [visited, assigned] = await Promise.all([
+    employee ? repo.projectsVisitedOn(employee.employeeId, today) : 0,
+    repo.siteProjectsAssigned(actor.id),
+  ]);
   return {
     attendanceToday,
+    // B-186: "2 of 4 assigned projects clocked in today"
+    visits: { clockedIn: visited, assigned },
     tasks: { total: taskCounts.total, pending: taskCounts.pending, first: tasks },
     issues: { open: openIssues },
     documents: { count: documents },

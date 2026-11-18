@@ -15,6 +15,7 @@ export interface AttendanceRecord {
   distanceFromSiteM: number | null;
   photoUrl: string | null;
   logDate: string;
+  clockOutGeofence?: string | null;
 }
 
 export interface ClockInInput {
@@ -41,6 +42,6 @@ export const attendanceRepository = {
   clockIn: (input: ClockInInput): Promise<{ data: AttendanceRecord }> =>
     apiClient.post("/attendance", input),
 
-  clockOut: (id: number, clockOut: string): Promise<{ data: AttendanceRecord }> =>
-    apiClient.patch(`/attendance/${id}`, { clockOut }),
+  clockOut: (id: number, clockOut: string, where?: { latitude: number; longitude: number }): Promise<{ data: AttendanceRecord }> =>
+    apiClient.patch(`/attendance/${id}`, { clockOut, clockOutLatitude: where?.latitude, clockOutLongitude: where?.longitude }),
 };

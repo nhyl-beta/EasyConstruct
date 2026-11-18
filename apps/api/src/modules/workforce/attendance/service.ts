@@ -201,7 +201,8 @@ export const create = async (
     dateTo: input.logDate,
   });
 
-  if (existingToday.length > 0) {
+  // One record per employee, project and day: a worker may visit several sites in one day, each with its own proof.
+  if (existingToday.some((r) => r.projectCode === input.projectCode)) {
     // 409 with a stable code: a queued offline entry that hits this will never succeed on retry,
     // and the client drops it on this code (features/attendance/offline/sync-classify.ts).
     throw new AppError(
@@ -209,6 +210,12 @@ export const create = async (
       DUPLICATE_ATTENDANCE_CODE,
       "Attendance for this employee has already been recorded today",
     );
+  }
+
+  // Visits can't overlap: the previous site has to be clocked out of first.
+  const openVisit = existingToday.find((r) => !r.clockOut && r.attendanceStatus !== "Absent");
+  if (openVisit) {
+    throw new ConflictError(`Clock out of ${openVisit.projectCode ?? "your current site"} before clocking in at another project`);
   }
 
   // ---------------------------------------------------------
@@ -506,7 +513,7 @@ export const createManualAttendance = async (
   }
 
   const existing = await repo.findAll({ employeeId: input.employeeId, dateFrom: input.logDate, dateTo: input.logDate });
-  if (existing.length > 0) {
+  if (existing.some((r) => r.projectCode === input.projectCode)) {
     throw new ConflictError(`Attendance for ${employee.name} on ${input.logDate} is already recorded`);
   }
 
@@ -563,7 +570,7 @@ export const createManualAttendance = async (
  * route-level guard lets Site Personnel in, this decides what they may do
  * once inside.
  */
-const SITE_PERSONNEL_UPDATABLE_FIELDS = new Set(["clockOut"]);
+const SITE_PERSONNEL_UPDATABLE_FIELDS = new Set(["clockOut", "clockOutLatitude", "clockOutLongitude"]);
 
 export const assertCanUpdateAttendance = async (
   record: { employeeId: string; clockOut: string | null },
@@ -617,9 +624,20 @@ export const update = async (
     existing.clockOut ??
     undefined;
 
+  // Proof of where the worker left from: measured server-side against this record's own project, like the clock-in.
+  let clockOutGeofence: string | undefined;
+  if (input.clockOutLatitude != null && input.clockOutLongitude != null && existing.projectCode) {
+    const [site] = await db.select().from(projects).where(eq(projects.code, existing.projectCode));
+    if (site?.siteLatitude != null && site?.siteLongitude != null) {
+      const away = distanceMeters(input.clockOutLatitude, input.clockOutLongitude, Number(site.siteLatitude), Number(site.siteLongitude));
+      clockOutGeofence = away <= (site.geofenceRadiusM ?? 300) ? "Inside" : "Outside";
+    } else clockOutGeofence = "Unverified";
+  }
+
   // HR verifying or flagging a clock-in counts as having reviewed it.
   const updated = await repo.update(id, {
     ...input,
+    ...(clockOutGeofence ? { clockOutGeofence } : {}),
     hours: computeHours(
       clockIn,
       clockOut,

@@ -205,7 +205,7 @@ const readWorkbook = async (buffer: Buffer): Promise<RawRow[]> => {
 
 // ── Validation ───────────────────────────────────────────────────────────
 
-const validateRows = async (raw: RawRow[]): Promise<SheetRow[]> => {
+const validateRows = async (raw: RawRow[], projectCode: string): Promise<SheetRow[]> => {
   const today = todayInManila();
   const earliest = new Date(`${today}T00:00:00Z`);
   earliest.setUTCDate(earliest.getUTCDate() - MAX_BACKDATE_DAYS);
@@ -264,7 +264,7 @@ const validateRows = async (raw: RawRow[]): Promise<SheetRow[]> => {
       seen.add(key);
       if (errors.length === 0 || !errors.some((e) => e.startsWith("No worker"))) {
         const existing = await repo.findAll({ employeeId: workerId, dateFrom: date, dateTo: date });
-        if (existing.length > 0) errors.push(`Attendance for ${workerId} on ${date} is already recorded`);
+        if (existing.some((r) => r.projectCode === projectCode)) errors.push(`Attendance for ${workerId} on ${date} is already recorded`);
       }
     }
 
@@ -317,7 +317,7 @@ const buildReport = async (
   actor: { role: string; userId: number },
 ) => {
   const project = await loadProject(projectCode, actor);
-  const rows = await validateRows(await readWorkbook(buffer));
+  const rows = await validateRows(await readWorkbook(buffer), projectCode);
   const validRows = rows.filter((r) => r.errors.length === 0).length;
   const report: SheetReport = {
     projectCode,

@@ -114,10 +114,10 @@ export const detectRecordExceptions = (
     }
   }
 
-  // Duplicates: more than one record for one person on one day.
+  // Duplicates: more than one record for one person on one day at one project (visiting two sites is fine).
   const byPersonDay = new Map<string, AttendanceRow[]>();
   for (const r of rows) {
-    const key = `${r.employeeId}|${r.logDate}`;
+    const key = `${r.employeeId}|${r.logDate}|${r.projectCode}`;
     byPersonDay.set(key, [...(byPersonDay.get(key) ?? []), r]);
   }
   for (const group of byPersonDay.values()) {
@@ -129,7 +129,7 @@ export const detectRecordExceptions = (
         employeeId: r.employeeId,
         logDate: r.logDate,
         projectCode: r.projectCode,
-        message: `${group.length} records for this person on ${r.logDate}.`,
+        message: `${group.length} records for this person on ${r.logDate} at ${r.projectCode ?? 'this project'}.`,
       });
     }
   }

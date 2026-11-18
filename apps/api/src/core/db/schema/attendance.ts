@@ -38,6 +38,10 @@ export const attendance = pgTable("attendance", {
   createdAt: timestamp("created_at").defaultNow(),
   // Set when HR verifies or flags the record (0052); "Resolve flags" lists only unreviewed ones.
   reviewedAt: timestamp("reviewed_at"),
+  // Where the worker clocked out from (0053): proof of leaving each site, measured against the same project's geofence.
+  clockOutLatitude: numeric("clock_out_latitude", { precision: 10, scale: 7 }),
+  clockOutLongitude: numeric("clock_out_longitude", { precision: 10, scale: 7 }),
+  clockOutGeofence: varchar("clock_out_geofence", { length: 20 }),
   // E1: a client-generated UUID an offline-queued clock-in/out carries so a
   // retried sync (the device coming back online more than once before the
   // server ack is confirmed) never creates a duplicate attendance record.
