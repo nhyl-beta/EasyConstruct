@@ -848,7 +848,15 @@ export const resubmitStage = async (
 
   await assertProjectWritable(workflow.projectCode);
 
-  await repo.updateStage(stageId, { status: "current", decidedBy: null, decidedAt: null, comments: null });
+  // A revision restarts the whole review: every stage is cleared and the first one is current again,
+  // so the roles that already approved the old version check the revised one too.
+  // The initiator's own stage (auto-approved when the workflow was raised) stays done.
+  const allStages = await repo.findStagesByWorkflow(workflowId);
+  const toReset = allStages.filter((s) => !(s.sequence === 1 && s.comments?.startsWith("Automatically approved")));
+  for (const [i, s] of toReset.entries()) {
+    await repo.updateStage(s.id, { status: i === 0 ? "current" : "upcoming", decidedBy: null, decidedAt: null, comments: null });
+  }
+  const first = toReset[0] ?? stage;
 
   // The reviewer has it again, so the linked proposal stops reading "Revision Requested" (the review comment stays as history).
   const linkedProposal = await proposalRepository.findByWorkflowId(workflowId);
@@ -887,9 +895,9 @@ export const resubmitStage = async (
   }
 
   await notificationsService.create({
-    recipientRole: stage.role,
+    recipientRole: first.role,
     title: "Workflow resubmitted",
-    body: `"${workflow.title}" (${workflow.code}) was resubmitted and is waiting on your ${stage.roleLabel} decision again.`,
+    body: `"${workflow.title}" (${workflow.code}) was revised and restarts review: it is waiting on your ${first.roleLabel} decision.`,
     link: `/workflows`,
     projectCode: workflow.projectCode,
   });
