@@ -12,6 +12,11 @@ export const procurementRepository = {
     return row ?? null;
   },
 
+  async findByRequest(purchaseRequestId: string, exec: Read = db): Promise<ProcurementOrderRow | null> {
+    const [row] = await exec.select().from(procurementOrders).where(eq(procurementOrders.purchaseRequestId, purchaseRequestId));
+    return row ?? null;
+  },
+
   async findAll(exec: Read = db): Promise<ProcurementOrderRow[]> {
     return exec.select().from(procurementOrders).orderBy(desc(procurementOrders.createdAt));
   },

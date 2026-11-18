@@ -1,4 +1,4 @@
-import { and, eq, ilike, or, type SQL } from "drizzle-orm";
+import { and, desc, eq, ilike, or, type SQL } from "drizzle-orm";
 import { db } from "../../../core/db/connection.js";
 import { budgets } from "../../../core/db/schema/finance.js";
 
@@ -71,6 +71,16 @@ export const findByProjectAndCategory = async (project: string, category: string
   if (rows.length === 0) return null;
   const latest = rows.reduce((a, b) => (a.createdAt > b.createdAt ? a : b));
   return toDto(latest);
+};
+
+/** Every budget line a project has for one category (a category can have several, e.g. across fiscal years). */
+export const findAllByProjectAndCategory = async (project: string, category: string) => {
+  const rows = await db
+    .select()
+    .from(budgets)
+    .where(and(eq(budgets.project, project), eq(budgets.category, category)))
+    .orderBy(desc(budgets.createdAt));
+  return rows.map(toDto);
 };
 
 export const create = async (data: CreateBudgetInput) => {

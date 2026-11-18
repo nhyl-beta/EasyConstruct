@@ -1,4 +1,11 @@
 import { apiClient } from "@/services/api.client";
+
+export interface BudgetBaseline {
+  budgetId: number;
+  planned: number;
+  /** Every budget line the project has for the category, newest first. */
+  lines: { budgetId: number; planned: number; fiscalYear: string; owner: string }[];
+}
 import type {
   ApprovalQueueItem,
   ApprovalScope,
@@ -138,8 +145,8 @@ export const WorkflowRepository = {
   },
 
   /** B-136: the budget's planned amount for a project + category, or null when no budget exists yet. */
-  async getBudgetBaseline(projectCode: string, category: string): Promise<{ budgetId: number; planned: number } | null> {
-    return unwrap<{ budgetId: number; planned: number } | null>(
+  async getBudgetBaseline(projectCode: string, category: string): Promise<BudgetBaseline | null> {
+    return unwrap<BudgetBaseline | null>(
       apiClient.get(
         `/workflows/budget-baseline?projectCode=${encodeURIComponent(projectCode)}&category=${encodeURIComponent(category)}`,
       ),

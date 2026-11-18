@@ -62,7 +62,11 @@ describe("resolveBudgetIdForLineItems", () => {
     assert.equal(await resolveBudgetIdForLineItems(P, []), null);
   });
   test("B-136: the baseline is the budget's planned amount, or null when there is no budget", async () => {
-    assert.deepEqual(await getBudgetBaseline(P, categoryName.toLowerCase()), { budgetId, planned: 1000 });
+    assert.deepEqual(await getBudgetBaseline(P, categoryName.toLowerCase()), {
+      budgetId,
+      planned: 1000,
+      lines: [{ budgetId, planned: 1000, fiscalYear: "2026", owner: "Test" }],
+    });
     assert.equal(await getBudgetBaseline(P, "not-a-real-category"), null);
   });
 });

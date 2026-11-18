@@ -65,6 +65,11 @@ describe("transitions: every pair is checked against the table", () => {
   test("a delivered order can no longer be cancelled", () => {
     assert.equal(canTransition("procurement-order", "delivered", "cancelled"), false);
   });
+
+  test("an order on hold can be resumed, and nothing else leaves it", () => {
+    assert.equal(canTransition("procurement-order", "cancelled", "ordered"), true);
+    assert.equal(canTransition("procurement-order", "cancelled", "delivered"), false);
+  });
 });
 
 describe("where a request starts", () => {

@@ -26,7 +26,7 @@ interface Props {
   onOpenExpense: (expenseId: string) => void;
 }
 
-type Dialog = { kind: "ship" | "pay" | "cancel"; order: ProcurementOrder } | null;
+type Dialog = { kind: "ship" | "pay" | "cancel" | "resume"; order: ProcurementOrder } | null;
 
 /** The payment dialog: invoice number, amount, optional invoice file, and a note when the amount differs. */
 function PayDialog({
@@ -212,6 +212,11 @@ export function ProcurementPanel({ procurement, canAct, onNotice, onOpenExpense 
                               Record payment
                             </Button>
                           )}
+                          {o.status === "cancelled" && (
+                            <Button size="sm" className="h-7 px-2 text-xs" onClick={() => setDialog({ kind: "resume", order: o })}>
+                              Resume
+                            </Button>
+                          )}
                           {(o.status === "ordered" || o.status === "in-transit") && (
                             <Button size="sm" variant="outline" className="h-7 px-2 text-xs border-destructive/40 text-destructive-strong" onClick={() => setDialog({ kind: "cancel", order: o })}>
                               On hold
@@ -255,6 +260,16 @@ export function ProcurementPanel({ procurement, canAct, onNotice, onOpenExpense 
         destructive
         hideNote
         onSubmit={async () => (dialog ? report(await procurement.cancel(dialog.order.id), "Order on hold. Its request is Approved again.") : null)}
+      />
+
+      <DecisionDialog
+        open={dialog?.kind === "resume"}
+        onOpenChange={(open) => !open && setDialog(null)}
+        title={`Resume ${dialog?.order.id ?? ""}?`}
+        description="The order goes back to Ordered and its request is taken off Approved again. It must be marked in transit again."
+        confirmLabel="Resume order"
+        hideNote
+        onSubmit={async () => (dialog ? report(await procurement.resume(dialog.order.id), "Order resumed.") : null)}
       />
 
       <PayDialog

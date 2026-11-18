@@ -21,14 +21,16 @@ let engineer: { id: number; name: string; role: string };
 let templateId: number;
 let budgetId: number;
 const workflowIds: number[] = [];
+const extraBudgetIds: number[] = [];
 
-const raise = async (category: "materials" | "labor", current: number, requested: number) => {
+const raise = async (category: "materials" | "labor", current: number, requested: number, pickedBudgetId?: number) => {
   const created = await service.createWorkflow(
     {
       title: `Budget change ${tag}`,
       projectCode: P,
       templateId,
       type: "Budget Change Request",
+      budgetId: pickedBudgetId,
       lineItems: [{ category, description: "Test line", currentAmount: current, requestedAmount: requested }],
     },
     engineer.name,
@@ -69,6 +71,10 @@ describe("budget change flow", () => {
       await db.delete(workflowStages).where(eq(workflowStages.workflowId, id));
       await db.delete(workflows).where(eq(workflows.id, id));
     }
+    for (const id of extraBudgetIds) {
+      await db.delete(budgetAdjustments).where(eq(budgetAdjustments.budgetId, id));
+      await db.delete(budgets).where(eq(budgets.id, id));
+    }
     await db.delete(budgetAdjustments).where(eq(budgetAdjustments.budgetId, budgetId));
     await db.delete(budgets).where(eq(budgets.id, budgetId));
     await db.delete(projects).where(eq(projects.code, P));
@@ -94,5 +100,23 @@ describe("budget change flow", () => {
     await db.update(workflows).set({ budgetId: null }).where(eq(workflows.id, id));
     await approveAll(id);
     assert.equal(Number(await planned()), 1800);
+  });
+
+  test("with several lines in one category, the picked line is the one that moves", async () => {
+    const [newer] = await db.insert(budgets).values({ project: P, category: "Materials", owner: "Test", planned: 80_000, fiscalYear: "2027" }).returning();
+    extraBudgetIds.push(newer!.id);
+    const [older] = await db.select().from(budgets).where(eq(budgets.id, budgetId));
+    const before = Number(older!.planned);
+    const id = await raise("materials", 80_000, 85_000, newer!.id);
+    await approveAll(id);
+    const [moved] = await db.select().from(budgets).where(eq(budgets.id, newer!.id));
+    assert.equal(Number(moved!.planned), 85_000);
+    assert.equal(Number(await planned()), before, "the other line is untouched");
+  });
+
+  test("a budget line from another project is refused", async () => {
+    const [other] = await db.insert(budgets).values({ project: `${P}-X`, category: "Materials", owner: "Test", planned: 1, fiscalYear: "2026" }).returning();
+    extraBudgetIds.push(other!.id);
+    await assert.rejects(raise("materials", 0, 100, other!.id), /different project/);
   });
 });

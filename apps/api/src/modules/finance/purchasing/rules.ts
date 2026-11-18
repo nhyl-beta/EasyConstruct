@@ -35,7 +35,7 @@ export const ORDER_TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
   "in-transit": ["delivered", "cancelled"],
   delivered: ["paid"],
   paid: [],
-  cancelled: [],
+  cancelled: ["ordered"], // resume: an order on hold goes back to ordered while its request is still waiting
 };
 
 const TABLES = {

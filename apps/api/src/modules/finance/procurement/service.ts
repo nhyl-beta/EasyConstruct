@@ -50,6 +50,9 @@ export const procurementService = {
     assertTransition("purchase-request", pr.id, pr.status, "ordered");
     await assertProjectWritable(pr.project);
     if (!pr.category) throw new ValidationError("The request has no category");
+    // A request keeps one order for good (unique index); a held order is reopened with Resume.
+    const existing = await repo.findByRequest(pr.id);
+    if (existing) throw new ConflictError(`${pr.id} already has order ${existing.id} (${existing.status === "cancelled" ? "on hold: resume it instead" : existing.status})`);
 
     const lines = input.lineItems ?? pr.lineItems;
     assertValidLineItems(lines);
@@ -257,6 +260,29 @@ export const procurementService = {
     });
     if (!updated) return lost(id, "cancelled");
     await logAudit({ entityType: ENTITY, entityId: id, action: "cancelled", actor: actor.name, projectCode: order.project });
+    return updated;
+  },
+
+  /** Takes an order off hold. Only while its request is still Approved (no new order was placed from it). */
+  async resume(actor: Actor, id: string) {
+    requireFinance(actor);
+    const order = await mustFind(id);
+    assertTransition("procurement-order", id, order.status, "ordered");
+    await assertProjectWritable(order.project);
+
+    const updated = await db.transaction(async (tx) => {
+      const pr = order.purchaseRequestId ? await prRepo.findById(order.purchaseRequestId, tx) : null;
+      if (!pr || pr.status !== "approved") {
+        throw new ConflictError(`${id} cannot be resumed: its request is no longer waiting to be ordered`);
+      }
+      const moved = await prRepo.transition(pr.id, ["approved"], { status: "ordered", committedAmount: order.amount }, tx);
+      if (!moved) return undefined;
+      // The request held its full amount while the order was on hold; the order only needs its own.
+      if (order.category && pr.committedAmount > order.amount) await adjustCommitted(tx, order.project, order.category, order.amount - pr.committedAmount);
+      return repo.transition(id, ["cancelled"], { status: "ordered" }, tx);
+    });
+    if (!updated) return lost(id, "resumed");
+    await logAudit({ entityType: ENTITY, entityId: id, action: "resumed", actor: actor.name, projectCode: order.project });
     return updated;
   },
 };

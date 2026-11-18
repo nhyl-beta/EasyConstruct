@@ -22,3 +22,4 @@ procurementRouter.post("/:id/ship", requireRole("finance-manager"), validate(shi
 procurementRouter.post("/:id/deliver", requireRole("engineer", "site-personnel", "project-manager", "admin"), validate(deliverOrderSchema), c.deliver);
 procurementRouter.post("/:id/pay", requireRole("finance-manager"), validate(payOrderSchema), c.pay);
 procurementRouter.post("/:id/cancel", requireRole("finance-manager"), c.cancel);
+procurementRouter.post("/:id/resume", requireRole("finance-manager"), c.resume);
