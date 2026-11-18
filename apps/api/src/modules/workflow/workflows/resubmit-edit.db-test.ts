@@ -9,6 +9,7 @@ import { eq } from "drizzle-orm";
 import { db } from "../../../core/db/connection.js";
 import { projects } from "../../../core/db/schema/projects.js";
 import { users } from "../../../core/db/schema/users.js";
+import { proposals } from "../../../core/db/schema/proposals.js";
 import { budgets } from "../../../core/db/schema/finance.js";
 import { workflows, workflowStages } from "../../../core/db/schema/workflows.js";
 import { assertDemoDatabase } from "../../../../scripts/demo/demo-guard.js";
@@ -60,6 +61,7 @@ describe("resubmitStage with edits", () => {
   });
 
   after(async () => {
+    await db.delete(proposals).where(eq(proposals.projectCode, P));
     await db.delete(workflowStages).where(eq(workflowStages.workflowId, workflowId));
     await db.delete(workflows).where(eq(workflows.id, workflowId));
     await db.delete(budgets).where(eq(budgets.project, P));
@@ -105,5 +107,18 @@ describe("resubmitStage with edits", () => {
       before.lineItems.map((li) => li.description),
     );
     assert.equal(after.stages.find((s) => s.id === revising!.id)!.status, "current");
+  });
+
+  test("resubmitting moves a linked proposal off 'Revision Requested' (and leaves other statuses alone)", async () => {
+    const [prop] = await db
+      .insert(proposals)
+      .values({ proposalId: `PR-${tag}`.slice(0, 20), title: "Linked proposal", projectCode: P, submittedBy: "Test", status: "Revision Requested", workflowId })
+      .returning();
+    const [current] = (await repo.findStagesByWorkflow(workflowId)).filter((s) => s.status === "current");
+    await service.decideStage(workflowId, current!.id, { decision: "revise", decidedBy: finance.name }, finance.role);
+    const [revising] = (await repo.findStagesByWorkflow(workflowId)).filter((s) => s.status === "revision-required");
+    await service.resubmitStage(workflowId, revising!.id, {}, { role: engineer.role, name: engineer.name });
+    const [after] = await db.select().from(proposals).where(eq(proposals.id, prop!.id));
+    assert.equal(after!.status, "In Review");
   });
 });

@@ -850,6 +850,10 @@ export const resubmitStage = async (
 
   await repo.updateStage(stageId, { status: "current", decidedBy: null, decidedAt: null, comments: null });
 
+  // The reviewer has it again, so the linked proposal stops reading "Revision Requested" (the review comment stays as history).
+  const linkedProposal = await proposalRepository.findByWorkflowId(workflowId);
+  if (linkedProposal?.status === "Revision Requested") await proposalRepository.update(linkedProposal.id, { status: "In Review" });
+
   if (input.title) {
     await repo.updateWorkflow(workflowId, { title: input.title });
   }

@@ -54,6 +54,7 @@ import { FEATURES } from "@/config/features";
 import { SplitDetailLayout, selectedRowClass } from "@/components/detail-panel/DetailPanel";
 import { useSelectedParam } from "@/hooks/use-selected-param";
 import { ProposalDetailPanel } from "@/features/proposals/ProposalDetailPanel";
+import { ProposalAttachments } from "@/pages/roles/consultant/proposal-attachments";
 
 interface ValidationResult {
   passed: boolean;
@@ -117,33 +118,66 @@ function AttachFileButton({ proposal, busy, onPick }: { proposal: Proposal; busy
 }
 
 /**
- * B-160: a proposal the consultant sent back ("Revision Requested") had no
- * way to resubmit it — the generic workflow resubmit action only lived on
- * the PM's Workflows page. Looks up the workflow's revision-required stage
- * and resubmits it, same as pm-workflows.tsx does.
+ * A proposal the consultant sent back ("Revision Requested"): attach the revised file that justifies the
+ * new plan, then resubmit it to the reviewer. Lives in the detail panel, next to the review comment.
  */
-function RespondButton({ proposal }: { proposal: Proposal }) {
+function ReviseAndResubmit({ proposal, onDone }: { proposal: Proposal; onDone: () => void }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [file, setFile] = useState<File | null>(null);
+  const [uploaded, setUploaded] = useState(false); // upload done but resubmit failed: a retry must not upload twice
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleClick = async () => {
-    if (proposal.workflowId == null) return;
+  const submit = async () => {
+    if (!file || proposal.workflowId == null) return;
     setBusy(true);
+    setError(null);
     try {
       const workflow = await WorkflowRepository.getById(proposal.workflowId);
       const stage = workflow.stages.find((s) => s.status === "revision-required");
-      if (stage) {
-        await WorkflowRepository.resubmitStage(workflow.id, stage.id);
+      if (!stage) throw new Error("This proposal is not waiting on a revision.");
+      if (!uploaded) {
+        await WorkflowRepository.uploadAttachment(workflow.id, file, file.name);
+        setUploaded(true);
       }
+      await WorkflowRepository.resubmitStage(workflow.id, stage.id);
+      setFile(null);
+      setUploaded(false);
+      onDone();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not resubmit the proposal");
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <Button variant="outline" size="sm" className="h-7 text-xs" disabled={busy} title="Resubmit for review" onClick={() => void handleClick()}>
-      <RotateCcw className="h-3 w-3" />
-      {busy ? "Resubmitting…" : "Respond"}
-    </Button>
+    <div className="flex w-full flex-col gap-2">
+      <p className="text-xs text-muted-foreground">The reviewer asked for a revision. Attach the revised file, then resubmit it for review.</p>
+      <input
+        ref={inputRef}
+        type="file"
+        className="sr-only"
+        tabIndex={-1}
+        aria-label={`Revised file for ${proposal.proposalId}`}
+        onChange={(e) => {
+          setFile(e.target.files?.[0] ?? null);
+          setUploaded(false);
+          e.target.value = "";
+        }}
+      />
+      <div className="flex flex-wrap items-center gap-2">
+        <Button variant="outline" size="sm" disabled={busy} onClick={() => inputRef.current?.click()}>
+          <Paperclip className="h-3.5 w-3.5" />
+          <span className="max-w-[12rem] truncate">{file ? file.name : "Choose revised file"}</span>
+        </Button>
+        <Button size="sm" disabled={!file || busy} onClick={() => void submit()}>
+          <RotateCcw className="h-3.5 w-3.5" />
+          {busy ? "Resubmitting…" : "Resubmit for review"}
+        </Button>
+      </div>
+      {error && <p role="alert" className="text-xs text-destructive-strong">{error}</p>}
+    </div>
   );
 }
 
@@ -562,6 +596,8 @@ export default function ArchitectProposals() {
               onSelectRelated={(p) => selectProposal(p.id)}
               onClose={closePanel}
               inSheet={inSheet}
+              contentExtra={<ProposalAttachments key={selectedProposal.updatedAt} proposal={selectedProposal} />}
+              actions={canRespond(selectedProposal) ? <ReviseAndResubmit proposal={selectedProposal} onDone={c.refresh} /> : undefined}
             />
           )
         }
@@ -690,7 +726,6 @@ export default function ArchitectProposals() {
                           onPick={(picked) => void designSubmission.attachFile(proposal.proposalId, proposal.workflowId as number, picked)}
                         />
                       )}
-                      {canRespond(proposal) && <RespondButton proposal={proposal} />}
                       <Button
                         variant="ghost"
                         size="icon"
