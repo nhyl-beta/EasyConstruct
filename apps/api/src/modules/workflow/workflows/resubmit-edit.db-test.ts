@@ -9,6 +9,7 @@ import { eq } from "drizzle-orm";
 import { db } from "../../../core/db/connection.js";
 import { projects } from "../../../core/db/schema/projects.js";
 import { users } from "../../../core/db/schema/users.js";
+import { budgets } from "../../../core/db/schema/finance.js";
 import { workflows, workflowStages } from "../../../core/db/schema/workflows.js";
 import { assertDemoDatabase } from "../../../../scripts/demo/demo-guard.js";
 import * as repo from "./repository.js";
@@ -33,6 +34,8 @@ describe("resubmitStage with edits", () => {
     engineer = await who("engineer");
     finance = await who("finance-manager");
     await db.insert(projects).values({ name: "Resubmit edit test", code: P, pm: finance.name, pmUserId: finance.id, due: "2099-12-31", status: "Construction" });
+    // A budget change needs a budget to change; submitting without one is refused (B-129/B-134).
+    await db.insert(budgets).values({ project: P, category: "Materials", owner: finance.name, planned: 1000, fiscalYear: "2026" });
     const template = (await repo.findAllTemplates()).find((t) => t.name === "Budget Change Request");
     assert.ok(template, "the Budget Change Request template must be seeded");
 
@@ -59,6 +62,7 @@ describe("resubmitStage with edits", () => {
   after(async () => {
     await db.delete(workflowStages).where(eq(workflowStages.workflowId, workflowId));
     await db.delete(workflows).where(eq(workflows.id, workflowId));
+    await db.delete(budgets).where(eq(budgets.project, P));
     await db.delete(projects).where(eq(projects.code, P));
   });
 
