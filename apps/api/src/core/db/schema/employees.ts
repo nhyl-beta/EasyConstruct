@@ -37,3 +37,10 @@ export const employees = pgTable("employees", {
 
 export type Employee = typeof employees.$inferSelect;
 export type NewEmployee = typeof employees.$inferInsert;
+// HR-managed department list (0051). employees.department stays free text; this is what the picker offers.
+export const departments = pgTable("departments", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  nameKey: varchar("name_key", { length: 100 }).notNull().unique(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});

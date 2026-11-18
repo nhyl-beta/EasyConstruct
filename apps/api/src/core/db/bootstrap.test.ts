@@ -48,8 +48,8 @@ describe("reference data steps", () => {
   });
   test("the steps come from the migration files, in order, and each is idempotent", () => {
     const steps = dataSteps(migrations);
-    assert.deepEqual([...new Set(steps.map((s) => s.tag))], ["0022_design_delivery", "0026_expense_categories", "0034_document_types", "0040_pm_reports"]);
-    assert.equal(steps.length, 4);
+    assert.deepEqual([...new Set(steps.map((s) => s.tag))], ["0022_design_delivery", "0026_expense_categories", "0034_document_types", "0040_pm_reports", "0051_departments"]);
+    assert.equal(steps.length, 5);
     for (const s of steps) {
       assert.match(s.sql, /^INSERT INTO/);
       assert.ok(!s.sql.endsWith(";"));

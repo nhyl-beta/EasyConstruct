@@ -61,6 +61,7 @@ export const DATA_MIGRATIONS: Readonly<Record<string, "inserts" | "empty-noop">>
   "0026_expense_categories": "inserts", // expense_categories: the 10 starting categories
   "0034_document_types": "inserts", // document_types: the starting types
   "0040_pm_reports": "inserts", // document_types: Daily, Weekly and Monthly Report
+  "0051_departments": "inserts", // departments: the starting list (on an old database it also copies the departments employees use)
 };
 
 const DATA_LINE = /^[ \t]*(INSERT[ \t]+INTO|UPDATE[ \t]+"|DELETE[ \t]+FROM)\b/im;

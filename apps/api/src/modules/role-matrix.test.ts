@@ -129,6 +129,8 @@ const WRITES: Case[] = [
   fin("/api/finance/purchase-requests", purchaseRequestsRouter, "post", "/5/reject", ["finance-manager", "project-manager"]),
   fin("/api/finance/payroll-review", payrollReviewRoutes, "post", "/5/decide", ["finance-manager", "it-designer"]),
   // employees: HR only (these were open to every signed-in role)
+  employees("post", "/departments", HR),
+  employees("delete", "/departments/5", HR),
   employees("post", "/", HR),
   employees("patch", "/5", HR),
   employees("patch", "/5/deactivate", HR),
@@ -172,6 +174,7 @@ const WRITES: Case[] = [
 const READS: Case[] = [
   fin("/api/finance/purchase-requests", purchaseRequestsRouter, "get", "/", ["finance-manager", "admin", "project-manager", "engineer", "site-personnel"]),
   fin("/api/finance/procurement", procurementRouter, "get", "/", ["finance-manager", "admin", "project-manager", "engineer", "site-personnel"]),
+  employees("get", "/departments", READ_EMPLOYEES),
   employees("get", "/", READ_EMPLOYEES),
   employees("get", "/5", READ_EMPLOYEES),
   employees("get", "/me", ANYONE),

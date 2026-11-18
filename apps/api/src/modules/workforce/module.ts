@@ -15,5 +15,5 @@ export const module: ApiModule = {
     { order: 14, prefix: "/api/payroll", router: payrollRoutes },
     { order: 15, prefix: "/api/workforce-reports", router: workforceReportRoutes },
   ],
-  ownsTables: ["employees", "attendance", "payroll", "payroll_batch_decisions", "payroll_batch_acknowledgements", "payroll_batches"],
+  ownsTables: ["employees", "departments", "attendance", "payroll", "payroll_batch_decisions", "payroll_batch_acknowledgements", "payroll_batches"],
 };

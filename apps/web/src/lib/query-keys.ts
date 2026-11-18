@@ -23,6 +23,7 @@ export const qk = {
     all: api("employees"),
     list: (params: Params) => api("employees", "list", params),
     me: api("employees", "me"),
+    departments: api("employees", "departments"),
   },
   attendance: {
     all: api("attendance"),
