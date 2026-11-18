@@ -1,5 +1,6 @@
 // apps/api/src/transmittals/service.ts — the transmittal cover sheet for sending request documents out.
-import { assertProjectWritable } from "../../projects/index.js";
+import { assertProjectWritable, projectsRepo } from "../../projects/index.js";
+import { PURPOSES, buildTransmittalHtml, buildTransmittalPdf, type TransmittalForm } from "./form.js";
 import * as repo from "../design-requests/repository.js";
 import { assertProjectVisible, scopeRowsToVisible } from "../../projects/index.js";
 import { logAudit } from "../../../core/audit/audit.js";
@@ -29,7 +30,8 @@ const today = () => new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Man
 export const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export const buildTransmittalEmail = (row: Transmittal & { items: TransmittalItem[] }) => {
-  const purpose = [...row.purposes, ...(row.purposeOther ? [row.purposeOther] : [])].join(", ") || "—";
+  const label = (v: string) => PURPOSES.find(([k]) => k === v)?.[1] ?? v;
+  const purpose = [...row.purposes.map(label), ...(row.purposeOther ? [row.purposeOther] : [])].join(", ") || "—";
   const particulars = row.items.map((it, i) => `${i + 1}. ${it.particulars}${it.remarks ? ` — ${it.remarks}` : ""}`);
   const lines = [
     `Transmittal ${row.controlNo}`,
@@ -47,12 +49,23 @@ export const buildTransmittalEmail = (row: Transmittal & { items: TransmittalIte
 };
 
 /** Never throws — a failed or skipped send still leaves the transmittal issued. */
-const attemptEmail = async (row: Transmittal & { items: TransmittalItem[] }, actor: Actor): Promise<{ emailStatus?: "sent" | "failed" }> => {
+const attemptEmail = async (row: TransmittalForm, actor: Actor): Promise<{ emailStatus?: "sent" | "failed" }> => {
   if (row.sentMode === "Hard copy" || !EMAIL_RE.test(row.toName.trim())) return {};
   try {
     const sender = await usersRepo.findById(actor.id);
     const { subject, text } = buildTransmittalEmail(row);
-    await sendMail({ to: row.toName.trim(), subject, text, ...(sender?.email ? { cc: sender.email, replyTo: sender.email } : {}) });
+    // The same cover sheet the person sees on screen: in the body, and as the PDF they can print and sign.
+    const project = await projectsRepo.findByCode(row.projectCode);
+    const html = buildTransmittalHtml(row, project);
+    const pdf = await buildTransmittalPdf(row, project);
+    await sendMail({
+      to: row.toName.trim(),
+      subject,
+      text,
+      html,
+      attachments: [{ filename: `${row.controlNo}.pdf`, content: pdf, contentType: "application/pdf" }],
+      ...(sender?.email ? { cc: sender.email, replyTo: sender.email } : {}),
+    });
     return { emailStatus: "sent" };
   } catch (err) {
     console.warn(`[transmittals] email for ${row.controlNo} to ${row.toName} failed:`, err instanceof Error ? err.message : err);
