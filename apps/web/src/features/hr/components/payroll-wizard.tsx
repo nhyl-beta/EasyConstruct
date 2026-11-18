@@ -26,6 +26,7 @@ import {
 import { PayrollPeriodPicker } from "@/components/shared/payroll-period-picker";
 import { ProjectPicker } from "@/components/shared/project-picker";
 import { listEmployees } from "@/features/hr/hr-api";
+import { PAY_CYCLES, payrollPeriod, type PayCycle } from "@/features/hr/lib/payroll-cycle";
 import type { Employee } from "@/features/hr/types";
 import {
   addPayrollLine,
@@ -54,14 +55,6 @@ const STEPS = [
 ] as const;
 
 const errorMessage = (e: unknown, fallback: string) => (e instanceof Error ? e.message : fallback);
-
-// "2026-07" → first / last calendar day, the range verified attendance is read over.
-function periodRange(period: string): { from?: string; to?: string } {
-  const m = /^(\d{4})-(\d{2})$/.exec(period.trim());
-  if (!m) return {};
-  const last = new Date(Number(m[1]), Number(m[2]), 0).getDate();
-  return { from: `${period}-01`, to: `${period}-${String(last).padStart(2, "0")}` };
-}
 
 function EditableNumber({
   value,
@@ -102,6 +95,7 @@ interface PayrollWizardProps {
 export function PayrollWizard({ resumeBatchId, onClose, onChanged }: PayrollWizardProps) {
   const [step, setStep] = useState(resumeBatchId ? 3 : 1);
   const [period, setPeriod] = useState("");
+  const [cycle, setCycle] = useState<PayCycle>("monthly");
   const [projectCode, setProjectCode] = useState("");
   const [readiness, setReadiness] = useState<AttendanceReadiness | null>(null);
   const [batchId, setBatchId] = useState<string | null>(resumeBatchId ?? null);
@@ -158,7 +152,7 @@ export function PayrollWizard({ resumeBatchId, onClose, onChanged }: PayrollWiza
       if (!period.trim() || !projectCode.trim()) {
         throw new Error("Choose a payroll period and a project first.");
       }
-      const { from, to } = periodRange(period);
+      const { from, to } = payrollPeriod(period, cycle);
       setReadiness(await getAttendanceReadiness(projectCode.trim(), from, to));
       setStep(2);
     }, "Failed to load attendance.");
@@ -172,7 +166,7 @@ export function PayrollWizard({ resumeBatchId, onClose, onChanged }: PayrollWiza
           );
         }
         const created = await generatePayroll({
-          period: period.trim(),
+          period: payrollPeriod(period, cycle).label,
           projectCode: projectCode.trim(),
           entries: readiness.entries,
         });
@@ -316,7 +310,18 @@ export function PayrollWizard({ resumeBatchId, onClose, onChanged }: PayrollWiza
             </div>
             <div className="space-y-1">
               <label className="text-xs text-muted-foreground">Frequency</label>
-              <div className="flex h-9 items-center rounded-md border bg-muted/40 px-3 text-sm">Monthly</div>
+              <Select value={cycle} onValueChange={(v) => { setCycle(v as PayCycle); setReadiness(null); }}>
+                <SelectTrigger className="h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PAY_CYCLES.map((c) => (
+                    <SelectItem key={c.value} value={c.value}>
+                      {c.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
         )}
