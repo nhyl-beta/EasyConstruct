@@ -152,5 +152,6 @@ export const ProcurementRepository = {
   pay: (id: string, input: PayOrderInput) =>
     act(() => apiClient.post(`/finance/procurement/${enc(id)}/pay`, input), (d) => normalizeOrder(obj(d).order)),
   cancel: (id: string) => act(() => apiClient.post(`/finance/procurement/${enc(id)}/cancel`, {}), normalizeOrder),
+  voidOrder: (id: string) => act(() => apiClient.post(`/finance/procurement/${enc(id)}/void`, {}), normalizeOrder),
   resume: (id: string) => act(() => apiClient.post(`/finance/procurement/${enc(id)}/resume`, {}), normalizeOrder),
 };

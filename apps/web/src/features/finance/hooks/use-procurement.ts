@@ -17,6 +17,7 @@ export function useProcurement(enabled = true) {
     deliver: (id: string, input: { note?: string; receiptUrl?: string }) => list.run(() => repo.deliver(id, input)),
     pay: (id: string, input: PayOrderInput) => list.run(() => repo.pay(id, input)),
     cancel: (id: string) => list.run(() => repo.cancel(id)),
+    voidOrder: (id: string) => list.run(() => repo.voidOrder(id)),
     resume: (id: string) => list.run(() => repo.resume(id)),
   };
 }

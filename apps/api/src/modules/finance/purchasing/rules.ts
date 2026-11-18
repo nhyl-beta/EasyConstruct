@@ -11,7 +11,8 @@ import { ConflictError, ForbiddenError, ValidationError } from "../../../core/ut
 export const PR_STATUSES = ["pending-pm", "pending-finance", "approved", "rejected", "ordered", "cancelled"] as const;
 export type PrStatus = (typeof PR_STATUSES)[number];
 
-export const ORDER_STATUSES = ["ordered", "in-transit", "delivered", "paid", "cancelled"] as const;
+// "cancelled" is an order on hold (can be resumed); "voided" is an order Finance cancelled for good.
+export const ORDER_STATUSES = ["ordered", "in-transit", "delivered", "paid", "cancelled", "voided"] as const;
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
 
 export type PurchasingKind = "purchase-request" | "procurement-order";
@@ -35,7 +36,8 @@ export const ORDER_TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
   "in-transit": ["delivered", "cancelled"],
   delivered: ["paid"],
   paid: [],
-  cancelled: ["ordered"], // resume: an order on hold goes back to ordered while its request is still waiting
+  cancelled: ["ordered", "voided"], // resume it, or cancel it for good
+  voided: [],
 };
 
 const TABLES = {
@@ -198,7 +200,7 @@ export function assertPayable(order: { id: string; status: string }, invoiceAmou
 export const isUnsettledRequest = (status: string): boolean =>
   status === "pending-pm" || status === "pending-finance" || status === "approved";
 
-export const isUnsettledOrder = (status: string): boolean => status !== "paid" && status !== "cancelled";
+export const isUnsettledOrder = (status: string): boolean => status !== "paid" && status !== "cancelled" && status !== "voided";
 
 export interface UnsettledInput {
   requests: readonly { id: string; status: string }[];

@@ -12,5 +12,6 @@ export const procurementController = {
   deliver: handle(async (actor, req) => ({ data: await service.deliver(actor, idParam(req), req.body ?? {}), message: "Delivery confirmed" })),
   pay: handle(async (actor, req) => ({ data: await service.pay(actor, idParam(req), req.body), message: "Payment recorded" })),
   cancel: handle(async (actor, req) => ({ data: await service.cancel(actor, idParam(req)), message: "Order cancelled" })),
+  void: handle(async (actor, req) => ({ data: await service.voidOrder(actor, idParam(req)), message: "Order cancelled" })),
   resume: handle(async (actor, req) => ({ data: await service.resume(actor, idParam(req)), message: "Order resumed" })),
 };

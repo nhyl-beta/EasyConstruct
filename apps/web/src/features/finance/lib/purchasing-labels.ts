@@ -19,6 +19,7 @@ export const ORDER_LABELS: Record<OrderStatus, Label> = {
   paid: { label: "Paid", tone: "success" },
   // B-135: shown as "On hold"; the order is stopped and its request goes back to Approved.
   cancelled: { label: "On hold", tone: "warning" },
+  voided: { label: "Cancelled", tone: "neutral" },
 };
 
 /** "2026-10-09" or an ISO timestamp becomes "Oct 9, 2026"; an em dash when empty. */

@@ -69,6 +69,9 @@ describe("transitions: every pair is checked against the table", () => {
   test("an order on hold can be resumed, and nothing else leaves it", () => {
     assert.equal(canTransition("procurement-order", "cancelled", "ordered"), true);
     assert.equal(canTransition("procurement-order", "cancelled", "delivered"), false);
+    assert.equal(canTransition("procurement-order", "cancelled", "voided"), true);
+    assert.equal(canTransition("procurement-order", "ordered", "voided"), false, "only a held order can be cancelled for good");
+    assert.equal(canTransition("procurement-order", "voided", "ordered"), false);
   });
 });
 
@@ -192,7 +195,7 @@ describe("unsettled (closing gate)", () => {
 
   test("orders: everything except paid and cancelled", () => {
     for (const s of ["ordered", "in-transit", "delivered"]) assert.equal(isUnsettledOrder(s), true, s);
-    for (const s of ["paid", "cancelled"]) assert.equal(isUnsettledOrder(s), false, s);
+    for (const s of ["paid", "cancelled", "voided"]) assert.equal(isUnsettledOrder(s), false, s);
   });
 
   test("an ordered request is settled by its order, not counted twice", () => {
