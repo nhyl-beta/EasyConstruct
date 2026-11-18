@@ -73,12 +73,13 @@ const PAY_RATE_BY_ROLE: Record<string, { payRate: string; rateType: "Hourly" | "
 const DEFAULT_PAY_RATE = { payRate: "30000", rateType: "Monthly" as const };
 
 // ── Part E: 100-employee roster ─────────────────────────────────────────
-// The 50 demo-account employees above all have a `users` login. These are
+// ALL_ACCOUNTS above is 46 rows (10 hand-named ACCOUNTS + 9 roles x 4
+// GENERATED_ACCOUNTS; owner is excluded from generation, see B1 below), each
+// with a `users` login and an account-linked employee row. These 54 are
 // roster-only (employees.userId stays null — nullable per the schema) real
 // construction trade rows so HR's dashboards have a realistic org to
-// summarize, not just the 10 canonical role logins ×5. Upserted on
-// `employeeId` (ROSTER-001..050), so re-running seed-demo-accounts.ts never
-// duplicates them.
+// summarize — 46 + 54 = 100 employees total. Upserted on `employeeId`
+// (ROSTER-001..054), so re-running seed-demo-accounts.ts never duplicates them.
 const ROSTER_FIRST_NAMES = [
   "Jose", "Juan", "Antonio", "Ramon", "Ricardo", "Eduardo", "Roberto", "Manuel",
   "Fernando", "Alfredo", "Danilo", "Rodrigo", "Ernesto", "Arnel", "Bienvenido",
@@ -431,9 +432,10 @@ async function main() {
       console.log(`created employee: ${account.email}`);
     }
 
-    // Part E1: 50 roster-only employees (userId stays null — no login),
+    // Part E1: 54 roster-only employees (userId stays null — no login),
     // spread across the real demo projects' display names so E3's
     // useWorkforceSnapshot() per-site rollup has more than one bucket.
+    // 46 account-linked + 54 roster-only = 100 employees total.
     // Upserted on employeeId: a row that already exists is updated in
     // place (same values, since the generator is deterministic) rather
     // than re-inserted, so re-running this script never duplicates rows.
@@ -441,7 +443,7 @@ async function main() {
     const siteNames = demoProjects.length > 0
       ? demoProjects.map((p) => p.name)
       : ["Main Office"];
-    const rosterRows = buildRosterEmployees(50, siteNames);
+    const rosterRows = buildRosterEmployees(54, siteNames);
     for (const row of rosterRows) {
       const [existing] = await tx
         .select()

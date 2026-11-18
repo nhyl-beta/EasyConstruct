@@ -5,7 +5,7 @@ assertDemoEnvironment();
 //
 // Clean-slate reset: removes EVERY project and all project-scoped data, then
 // resets the employees table to the account-linked rows (kept untouched) plus the
-// 50 deterministic roster rows (a roster row already linked to an account counts once). Accounts are read-only: users,
+// 54 deterministic roster rows (a roster row already linked to an account counts once). Accounts are read-only: users,
 // password_reset_tokens and roles are never written, and their checksums are
 // recorded before and compared after.
 //
@@ -83,7 +83,7 @@ async function main() {
     counts["notifications (project_code IS NOT NULL)"] = (await c.query(`SELECT count(*)::int n FROM notifications WHERE project_code IS NOT NULL`)).rows[0].n;
     counts["employees (user_id IS NULL)"] = (await c.query(`SELECT count(*)::int n FROM employees WHERE user_id IS NULL`)).rows[0].n;
     console.table(counts);
-    console.log("Preserved untouched:", PRESERVE.join(", "), "+ 50 account-linked employees");
+    console.log("Preserved untouched:", PRESERVE.join(", "), "+ 46 account-linked employees");
     console.log(`Employees after reset: ${(await c.query(`SELECT count(*)::int n FROM employees WHERE user_id IS NOT NULL`)).rows[0].n} linked + ${buildRoster().length} roster`);
 
     if (DRY) {

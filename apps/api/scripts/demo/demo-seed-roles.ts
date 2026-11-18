@@ -73,9 +73,9 @@ const team = (code: string) => {
 async function proposals() {
   section("Proposals (Architect → Consultant → PM, Owner/IT Designer monitoring)");
   const specs: { code: string; n: string; title: string; outcome: "pending" | "revision" | "rejected" | "approved" }[] = [
-    { code: "DEMO-S1", n: "02", title: "Mezzanine office extension", outcome: "pending" },
-    { code: "DEMO-S1", n: "03", title: "Rooftop solar option", outcome: "revision" },
-    { code: "DEMO-S1", n: "04", title: "Cold-room annex", outcome: "rejected" },
+    { code: "DEMO-S1", n: "02", title: "Battery storage bay addition", outcome: "pending" },
+    { code: "DEMO-S1", n: "03", title: "Expanded panel array option", outcome: "revision" },
+    { code: "DEMO-S1", n: "04", title: "Ground-mount alternative", outcome: "rejected" },
     { code: "DEMO-S2", n: "02", title: "Retaining wall redesign", outcome: "pending" },
     { code: "DEMO-S2", n: "03", title: "Landscape and drainage package", outcome: "pending" },
     { code: "DEMO-S3", n: "02", title: "Covered walkway upgrade", outcome: "pending" },
@@ -304,7 +304,7 @@ async function documents() {
 
   // Consultant advisory uploads, linked to a real proposal or design on the same project.
   const adv: { code: string; id: string; title: string; table: "proposals" | "designs"; kind: "proposal" | "design" }[] = [
-    { code: "DEMO-S1", id: "A-S1-001", title: "Advisory: warehouse floor loading guidance", table: "proposals", kind: "proposal" },
+    { code: "DEMO-S1", id: "A-S1-001", title: "Advisory: rooftop structural loading guidance", table: "proposals", kind: "proposal" },
     { code: "DEMO-S2", id: "A-S2-001", title: "Advisory: hillside drainage review notes", table: "designs", kind: "design" },
     { code: "DEMO-S2", id: "A-S2-002", title: "Advisory: retaining wall reference standard", table: "proposals", kind: "proposal" },
     { code: "DEMO-S3", id: "A-S3-001", title: "Advisory: rural health unit planning guide", table: "designs", kind: "design" },
