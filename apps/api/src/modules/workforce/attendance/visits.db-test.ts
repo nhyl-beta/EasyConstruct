@@ -62,6 +62,7 @@ describe("attendance visits across projects", () => {
   test("clock-in at the first site is measured against that site", async () => {
     const created = await clockIn(A, SITE_A);
     assert.equal(created!.geofence, "Inside");
+    assert.equal(created!.site, `Visits ${A}`, "the row names the project, so HR can tell two sites apart");
     visitA = created!.id;
   });
 

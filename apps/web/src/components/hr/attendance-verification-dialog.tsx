@@ -132,6 +132,13 @@ export function AttendanceVerificationDialog({
                     </span>
                   )}
                 </Row>
+                {entry.clockOut && (
+                  <Row label="Clocked out">
+                    <span className="text-xs">
+                      {entry.clockOutGeofence === "Inside" ? "From inside the site" : entry.clockOutGeofence === "Outside" ? "From outside the site" : "Location not measured"}
+                    </span>
+                  </Row>
+                )}
                 <Row label="Distance from site">
                   {entry.distanceFromSiteM != null ? (
                     <span className="text-xs tabular-nums">

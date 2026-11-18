@@ -20,7 +20,7 @@ import {
   StatusBadge,
 } from "@/pages/roles/shared/shared-hr";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, Fragment, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import {
@@ -49,8 +49,11 @@ import {
   Download,
   FileSpreadsheet,
   MapPin,
+  ChevronDown,
+  ChevronRight,
   ShieldCheck,
 } from "lucide-react";
+import { groupByDay } from "@/features/hr/lib/attendance-days";
 
 const VERIFICATION_OPTIONS = ["Pending", "Verified", "Flagged"];
 const DAY_STATUS_OPTIONS = ["Present", "Late", "Absent", "On Leave", "Half Day"];
@@ -122,6 +125,16 @@ export default function HRAttendancePage() {
   };
 
   const heatmap = a.heatmap;
+  // "By day": first in to last out per person, with the visits underneath.
+  const [view, setView] = useState<"visits" | "days">("visits");
+  const [openDays, setOpenDays] = useState<Set<string>>(new Set());
+  const days = useMemo(() => groupByDay(a.rows), [a.rows]);
+  const toggleDay = (key: string) =>
+    setOpenDays((prev) => {
+      const next = new Set(prev);
+      if (!next.delete(key)) next.add(key);
+      return next;
+    });
 
   // Everything the current search/filters/date range select, not just the
   // visible page — same pattern as hr-employees.tsx's Export. No photo column:
@@ -216,6 +229,14 @@ export default function HRAttendancePage() {
               </p>
             </div>
             <div className="flex items-center gap-2">
+              <div role="group" aria-label="Log view" className="flex gap-1">
+                <Button size="sm" variant={view === "visits" ? "default" : "outline"} aria-pressed={view === "visits"} onClick={() => setView("visits")}>
+                  By visit
+                </Button>
+                <Button size="sm" variant={view === "days" ? "default" : "outline"} aria-pressed={view === "days"} onClick={() => setView("days")}>
+                  By day
+                </Button>
+              </div>
               <Button
                 size="sm"
                 variant="outline"
@@ -286,6 +307,85 @@ export default function HRAttendancePage() {
           <CardContent className="px-0 [&_[data-slot=table-container]]:overflow-x-auto [&_table]:min-w-[60rem] [&_td]:whitespace-normal [&_td]:break-words [&_td]:px-2 [&_th]:px-2">
             {/* table-fixed + percentage widths (sum 100%) so long names/badges
                 wrap instead of forcing the table wider than the card. */}
+            {view === "days" ? (
+              <Table className="table-fixed">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[24%]">Employee</TableHead>
+                    <TableHead className="w-[12%]">Date</TableHead>
+                    <TableHead className="w-[10%]">First in</TableHead>
+                    <TableHead className="w-[10%]">Last out</TableHead>
+                    <TableHead className="w-[8%] text-right">Sites</TableHead>
+                    <TableHead className="w-[10%] text-right">Worked</TableHead>
+                    <TableHead className="w-[10%] text-right">Gap</TableHead>
+                    <TableHead className="w-[16%] text-right">Verified</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {days.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={8} className="py-8 text-center text-sm text-muted-foreground">
+                        {a.loading ? "Loading attendance…" : "No attendance records to group."}
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {days.map((d) => (
+                    <Fragment key={d.key}>
+                      <TableRow className="hover:bg-muted/40">
+                        <TableCell>
+                          <button type="button" aria-expanded={openDays.has(d.key)} className="flex items-center gap-2 text-left" onClick={() => toggleDay(d.key)}>
+                            {openDays.has(d.key) ? <ChevronDown className="h-4 w-4 shrink-0" /> : <ChevronRight className="h-4 w-4 shrink-0" />}
+                            <span>
+                              <span className="block text-sm font-medium">{d.name}</span>
+                              <span className="block font-mono text-overline text-muted-foreground">{d.employeeId}</span>
+                            </span>
+                          </button>
+                        </TableCell>
+                        <TableCell className="text-sm">{d.logDate}</TableCell>
+                        <TableCell className="font-mono text-xs">{d.firstIn ?? "—"}</TableCell>
+                        <TableCell className="font-mono text-xs">{d.open ? "still on site" : (d.lastOut ?? "—")}</TableCell>
+                        <TableCell className="text-right text-sm">{d.visits.length}</TableCell>
+                        <TableCell className="text-right text-sm">{d.workedHours.toFixed(1)} h</TableCell>
+                        <TableCell className="text-right text-sm">{d.gapHours == null ? "—" : `${d.gapHours.toFixed(1)} h`}</TableCell>
+                        <TableCell className="text-right text-sm">
+                          <span className={d.verified === d.visits.length ? "text-success-strong" : "text-warning-strong"}>
+                            {d.verified} of {d.visits.length}
+                          </span>
+                        </TableCell>
+                      </TableRow>
+                      {openDays.has(d.key) &&
+                        d.visits.map((v) => (
+                          <TableRow key={v.id} className="bg-muted/20">
+                            <TableCell colSpan={8}>
+                              <div className="flex flex-wrap items-center gap-3 pl-6 text-sm">
+                                <span className="font-medium">{v.site}</span>
+                                {v.projectCode && v.projectCode !== v.site && <span className="font-mono text-overline text-muted-foreground">{v.projectCode}</span>}
+                                <span className="font-mono text-xs">
+                                  {v.clockIn} to {v.clockOut ?? "still on site"}
+                                </span>
+                                <Badge variant="outline" className="rounded-full text-overline">
+                                  <MapPin className="mr-1 h-3 w-3" /> {v.geofence}
+                                  {v.distanceFromSiteM != null && ` · ${v.distanceFromSiteM} m`}
+                                </Badge>
+                                {v.clockOut && v.clockOutGeofence && <span className="text-xs text-muted-foreground">Left {v.clockOutGeofence === "Inside" ? "inside" : v.clockOutGeofence === "Outside" ? "outside" : "unmeasured"}</span>}
+                                <Badge variant="outline" className="rounded-full text-overline">
+                                  <Camera className="mr-1 h-3 w-3" /> {v.photo}
+                                </Badge>
+                                <StatusBadge status={v.status} />
+                                {!readOnly && (
+                                  <Button size="sm" variant="outline" className="ml-auto" onClick={() => setReviewing(v)}>
+                                    Verify
+                                  </Button>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                    </Fragment>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
             <Table className="table-fixed">
               <TableHeader>
                 <TableRow>
@@ -346,6 +446,7 @@ export default function HRAttendancePage() {
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {l.site}
+                      {l.projectCode && l.projectCode !== l.site && <div className="font-mono text-overline">{l.projectCode}</div>}
                       {l.source === "Sheet" && (
                         <Badge
                           variant="outline"
@@ -366,7 +467,14 @@ export default function HRAttendancePage() {
                       )}
                     </TableCell>
                     <TableCell className="font-mono text-xs">{l.clockIn}</TableCell>
-                    <TableCell className="font-mono text-xs">{l.clockOut ?? "—"}</TableCell>
+                    <TableCell className="font-mono text-xs">
+                      {l.clockOut ?? "—"}
+                      {l.clockOut && l.clockOutGeofence && (
+                        <div className={`font-sans text-overline ${l.clockOutGeofence === "Outside" ? "text-destructive-strong" : "text-muted-foreground"}`}>
+                          Left {l.clockOutGeofence === "Inside" ? "inside" : l.clockOutGeofence === "Outside" ? "outside" : "unmeasured"}
+                        </div>
+                      )}
+                    </TableCell>
                     <TableCell className="text-right text-sm">{l.hours.toFixed(1)}</TableCell>
                     <TableCell>
                       <Badge
@@ -430,6 +538,7 @@ export default function HRAttendancePage() {
                 ))}
               </TableBody>
             </Table>
+            )}
 
             {a.total > 0 && (
               <div className="border-t px-2 pt-3">
