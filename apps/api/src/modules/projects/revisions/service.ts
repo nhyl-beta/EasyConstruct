@@ -9,7 +9,7 @@ import { hasAllowedExtension, maxUploadBytes } from "../../documents/index.js";
 import { assignedCodesFor } from "../projects/scope.js";
 import { projectCodesForPm } from "../projects/service.js";
 import * as projectsRepo from "../projects/repository.js";
-import { designsRepo, designReviewsRepo, blueprintsRepo, DESIGN_REVISION_STATUSES } from "../../design/index.js";
+import { designsRepo, designReviewsRepo, blueprintsRepo, newReviewCode, DESIGN_REVISION_STATUSES } from "../../design/index.js";
 import * as repo from "./repository.js";
 import {
   REVISION_READ_ROLES,
@@ -149,7 +149,7 @@ export const create = async (input: CreateRevisionInput, actor: RevisionActor): 
     if (design && (DESIGN_REVISION_STATUSES as readonly string[]).includes(design.status)) {
       const [last] = await designReviewsRepo.findAll({ designId: design.id });
       await designReviewsRepo.create({
-        code: `REV-${design.code}-${Date.now().toString(36).toUpperCase()}`.slice(0, 20),
+        code: newReviewCode(),
         designId: design.id,
         discipline: last?.discipline ?? undefined,
         priority: last?.priority ?? undefined,

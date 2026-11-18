@@ -2,6 +2,7 @@
 import * as repo from "./repository.js";
 import * as designsRepo from "../repository.js";
 import * as reviewsRepo from "../design-reviews/repository.js";
+import { newReviewCode } from "../design-reviews/code.js";
 import { REVISION_STATUSES } from "../status-group.js";
 import { projectsRepo } from "../../../projects/index.js";
 import { projectsService } from "../../../projects/index.js";
@@ -107,7 +108,7 @@ export const create = async (
   if (!internal.bypassLock && (REVISION_STATUSES as readonly string[]).includes(design.status)) {
     const [last] = await reviewsRepo.findAll({ designId: design.id });
     await reviewsRepo.create({
-      code: `REV-${design.code}-${Date.now().toString(36).toUpperCase()}`.slice(0, 20),
+      code: newReviewCode(),
       designId: design.id,
       discipline: last?.discipline ?? undefined,
       priority: last?.priority ?? undefined,

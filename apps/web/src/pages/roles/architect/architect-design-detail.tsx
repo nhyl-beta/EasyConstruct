@@ -80,7 +80,8 @@ export default function ArchitectDesignDetail() {
     setReviewError(null);
     try {
       await createReview({
-        code: `REV-${d.code}-${Date.now().toString(36).toUpperCase()}`.slice(0, 20),
+        // 20 characters at most; the design is linked by id, so the code only has to be unique
+        code: `REV-${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 10).toUpperCase()}`,
         designId: d.id,
         requestedBy: user?.name ?? "Architect",
       });
