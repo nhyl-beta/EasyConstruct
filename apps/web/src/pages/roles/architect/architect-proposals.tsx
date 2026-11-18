@@ -55,6 +55,10 @@ import { SplitDetailLayout, selectedRowClass } from "@/components/detail-panel/D
 import { useSelectedParam } from "@/hooks/use-selected-param";
 import { ProposalDetailPanel } from "@/features/proposals/ProposalDetailPanel";
 import { ProposalAttachments } from "@/pages/roles/consultant/proposal-attachments";
+import { SubmittedFiles } from "@/components/shared/submitted-files";
+import { fileTypeLabel } from "@/lib/file-type-label";
+import { formatRelativeTime } from "@/lib/format-relative-time";
+import { useProposalFiles } from "@/features/proposals/hooks/useProposalFiles";
 
 interface ValidationResult {
   passed: boolean;
@@ -90,6 +94,45 @@ function ValidationSummary({ raw }: { raw: string | null }) {
         </div>
       )}
     </div>
+  );
+}
+
+/** Admin's paperclip: open, preview or download the files attached to the proposal (read-only). */
+function ViewFilesButton({ proposal }: { proposal: Proposal }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Button variant="ghost" size="icon" className="h-8 w-8" title="View attached files" aria-label={`View files attached to ${proposal.proposalId}`} onClick={() => setOpen(true)}>
+        <Paperclip className="h-3.5 w-3.5" />
+      </Button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Attached files — {proposal.proposalId}</DialogTitle>
+          </DialogHeader>
+          {open && <ProposalFileList proposal={proposal} />}
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+function ProposalFileList({ proposal }: { proposal: Proposal }) {
+  const submitted = useProposalFiles(proposal.id);
+  return (
+    <SubmittedFiles
+      loading={submitted.loading}
+      error={submitted.error}
+      emptyText="No file is attached to this proposal."
+      onRetry={submitted.reload}
+      files={submitted.files.map((f) => ({
+        key: f.id,
+        name: f.name,
+        url: f.url,
+        meta: [fileTypeLabel(f.name), f.size, f.uploadedBy, f.filedAt ? formatRelativeTime(f.filedAt) : null].filter(Boolean).join(" · "),
+        unavailableNote: f.available === false ? "This file is no longer stored. Ask the Architect to attach it again." : undefined,
+      }))}
+    />
   );
 }
 
@@ -723,7 +766,8 @@ export default function ArchitectProposals() {
                           onUpdate={c.updateProposal}
                         />
                       )}
-                      {canAttachFile(proposal) && (
+                      {user?.role === "admin" && proposal.workflowId != null && <ViewFilesButton proposal={proposal} />}
+                      {user?.role !== "admin" && canAttachFile(proposal) && (
                         <AttachFileButton
                           proposal={proposal}
                           busy={designSubmission.uploading}
