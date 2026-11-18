@@ -16,6 +16,10 @@ on:
         description: "Dry run: list pending migrations, change nothing"
         type: boolean
         default: true
+      baseline_through:
+        description: "Only if the first run refuses: tag of the last migration already applied by hand (records bookkeeping rows, runs no SQL)"
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -39,9 +43,14 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || 'false' }}
+          BASELINE: ${{ github.event_name == 'workflow_dispatch' && inputs.baseline_through || '' }}
         run: |
           if [ -z "$DATABASE_URL" ]; then
             echo "::error::Add the DATABASE_URL repository secret, then re-run this workflow"; exit 1
           fi
-          if [ "$DRY_RUN" = "true" ]; then npm run db:migrate --workspace=@easyconstruct/api -- --dry-run
-          else npm run db:migrate --workspace=@easyconstruct/api; fi
+          args=""; [ -n "$BASELINE" ] && args="--baseline-through=$BASELINE"
+          if [ "$DRY_RUN" = "true" ]; then
+            npm run db:migrate --workspace=@easyconstruct/api -- --dry-run $args
+            echo "--- read-only comparison of Neon with the code's schema ---"
+            npm run db:verify-schema --workspace=@easyconstruct/api || true
+          else npm run db:migrate --workspace=@easyconstruct/api -- $args; fi
