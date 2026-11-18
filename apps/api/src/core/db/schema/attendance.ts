@@ -36,6 +36,8 @@ export const attendance = pgTable("attendance", {
   // so HR sees it needs verification — see attendance/import.ts).
   source: varchar("source", { length: 20 }).notNull().default("Clock-in"),
   createdAt: timestamp("created_at").defaultNow(),
+  // Set when HR verifies or flags the record (0052); "Resolve flags" lists only unreviewed ones.
+  reviewedAt: timestamp("reviewed_at"),
   // E1: a client-generated UUID an offline-queued clock-in/out carries so a
   // retried sync (the device coming back online more than once before the
   // server ack is confirmed) never creates a duplicate attendance record.

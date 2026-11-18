@@ -9,8 +9,9 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { listAttendanceAll, type AttendanceEntry } from "@/features/hr/attendance-api";
 import { listEmployees } from "@/features/hr/hr-api";
 
+// Verifying and flagging both count as reviewed, so either one takes the clock-in off this list.
 const needsReview = (e: AttendanceEntry) =>
-  e.status === "Flagged" || e.geofence === "Outside" || e.photo === "Failed";
+  !e.reviewedAt && (e.status === "Flagged" || e.geofence === "Outside" || e.photo === "Failed");
 
 export function ResolveFlagsDialog({ open, onOpenChange, onReview }: { open: boolean; onOpenChange: (open: boolean) => void; onReview: (entry: AttendanceEntry) => void }) {
   const [rows, setRows] = useState<AttendanceEntry[]>([]);
@@ -40,7 +41,7 @@ export function ResolveFlagsDialog({ open, onOpenChange, onReview }: { open: boo
       <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Resolve flags</DialogTitle>
-          <DialogDescription>Clock-ins outside the site radius, with a failed photo, or already flagged. Review each one to verify or flag it.</DialogDescription>
+          <DialogDescription>Clock-ins outside the site radius or with a failed photo that HR has not reviewed yet. Verifying or flagging one takes it off this list.</DialogDescription>
         </DialogHeader>
         {loading && <p className="text-sm text-muted-foreground">Loading…</p>}
         {error && <p role="alert" className="text-sm text-destructive-strong">{error}</p>}
