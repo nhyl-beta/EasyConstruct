@@ -16,9 +16,9 @@ import { WorkflowFormatService } from "@/features/workflows/services/workflow.se
 import { WorkflowStagePipeline } from "@/components/workflows/workflow-stage-pipeline";
 import { WorkflowDetailDialog } from "@/components/workflows/workflow-detail-dialog";
 import { EditWorkflowDialog } from "@/components/workflows/edit-workflow-dialog";
+import { ResubmitWorkflowDialog } from "@/components/workflows/resubmit-workflow-dialog";
 import { useAuth } from "@/auth/auth-context";
 import { FEATURES } from "@/config/features";
-import { WorkflowRepository } from "@/features/workflows/repositories/workflow.repository";
 import type { Workflow } from "@/features/workflows/types/workflow.types";
 import {
   Eye,
@@ -47,17 +47,7 @@ export default function WorkflowsPage() {
   const [detailWorkflowId, setDetailWorkflowId] = useState<number | null>(() => Number(new URLSearchParams(window.location.search).get("open")) || null);
   const [deletingWorkflow, setDeletingWorkflow] = useState<Workflow | null>(null);
   const [deletingBusy, setDeletingBusy] = useState(false);
-  const [resubmittingStageId, setResubmittingStageId] = useState<number | null>(null);
-
-  const resubmitStage = async (workflowId: number, stageId: number) => {
-    setResubmittingStageId(stageId);
-    try {
-      // The write invalidates the workflow queries, so the list refetches itself.
-      await WorkflowRepository.resubmitStage(workflowId, stageId);
-    } finally {
-      setResubmittingStageId(null);
-    }
-  };
+  const [resubmitTarget, setResubmitTarget] = useState<{ workflow: Workflow; stageId: number } | null>(null);
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-8">
@@ -175,11 +165,10 @@ export default function WorkflowsPage() {
                             size="sm"
                             variant="outline"
                             className="h-7 text-xs"
-                            disabled={resubmittingStageId === stage.id}
-                            onClick={() => void resubmitStage(workflow.id, stage.id)}
+                            onClick={() => setResubmitTarget({ workflow, stageId: stage.id })}
                           >
                             <RotateCcw className="h-3 w-3" />
-                            {resubmittingStageId === stage.id ? "Resubmitting…" : "Resubmit"}
+                            Resubmit
                           </Button>
                         </div>
                       ))}
@@ -265,6 +254,15 @@ export default function WorkflowsPage() {
           if (!next) setEditingWorkflow(null);
         }}
         onSave={(id, input) => update(id, input)}
+      />
+
+      <ResubmitWorkflowDialog
+        workflow={resubmitTarget?.workflow ?? null}
+        stageId={resubmitTarget?.stageId ?? null}
+        onOpenChange={(open) => {
+          if (!open) setResubmitTarget(null);
+        }}
+        onResubmitted={() => setResubmitTarget(null)}
       />
 
       <WorkflowDetailDialog

@@ -27,7 +27,9 @@ export const create = async (input: CreateBlueprintInput) => {
 export const update = async (id: number, input: UpdateBlueprintInput) => {
   const existing = await getById(id);
   if (existing.projectCode) await assertProjectWritable(existing.projectCode);
-  const updated = await repo.update(id, input);
+  // Revising a blueprint that was sent back puts it in front of the reviewer again.
+  const sentBack = input.approval === undefined && (existing.approval === "Rejected" || existing.approval === "Revision Required");
+  const updated = await repo.update(id, sentBack ? { ...input, approval: "Pending", status: "Draft" } : input);
   if (!updated) throw new NotFoundError('Blueprint', String(id));
   if (updated.projectCode) await refreshProjectProgress(updated.projectCode);
   return updated;
