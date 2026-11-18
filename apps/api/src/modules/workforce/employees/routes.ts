@@ -3,6 +3,7 @@ import * as controller from "./controller.js";
 import { validate } from "../../../core/http/validate.js";
 import { authenticate, requireRole } from "../../../core/auth/middleware.js";
 import * as documents from "./documents.js";
+import * as departments from "./departments.js";
 import {
   createEmployeeSchema,
   updateEmployeeSchema,
@@ -22,6 +23,10 @@ router.get("/me", controller.getMe);
 // Name lookup for Quick attendance entry (Site Personnel can't read the full
 // list) — before "/:id" for the same reason as "/me".
 router.get("/lookup", requireRole("site-personnel", "human-resources", "finance-manager", "admin", "it-designer"), controller.lookup);
+// Department list (before "/:id"). Reads: same roles as the employee list; writes: HR.
+router.get("/departments", canReadEmployees, departments.list);
+router.post("/departments", canWriteEmployees, validate(departments.createDepartmentSchema), departments.create);
+router.delete("/departments/:id", canWriteEmployees, departments.remove);
 router.get("/", canReadEmployees, controller.getAll);
 router.post("/", canWriteEmployees, validate(createEmployeeSchema), controller.create);
 router.get("/:id", canReadEmployees, controller.getById);

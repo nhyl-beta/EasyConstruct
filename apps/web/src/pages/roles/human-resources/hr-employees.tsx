@@ -43,7 +43,8 @@ import {
 } from "@/components/ui/table";
 
 import { PageHeader, StatusBadge } from "@/pages/roles/shared/shared-hr";
-import { departments } from "@/providers/mock-data";
+import { useDepartments } from "@/features/employees/hooks/use-departments";
+import { ManageDepartmentsDialog } from "@/components/shared/manage-departments-dialog";
 import {
   deactivateEmployee,
   deleteEmployee,
@@ -168,6 +169,8 @@ function EmployeeRow({
 
 export default function HREmployeesPage() {
   const readOnly = useIsReadOnlyAdmin();
+  const { departments } = useDepartments();
+  const [manageOpen, setManageOpen] = useState(false);
   const [dept, setDept] = useState("all");
   const [status, setStatus] = useState("all");
   const [selected, setSelected] = useState<Map<number, Employee>>(new Map());
@@ -315,6 +318,11 @@ export default function HREmployeesPage() {
               <Download className="h-4 w-4" /> Export
             </Button>
             {!readOnly && (
+              <Button variant="outline" size="sm" onClick={() => setManageOpen(true)}>
+                Manage departments
+              </Button>
+            )}
+            {!readOnly && (
               <Button size="sm" asChild>
                 <Link to="/employees/create">
                   <Plus className="h-4 w-4" /> Add employee
@@ -460,6 +468,7 @@ export default function HREmployeesPage() {
         </CardContent>
       </Card>
 
+      <ManageDepartmentsDialog open={manageOpen} onOpenChange={setManageOpen} />
       <EmployeeDetailSheet employee={viewing} onClose={() => setViewing(null)} />
 
       <Dialog open={reassignOpen} onOpenChange={(open) => !busy && setReassignOpen(open)}>

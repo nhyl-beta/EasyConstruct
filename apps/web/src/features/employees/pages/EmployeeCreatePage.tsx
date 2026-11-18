@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/select";
 import { Info, Paperclip, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useDepartments } from "../hooks/use-departments";
 import { useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
 import {
@@ -325,6 +326,7 @@ function StepEmployment({
     value: EmployeeFormData[K],
   ) => void;
 }) {
+  const { departments } = useDepartments();
   return (
     <div className="space-y-6">
       <div>
@@ -354,14 +356,9 @@ function StepEmployment({
               <SelectValue placeholder="Select department" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Engineering">Engineering</SelectItem>
-              <SelectItem value="Field Ops">Field Ops</SelectItem>
-              <SelectItem value="Finance">Finance</SelectItem>
-              <SelectItem value="HR">HR</SelectItem>
-              <SelectItem value="Legal">Legal</SelectItem>
-              <SelectItem value="Design">Design</SelectItem>
-              <SelectItem value="Safety">Safety</SelectItem>
-              <SelectItem value="Project Mgmt">Project Mgmt</SelectItem>
+              {[...new Set([...departments.map((d) => d.name), ...(data.department ? [data.department] : [])])].map((n) => (
+                <SelectItem key={n} value={n}>{n}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
