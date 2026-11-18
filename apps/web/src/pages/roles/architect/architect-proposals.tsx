@@ -121,7 +121,7 @@ function AttachFileButton({ proposal, busy, onPick }: { proposal: Proposal; busy
  * A proposal the consultant sent back ("Revision Requested"): attach the revised file that justifies the
  * new plan, then resubmit it to the reviewer. Lives in the detail panel, next to the review comment.
  */
-function ReviseAndResubmit({ proposal, onDone }: { proposal: Proposal; onDone: () => void }) {
+function ReviseAndResubmit({ proposal, saving, onUpdate, onDone }: { proposal: Proposal; saving: boolean; onUpdate: (id: number, input: UpdateProposalInput) => Promise<Proposal | null>; onDone: () => void }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [uploaded, setUploaded] = useState(false); // upload done but resubmit failed: a retry must not upload twice
@@ -153,7 +153,7 @@ function ReviseAndResubmit({ proposal, onDone }: { proposal: Proposal; onDone: (
 
   return (
     <div className="flex w-full flex-col gap-2">
-      <p className="text-xs text-muted-foreground">The reviewer asked for a revision. Attach the revised file, then resubmit it for review.</p>
+      <p className="text-xs text-muted-foreground">The reviewer asked for a revision. Update the details if the plan changed, attach the revised file, then resubmit it for review.</p>
       <input
         ref={inputRef}
         type="file"
@@ -167,6 +167,7 @@ function ReviseAndResubmit({ proposal, onDone }: { proposal: Proposal; onDone: (
         }}
       />
       <div className="flex flex-wrap items-center gap-2">
+        <EditProposalDialog proposal={proposal} saving={saving} onUpdate={onUpdate} label="Edit details" />
         <Button variant="outline" size="sm" disabled={busy} onClick={() => inputRef.current?.click()}>
           <Paperclip className="h-3.5 w-3.5" />
           <span className="max-w-[12rem] truncate">{file ? file.name : "Choose revised file"}</span>
@@ -185,10 +186,12 @@ function EditProposalDialog({
   proposal,
   saving,
   onUpdate,
+  label,
 }: {
   proposal: Proposal;
   saving: boolean;
   onUpdate: (id: number, input: UpdateProposalInput) => Promise<Proposal | null>;
+  label?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState(proposal.title);
@@ -221,8 +224,9 @@ function EditProposalDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" title="Edit proposal">
+        <Button variant={label ? "outline" : "ghost"} size="sm" title="Edit proposal">
           <Pencil className="h-3.5 w-3.5" />
+          {label}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
@@ -597,7 +601,7 @@ export default function ArchitectProposals() {
               onClose={closePanel}
               inSheet={inSheet}
               contentExtra={<ProposalAttachments key={selectedProposal.updatedAt} proposal={selectedProposal} />}
-              actions={canRespond(selectedProposal) ? <ReviseAndResubmit proposal={selectedProposal} onDone={c.refresh} /> : undefined}
+              actions={canRespond(selectedProposal) ? <ReviseAndResubmit proposal={selectedProposal} saving={c.saving} onUpdate={c.updateProposal} onDone={c.refresh} /> : undefined}
             />
           )
         }
