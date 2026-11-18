@@ -16,7 +16,7 @@ export const createEmployeeSchema = z.object({
   status: employeeStatusEnum.optional(),
   hiredOn: z.string().min(1, "Hire date is required"),
   email: z.union([z.string().email("Invalid email"), z.literal("")]).optional(),
-  phone: z.string().max(30).optional().or(z.literal("")),
+  phone: z.string().regex(/^\d{7,15}$/, "Phone number: digits only, 7 to 15").optional().or(z.literal("")),
   payRate: z.union([z.number(), z.string()]).optional(),
   rateType: z.enum(["Monthly", "Daily", "Hourly"]).optional(),
 });
