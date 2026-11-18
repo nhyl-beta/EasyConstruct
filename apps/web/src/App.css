@@ -386,6 +386,11 @@
   [data-print-payslip] {
     position: static !important;
     inset: auto !important;
+    /* Tailwind positions the dialog with `translate: var(--tw-translate-x) var(--tw-translate-y)`.
+       A plain `translate: none` was dropped by the CSS minifier in the production build, so
+       the dialog stayed shifted left and up on paper; zeroing the variables survives it. */
+    --tw-translate-x: 0 !important;
+    --tw-translate-y: 0 !important;
     translate: none !important;
     transform: none !important;
     max-width: none !important;
