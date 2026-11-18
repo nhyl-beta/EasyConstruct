@@ -2,7 +2,7 @@
 // /uploads/...); these routes only store and list its link.
 import type { NextFunction, Response } from "express";
 import { z } from "zod";
-import { and, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 
 import type { AuthedRequest } from "../../../core/auth/middleware.js";
 import { db } from "../../../core/db/connection.js";
@@ -59,6 +59,33 @@ export const remove = async (req: AuthedRequest, res: Response, next: NextFuncti
     if (!removed) throw new NotFoundError("Employee document", String(docId));
     await logAudit({ entityType: "employee", entityId: String(id), action: "updated", actor: req.authUser!.name, summary: `Removed document "${removed.name}"` });
     res.json(formatSuccess(removed, "Document removed"));
+  } catch (err) {
+    next(err);
+  }
+};
+
+// The repository: every employee's documents in one list, newest first within an employee.
+// shortcut: capped at 2000 rows, add paging when HR holds more documents than that.
+export const listAll = async (_req: AuthedRequest, res: Response, next: NextFunction) => {
+  try {
+    const rows = await db
+      .select({
+        id: employeeDocuments.id,
+        employeeId: employeeDocuments.employeeId,
+        employeeName: employees.name,
+        employeeCode: employees.employeeId,
+        department: employees.department,
+        docType: employeeDocuments.docType,
+        name: employeeDocuments.name,
+        url: employeeDocuments.url,
+        uploadedBy: employeeDocuments.uploadedBy,
+        createdAt: employeeDocuments.createdAt,
+      })
+      .from(employeeDocuments)
+      .innerJoin(employees, eq(employees.id, employeeDocuments.employeeId))
+      .orderBy(asc(employees.name), desc(employeeDocuments.createdAt))
+      .limit(2000);
+    res.json(formatSuccess(rows, "Employee documents retrieved"));
   } catch (err) {
     next(err);
   }

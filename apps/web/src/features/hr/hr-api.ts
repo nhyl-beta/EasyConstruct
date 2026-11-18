@@ -167,3 +167,14 @@ export const addEmployeeDocument = (id: number, doc: Omit<EmployeeDocument, "id"
   unwrap<EmployeeDocument>(apiClient.post(`/employees/${id}/documents`, doc));
 export const removeEmployeeDocument = (id: number, docId: number) =>
   unwrap<EmployeeDocument>(apiClient.del(`/employees/${id}/documents/${docId}`));
+
+/** One row of the document repository: a document plus the employee it belongs to. */
+export interface RepositoryDocument extends EmployeeDocument {
+  employeeId: number;
+  employeeName: string;
+  employeeCode: string;
+  department: string;
+  uploadedBy: string;
+  createdAt: string;
+}
+export const listAllEmployeeDocuments = () => unwrap<RepositoryDocument[]>(apiClient.get("/employees/documents"));

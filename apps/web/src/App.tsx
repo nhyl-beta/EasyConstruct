@@ -45,6 +45,7 @@ import PMWorkflows from "./pages/roles/project-manager/pm-workflows";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import HRAttendance from "./pages/roles/human-resources/hr-attendance";
 import HREmployees from "./pages/roles/human-resources/hr-employees";
+import HRDocumentRepository from "./pages/roles/human-resources/hr-document-repository";
 import HRPayroll from "./pages/roles/human-resources/hr-payroll";
 import HRWorkforce from "./pages/roles/human-resources/hr-workforce";
 
@@ -267,6 +268,7 @@ function App() {
                   <Route path="/documents" element={<DocumentsRouter />} />
 
                   {/* ── Human Resources Routes ── */}
+                  <Route path="/employee-documents" element={<RequireRole allow={["human_resources","admin"]}><HRDocumentRepository /></RequireRole>} />
                   <Route path="/employees" element={<RequireRole allow={["human_resources","admin","it_designer"]}><HREmployees /></RequireRole>} />
                   <Route
                     path="/employees/create"
