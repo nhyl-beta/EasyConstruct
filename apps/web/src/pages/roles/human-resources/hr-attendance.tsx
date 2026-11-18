@@ -35,6 +35,7 @@ import { downloadCsv } from "@/lib/export-csv";
 import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
 import { useAttendancePaged } from "@/features/hr/hooks/use-attendance-paged";
 import { AttendanceVerificationDialog } from "@/components/hr/attendance-verification-dialog";
+import { ResolveFlagsDialog } from "@/components/hr/resolve-flags-dialog";
 import { DateRangeFields, FilterBar, FilterChips } from "@/components/shared/filter-bar";
 import { AttendanceExceptionsPanel } from "@/features/hr/components/AttendanceExceptionsPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -86,6 +87,7 @@ export default function HRAttendancePage() {
   // The clock-in HR is currently confirming — photo and coordinates side by
   // side in AttendanceVerificationDialog.
   const [reviewing, setReviewing] = useState<AttendanceEntry | null>(null);
+  const [resolveOpen, setResolveOpen] = useState(false);
   const [confirmBulk, setConfirmBulk] = useState(false);
   const [bulkBusy, setBulkBusy] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -237,7 +239,7 @@ export default function HRAttendancePage() {
               >
                 Bulk verify{bulkCount > 0 ? ` (${bulkCount})` : ""}
               </Button>
-              <Button size="sm">
+              <Button size="sm" onClick={() => setResolveOpen(true)}>
                 <ShieldCheck className="h-4 w-4" /> Resolve flags
               </Button>
               </>)}
@@ -533,6 +535,8 @@ export default function HRAttendancePage() {
         loading={bulkBusy}
         onConfirm={() => void runBulkVerify()}
       />
+
+      <ResolveFlagsDialog open={resolveOpen} onOpenChange={setResolveOpen} onReview={setReviewing} />
 
       <AttendanceVerificationDialog
         entry={reviewing}

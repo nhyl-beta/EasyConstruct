@@ -212,6 +212,7 @@ test("Admin gets 403 on every write route in the matrix, and 200-class on the re
   for (const [router, method, path] of [
     [employeeRoutes, "get", "/"],
     [employeeRoutes, "get", "/5"],
+    [employeeRoutes, "get", "/documents"], // the document repository: HR and Admin read it
     [hrRoutes, "get", "/employees"],
     [hrRoutes, "get", "/payroll"],
     [payrollRoutes, "get", "/"],

@@ -189,7 +189,7 @@ export const create = async (data: CreateAttendanceInput & { hours?: string }) =
   return findByClientRequestId(data.clientRequestId);
 };
 
-export const update = async (id: number, data: UpdateAttendanceInput & { hours?: string }) => {
+export const update = async (id: number, data: UpdateAttendanceInput & { hours?: string; reviewedAt?: Date }) => {
   const [updated] = await db
     .update(attendance)
     .set(data)

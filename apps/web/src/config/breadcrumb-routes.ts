@@ -20,6 +20,7 @@ export const BREADCRUMB_ROUTES: BreadcrumbRoute[] = [
   // The page passes the project's name as `breadcrumbLabel`; "Project" is the
   // fallback while it loads.
   { pattern: "/projects/:projectId", label: "Project", parent: "/projects" },
+  { pattern: "/employee-documents", label: "Documents", parent: "/employees" },
   { pattern: "/employees/new", label: "Add employee", parent: "/employees" },
   { pattern: "/employees/:id/edit", label: "Edit employee", parent: "/employees" },
   { pattern: "/settings", label: "Settings" },

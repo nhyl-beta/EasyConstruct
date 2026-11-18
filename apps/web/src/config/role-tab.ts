@@ -292,6 +292,7 @@ export const ROLE_CONFIGS: Record<string, RoleConfig> = {
     },
     tabs: [
       { label: "Employees", icon: Users, route: "/employees" },
+      { label: "Documents", icon: FolderKanban, route: "/employee-documents" },
       { label: "Attendance", icon: UserCheck, route: "/attendance" },
       { label: "Payroll", icon: DollarSign, route: "/payroll" },
       { label: "Approvals", icon: CheckSquare, route: "/approvals" },
@@ -311,7 +312,7 @@ export const ROLE_CONFIGS: Record<string, RoleConfig> = {
         items: [
           { label: "Employees", icon: UsersRound, route: "/employees" },
           { label: "Attendance", icon: UserCheck, route: "/attendance" },
-          { label: "Documents", icon: FileText, route: "/documents" },
+          { label: "Documents", icon: FileText, route: "/employee-documents" },
         ],
       },
       {

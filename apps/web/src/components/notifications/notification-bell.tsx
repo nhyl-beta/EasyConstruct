@@ -9,6 +9,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { ArrowUpRight, Bell, CheckCheck, CircleX } from "lucide-react";
 import { useNavigate } from "react-router";
+import { useRoleConfig } from "@/hooks/use-role-config";
+import { ROLE_RESOURCE_ACCESS } from "@/config/role-resources";
 
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -53,6 +55,15 @@ const readDismissed = (): Set<number> => {
 export function NotificationBell() {
   const { notifications, loading, error, marking, markRead, markAllRead, reload } = useNotifications();
   const navigate = useNavigate();
+  const { identity } = useRoleConfig();
+  // The API links every workflow notification to /workflows (the PM page). Other roles have their own
+  // page for it, so send them there instead of to "Access denied".
+  const linkFor = (link: string) => {
+    const access = ROLE_RESOURCE_ACCESS[identity.role] ?? [];
+    if (link !== "/workflows" || access.includes("workflows")) return link;
+    if (access.includes("admin-workflows")) return "/admin/workflows";
+    return access.includes("approvals") ? "/approvals" : link;
+  };
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<NotificationTab>("all");
   const [range, setRange] = useState<DateRange | null>(null);
@@ -79,7 +90,7 @@ export function NotificationBell() {
     if (!n.isRead) void markRead(n.id);
     if (n.link) {
       setOpen(false);
-      navigate(n.link);
+      navigate(linkFor(n.link));
     }
   };
   const dismiss = (n: Notification) => {

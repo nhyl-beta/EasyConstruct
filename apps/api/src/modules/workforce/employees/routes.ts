@@ -25,6 +25,7 @@ router.get("/me", controller.getMe);
 router.get("/lookup", requireRole("site-personnel", "human-resources", "finance-manager", "admin", "it-designer"), controller.lookup);
 // Department list (before "/:id"). Reads: same roles as the employee list; writes: HR.
 router.get("/departments", canReadEmployees, departments.list);
+router.get("/documents", requireRole("human-resources", "admin"), documents.listAll);
 router.post("/departments", canWriteEmployees, validate(departments.createDepartmentSchema), departments.create);
 router.delete("/departments/:id", canWriteEmployees, departments.remove);
 router.get("/", canReadEmployees, controller.getAll);

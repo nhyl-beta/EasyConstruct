@@ -18,6 +18,8 @@ export interface AttendanceEntry {
   remarks: string | null;
   logDate: string;
   photoUrl: string | null;
+  /** When HR verified or flagged it; null while it still waits for review. */
+  reviewedAt: string | null;
   // The clock-in's recorded position and how far it was from the project's
   // registered site. The API has always returned these; the normalizer below
   // dropped them, so HR's attendance review could show a geofence verdict but
@@ -62,6 +64,8 @@ interface BackendAttendance {
   remarks: string | null;
   logDate: string;
   photoUrl: string | null;
+  /** When HR verified or flagged it; null while it still waits for review. */
+  reviewedAt: string | null;
   latitude: string | number | null;
   longitude: string | number | null;
   distanceFromSiteM: number | null;
@@ -93,6 +97,7 @@ function normalize(raw: BackendAttendance, nameLookup: Map<string, { name: strin
     remarks: raw.remarks,
     logDate: raw.logDate,
     photoUrl: raw.photoUrl ?? null,
+    reviewedAt: raw.reviewedAt ?? null,
     // numeric() columns arrive as strings from drizzle.
     latitude: raw.latitude != null ? Number(raw.latitude) : null,
     longitude: raw.longitude != null ? Number(raw.longitude) : null,

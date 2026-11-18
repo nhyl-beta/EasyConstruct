@@ -23,7 +23,7 @@ import { projectMemberRepo } from "../../projects/index.js";
 
 import * as repo from "./repository.js";
 import { notifications } from "../../platform/index.js";
-import { FLAGGED_CLOCK_IN_ROLES, buildFlaggedAlert, shouldAlertFlagged } from "./alert.js";
+import { FLAGGED_CLOCK_IN_ROLES, buildFlaggedAlert, flaggedClockInLink, shouldAlertFlagged } from "./alert.js";
 
 import type {
   AttendanceFilters,
@@ -389,6 +389,21 @@ const alertFlaggedClockIn = async (
   }
 };
 
+/** HR flagged a clock-in for follow-up: tell the project's PM and Site Personnel, with HR's note. Never throws. */
+const tellFlaggedByHr = async (record: NonNullable<Awaited<ReturnType<typeof repo.create>>>, note: string | null | undefined) => {
+  if (!record.projectCode) return;
+  try {
+    const employee = await employeesRepo.findByEmployeeId(record.employeeId);
+    await notifications.notifyProject(record.projectCode, ["project-manager", "site-personnel"], {
+      title: `HR flagged a clock-in for follow-up: ${employee?.name ?? record.employeeId}`,
+      body: `${record.logDate} at ${record.clockIn} (${record.projectCode}).${note?.trim() ? ` HR note: ${note.trim().slice(0, 300)}` : " HR left no note."}`,
+      link: flaggedClockInLink(record.id),
+    });
+  } catch (err) {
+    console.error("[attendance] could not send the HR follow-up notice", err instanceof Error ? err.message : err);
+  }
+};
+
 /**
  * HR confirms an absence (fix 2.3), usually from the daily exceptions list.
  * Goes through the same checks as any attendance write: the employee and
@@ -602,12 +617,14 @@ export const update = async (
     existing.clockOut ??
     undefined;
 
+  // HR verifying or flagging a clock-in counts as having reviewed it.
   const updated = await repo.update(id, {
     ...input,
     hours: computeHours(
       clockIn,
       clockOut,
     ),
+    ...(input.status === "Verified" || input.status === "Flagged" ? { reviewedAt: new Date() } : {}),
   });
 
   if (!updated) {
@@ -616,6 +633,8 @@ export const update = async (
       String(id),
     );
   }
+
+  if (input.status === "Flagged") await tellFlaggedByHr(updated, input.remarks ?? existing.remarks);
 
   return updated;
 };

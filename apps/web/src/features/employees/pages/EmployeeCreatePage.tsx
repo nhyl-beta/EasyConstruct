@@ -108,7 +108,7 @@ export default function EmployeeCreatePage() {
           status: employee.status,
           hiredOn: employee.hiredOn,
           email: employee.email ?? "",
-          phone: employee.phone ?? "",
+          phone: (employee.phone ?? "").replace(/\D/g, ""), // older records hold dashes or a +; the field is digits only
           rate: employee.payRate,
           rateType: employee.rateType,
         });
@@ -274,9 +274,11 @@ function StepPersonalInfo({
           <Label>Phone number</Label>
           <Input
             type="tel"
-            placeholder="+63 9XX XXX XXXX"
+            inputMode="numeric"
+            maxLength={15}
+            placeholder="e.g. 09171234567"
             value={data.phone}
-            onChange={(e) => set("phone", e.target.value)}
+            onChange={(e) => set("phone", e.target.value.replace(/\D/g, ""))}
            
           />
         </div>
