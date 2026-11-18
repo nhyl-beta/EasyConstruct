@@ -16,6 +16,10 @@ on:
         description: "Dry run: list pending migrations, change nothing"
         type: boolean
         default: true
+      verify_schema:
+        description: "Also compare Neon with the code's schema, read-only (slow; stops after 3 minutes)"
+        type: boolean
+        default: false
       baseline_through:
         description: "Only if the first run refuses: tag of the last migration already applied by hand (records bookkeeping rows, runs no SQL)"
         type: string
@@ -43,6 +47,7 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || 'false' }}
+          VERIFY: ${{ github.event_name == 'workflow_dispatch' && inputs.verify_schema || 'false' }}
           BASELINE: ${{ github.event_name == 'workflow_dispatch' && inputs.baseline_through || '' }}
         run: |
           if [ -z "$DATABASE_URL" ]; then
@@ -51,6 +56,8 @@ jobs:
           args=""; [ -n "$BASELINE" ] && args="--baseline-through=$BASELINE"
           if [ "$DRY_RUN" = "true" ]; then
             npm run db:migrate --workspace=@easyconstruct/api -- --dry-run $args
-            echo "--- read-only comparison of Neon with the code's schema ---"
-            npm run db:verify-schema --workspace=@easyconstruct/api || true
+            if [ "$VERIFY" = "true" ]; then
+              echo "--- read-only comparison of Neon with the code's schema ---"
+              timeout 180 npm run db:verify-schema --workspace=@easyconstruct/api || echo "schema comparison did not finish or found differences"
+            fi
           else npm run db:migrate --workspace=@easyconstruct/api -- $args; fi
