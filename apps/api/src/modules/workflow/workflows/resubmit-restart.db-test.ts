@@ -9,6 +9,8 @@ import { projects } from "../../../core/db/schema/projects.js";
 import { users } from "../../../core/db/schema/users.js";
 import { budgets } from "../../../core/db/schema/finance.js";
 import { workflows } from "../../../core/db/schema/workflows.js";
+import { notifications } from "../../../core/db/schema/notifications.js";
+import { and } from "drizzle-orm";
 import { assertDemoDatabase } from "../../../../scripts/demo/demo-guard.js";
 import * as repo from "./repository.js";
 import * as service from "./service.js";
@@ -52,6 +54,8 @@ describe("resubmitStage restarts the review", () => {
     assert.ok(stages.length >= 3, "needs a template with at least three stages");
     await service.decideStage(workflowId, stages[1]!.id, { decision: "approve", decidedBy: admin.name }, admin.role);
     await service.decideStage(workflowId, stages[2]!.id, { decision: "revise", decidedBy: admin.name, comments: "redo" }, admin.role);
+    const told = await db.select().from(notifications).where(and(eq(notifications.recipientUserId, actors.engineer!.id), eq(notifications.title, "Revision requested")));
+    assert.ok(told.some((n) => n.projectCode === P), "the Engineer who raised it is told a revision was requested");
     await service.resubmitStage(workflowId, stages[2]!.id, {}, { role: "engineer", name: actors.engineer!.name });
     const after = await repo.findStagesByWorkflow(workflowId);
     assert.deepEqual(after.map((s) => s.status), after.map((s) => (s.sequence === 1 ? "done" : s.sequence === 2 ? "current" : "upcoming")));

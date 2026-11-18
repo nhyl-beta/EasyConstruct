@@ -168,7 +168,7 @@ export default function WorkflowsPage() {
                             onClick={() => setResubmitTarget({ workflow, stageId: stage.id })}
                           >
                             <RotateCcw className="h-3 w-3" />
-                            Resubmit
+                            Respond to revision
                           </Button>
                         </div>
                       ))}
