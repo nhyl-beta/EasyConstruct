@@ -122,6 +122,8 @@ ALLOW_DEMO_RESET=true npm run db:seed
 
 On Render, do not run migrations by hand: set the API service's **Pre-Deploy Command** to `npm run db:migrate --workspace=@easyconstruct/api`. Each deploy then applies what is pending first, and a failed migration stops the deploy before the new code goes live.
 
+To run them on demand (for example from a phone), use the **Run database migrations** workflow in the Actions tab. It needs the `DATABASE_URL` repository secret, and it defaults to a dry run that only lists what is pending.
+
 The seed command creates demo accounts, one per role. Credentials are listed in [`docs/TEST_ACCOUNTS.md`](docs/TEST_ACCOUNTS.md) and are intended for local development only.
 
 ### 6.5 Run the application

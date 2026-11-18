@@ -1,0 +1,39 @@
+name: Run database migrations
+
+# Applies the SQL migrations in apps/api/drizzle that the Neon database has not recorded (same script as
+# `npm run db:migrate`). Run it from the Actions tab (works from a phone): leave "dry run" on to only list what
+# is pending. Secret used (name only): DATABASE_URL (the Neon connection string).
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run: list pending migrations, change nothing"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: db-migrate
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Migrate
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          test -n "$DATABASE_URL" || { echo "Add the DATABASE_URL repository secret first"; exit 1; }
+          if [ "$DRY_RUN" = "true" ]; then npm run db:migrate --workspace=@easyconstruct/api -- --dry-run
+          else npm run db:migrate --workspace=@easyconstruct/api; fi
