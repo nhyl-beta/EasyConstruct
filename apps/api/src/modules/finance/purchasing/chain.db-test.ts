@@ -110,6 +110,25 @@ describe("purchasing chain", () => {
     assert.equal((await line()).committed, 0);
   });
 
+  test("resume: an order on hold goes back to ordered and its budget hold shrinks to the order's amount", async () => {
+    const id = await raiseApproved(10); // 10,000
+    const order = await orders.create(finance, {
+      purchaseRequestId: id,
+      vendor: "Resume Co",
+      lineItems: [{ description: "Sand", qty: 8, unit: "ton", unitCost: 1000 }],
+    });
+    await orders.cancel(finance, order.id);
+    assert.equal((await line()).committed, 10_000);
+
+    const resumed = await orders.resume(finance, order.id);
+    assert.equal(resumed.status, "ordered");
+    assert.equal((await line()).committed, 8_000, "only the order's amount is held again");
+    await assert.rejects(orders.resume(finance, order.id), ConflictError, "already ordered");
+
+    await orders.cancel(finance, order.id);
+    await prs.cancel(finance, id);
+  });
+
   test("delivery: the order's creator cannot confirm it; staff on the project can", async () => {
     const id = await raiseApproved(5);
     const order = await orders.create(finance, { purchaseRequestId: id, vendor: "Cement Co" });

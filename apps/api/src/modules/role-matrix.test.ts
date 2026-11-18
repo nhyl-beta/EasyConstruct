@@ -125,6 +125,7 @@ const WRITES: Case[] = [
   fin("/api/finance/procurement", procurementRouter, "post", "/5/ship", FM),
   fin("/api/finance/procurement", procurementRouter, "post", "/5/pay", FM),
   fin("/api/finance/procurement", procurementRouter, "post", "/5/cancel", FM),
+  fin("/api/finance/procurement", procurementRouter, "post", "/5/resume", FM),
   fin("/api/finance/purchase-requests", purchaseRequestsRouter, "post", "/5/approve", FM),
   fin("/api/finance/purchase-requests", purchaseRequestsRouter, "post", "/5/reject", ["finance-manager", "project-manager"]),
   fin("/api/finance/payroll-review", payrollReviewRoutes, "post", "/5/decide", ["finance-manager", "it-designer"]),
