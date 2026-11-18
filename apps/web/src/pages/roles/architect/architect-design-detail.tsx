@@ -13,6 +13,9 @@ import { ImpactAwarenessCard } from "@/features/lifecycle/components/ImpactAware
 import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { FileIntegrityBadge } from "@/features/uploads/components/FileIntegrityBadge";
+import { downloadFileUrl } from "@/lib/file-url";
+import { toast } from "sonner";
 
 export default function ArchitectDesignDetail() {
   const { id } = useParams<{ id: string }>();
@@ -26,6 +29,8 @@ export default function ArchitectDesignDetail() {
   const [reviewError, setReviewError] = useState<string | null>(null);
   const [raisingRfi, setRaisingRfi] = useState(false);
   // Only the PM and Engineers raise RFIs/RFAs; designers answer them.
+  // IT Designer only looks: no Delete or Request review (the API refuses them anyway); files stay downloadable.
+  const readOnly = user?.role === "it-designer";
   const canRaiseRequest = user?.role === "project-manager" || user?.role === "engineer" || user?.role === "admin";
 
   // C2 follow-up: "Request review" previously only existed as a dialog
@@ -108,15 +113,17 @@ export default function ArchitectDesignDetail() {
                 <MessageSquareQuote className="mr-1 h-3.5 w-3.5" /> Raise RFI
               </Button>
             )}
-            <Button
-              size="sm"
-              variant="outline"
-              className="text-destructive-strong"
-              onClick={() => setConfirmDelete(true)}
-            >
-              <Trash2 className="mr-1 h-3.5 w-3.5" /> Delete
-            </Button>
-            {d.status !== "Approved" && (
+            {!readOnly && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-destructive-strong"
+                onClick={() => setConfirmDelete(true)}
+              >
+                <Trash2 className="mr-1 h-3.5 w-3.5" /> Delete
+              </Button>
+            )}
+            {!readOnly && d.status !== "Approved" && (
               <Button
                 size="sm"
                
@@ -153,6 +160,25 @@ export default function ArchitectDesignDetail() {
           <Field label="Zone" value={d.zone ?? "—"} />
           <Field label="Files" value={`${d.fileCount}`} />
         </dl>
+        {(d.fileUrls ?? []).length > 0 && (
+          <ul className="mt-4 space-y-1 border-t border-border pt-4">
+            {(d.fileUrls ?? []).map((f) => (
+              <li key={f.url} className="flex items-center justify-between gap-2 text-sm">
+                <span className="flex min-w-0 items-center gap-2">
+                  <span className="truncate">{f.name}</span>
+                  <FileIntegrityBadge url={f.url} />
+                </span>
+                <button
+                  type="button"
+                  className="shrink-0 text-xs text-primary-strong hover:underline"
+                  onClick={() => void downloadFileUrl(f.url, f.name).catch((e: unknown) => toast.error(e instanceof Error ? e.message : "Could not download the file"))}
+                >
+                  Download
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
         {d.description && (
           <div className="mt-4 border-t border-border pt-4">
             <div className="text-xs uppercase tracking-wider text-muted-foreground">
