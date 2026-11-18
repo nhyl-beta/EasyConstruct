@@ -48,6 +48,8 @@ export interface UserAccountDialogProps {
     id: number,
     input: { name: string; email: string; role: string },
   ) => Promise<unknown>;
+  /** The sign-in email, changed through its own safe endpoint (also updates the employee record). */
+  onChangeEmail: (id: number, email: string) => Promise<unknown>;
   /** Administrative password reset — only called when the field is filled in. */
   onSetPassword: (id: number, password: string) => Promise<unknown>;
 }
@@ -61,6 +63,7 @@ export function UserAccountDialog({
   onOpenChange,
   onCreate,
   onUpdate,
+  onChangeEmail,
   onSetPassword,
 }: UserAccountDialogProps) {
   const [name, setName] = useState("");
@@ -84,8 +87,14 @@ export function UserAccountDialog({
   }, [open, user]);
 
   const isEdit = user !== null;
-  // A linked account's name and email follow its employee record, so they are edited there (Human Resources).
+  // A linked account's name follows its employee record, so it is edited there (Human Resources).
   const linkedToEmployee = isEdit && !!user.employeeCode;
+  // An unlinked account picks its name from the employee list; the list always offers the name it has now.
+  const nameOptions = useMemo(() => {
+    const names = new Set(employees.map((e) => e.name));
+    if (user?.name) names.add(user.name);
+    return [...names].sort().map((n) => ({ value: n, label: n }));
+  }, [employees, user]);
   const selectedEmployee = useMemo(
     () => employees.find((e) => String(e.id) === employeeKey) ?? null,
     [employees, employeeKey],
@@ -102,11 +111,13 @@ export function UserAccountDialog({
     setError(null);
     try {
       if (isEdit) {
+        // The email is left as it is here: changing it goes through onChangeEmail below.
         await onUpdate(user.id, {
           name: name.trim(),
-          email: email.trim(),
+          email: user.email,
           role,
         });
+        if (email.trim() !== user.email) await onChangeEmail(user.id, email.trim());
         // Separate endpoint (PATCH /users/:id/password) because the password
         // column is never read back or returned — see users/repository.ts.
         if (password) {
@@ -181,14 +192,26 @@ export function UserAccountDialog({
 
           <div className="grid gap-1.5">
             <Label htmlFor="user-name">Full name</Label>
-            <Input
-              id="user-name"
-              value={isEdit ? name : selectedEmployee?.name ?? ""}
-              readOnly={!isEdit || linkedToEmployee}
-              disabled={saving}
-              placeholder={isEdit ? undefined : "Filled in from the employee"}
-              onChange={(e) => setName(e.target.value)}
-            />
+            {isEdit && !linkedToEmployee ? (
+              <SearchableSelect
+                id="user-name"
+                value={name || undefined}
+                onValueChange={setName}
+                disabled={saving}
+                options={nameOptions}
+                placeholder="Select an employee"
+                searchPlaceholder="Search employee names…"
+                emptyText="No employee with that name. Ask HR to add the employee first."
+              />
+            ) : (
+              <Input
+                id="user-name"
+                value={isEdit ? name : selectedEmployee?.name ?? ""}
+                readOnly
+                disabled={saving}
+                placeholder={isEdit ? undefined : "Filled in from the employee"}
+              />
+            )}
           </div>
 
           <div className="grid gap-1.5">
@@ -198,14 +221,14 @@ export function UserAccountDialog({
               type="email"
               autoComplete="off"
               value={isEdit ? email : selectedEmployee?.email ?? ""}
-              readOnly={!isEdit || linkedToEmployee}
+              readOnly={!isEdit}
               disabled={saving}
               placeholder={isEdit ? undefined : "Filled in from the employee"}
               onChange={(e) => setEmail(e.target.value)}
             />
             {linkedToEmployee && (
               <p className="text-xs text-muted-foreground">
-                Name and email come from the employee record ({user?.employeeCode}). Human Resources edits them there.
+                The name comes from the employee record ({user?.employeeCode}); Human Resources edits it there. Changing the email here updates the employee record too and signs the person out.
               </p>
             )}
           </div>
