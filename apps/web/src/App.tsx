@@ -88,6 +88,7 @@ import ConsultantProjects from "./pages/roles/consultant/consultant-projects";
 // ── Admin Pages ──
 import AdminProjects from "./pages/roles/admin/admin-projects";
 import AdminWorkflows from "./pages/roles/admin/admin-workflows";
+import CompletedWorkflows from "./pages/roles/shared/completed-workflows";
 import AdminDocuments from "./pages/roles/admin/admin-documents";
 import AdminActivityLogs from "./pages/roles/admin/admin-activity-logs";
 import AdminSecurity from "./pages/roles/admin/admin-security";
@@ -395,6 +396,14 @@ function App() {
                     element={
                       <RequireRole allow={["admin", "it_designer"]}>
                         <AdminProjects />
+                      </RequireRole>
+                    }
+                  />
+                  <Route
+                    path="/admin/completed-workflows"
+                    element={
+                      <RequireRole allow={["admin", "owner"]}>
+                        <CompletedWorkflows />
                       </RequireRole>
                     }
                   />

@@ -91,7 +91,7 @@ export default function OwnerDashboardPage() {
             value: `${c.completedWorkflowCount}`,
             icon: FileCheck2,
             tone: "good",
-            to: "/owner/audit-trail", // B-43: the card opens the log that records each completed workflow
+            to: "/admin/completed-workflows",
           },
           {
             label: "Proposals pending",

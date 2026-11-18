@@ -41,9 +41,10 @@ export const WorkflowRepository = {
   },
 
   /** One page of active workflows (server-side paging and search). */
-  async listActivePage(params: { page: number; limit: number; search?: string }): Promise<{ items: Workflow[]; total: number; pages: number }> {
+  async listActivePage(params: { page: number; limit: number; search?: string; status?: "completed" }): Promise<{ items: Workflow[]; total: number; pages: number }> {
     const qs = new URLSearchParams({ page: String(params.page), limit: String(params.limit) });
     if (params.search) qs.set("search", params.search);
+    if (params.status) qs.set("status", params.status);
     const json = (await apiClient.get(`/workflows?${qs.toString()}`)) as {
       data: Workflow[];
       meta: { total: number; pages: number };

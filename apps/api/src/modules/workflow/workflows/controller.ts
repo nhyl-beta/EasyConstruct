@@ -78,6 +78,7 @@ export const getAll = async (req: AuthedRequest, res: Response, next: NextFuncti
       const { items, meta } = await service.getActiveWorkflowsPage(
         { ...(codes ? { codes } : {}), projectCode: text(req.query.projectCode), search: text(req.query.search) },
         paging,
+        req.query.status === "completed" ? "completed" : "active",
       );
       sendPaged(res, items, MSG.workflows.retrieved, meta);
       return;
