@@ -444,7 +444,10 @@ async function attendance() {
       const clockIn = status === "Late" ? `08:${String(10 + Math.floor(rand() * 45)).padStart(2, "0")}` : status === "Absent" ? "08:00" : `07:${String(Math.floor(rand() * 25)).padStart(2, "0")}`;
       const clockOut = status === "Absent" ? undefined : status === "Half Day" ? "12:00" : "16:30";
       await attempt(`attendance ${e.employee_id} ${d}`, async () => {
-        await api("/attendance", s.admin.token, {
+        // POST /attendance only allows site-personnel or it-designer (routes.ts); admin
+        // was never on that list, so every one of these silently failed and got logged
+        // as a "skipped" attempt instead of actually creating the record.
+        await api("/attendance", s.itdesigner.token, {
           method: "POST",
           body: { employeeId: e.employee_id, site: p.name, projectCode: p.code, clockIn, clockOut, attendanceStatus: status, logDate: d, photoUrl: photoFor.get(e.employee_id), remarks: status === "Absent" ? "No show - not notified" : status === "Late" ? "Traffic on the access road" : undefined, ...coords },
         });
