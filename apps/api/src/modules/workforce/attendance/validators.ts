@@ -61,4 +61,7 @@ export const markAbsentSchema = z.object({
 // photo and coordinates, and there was no way to write it at all.
 export const updateAttendanceSchema = createAttendanceSchema.partial().extend({
   status: z.enum(["Verified", "Flagged", "Pending"]).optional(),
+  // Where the worker clocked out from (Site Personnel's own device).
+  clockOutLatitude: z.number().min(-90).max(90).optional(),
+  clockOutLongitude: z.number().min(-180).max(180).optional(),
 });

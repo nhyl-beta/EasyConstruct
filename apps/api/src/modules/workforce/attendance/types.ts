@@ -32,7 +32,10 @@ export interface CreateAttendanceInput {
   validatedOffline?: boolean;
 }
 
-export interface UpdateAttendanceInput extends Partial<CreateAttendanceInput> {}
+export interface UpdateAttendanceInput extends Partial<CreateAttendanceInput> {
+  clockOutLatitude?: number;
+  clockOutLongitude?: number;
+}
 
 export interface AttendanceFilters {
   employeeId?: string;

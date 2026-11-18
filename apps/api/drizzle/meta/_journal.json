@@ -372,6 +372,13 @@
       "when": 1793441600000,
       "tag": "0052_attendance_reviewed",
       "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1793528000000,
+      "tag": "0053_attendance_clock_out_location",
+      "breakpoints": true
     }
   ]
 }

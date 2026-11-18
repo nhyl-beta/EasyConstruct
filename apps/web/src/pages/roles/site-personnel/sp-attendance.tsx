@@ -100,7 +100,7 @@ type GeoState = "idle" | "requesting" | "granted" | "denied";
 
 export default function SPAttendancePage() {
   const { employeeId, loading: employeeLoading, error: employeeError } = useMyEmployee();
-  const { today, loading, error, submitting, clockIn, clockOut } = useAttendance(employeeId);
+  const { visits, openVisit, loading, error, submitting, clockIn, clockOut } = useAttendance(employeeId);
 
   const { projects } = useProjects();
   const staffedCodes = useMyStaffedProjectCodes();
@@ -109,6 +109,10 @@ export default function SPAttendancePage() {
     [projects, staffedCodes],
   );
   const [projectCode, setProjectCode] = useState("");
+  // A project already visited today can't be logged again; the server enforces one visit per project per day.
+  const visitedCodes = new Set(visits.map((v) => v.projectCode));
+  const availableProjects = staffedProjects.filter((p) => !visitedCodes.has(p.code));
+  const clockedInCount = staffedProjects.filter((p) => visitedCodes.has(p.code)).length;
 
   // E1: cache each staffed project's geofence coordinates whenever they're
   // freshly fetched online, so a clock-in attempted while offline can still
@@ -210,6 +214,7 @@ export default function SPAttendancePage() {
       setPhotoFile(null);
       setGeoState("idle");
       setCoords(null);
+      setProjectCode("");
     } catch {
       await queueOffline();
     }
@@ -217,7 +222,7 @@ export default function SPAttendancePage() {
 
   return (
     <PageContainer>
-      <PageHeader title="Attendance" description="Geofenced, photo-verified attendance for your assigned site" />
+      <PageHeader title="Attendance" description="Geofenced, photo-verified attendance for each site you visit" />
       <PageContent className="p-6 md:p-8 space-y-6">
         <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-muted/30 px-4 py-2.5 text-sm">
           <span className={`flex items-center gap-1.5 font-medium ${isOnline ? "text-success-strong" : "text-warning-strong"}`}>
@@ -288,29 +293,37 @@ export default function SPAttendancePage() {
 
         {loading ? (
           <p className="text-sm text-muted-foreground">Loading today's attendance…</p>
-        ) : today ? (
-          <SectionCard title="Today's attendance" subtitle={today.logDate}>
-            <div className="flex flex-wrap items-center gap-4">
-              <div className="flex items-center gap-2 text-sm">
-                <Clock className="h-4 w-4 text-muted-foreground" />
-                Clocked in at {today.clockIn}
-              </div>
-              {today.clockOut && (
-                <div className="flex items-center gap-2 text-sm">
-                  <Clock className="h-4 w-4 text-muted-foreground" />
-                  Clocked out at {today.clockOut}
-                </div>
-              )}
-              <StatusBadge status={today.geofence} />
-              <StatusBadge status={today.photo === "Verified" ? "Verified" : "Pending"} />
-            </div>
-            {!today.clockOut && (
-              <Button className="mt-4" onClick={() => clockOut()} disabled={submitting}>
-                Clock out
-              </Button>
-            )}
-          </SectionCard>
         ) : (
+          <>
+            {visits.length > 0 && (
+              <SectionCard
+                title="Today's visits"
+                subtitle={`${clockedInCount} of ${staffedProjects.length} assigned project${staffedProjects.length === 1 ? "" : "s"} clocked in`}
+              >
+                <ul className="space-y-3">
+                  {visits.map((v) => (
+                    <li key={v.id} className="flex flex-wrap items-center gap-3 rounded-lg border border-border p-3 text-sm">
+                      <span className="font-medium">{v.projectCode ?? v.site}</span>
+                      <span className="flex items-center gap-1.5 text-muted-foreground">
+                        <Clock className="h-4 w-4" />
+                        {v.clockIn} to {v.clockOut ?? "still on site"}
+                      </span>
+                      <StatusBadge status={v.geofence} />
+                      <StatusBadge status={v.photo === "Verified" ? "Verified" : "Pending"} />
+                      {v.clockOut && v.clockOutGeofence && (
+                        <span className="text-xs text-muted-foreground">Left from: {v.clockOutGeofence === "Outside" ? "outside the site" : v.clockOutGeofence === "Inside" ? "inside the site" : "unmeasured"}</span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+                {openVisit && (
+                  <Button className="mt-4" onClick={() => clockOut()} disabled={submitting}>
+                    Clock out of {openVisit.projectCode ?? openVisit.site}
+                  </Button>
+                )}
+              </SectionCard>
+            )}
+            {!openVisit && (
           <SectionCard title="Log attendance" subtitle="Verify your location and identity to clock in">
             <div className="space-y-4">
               <div className="space-y-1.5">
@@ -319,12 +332,12 @@ export default function SPAttendancePage() {
                     <SelectValue placeholder="Select a project" />
                   </SelectTrigger>
                   <SelectContent>
-                    {staffedProjects.length === 0 && (
+                    {availableProjects.length === 0 && (
                       <div className="px-2 py-1.5 text-xs text-muted-foreground">
-                        You are not staffed on any project as site personnel
+                        {staffedProjects.length === 0 ? "You are not staffed on any project as site personnel" : "You have clocked in at every assigned project today"}
                       </div>
                     )}
-                    {staffedProjects.map((p) => (
+                    {availableProjects.map((p) => (
                       <SelectItem key={p.code} value={p.code}>
                         {p.code} · {p.name}
                       </SelectItem>
@@ -380,10 +393,12 @@ export default function SPAttendancePage() {
                 {uploadingPhoto ? "Uploading photo…" : submitting ? "Submitting…" : "Confirm attendance"}
               </Button>
               <p className="text-xs text-muted-foreground">
-                Attendance already recorded today can't be duplicated — the server rejects a second clock-in for the same date.
+                One clock-in per project per day. Clock out of this site before you clock in at the next one.
               </p>
             </div>
           </SectionCard>
+            )}
+          </>
         )}
 
         {/* One worker at a time, right now, with a photo. */}

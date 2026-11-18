@@ -82,6 +82,11 @@ describe("record exceptions", () => {
     assert.equal(detectRecordExceptions([row({ id: 1 }), row({ id: 2, logDate: "2026-10-12" })], TODAY, RULES).length, 0);
   });
 
+  test("one person at two different projects on one day is not a duplicate", () => {
+    const out = detectRecordExceptions([row({ id: 1, projectCode: "P-1" }), row({ id: 2, projectCode: "P-2" })], TODAY, RULES);
+    assert.equal(out.filter((e) => e.kind === "duplicate_entry").length, 0);
+  });
+
   test("an absent or on-leave record needs no clock-out, time or photo", () => {
     assert.deepEqual(kinds([row({ attendanceStatus: "Absent", clockIn: "00:00", clockOut: null, photoUrl: null })]), []);
   });

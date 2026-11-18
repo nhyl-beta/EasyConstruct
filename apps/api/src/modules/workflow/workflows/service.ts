@@ -775,6 +775,11 @@ export const decideStage = async (
     );
   } else if (input.decision === "revise") {
     await syncLinkedProposal("Revision Requested");
+    // It goes back to whoever raised it, who answers with "Respond to revision" in Approvals.
+    await notifyInitiator(
+      "Revision requested",
+      `${stage.roleLabel} asked for a revision of "${owningWorkflow?.title}" (${owningWorkflow?.code}). Open Approvals and respond to the revision.${input.comments ? ` Note: ${input.comments}`.slice(0, 300) : ""}`,
+    );
   } else if (input.decision === "approve") {
     const allStages = await repo.findStagesByWorkflow(workflowId);
     const next = allStages.find((s) => s.sequence === stage.sequence + 1);

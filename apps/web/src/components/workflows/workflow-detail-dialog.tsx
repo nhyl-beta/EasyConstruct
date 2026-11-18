@@ -107,7 +107,7 @@ export function WorkflowDetailDialog({
         {workflow && (
           <div className="space-y-6 py-1">
             <Section title="Approval chain">
-              <WorkflowStagePipeline stages={workflow.stages} direction="row" />
+              <WorkflowStagePipeline stages={workflow.stages} direction="row" waitingOn={workflow.createdBy} />
             </Section>
 
             {/* Fix 3.2: shown for budget changes and change orders only (the card hides itself otherwise). */}

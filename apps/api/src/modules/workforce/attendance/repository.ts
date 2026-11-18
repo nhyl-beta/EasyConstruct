@@ -189,10 +189,16 @@ export const create = async (data: CreateAttendanceInput & { hours?: string }) =
   return findByClientRequestId(data.clientRequestId);
 };
 
-export const update = async (id: number, data: UpdateAttendanceInput & { hours?: string; reviewedAt?: Date }) => {
+export const update = async (id: number, data: UpdateAttendanceInput & { hours?: string; reviewedAt?: Date; clockOutGeofence?: string }) => {
+  // numeric columns take strings
+  const { clockOutLatitude, clockOutLongitude, ...rest } = data;
   const [updated] = await db
     .update(attendance)
-    .set(data)
+    .set({
+      ...rest,
+      ...(clockOutLatitude != null ? { clockOutLatitude: String(clockOutLatitude) } : {}),
+      ...(clockOutLongitude != null ? { clockOutLongitude: String(clockOutLongitude) } : {}),
+    })
     .where(eq(attendance.id, id))
     .returning();
   return updated ?? null;

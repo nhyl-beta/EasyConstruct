@@ -135,7 +135,7 @@ export function ResubmitWorkflowDialog({
     <Dialog open={workflow !== null} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Review before resubmitting</DialogTitle>
+          <DialogTitle>Respond to revision</DialogTitle>
           <DialogDescription>
             {workflow ? `${workflow.code} — sent back for revision. Make any changes, then resend it.` : "Loading…"}
           </DialogDescription>
@@ -330,7 +330,7 @@ export function ResubmitWorkflowDialog({
             Cancel
           </Button>
           <Button onClick={() => void handleSubmit()} disabled={submitting || !workflow}>
-            {submitting ? "Resubmitting…" : "Resubmit"}
+            {submitting ? "Sending…" : "Send revision"}
           </Button>
         </DialogFooter>
       </DialogContent>

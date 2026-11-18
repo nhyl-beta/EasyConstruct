@@ -27,9 +27,11 @@ interface WorkflowStagePipelineProps {
   /** Vertical layout reads better inside a narrow dialog than the
    * horizontal one used on the full-width Workflows page. */
   direction?: "row" | "column";
+  /** Who a revision-required stage is waiting on: the person who raised the workflow. */
+  waitingOn?: string | null;
 }
 
-export function WorkflowStagePipeline({ stages, direction = "row" }: WorkflowStagePipelineProps) {
+export function WorkflowStagePipeline({ stages, direction = "row", waitingOn }: WorkflowStagePipelineProps) {
   return (
     <div
       className={
@@ -50,6 +52,8 @@ export function WorkflowStagePipeline({ stages, direction = "row" }: WorkflowSta
                   ? "border-primary bg-primary/10 text-primary-strong"
                   : stage.status === "rejected"
                   ? "border-destructive bg-destructive/10 text-destructive-strong"
+                  : stage.status === "revision-required"
+                  ? "border-warning bg-warning/10 text-warning-strong"
                   : "border-border bg-muted text-muted-foreground"
               }`}
             >
@@ -63,7 +67,9 @@ export function WorkflowStagePipeline({ stages, direction = "row" }: WorkflowSta
               </div>
               <div className="text-xs text-muted-foreground">
                 {stage.decidedBy ?? stage.assignedTo ?? "Unassigned"} ·{" "}
-                {stage.decidedAt
+                {stage.status === "revision-required"
+                  ? `Revision requested, waiting on ${waitingOn ?? "the sender"}`
+                  : stage.decidedAt
                   ? formatRelativeTime(stage.decidedAt)
                   : stage.status === "current"
                   ? "In progress"

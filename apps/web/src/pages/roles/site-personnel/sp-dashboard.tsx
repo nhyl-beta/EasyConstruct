@@ -41,8 +41,8 @@ export default function SPDashboardPage() {
         items={[
           {
             label: "Attendance",
-            value: c.today ? c.today.geofence : "Not logged",
-            hint: c.today ? c.today.clockIn : "Log attendance to start your shift",
+            value: c.visits.assigned > 1 ? `${c.visits.clockedIn} of ${c.visits.assigned}` : c.today ? c.today.geofence : "Not logged",
+            hint: c.visits.assigned > 1 ? "assigned projects clocked in today" : c.today ? c.today.clockIn : "Log attendance to start your shift",
             icon: UserCheck,
             tone: c.today?.geofence === "Inside" ? "good" : c.today ? "bad" : "neutral",
           },

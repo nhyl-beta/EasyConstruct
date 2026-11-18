@@ -148,7 +148,7 @@ export default function WorkflowsPage() {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <WorkflowStagePipeline stages={workflow.stages} />
+                  <WorkflowStagePipeline stages={workflow.stages} waitingOn={workflow.createdBy} />
                   {canManage &&
                     workflow.stages
                       .filter((stage) => stage.status === "revision-required")
@@ -168,7 +168,7 @@ export default function WorkflowsPage() {
                             onClick={() => setResubmitTarget({ workflow, stageId: stage.id })}
                           >
                             <RotateCcw className="h-3 w-3" />
-                            Resubmit
+                            Respond to revision
                           </Button>
                         </div>
                       ))}

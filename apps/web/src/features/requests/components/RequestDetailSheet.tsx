@@ -17,10 +17,11 @@ import { downloadFileUrl } from "@/lib/file-url";
 import { useMarkClientReplied, useRequestDetail, useResendRequestEmail } from "../hooks/useRequests";
 import { canFollowUpRequest, REQUEST_RAISER_ROLES } from "../lib/follow-up-rule";
 import { RequestRepository } from "../repositories/request.repository";
-import { DISCIPLINE_LABEL, MAX_EMAIL_RESENDS, STATUS_LABEL, type DesignRequestDetail, type RequestFile } from "../types/request.types";
+import { DISCIPLINE_LABEL, MAX_EMAIL_RESENDS, RFA_OUTCOMES, STATUS_LABEL, type DesignRequestDetail, type RequestFile, type RfaOutcome } from "../types/request.types";
 import { EmailStatusBadge, formatDate, formatDateTime, KindBadge, OverdueBadge, RecipientBadge, RequestStatusBadge } from "./RequestBadges";
 import { RequestFilePicker, uploadAll } from "./RequestFilePicker";
 import { RespondDialog } from "./RespondDialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FileIntegrityBadge } from "@/features/uploads/components/FileIntegrityBadge";
 import { RecipientsList } from "./RecipientsList";
 import { OverrideReasonDialog } from "@/components/shared/override-reason-dialog";
@@ -212,9 +213,15 @@ export function RequestDetailSheet({
                       </p>
                       <Files files={r.files} stage="response" />
                     </>
+                  ) : mineToAnswer ? (
+                    <InlineReply request={r} isClient={isClient} onDone={done} />
                   ) : (
                     <p className="mt-1 text-sm text-muted-foreground">
-                      {r.status === "draft" ? "Not sent yet." : isClient ? "Waiting for the client's reply." : "Waiting for a response."}
+                      {r.status === "draft"
+                        ? "Not sent yet. The Project Manager countersigns and sends it first."
+                        : isClient
+                        ? "Waiting for the client's reply."
+                        : `Waiting for ${r.assignedToName ?? "the assignee"} to respond.`}
                     </p>
                   )}
                 </section>
@@ -293,7 +300,7 @@ export function RequestDetailSheet({
                   )}
                   {mineToAnswer && (
                     <Button size="sm" disabled={busy} onClick={() => setResponding(true)}>
-                      <CheckCircle2 className="h-4 w-4" /> {isClient ? "Mark answered" : "Respond"}
+                      <CheckCircle2 className="h-4 w-4" /> {isClient ? "Mark answered" : "Respond with files"}
                     </Button>
                   )}
                   {canFollowUp && (
@@ -365,6 +372,49 @@ export function RequestDetailSheet({
         </>
       )}
     </>
+  );
+}
+
+/** Reply box in the panel (B-171). Files and a longer answer still go through "Respond with files". */
+function InlineReply({ request, isClient, onDone }: { request: DesignRequestDetail; isClient: boolean; onDone: () => void }) {
+  const [text, setText] = useState("");
+  const [outcome, setOutcome] = useState<RfaOutcome | "">("");
+  const [busy, setBusy] = useState(false);
+  const isRfa = request.kind === "RFA";
+  const ok = text.trim().length >= 3 && (!isRfa || !!outcome);
+  const send = async () => {
+    setBusy(true);
+    try {
+      await RequestRepository.respond(request.id, { responseText: text.trim(), outcome: isRfa ? (outcome as RfaOutcome) : undefined, files: [] });
+      toast.success(`${request.number} ${isRfa ? STATUS_LABEL[outcome as RfaOutcome].toLowerCase() : "answered"}`);
+      onDone();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not send the response");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="mt-2 space-y-2">
+      {isRfa && (
+        <Select value={outcome} onValueChange={(v) => setOutcome(v as RfaOutcome)} disabled={busy}>
+          <SelectTrigger aria-label="Outcome">
+            <SelectValue placeholder="Choose an outcome" />
+          </SelectTrigger>
+          <SelectContent>
+            {RFA_OUTCOMES.map((o) => (
+              <SelectItem key={o} value={o}>
+                {STATUS_LABEL[o]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
+      <Textarea aria-label="Your reply" rows={3} placeholder={isClient ? "Record the client's answer" : "Type your reply or clarification"} value={text} onChange={(e) => setText(e.target.value)} disabled={busy} />
+      <Button size="sm" disabled={!ok || busy} onClick={() => void send()}>
+        <Send className="h-4 w-4" /> Send response
+      </Button>
+    </div>
   );
 }
 

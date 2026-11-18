@@ -229,6 +229,24 @@ export const attendanceOn = async (employeeId: string, date: string) => {
   return row ?? null;
 };
 
+/** Projects the employee has a record for on one date: the sites visited that day. */
+export const projectsVisitedOn = async (employeeId: string, date: string): Promise<number> => {
+  const rows = await db
+    .selectDistinct({ projectCode: attendance.projectCode })
+    .from(attendance)
+    .where(and(eq(attendance.employeeId, employeeId), eq(attendance.logDate, date)));
+  return rows.filter((r) => r.projectCode).length;
+};
+
+/** Projects the user is staffed on as site personnel. */
+export const siteProjectsAssigned = async (userId: number): Promise<number> => {
+  const rows = await db
+    .selectDistinct({ projectCode: projectMembers.projectCode })
+    .from(projectMembers)
+    .where(and(eq(projectMembers.userId, userId), eq(projectMembers.role, "site-personnel")));
+  return rows.length;
+};
+
 // ── Documents ───────────────────────────────────────────────────────────────
 
 export const documentCount = async (codes: Codes = null): Promise<number> => {

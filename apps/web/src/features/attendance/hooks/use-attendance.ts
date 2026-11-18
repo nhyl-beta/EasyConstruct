@@ -13,6 +13,17 @@ function nowHHMM() {
   return new Date().toTimeString().slice(0, 5);
 }
 
+/** The phone's position for the clock-out proof; gives up quietly so a weak signal never traps a worker on site. */
+const currentPosition = () =>
+  new Promise<{ latitude: number; longitude: number } | undefined>((resolve) => {
+    if (!navigator.geolocation) return resolve(undefined);
+    navigator.geolocation.getCurrentPosition(
+      (p) => resolve({ latitude: p.coords.latitude, longitude: p.coords.longitude }),
+      () => resolve(undefined),
+      { enableHighAccuracy: true, timeout: 8000 },
+    );
+  });
+
 // Employee linkage note: users↔employees are joined by email, not a real FK
 // (see Part 1). If an employee record's email doesn't exactly match the
 // logged-in user's email, this hook has nothing to key attendance off of.
@@ -44,7 +55,9 @@ export function useAttendance(employeeId: string | null) {
     refresh();
   }, [refresh]);
 
-  const today = records.find((r) => r.logDate === todayISO());
+  // One visit per project per day; the open one (no clock-out yet) is the site the worker is at now.
+  const visits = records.filter((r) => r.logDate === todayISO());
+  const openVisit = visits.find((r) => !r.clockOut);
 
   const clockIn = useCallback(
     async (opts: { site: string; projectCode?: string; latitude?: number; longitude?: number; photoUrl?: string }) => {
@@ -75,15 +88,15 @@ export function useAttendance(employeeId: string | null) {
   );
 
   const clockOut = useCallback(async () => {
-    if (!today) throw new Error("No active attendance record to clock out of");
+    if (!openVisit) throw new Error("No active attendance record to clock out of");
     setSubmitting(true);
     try {
-      await attendanceRepository.clockOut(today.id, nowHHMM());
+      await attendanceRepository.clockOut(openVisit.id, nowHHMM(), await currentPosition());
       await refresh();
     } finally {
       setSubmitting(false);
     }
-  }, [today, refresh]);
+  }, [openVisit, refresh]);
 
-  return { records, today, loading, error, submitting, clockIn, clockOut, refresh, currentUserEmail: user?.email };
+  return { records, visits, openVisit, loading, error, submitting, clockIn, clockOut, refresh, currentUserEmail: user?.email };
 }

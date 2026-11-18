@@ -121,6 +121,7 @@ export interface FinanceSummary {
 export interface SitePersonnelSummary {
   role: "site-personnel";
   attendanceToday: { clockIn: string; clockOut: string | null; geofence: string; logDate: string } | null;
+  visits: { clockedIn: number; assigned: number };
   tasks: { total: number; pending: number; first: unknown[] };
   issues: { open: number };
   documents: { count: number };

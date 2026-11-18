@@ -16,6 +16,7 @@ export const useSpDashboardController = () => {
   return {
     loading,
     today: summary?.attendanceToday ?? null,
+    visits: summary?.visits ?? { clockedIn: 0, assigned: 0 },
     taskCounts: { total: summary?.tasks.total ?? 0, pending: summary?.tasks.pending ?? 0 },
     tasks: (summary?.tasks.first ?? []) as DashboardTask[],
     openIssues: summary?.issues.open ?? 0,
