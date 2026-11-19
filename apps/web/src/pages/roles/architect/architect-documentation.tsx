@@ -1,6 +1,6 @@
 import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
 import { usePagination } from "@/hooks/use-pagination";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { PageHeader } from "@/components/refine-ui/views/page-header";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Input } from "@/components/ui/input";
@@ -17,14 +17,63 @@ import { useCurrentRevisions } from "@/features/revisions/hooks/useCurrentRevisi
 
 export default function ArchitectDocumentation() {
   const c = useArchitectDocuments();
-  const pg = usePagination(c.docs, 12, `${c.query}|${c.category}`);
   const currentRevisions = useCurrentRevisions("plan");
-  // H7: separate from useArchitectDocuments' own read-only table above — an
-  // As-Built Drawing (gate X-check territory) has to land in the shared
-  // `documents` table every other role's uploads and the lifecycle gates
-  // read from, not this page's own architect-documents table.
-  const { uploading, upload } = useFieldDocuments();
+  // H7/B-154: an As-Built Drawing (gate X-check territory) uploads into the
+  // shared `documents` table every other role's uploads and the lifecycle
+  // gates read from, not this page's own architect-documents table — so the
+  // list below has to show both sources or a fresh upload never appears.
+  const { documents: fieldDocs, loading: fieldLoading, uploading, upload } = useFieldDocuments();
   const [uploadOpen, setUploadOpen] = useState(false);
+
+  const query = c.query.trim().toLowerCase();
+  const matchingFieldDocs = useMemo(
+    () =>
+      fieldDocs
+        .filter((d) => c.category === "all" || d.type === c.category)
+        .filter((d) => !query || d.title.toLowerCase().includes(query)),
+    [fieldDocs, c.category, query],
+  );
+  const categories = useMemo(
+    () => Array.from(new Set([...c.categories, ...fieldDocs.map((d) => d.type)])),
+    [c.categories, fieldDocs],
+  );
+  type DisplayDoc = {
+    id: string;
+    title: string;
+    category: string;
+    version: string;
+    status: string;
+    owner: string;
+    updatedAt: string | null;
+    revisionItemId: number | null;
+  };
+  const allDocs = useMemo<DisplayDoc[]>(
+    () => [
+      ...c.docs.map((d) => ({
+        id: `plan-${d.id}`,
+        title: d.title,
+        category: d.category,
+        version: d.version,
+        status: d.status,
+        owner: d.owner,
+        updatedAt: d.updatedAt,
+        revisionItemId: d.id,
+      })),
+      ...matchingFieldDocs.map((d) => ({
+        id: `doc-${d.id}`,
+        title: d.title,
+        category: d.type,
+        version: d.version,
+        status: "Uploaded",
+        owner: d.uploadedBy ?? "—",
+        updatedAt: d.createdAt,
+        revisionItemId: null,
+      })),
+    ],
+    [c.docs, matchingFieldDocs],
+  );
+  const loading = c.loading || fieldLoading;
+  const pg = usePagination(allDocs, 12, `${c.query}|${c.category}`);
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-8">
@@ -49,14 +98,14 @@ export default function ArchitectDocumentation() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All categories</SelectItem>
-            {c.categories.map((cat) => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+            {categories.map((cat) => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
 
-      {c.loading ? (
+      {loading ? (
         <div className="text-sm text-muted-foreground">Loading documents…</div>
-      ) : c.docs.length === 0 ? (
+      ) : allDocs.length === 0 ? (
         <div className="rounded-2xl border border-dashed p-10 text-center text-sm text-muted-foreground">
           No documents yet.
         </div>
@@ -80,9 +129,11 @@ export default function ArchitectDocumentation() {
                 <span>{d.owner}</span>
                 <span>{d.updatedAt ? new Date(d.updatedAt).toLocaleDateString() : "—"}</span>
               </div>
-              <div className="mt-2 border-t pt-2">
-                <RevisionLink itemType="plan" itemId={d.id} current={currentRevisions[d.id]} />
-              </div>
+              {d.revisionItemId != null && (
+                <div className="mt-2 border-t pt-2">
+                  <RevisionLink itemType="plan" itemId={d.revisionItemId} current={currentRevisions[d.revisionItemId]} />
+                </div>
+              )}
             </div>
           ))}
           <div className="col-span-full">
