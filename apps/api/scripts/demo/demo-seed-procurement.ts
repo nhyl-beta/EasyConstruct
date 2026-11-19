@@ -41,6 +41,7 @@ import { monthKey } from "../../src/modules/finance/cash-flow/months.js";
 import { refreshMonth } from "../../src/modules/finance/cash-flow/service.js";
 import { lineItemsTotal } from "../../src/modules/finance/purchasing/rules.js";
 import { assertDemoDatabase } from "./demo-guard.js";
+import { storePdf } from "./demo-files.js";
 import { EMAILS } from "./demo-seed-lib.js";
 
 const DRY = process.argv.includes("--dry-run");
@@ -188,6 +189,18 @@ async function main() {
         const orderLines = o.lines ?? plan.lines;
         const orderAmount = lineItemsTotal(orderLines);
         const delivered = o.status === "delivered" || o.status === "paid";
+        // A receipt the site confirmed delivery against; this script writes straight to the
+        // DB (no HTTP session), so storePdf() goes through the upload service in-process.
+        const receipt = delivered
+          ? await storePdf(`${o.id}-delivery-receipt.pdf`, `Delivery Receipt - ${o.id}`, [
+              `Vendor: ${o.vendor}`,
+              `Project: ${PROJECT}`,
+              `Purchase request: ${plan.id}`,
+              `Items: ${orderLines.length}`,
+              `Amount: PHP ${orderAmount.toLocaleString("en-PH")}`,
+              "Received complete and in good condition.",
+            ])
+          : null;
         await tx.insert(procurementOrders).values({
           id: o.id,
           vendor: o.vendor,
@@ -205,6 +218,7 @@ async function main() {
           receivedByUserId: delivered ? site.id : null,
           receivedBy: delivered ? site.name : null,
           deliveryNote: delivered ? "Received complete and in good condition." : null,
+          deliveryReceiptUrl: receipt?.url ?? null,
           invoiceNumber: o.status === "paid" ? `INV-${o.id}` : null,
           invoiceAmount: o.status === "paid" ? (o.invoiceAmount ?? orderAmount) : null,
           varianceNote: o.status === "paid" ? (o.varianceNote ?? null) : null,

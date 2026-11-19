@@ -446,10 +446,11 @@ async function buildConstructionPartial(c: Ctx, built: Built) {
     ["ISS-S4-03", "Honeycombing at column base C4", "Voids found at the base of column C4 after formwork removal.", "Material", false],
     ["ISS-S4-04", "Scaffold base plates missing on grid B", "Two scaffold bays on grid B are missing base plates; work paused in that bay.", "Safety", false],
   ];
-  for (const [code, title, description, category, resolve] of issues) {
+  for (const [idx, [code, title, description, category, resolve]] of issues.entries()) {
+    const photo = await png(eng, `${code}.png`, [c.code, title.slice(0, 30).toUpperCase(), "SITE PHOTO", code], idx);
     const i = await api<{ id: number }>("/issues", eng.token, {
       method: "POST",
-      body: { issueCode: code, projectCode: c.code, title, description, category, severity: category === "Safety" ? "High" : "Medium", reportedByName: eng.name },
+      body: { issueCode: code, projectCode: c.code, title, description, category, severity: category === "Safety" ? "High" : "Medium", reportedByName: eng.name, attachmentUrl: photo.url },
     });
     if (resolve) {
       await api(`/issues/${i.id}/status`, pm.token, {
@@ -490,9 +491,11 @@ async function buildConstructionComplete(c: Ctx, built: Built) {
   for (const t of built.taskIds) await completeTask(c, t, t.idx % 4 === 0);
   for (const m of built.milestoneIds) await api(`/milestones/${m}`, pm.token, { method: "PATCH", body: { status: "completed" } });
   const eng = c.team.engineer!;
+  const issueCode = `ISS-${c.code.replace("DEMO-", "")}-01`;
+  const photo = await png(eng, `${issueCode}.png`, [c.code, "REBAR SPACING", "SITE PHOTO", issueCode]);
   const i = await api<{ id: number }>("/issues", eng.token, {
     method: "POST",
-    body: { issueCode: `ISS-${c.code.replace("DEMO-", "")}-01`, projectCode: c.code, category: "Quality", severity: "Low", title: "Minor rebar spacing deviation", description: "Spacing on grid line 4 slightly out of tolerance, corrected on site.", reportedByName: eng.name },
+    body: { issueCode, projectCode: c.code, category: "Quality", severity: "Low", title: "Minor rebar spacing deviation", description: "Spacing on grid line 4 slightly out of tolerance, corrected on site.", reportedByName: eng.name, attachmentUrl: photo.url },
   });
   await api(`/issues/${i.id}/status`, pm.token, { method: "PATCH", body: { status: "Resolved", resolutionNotes: "Re-inspected and corrected on site before the pour." } });
 }
