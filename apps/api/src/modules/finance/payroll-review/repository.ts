@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 
 import { db } from "../../../core/db/connection.js";
 import { payrollBatches } from "../../../core/db/schema/finance.js";
@@ -36,12 +36,14 @@ export const findAll = async (filters: PayrollBatchFilters = {}) => {
     conditions.push(eq(payrollBatches.projectCode, filters.projectCode));
   }
 
+  // Newest batch first — the queue's own default order before any explicit sort/filter.
   const rows = conditions.length
     ? await db
         .select()
         .from(payrollBatches)
         .where(and(...conditions))
-    : await db.select().from(payrollBatches);
+        .orderBy(desc(payrollBatches.createdAt), desc(payrollBatches.id))
+    : await db.select().from(payrollBatches).orderBy(desc(payrollBatches.createdAt), desc(payrollBatches.id));
 
   return rows.map(toDto);
 };

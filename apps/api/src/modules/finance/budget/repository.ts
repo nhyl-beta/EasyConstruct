@@ -42,13 +42,15 @@ export const findAll = async (filters: BudgetFilters = {}) => {
     );
   }
 
+  // Most recently updated first — the default order before any explicit sort/filter.
   const rows =
     conditions.length > 0
       ? await db
           .select()
           .from(budgets)
           .where(and(...conditions))
-      : await db.select().from(budgets);
+          .orderBy(desc(budgets.updatedAt), desc(budgets.id))
+      : await db.select().from(budgets).orderBy(desc(budgets.updatedAt), desc(budgets.id));
 
   return rows.map(toDto);
 };

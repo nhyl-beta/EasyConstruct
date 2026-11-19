@@ -1,7 +1,7 @@
 // repository.ts
 import { db } from "../../../core/db/connection.js";
 import { architectDocuments } from "../../../core/db/schema/architect-documents.js";
-import { eq, ilike, and, or, SQL } from 'drizzle-orm';
+import { desc, eq, ilike, and, or, SQL } from 'drizzle-orm';
 import type { CreateArchitectDocumentInput, UpdateArchitectDocumentInput, ArchitectDocumentFilters } from "./types.js";
 
 export const findAll = async (filters: ArchitectDocumentFilters = {}) => {
@@ -9,9 +9,10 @@ export const findAll = async (filters: ArchitectDocumentFilters = {}) => {
   if (filters.category && filters.category !== 'all') conditions.push(eq(architectDocuments.category, filters.category));
   if (filters.search) conditions.push(ilike(architectDocuments.title, `%${filters.search}%`));
 
+  // Most recently updated first — the default order before any explicit sort/filter.
   return conditions.length
-    ? await db.select().from(architectDocuments).where(and(...conditions))
-    : await db.select().from(architectDocuments);
+    ? await db.select().from(architectDocuments).where(and(...conditions)).orderBy(desc(architectDocuments.updatedAt), desc(architectDocuments.id))
+    : await db.select().from(architectDocuments).orderBy(desc(architectDocuments.updatedAt), desc(architectDocuments.id));
 };
 
 export const findById = async (id: number) => {
