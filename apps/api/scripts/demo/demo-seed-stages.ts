@@ -49,11 +49,17 @@ const step = (label: string) => console.log(`  ▶ ${label}`);
 async function cleanup(code: string) {
   const q = (sql: string) => pool.query(sql, [code]);
   await q("DELETE FROM validation_results WHERE project_code = $1");
+  // plan_suggestions.proposal_id -> proposals.id has no ON DELETE CASCADE.
+  await q("DELETE FROM plan_suggestions WHERE project_code = $1");
   await q("DELETE FROM proposals WHERE project_code = $1");
   await q("DELETE FROM workflows WHERE project_code = $1");
   await q("DELETE FROM milestones WHERE project_code = $1");
   await q("DELETE FROM tasks WHERE project_code = $1");
   await q("DELETE FROM issues WHERE project_code = $1");
+  // purchase_requests.requirement_id -> requirements.id has no ON DELETE CASCADE either
+  // (buildPreConstruction raises one against the Materials requirement; see gates.ts C6).
+  await q("DELETE FROM procurement_orders WHERE project = $1");
+  await q("DELETE FROM purchase_requests WHERE project = $1");
   await q("DELETE FROM requirements WHERE project = $1");
   await q("DELETE FROM documents WHERE project = $1");
   await q("DELETE FROM engineering_reports WHERE project = $1");
@@ -252,6 +258,7 @@ const TASK_PLAN: { milestone: string; tasks: string[] }[] = [
 async function buildPreConstruction(c: Ctx, opts: { complete: boolean; taskCount: number }) {
   const { engineer, pm, architect } = c.team;
   const eng = engineer!;
+  let materialsRequirementId = 0;
   for (const category of ["Materials", "Specifications"] as const) {
     const f = await pdf(eng, `${c.code}-${category.toLowerCase()}-requirement.pdf`, `${category} requirement - ${c.p.subtitle}`, fileLines(c, `${category} requirement`));
     const req = await api<{ id: number }>("/requirements", eng.token, {
@@ -266,6 +273,7 @@ async function buildPreConstruction(c: Ctx, opts: { complete: boolean; taskCount
       },
     });
     await api(`/requirements/${req.id}`, pm.token, { method: "PATCH", body: { status: "Approved" } });
+    if (category === "Materials") materialsRequirementId = req.id;
   }
 
   // Budget: four lines that add up to the contract value, each through the full approval chain.
@@ -341,6 +349,22 @@ async function buildPreConstruction(c: Ctx, opts: { complete: boolean; taskCount
 
   if (opts.complete) {
     await docRecord(c, "Notice to Proceed", "Notice to Proceed", pm);
+    // C6 (gates.ts): Pre-Construction cannot advance without at least one purchase
+    // request raised. Reuses the Materials requirement approved just above, then
+    // cancels it right away so it never shows up as "unsettled" for the Closeout/
+    // Design-Turnover gate (X6/T5) further down the line — C6 only checks that one
+    // was ever raised, any status counts, per gates.ts's `requests.length > 0`.
+    const pr = await api<{ id: string }>("/finance/purchase-requests", eng.token, {
+      method: "POST",
+      body: {
+        requirementId: materialsRequirementId,
+        title: `Materials procurement - ${c.p.subtitle}`,
+        category: "Materials",
+        lineItems: [{ description: "Rebar, 16mm", qty: 10, unit: "ton", unitCost: 52_000 }],
+        justification: "Initial procurement to begin construction mobilization.",
+      },
+    });
+    await api(`/finance/purchase-requests/${pr.id}/cancel`, eng.token, { method: "POST" });
   }
   await api(`/projects/${c.projectId}`, pm.token, {
     method: "PATCH",
@@ -422,10 +446,11 @@ async function buildConstructionPartial(c: Ctx, built: Built) {
     ["ISS-S4-03", "Honeycombing at column base C4", "Voids found at the base of column C4 after formwork removal.", "Material", false],
     ["ISS-S4-04", "Scaffold base plates missing on grid B", "Two scaffold bays on grid B are missing base plates; work paused in that bay.", "Safety", false],
   ];
-  for (const [code, title, description, category, resolve] of issues) {
+  for (const [idx, [code, title, description, category, resolve]] of issues.entries()) {
+    const photo = await png(eng, `${code}.png`, [c.code, title.slice(0, 30).toUpperCase(), "SITE PHOTO", code], idx);
     const i = await api<{ id: number }>("/issues", eng.token, {
       method: "POST",
-      body: { issueCode: code, projectCode: c.code, title, description, category, severity: category === "Safety" ? "High" : "Medium", reportedByName: eng.name },
+      body: { issueCode: code, projectCode: c.code, title, description, category, severity: category === "Safety" ? "High" : "Medium", reportedByName: eng.name, attachmentUrl: photo.url },
     });
     if (resolve) {
       await api(`/issues/${i.id}/status`, pm.token, {
@@ -466,9 +491,11 @@ async function buildConstructionComplete(c: Ctx, built: Built) {
   for (const t of built.taskIds) await completeTask(c, t, t.idx % 4 === 0);
   for (const m of built.milestoneIds) await api(`/milestones/${m}`, pm.token, { method: "PATCH", body: { status: "completed" } });
   const eng = c.team.engineer!;
+  const issueCode = `ISS-${c.code.replace("DEMO-", "")}-01`;
+  const photo = await png(eng, `${issueCode}.png`, [c.code, "REBAR SPACING", "SITE PHOTO", issueCode]);
   const i = await api<{ id: number }>("/issues", eng.token, {
     method: "POST",
-    body: { issueCode: `ISS-${c.code.replace("DEMO-", "")}-01`, projectCode: c.code, category: "Quality", severity: "Low", title: "Minor rebar spacing deviation", description: "Spacing on grid line 4 slightly out of tolerance, corrected on site.", reportedByName: eng.name },
+    body: { issueCode, projectCode: c.code, category: "Quality", severity: "Low", title: "Minor rebar spacing deviation", description: "Spacing on grid line 4 slightly out of tolerance, corrected on site.", reportedByName: eng.name, attachmentUrl: photo.url },
   });
   await api(`/issues/${i.id}/status`, pm.token, { method: "PATCH", body: { status: "Resolved", resolutionNotes: "Re-inspected and corrected on site before the pour." } });
 }

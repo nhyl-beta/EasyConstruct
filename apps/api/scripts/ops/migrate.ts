@@ -43,6 +43,14 @@ async function main() {
   if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is not set.");
   const host = new URL(process.env.DATABASE_URL).hostname;
   console.log(`Target database host: ${host}`);
+  if (/-pooler\./.test(host)) {
+    throw new Error(
+      `REFUSED: ${host} looks like a pooled (PgBouncer transaction-mode) connection. This script holds a ` +
+        `session-scoped advisory lock, which a transaction pooler can route to a different backend mid-run and ` +
+        `leave hung or orphaned. Use the database's direct/unpooled connection string instead (in Neon: turn off ` +
+        `"Pooled connection" on the Connection Details panel, or drop the "-pooler" segment from the host).`,
+    );
+  }
 
   const client = new pg.Client({ connectionString: process.env.DATABASE_URL });
   await client.connect();

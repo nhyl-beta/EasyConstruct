@@ -70,6 +70,9 @@ web_modules/
 .env.*
 !.env.example
 
+# demo-seed-lib.ts's local token cache (demo-seed-lib.ts) — never committed, never shared between machines
+.demo-session-cache.json
+
 # parcel-bundler cache (https://parceljs.org/)
 .cache
 .parcel-cache

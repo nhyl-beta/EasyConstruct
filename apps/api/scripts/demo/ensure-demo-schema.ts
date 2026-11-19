@@ -5,6 +5,7 @@ import "dotenv/config";
 import fs from "node:fs";
 import pg from "pg";
 import { assertDemoDatabase } from "./demo-guard.js";
+import { seedMissing as seedMissingDocumentTypes } from "../../src/modules/documents/document-types/repository.js";
 
 const { Pool } = pg;
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
@@ -742,6 +743,13 @@ async function main() {
   // Managed expense categories: migration 0026 (CREATE TABLE IF NOT EXISTS + a seed
   // that is INSERT ... ON CONFLICT DO NOTHING) is idempotent, so run the same file.
   await pool.query(fs.readFileSync(new URL("../../drizzle/0026_expense_categories.sql", import.meta.url), "utf8"));
+
+  // Document types: migration 0034 seeds these once at schema-build time, but db-reset.ts
+  // truncates the table on every reset and nothing else here replays that seed (unlike
+  // 0025/0026 above). seedMissing() is the same insert-if-missing the standalone
+  // db:seed-document-types script uses, so a fresh reset never lands without them.
+  const addedDocTypes = await seedMissingDocumentTypes("ensure-demo-schema");
+  if (addedDocTypes > 0) console.log(`Document types: ${addedDocTypes} added.`);
 
   console.log("Demo schema tables and compatibility columns are ready.");
 }

@@ -3,8 +3,10 @@ assertDemoEnvironment();
 
 // apps/api/scripts/demo/demo-roster.ts
 //
-// Deterministic 50-person synthetic roster. Together with the 50 account-linked
-// employee rows (which are never touched) this makes exactly 100 employees.
+// Deterministic 54-person synthetic roster. Together with the 46 account-linked
+// employee rows (which are never touched — 10 hand-named + 9 roles x 4, see
+// seed-demo-accounts.ts's ACCOUNTS/GENERATED_ACCOUNTS) this makes exactly 100
+// employees.
 // All contact data is synthetic (example.com e-mails, 0900-000-xxxx phones);
 // no government IDs are stored on the employees table.
 //
@@ -49,9 +51,9 @@ interface Trade {
   count: number;
 }
 
-// 46 generated rows; weighted toward field trades.
+// 50 generated rows; weighted toward field trades.
 const TRADES: Trade[] = [
-  { role: "Laborer", department: "Field Operations", rateType: "Daily", min: 610, max: 700, count: 9 },
+  { role: "Laborer", department: "Field Operations", rateType: "Daily", min: 610, max: 700, count: 13 },
   { role: "Mason", department: "Field Operations", rateType: "Hourly", min: 120, max: 150, count: 5 },
   { role: "Carpenter", department: "Field Operations", rateType: "Hourly", min: 120, max: 145, count: 5 },
   { role: "Steel Fixer / Rebar Worker", department: "Field Operations", rateType: "Hourly", min: 130, max: 150, count: 4 },

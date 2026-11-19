@@ -183,5 +183,18 @@ export async function uploadBytes(
 export const uploadPdf = (base: string, token: string, filename: string, title: string, lines: string[]) =>
   uploadBytes(base, token, filename, "application/pdf", textPdf(title, lines));
 
+// ── In-process storage, for scripts with no HTTP session (direct-DB seeders
+// like demo-seed-procurement.ts, which insert rows straight through drizzle
+// rather than through the API) ─────────────────────────────────────────────
+
+export async function storeBytes(filename: string, contentType: string, bytes: Buffer): Promise<StoredUpload> {
+  const { uploadFile } = await import("../../src/modules/documents/uploads/service.js");
+  const result = await uploadFile({ filename, contentType, dataUrl: `data:${contentType};base64,${bytes.toString("base64")}` });
+  return result;
+}
+
+export const storePdf = (filename: string, title: string, lines: string[]) =>
+  storeBytes(filename, "application/pdf", textPdf(title, lines));
+
 export const uploadPng = (base: string, token: string, filename: string, lines: string[], variant = 0) =>
   uploadBytes(base, token, filename, "image/png", titlePng(lines, variant));

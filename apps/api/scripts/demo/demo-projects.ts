@@ -6,6 +6,11 @@ assertDemoEnvironment();
 // Single source of truth for the seven lifecycle demo projects (DEMO-S1..S7).
 // Shared by the roster generator (employee `site` values), the project seed and
 // the role-data seed so every script tells the same story.
+//
+// Covers every lifecycle phase (one project each) and, across the 5 official
+// project types in projects/validators.ts (Commercial, Residential,
+// Infrastructure, Industrial, Renewable Energy), every type at least once —
+// DEMO-S1 carries Renewable Energy rather than a second Commercial project.
 
 export interface DemoProject {
   code: string;
@@ -31,10 +36,10 @@ export const DEMO_PROJECTS: DemoProject[] = [
     code: "DEMO-S1",
     name: "DEMO · 1 Proposal",
     phase: "Proposal",
-    subtitle: "Malolos Logistics Warehouse",
-    description: "Two-storey dry-goods warehouse with loading bays and a small office wing for a logistics operator.",
-    projectType: "Commercial",
-    client: "Marikina Logistics Corp.",
+    subtitle: "Malolos Rooftop Solar Array",
+    description: "Rooftop solar photovoltaic installation with panel array, inverter room and grid interconnection, target capacity 2.5 MWp.",
+    projectType: "Renewable Energy",
+    client: "Bulacan Solar Energy Partners",
     location: "Malolos, Bulacan",
     lat: 14.8433,
     lng: 120.8114,

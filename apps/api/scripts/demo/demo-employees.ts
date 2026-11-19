@@ -3,7 +3,7 @@ assertDemoEnvironment();
 
 // apps/api/scripts/demo/demo-employees.ts
 //
-// Idempotent roster upsert (npm run demo:employees): makes sure the 50
+// Idempotent roster upsert (npm run demo:employees): makes sure the 54
 // deterministic roster employees (including the four named people) exist, never
 // touching an account-linked row. `npm run demo:reset` already does this inside
 // its transaction; this entry point is for re-running it on its own.
