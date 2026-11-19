@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { ProjectPicker } from "@/components/shared/project-picker";
+import { SuggestInput } from "@/components/shared/suggest-input";
 import { RevisionLink } from "@/features/revisions/components/RevisionLink";
 import { useCurrentRevisions } from "@/features/revisions/hooks/useCurrentRevisions";
 import {
@@ -136,10 +137,9 @@ function NewBlueprintDialog({
               <Input value={drawingNumber} onChange={(e) => setDrawingNumber(e.target.value)} placeholder="A-101" {...fieldProps("drawingNumber")} />
               <FieldError name="drawingNumber" />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-1.5" onBlur={() => touch("folder")}>
               <Label>Folder</Label>
-              <Input value={folder} onChange={(e) => setFolder(e.target.value)} placeholder="Pick a folder or type a new one" list="blueprint-folders" {...fieldProps("folder")} />
-              <datalist id="blueprint-folders">{folders.map((f) => <option key={f} value={f} />)}</datalist>
+              <SuggestInput value={folder} onChange={setFolder} suggestions={folders} placeholder="Pick a folder or type a new one" emptyMessage="No folders yet — the typed value will be used as-is." />
               <FieldError name="folder" />
             </div>
           </div>
