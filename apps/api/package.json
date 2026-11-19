@@ -38,6 +38,7 @@
     "demo:seed-requests": "tsx scripts/demo/demo-seed-requests.ts",
     "demo:ai-signals": "tsx scripts/demo/demo-ai-signals.ts",
     "demo:revisions": "tsx scripts/demo/demo-revisions.ts",
+    "demo:check-files": "tsx scripts/demo/check-missing-files.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint ."
   },
