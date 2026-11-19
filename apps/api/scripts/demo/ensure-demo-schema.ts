@@ -752,10 +752,12 @@ async function main() {
   const addedDocTypes = await seedMissingDocumentTypes("ensure-demo-schema");
   if (addedDocTypes > 0) console.log(`Document types: ${addedDocTypes} added.`);
 
-  // Material price references: migration 0054 creates the table, additive and idempotent
-  // (CREATE TABLE IF NOT EXISTS), so run the same file; then seed it the same insert-if-missing
-  // way as document types above, so demo-seed-procurement.ts always has unit costs to read.
+  // Material price references: migration 0054 creates the table and 0055 reshapes it to a
+  // low/typical/high range (both idempotent -- IF NOT EXISTS / IF EXISTS guards throughout), so
+  // run both files in order; then seed it the same insert-if-missing way as document types
+  // above, so demo-seed-procurement.ts always has unit costs to read.
   await pool.query(fs.readFileSync(new URL("../../drizzle/0054_material_price_references.sql", import.meta.url), "utf8"));
+  await pool.query(fs.readFileSync(new URL("../../drizzle/0055_material_price_reference_ranges.sql", import.meta.url), "utf8"));
   const addedPrices = await seedMissingMaterialPrices();
   if (addedPrices > 0) console.log(`Material price references: ${addedPrices} added.`);
 

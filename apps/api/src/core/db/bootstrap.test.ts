@@ -64,7 +64,7 @@ describe("reference data steps", () => {
   });
   test("row-only migrations that do nothing on an empty database are never run", () => {
     const skipped = Object.entries(DATA_MIGRATIONS).filter(([, v]) => v === "empty-noop").map(([k]) => k);
-    assert.deepEqual(skipped, ["0015_payroll_lifecycle", "0019_fix_report_project_case", "0024_cash_flow_month_unique"]);
+    assert.deepEqual(skipped, ["0015_payroll_lifecycle", "0019_fix_report_project_case", "0024_cash_flow_month_unique", "0055_material_price_reference_ranges"]);
     assert.ok(dataSteps(migrations).every((s) => !skipped.includes(s.tag)));
   });
 });

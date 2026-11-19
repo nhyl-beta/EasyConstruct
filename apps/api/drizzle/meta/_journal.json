@@ -386,6 +386,13 @@
       "when": 1793614400000,
       "tag": "0054_material_price_references",
       "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "7",
+      "when": 1793700800000,
+      "tag": "0055_material_price_reference_ranges",
+      "breakpoints": true
     }
   ]
 }
