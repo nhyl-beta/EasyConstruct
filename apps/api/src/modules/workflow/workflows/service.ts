@@ -1048,7 +1048,7 @@ export const getApprovalQueuePage = async (
   filters: ApprovalQueueFilters = {},
   requesterUserId?: number | null,
 ) => {
-  // The queue's own order (oldest pending first / newest decision first) is the default.
+  // The queue's own order (newest first, pending or decided) is the default.
   const rows = await loadQueueRows(scope, requesterRole, requesterName, visibleCodes, requesterUserId);
   const { items, meta } = paginateRows(rows.filter(queueFilter(filters)), request, QUEUE_SORTERS);
   return {

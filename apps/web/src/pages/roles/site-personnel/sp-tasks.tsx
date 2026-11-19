@@ -31,7 +31,8 @@ import { CompleteTaskDialog } from "@/components/tasks/complete-task-dialog";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { ProjectPicker } from "@/components/shared/project-picker";
 import { useMilestones } from "@/features/milestones/hooks/use-milestones";
-import { isRealFileUrl, openFileUrl } from "@/lib/file-url";
+import { isRealFileUrl } from "@/lib/file-url";
+import { FilePreviewDialog } from "@/components/shared/file-preview-dialog";
 import { formatRelativeTime } from "@/lib/format-relative-time";
 import type { AssignmentWarning, TaskRecord } from "@/features/tasks/repositories/task.repository";
 import { AssigneeSuggestionsPanel, AssignmentWarnings } from "@/features/tasks/components/AssigneeSuggestions";
@@ -59,6 +60,9 @@ export default function TasksPage() {
   // Completing needs evidence (note + optional attachment), so that
   // transition goes through a dialog; starting a task is still a direct flip.
   const [completing, setCompleting] = useState<TaskRecord | null>(null);
+  // The completion evidence (photo or file) Site Personnel attached — previewed in place
+  // rather than opened as a bare download, same as every other document surface.
+  const [previewing, setPreviewing] = useState<TaskRecord | null>(null);
 
   return (
     <PageContainer>
@@ -143,7 +147,7 @@ export default function TasksPage() {
                                 <button
                                   type="button"
                                   className="text-primary-strong underline-offset-2 hover:underline"
-                                  onClick={() => void openFileUrl(t.completionFileUrl).catch(() => toast.error("Could not open that file."))}
+                                  onClick={() => setPreviewing(t)}
                                 >
                                   attachment
                                 </button>
@@ -192,6 +196,14 @@ export default function TasksPage() {
         task={completing}
         onOpenChange={(open) => !open && setCompleting(null)}
         onConfirm={(task, completion) => advance(task, completion)}
+      />
+
+      <FilePreviewDialog
+        open={previewing !== null}
+        onOpenChange={(open) => !open && setPreviewing(null)}
+        url={previewing?.completionFileUrl}
+        title={previewing ? `${previewing.taskCode} — completion evidence` : "Attachment"}
+        description={previewing?.completionNote ?? undefined}
       />
     </PageContainer>
   );

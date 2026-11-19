@@ -9,7 +9,7 @@
 // has hours behind it, shown with its record count.
 import { useEffect, useMemo, useState } from "react";
 
-import { Input } from "@/components/ui/input";
+import { SuggestInput } from "@/components/shared/suggest-input";
 import { listAttendance } from "@/features/hr/attendance-api";
 
 export interface PayrollPeriodOption {
@@ -26,8 +26,6 @@ interface PayrollPeriodPickerProps {
   id?: string;
   className?: string;
 }
-
-const DATALIST_ID = "payroll-period-suggestions";
 
 function monthLabel(period: string) {
   const [year, month] = period.split("-").map(Number);
@@ -94,23 +92,20 @@ export function PayrollPeriodPicker({
     return `e.g. ${periods[0]?.value}`;
   }, [loading, periods]);
 
+  const labelByValue = useMemo(() => new Map(periods.map((p) => [p.value, p.label])), [periods]);
+
   return (
-    <>
-      <Input
-        id={id}
-        list={DATALIST_ID}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={hint}
-        className={className}
-        autoComplete="off"
-      />
-      <datalist id={DATALIST_ID}>
-        {periods.map((p) => (
-          <option key={p.value} value={p.value} label={p.label} />
-        ))}
-      </datalist>
-    </>
+    <SuggestInput
+      id={id}
+      value={value}
+      onChange={onChange}
+      suggestions={periods.map((p) => p.value)}
+      renderLabel={(v) => labelByValue.get(v) ?? v}
+      placeholder={hint}
+      loading={loading}
+      emptyMessage="No attendance logged yet — the typed value will be used as-is."
+      className={className}
+    />
   );
 }
 

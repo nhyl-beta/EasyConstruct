@@ -1,4 +1,4 @@
-import { and, eq, ilike, or, SQL } from "drizzle-orm";
+import { and, desc, eq, ilike, or, SQL } from "drizzle-orm";
 import { db } from "../../../core/db/connection.js";
 import { budgetAdjustments } from "../../../core/db/schema/finance.js";
 import type {
@@ -33,12 +33,14 @@ export const findAll = async (filters: BudgetAdjustmentFilters = {}) => {
     );
   }
 
+  // Newest request first — the default order before any explicit sort/filter.
   const rows = conditions.length
     ? await db
         .select()
         .from(budgetAdjustments)
         .where(and(...conditions))
-    : await db.select().from(budgetAdjustments);
+        .orderBy(desc(budgetAdjustments.requestedAt), desc(budgetAdjustments.id))
+    : await db.select().from(budgetAdjustments).orderBy(desc(budgetAdjustments.requestedAt), desc(budgetAdjustments.id));
 
   return rows.map(toDto);
 };

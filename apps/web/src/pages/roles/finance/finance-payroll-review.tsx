@@ -28,13 +28,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
+import { Input } from "@/components/ui/input";
 import { useIsReadOnlyAdmin } from "@/hooks/use-read-only-admin";
 import { usePagination } from "@/hooks/use-pagination";
 import { useServerList } from "@/hooks/use-server-list";
 import { qk } from "@/lib/query-keys";
 import { formatCurrency } from "@/lib/format-currency";
 import { downloadCsv } from "@/lib/export-csv";
-import { Download } from "lucide-react";
+import { Download, Search } from "lucide-react";
 
 const ALL = "all";
 
@@ -62,7 +63,7 @@ export default function FinancePayrollReviewPage() {
     key: (params) => qk.finance.payrollReview(params),
     filters: { period: periodFilter ?? "" },
     fetchPage: async (params, signal) => {
-      const page = await listPayrollReviewPage(params.page, params.limit, periodFilter, signal);
+      const page = await listPayrollReviewPage(params.page, params.limit, periodFilter, signal, params.search);
       return { items: page.items, total: page.total, pages: page.pages, extra: { periods: page.periods } };
     },
   });
@@ -83,7 +84,7 @@ export default function FinancePayrollReviewPage() {
   async function fetchAllBatches() {
     const all: PayrollReviewBatch[] = [];
     for (let page = 1; ; page += 1) {
-      const next = await listPayrollReviewPage(page, 100, periodFilter);
+      const next = await listPayrollReviewPage(page, 100, periodFilter, undefined, pagination.search);
       all.push(...next.items);
       if (page >= (next.pages ?? 1) || next.items.length === 0) break;
     }
@@ -183,6 +184,15 @@ export default function FinancePayrollReviewPage() {
         >
           <Download className="h-3.5 w-3.5" /> Export
         </button>
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={pagination.searchInput}
+            onChange={(e) => pagination.setSearchInput(e.target.value)}
+            placeholder="Search batch, period, project…"
+            className="h-9 w-56 pl-8 text-xs"
+          />
+        </div>
         <Select value={periodFilter ?? ALL} onValueChange={(v) => setPeriodFilter(v === ALL ? null : v)}>
           <SelectTrigger className="h-9 w-44 text-xs">
             <SelectValue placeholder="All periods" />
@@ -206,7 +216,7 @@ export default function FinancePayrollReviewPage() {
         <div className="rounded-md border border-destructive/30 bg-destructive-soft p-3 text-sm text-destructive-strong">{error}</div>
       )}
 
-      {pagination.total === 0 && !periodFilter ? (
+      {pagination.total === 0 && !periodFilter && !pagination.search ? (
         <div className="rounded-lg border p-6">
           <p className="text-muted-foreground">No payroll batches are currently available for review.</p>
         </div>
@@ -217,6 +227,9 @@ export default function FinancePayrollReviewPage() {
               <h2 className="font-semibold">Payroll Batches</h2>
             </div>
             <div className="divide-y">
+              {pagination.pageItems.length === 0 && (
+                <p className="p-4 text-sm text-muted-foreground">No batches match that search.</p>
+              )}
               {pagination.pageItems.map((b) => (
                 <button
                   key={b.id}

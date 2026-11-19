@@ -3,7 +3,6 @@ import { createRealtimeClient, type SealedLiveQuery } from "@neon/realtime/clien
 import { drizzleParsers } from "@neon/realtime-drizzle/client";
 import { RealtimeProvider, useLiveQuery } from "@neon/realtime-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { qk } from "@/lib/query-keys";
 import { apiClient } from "@/services/api.client";
 
 type Row = { id: number; isRead: boolean };
@@ -36,11 +35,14 @@ export function NotificationLiveSync({ onChange }: { onChange: () => void }) {
   const [sealed, setSealed] = useState<Sealed | null>(null);
   const queryClient = useQueryClient();
   // shortcut: most domain events also write a notification, so a new row stands in for "something changed".
-  // Anything that changes without one still waits for the next page load; upgrade = one sealed query per table.
+  // Previously invalidated only the approvals badge and My Actions, so every other open screen (the actual
+  // Approvals/Blueprint/Proposal lists, dashboards…) still needed a manual refresh to see someone else's
+  // change. No filter = every query goes stale; only screens actually on screen refetch, so this is cheap.
+  // Anything that changes without a notification at all still waits for the next page load; upgrade = one
+  // sealed query per table.
   const changed = useCallback(() => {
     onChange();
-    void queryClient.invalidateQueries({ queryKey: qk.approvals.stats });
-    void queryClient.invalidateQueries({ queryKey: qk.lifecycle.myActions });
+    void queryClient.invalidateQueries();
   }, [onChange, queryClient]);
 
   useEffect(() => {

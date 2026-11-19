@@ -247,7 +247,7 @@ export const findPendingStagesForRole = async (
     .from(workflowStages)
     .innerJoin(workflows, eq(workflowStages.workflowId, workflows.id))
     .where(pendingCondition(role, isPrivileged, requester))
-    .orderBy(workflowStages.createdAt);
+    .orderBy(desc(workflowStages.createdAt));
 };
 
 /**

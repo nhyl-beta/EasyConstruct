@@ -62,7 +62,11 @@ export function NotificationBell() {
     const access = ROLE_RESOURCE_ACCESS[identity.role] ?? [];
     if (link !== "/workflows" || access.includes("workflows")) return link;
     if (access.includes("admin-workflows")) return "/admin/workflows";
-    return access.includes("approvals") ? "/approvals" : link;
+    if (access.includes("approvals")) return "/approvals";
+    // Consultant has neither "workflows" nor "approvals" — its queue (including
+    // the Design Proposal Approval template it owns stage 1 of) lives on
+    // /consultant/proposals, defaulting to the Proposal Review tab.
+    return identity.role === "consultant" ? "/consultant/proposals" : link;
   };
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<NotificationTab>("all");
