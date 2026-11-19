@@ -40,6 +40,7 @@ import { FEATURES } from "@/config/features";
 import { useAuth } from "@/auth/auth-context";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
+import { usePagination } from "@/hooks/use-pagination";
 import { useExpensesController, type CreateExpenseInput } from "@/features/finance/hooks/use-expenses";
 import { usePurchaseRequests } from "@/features/finance/hooks/use-purchase-requests";
 import { useProcurement } from "@/features/finance/hooks/use-procurement";
@@ -255,6 +256,22 @@ export default function FinanceExpensesPage() {
   const [pendingDecision, setPendingDecision] = useState<{ id: string; vendor: string; amount: number; decision: "approve" | "reject" } | null>(null);
   const [deciding, setDeciding] = useState(false);
   const [notice, setNotice] = useState<Notice>(null);
+
+  const [paymentQuery, setPaymentQuery] = useState("");
+  const [paymentProject, setPaymentProject] = useState("all");
+  const paymentProjects = useMemo(
+    () => [...new Set(payments.payments.map((p) => p.project))].sort(),
+    [payments.payments],
+  );
+  const filteredPayments = useMemo(() => {
+    const q = paymentQuery.trim().toLowerCase();
+    return payments.payments.filter((p) => {
+      if (paymentProject !== "all" && p.project !== paymentProject) return false;
+      if (!q) return true;
+      return p.id.toLowerCase().includes(q) || p.project.toLowerCase().includes(q) || (p.note ?? "").toLowerCase().includes(q);
+    });
+  }, [payments.payments, paymentQuery, paymentProject]);
+  const paymentsPg = usePagination(filteredPayments, 10, paymentProject + paymentQuery);
 
   /** Jump to the ledger row a payment created. */
   const openExpense = (expenseId: string) => {
@@ -532,7 +549,33 @@ export default function FinanceExpensesPage() {
             <SectionCard
               title="Client payments"
               subtitle="Money actually received from clients. The only source of cash flow inflow."
-              actions={canDecide && <RecordPaymentDialog creating={creatingPayment} error={paymentError} onCreate={createPayment} />}
+              actions={
+                <>
+                  <div className="relative w-56">
+                    <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      value={paymentQuery}
+                      onChange={(e) => setPaymentQuery(e.target.value)}
+                      placeholder="Search ID, project, note…"
+                      className="h-8 pl-8 text-xs"
+                    />
+                  </div>
+                  <Select value={paymentProject} onValueChange={setPaymentProject}>
+                    <SelectTrigger className="h-8 w-40 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All projects</SelectItem>
+                      {paymentProjects.map((p) => (
+                        <SelectItem key={p} value={p}>
+                          {p}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {canDecide && <RecordPaymentDialog creating={creatingPayment} error={paymentError} onCreate={createPayment} />}
+                </>
+              }
             >
               {payments.loading ? (
                 <div className="space-y-2 p-2">
@@ -544,31 +587,38 @@ export default function FinanceExpensesPage() {
                 <div className="p-6 text-center text-sm text-muted-foreground">
                   No client payments recorded yet.
                 </div>
+              ) : paymentsPg.total === 0 ? (
+                <div className="p-6 text-center text-sm text-muted-foreground">
+                  No payments match your filters.
+                </div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>ID</TableHead>
-                      <TableHead>Project</TableHead>
-                      <TableHead className="text-right">Amount</TableHead>
-                      <TableHead>Received</TableHead>
-                      <TableHead>Note</TableHead>
-                      <TableHead>Recorded by</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {payments.payments.map((p) => (
-                      <TableRow key={p.id}>
-                        <TableCell className="font-mono text-xs">{p.id}</TableCell>
-                        <TableCell className="text-xs text-muted-foreground">{p.project}</TableCell>
-                        <TableCell className="text-right text-sm">{formatCurrency(p.amount)}</TableCell>
-                        <TableCell className="text-xs text-muted-foreground">{p.receivedAt}</TableCell>
-                        <TableCell className="text-xs">{p.note ?? ""}</TableCell>
-                        <TableCell className="text-xs text-muted-foreground">{p.createdBy ?? ""}</TableCell>
+                <>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>ID</TableHead>
+                        <TableHead>Project</TableHead>
+                        <TableHead className="text-right">Amount</TableHead>
+                        <TableHead>Received</TableHead>
+                        <TableHead>Note</TableHead>
+                        <TableHead>Recorded by</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {paymentsPg.pageItems.map((p) => (
+                        <TableRow key={p.id}>
+                          <TableCell className="font-mono text-xs">{p.id}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground">{p.project}</TableCell>
+                          <TableCell className="text-right text-sm">{formatCurrency(p.amount)}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground">{p.receivedAt}</TableCell>
+                          <TableCell className="text-xs">{p.note ?? ""}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground">{p.createdBy ?? ""}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  <DataTablePagination {...paymentsPg} />
+                </>
               )}
             </SectionCard>
           </TabsContent>
