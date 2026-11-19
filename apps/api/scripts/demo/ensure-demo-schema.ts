@@ -752,12 +752,22 @@ async function main() {
   const addedDocTypes = await seedMissingDocumentTypes("ensure-demo-schema");
   if (addedDocTypes > 0) console.log(`Document types: ${addedDocTypes} added.`);
 
-  // Material price references: migration 0054 creates the table and 0055 reshapes it to a
-  // low/typical/high range (both idempotent -- IF NOT EXISTS / IF EXISTS guards throughout), so
-  // run both files in order; then seed it the same insert-if-missing way as document types
-  // above, so demo-seed-procurement.ts always has unit costs to read.
-  await pool.query(fs.readFileSync(new URL("../../drizzle/0054_material_price_references.sql", import.meta.url), "utf8"));
-  await pool.query(fs.readFileSync(new URL("../../drizzle/0055_material_price_reference_ranges.sql", import.meta.url), "utf8"));
+  // Material price references: migration 0054 creates the table (with a since-abandoned
+  // unit_cost column) and 0055 reshapes it to a low/typical/high range. Both are idempotent
+  // replaying this file twice against a database that already went through them -- but
+  // db:bootstrap builds a *fresh* database straight from the Drizzle schema, which only
+  // declares the final low_php/typical_php/high_php shape and never creates unit_cost at all.
+  // Against that database 0054 is a no-op (table already exists) and 0055's "ALTER COLUMN
+  // unit_cost" then fails: the column it expects was never created. low_php existing already
+  // is exactly the signal that the final shape is already in place (via either path), so skip
+  // the replay in that case instead of assuming unit_cost is there to alter.
+  const hasFinalShape = await pool.query(
+    `select 1 from information_schema.columns where table_name = 'material_price_references' and column_name = 'low_php'`,
+  );
+  if (hasFinalShape.rowCount === 0) {
+    await pool.query(fs.readFileSync(new URL("../../drizzle/0054_material_price_references.sql", import.meta.url), "utf8"));
+    await pool.query(fs.readFileSync(new URL("../../drizzle/0055_material_price_reference_ranges.sql", import.meta.url), "utf8"));
+  }
   const addedPrices = await seedMissingMaterialPrices();
   if (addedPrices > 0) console.log(`Material price references: ${addedPrices} added.`);
 
