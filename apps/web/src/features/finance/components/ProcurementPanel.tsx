@@ -1,10 +1,11 @@
 import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
 import { usePagination } from "@/hooks/use-pagination";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -13,9 +14,11 @@ import { formatCurrency } from "@/lib/format-currency";
 import type { useProcurement } from "../hooks/use-procurement";
 import { ORDER_LABELS, shortDate } from "../lib/purchasing-labels";
 import { uploadReceipt } from "../lib/upload-receipts";
-import type { ActionResult, ProcurementOrder } from "../types/purchasing.types";
+import { ORDER_STATUSES, type ActionResult, type OrderStatus, type ProcurementOrder } from "../types/purchasing.types";
 import { DecisionDialog } from "./DecisionDialog";
 import type { Notice } from "./PurchaseRequestsPanel";
+
+const STATUS_FILTERS = ["all", ...ORDER_STATUSES] as const;
 
 interface Props {
   procurement: ReturnType<typeof useProcurement>;
@@ -103,7 +106,17 @@ function PayDialog({
 }
 
 export function ProcurementPanel({ procurement, canAct, onNotice, onOpenExpense }: Props) {
-  const pg = usePagination(procurement.orders, 8);
+  const [statusFilter, setStatusFilter] = useState<(typeof STATUS_FILTERS)[number]>("all");
+  const [query, setQuery] = useState("");
+  const rows = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return procurement.orders.filter((o) => {
+      if (statusFilter !== "all" && o.status !== statusFilter) return false;
+      if (!q) return true;
+      return o.id.toLowerCase().includes(q) || o.vendor.toLowerCase().includes(q) || o.project.toLowerCase().includes(q) || (o.purchaseRequestId ?? "").toLowerCase().includes(q);
+    });
+  }, [procurement.orders, statusFilter, query]);
+  const pg = usePagination(rows, 8, statusFilter + query);
   const [dialog, setDialog] = useState<Dialog>(null);
   const [eta, setEta] = useState("");
 
@@ -118,6 +131,30 @@ export function ProcurementPanel({ procurement, canAct, onNotice, onOpenExpense 
 
   return (
     <div className="space-y-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <Label htmlFor="po-status-filter" className="text-xs text-muted-foreground">
+          Show
+        </Label>
+        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
+          <SelectTrigger id="po-status-filter" className="h-8 w-40 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {STATUS_FILTERS.map((s) => (
+              <SelectItem key={s} value={s}>
+                {s === "all" ? "All orders" : ORDER_LABELS[s as OrderStatus].label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search order, request, vendor, project…"
+          className="h-8 w-64 text-xs"
+        />
+      </div>
+
       {procurement.error && (
         <p role="alert" className="text-sm text-destructive-strong">
           Failed to load orders: {procurement.error}
@@ -132,6 +169,10 @@ export function ProcurementPanel({ procurement, canAct, onNotice, onOpenExpense 
       ) : procurement.orders.length === 0 ? (
         <p className="p-6 text-center text-sm text-muted-foreground">
           No orders yet. Approve a purchase request, then create its order.
+        </p>
+      ) : rows.length === 0 ? (
+        <p className="p-6 text-center text-sm text-muted-foreground">
+          No orders match your filters.
         </p>
       ) : (
         <div className="overflow-x-auto">
