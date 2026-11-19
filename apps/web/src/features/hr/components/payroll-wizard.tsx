@@ -69,7 +69,11 @@ function EditableNumber({
   useEffect(() => setText(String(value)), [value]);
   return (
     <Input
-      className="h-8 w-24 text-right tabular-nums"
+      // B-131: Input is `flex` by default, so it's a block box the cell's
+      // `text-right` can't move — the table header above it lined up, the
+      // input itself didn't. `ml-auto` pushes this fixed-width box to the
+      // cell's right edge the same way the header text sits there.
+      className="ml-auto h-8 w-24 text-right tabular-nums"
       type="number"
       step="0.01"
       value={text}

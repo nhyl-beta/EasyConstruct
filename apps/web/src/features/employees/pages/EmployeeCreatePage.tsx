@@ -127,6 +127,13 @@ export default function EmployeeCreatePage() {
   const [duplicateName, setDuplicateName] = useState<string | null>(null);
 
   const handleSubmit = async (confirmDuplicate = false) => {
+    // B-118: the field already strips non-digits as you type, but nothing
+    // stopped submitting a too-short number (e.g. "1234"). Phone is
+    // optional, so only a non-empty value is held to the PH mobile format.
+    if (data.phone && data.phone.length !== 11) {
+      setError("Phone number must be 11 digits (e.g. 09171234567).");
+      return;
+    }
     setSubmitting(true);
     setError(null);
     try {
@@ -275,7 +282,7 @@ function StepPersonalInfo({
           <Input
             type="tel"
             inputMode="numeric"
-            maxLength={15}
+            maxLength={11}
             placeholder="e.g. 09171234567"
             value={data.phone}
             onChange={(e) => set("phone", e.target.value.replace(/\D/g, ""))}

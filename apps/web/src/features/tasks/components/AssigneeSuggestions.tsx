@@ -2,7 +2,7 @@ import { AlertTriangle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { DecisionSupportLabel } from "@/components/shared/decision-support-label";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { recordDecisionSupport } from "@/features/decision-support/events.api";
 import { useAssigneeSuggestions } from "../hooks/use-assignee-suggestions";
 import type { AssignmentWarning } from "../repositories/task.repository";
@@ -43,10 +43,15 @@ export function AssigneeSuggestionsPanel({
   onAssign: (userId: number, name: string) => void;
 }) {
   const { data, loading, error, ready } = useAssigneeSuggestions({ projectCode, title, dueDate, milestoneId });
+  // The TC sheet's "non-interactive/unclickable" report (B-224-area) was this
+  // link doing nothing visible: it only fired a telemetry beacon, so a click
+  // looked like a dead button. Dismissing now actually hides the list.
+  const [dismissed, setDismissed] = useState(false);
 
   // Fix 3.7: what was shown, taken or dismissed. One key per project, task title and person.
   const keyFor = (userId: number) => `${projectCode}|${title.trim().toLowerCase().slice(0, 60)}|${userId}`;
   useEffect(() => {
+    setDismissed(false);
     if (!data || data.suggestions.length === 0) return;
     recordDecisionSupport(data.suggestions.map((s) => ({ kind: "assignee", itemKey: keyFor(s.userId), projectCode, action: "shown" })));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -74,6 +79,8 @@ export function AssigneeSuggestionsPanel({
         <p className="text-xs text-muted-foreground">
           No eligible Site Personnel on this project. Staff someone first, or check that they have an active employee record.
         </p>
+      ) : dismissed ? (
+        <p className="text-xs text-muted-foreground">Suggestions dismissed.</p>
       ) : (
         <ol className="space-y-2">
           {data.suggestions.map((s, i) => (
@@ -108,13 +115,14 @@ export function AssigneeSuggestionsPanel({
           ))}
         </ol>
       )}
-      {data && data.suggestions.length > 0 && (
+      {data && data.suggestions.length > 0 && !dismissed && (
         <button
           type="button"
           className="text-overline text-muted-foreground underline underline-offset-2"
-          onClick={() =>
-            recordDecisionSupport(data.suggestions.map((s) => ({ kind: "assignee", itemKey: keyFor(s.userId), projectCode, action: "dismissed" })))
-          }
+          onClick={() => {
+            recordDecisionSupport(data.suggestions.map((s) => ({ kind: "assignee", itemKey: keyFor(s.userId), projectCode, action: "dismissed" })));
+            setDismissed(true);
+          }}
         >
           These suggestions are not helpful
         </button>
