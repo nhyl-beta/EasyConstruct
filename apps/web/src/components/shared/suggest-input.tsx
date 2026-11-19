@@ -42,6 +42,8 @@ interface SuggestInputProps {
   emptyMessage?: string;
   loading?: boolean;
   className?: string;
+  /** Text shown for a suggestion when it should differ from the value itself (e.g. a code with a human label). */
+  renderLabel?: (suggestion: string) => string;
 }
 
 export function SuggestInput({
@@ -53,6 +55,7 @@ export function SuggestInput({
   emptyMessage = "No matches — the typed value will be used as-is.",
   loading = false,
   className,
+  renderLabel,
 }: SuggestInputProps) {
   const [open, setOpen] = useState(false);
 
@@ -85,24 +88,28 @@ export function SuggestInput({
             <CommandList>
               <CommandEmpty>{emptyMessage}</CommandEmpty>
               <CommandGroup>
-                {suggestions.map((suggestion) => (
-                  <CommandItem
-                    key={suggestion}
-                    value={suggestion}
-                    onSelect={() => {
-                      onChange(suggestion);
-                      setOpen(false);
-                    }}
-                  >
-                    <Check
-                      className={cn(
-                        "h-4 w-4",
-                        value === suggestion ? "opacity-100" : "opacity-0",
-                      )}
-                    />
-                    {suggestion}
-                  </CommandItem>
-                ))}
+                {suggestions.map((suggestion) => {
+                  const label = renderLabel ? renderLabel(suggestion) : suggestion;
+                  return (
+                    <CommandItem
+                      key={suggestion}
+                      // Include the raw value too, so typing the code still matches when the label differs from it.
+                      value={renderLabel ? `${suggestion} ${label}` : suggestion}
+                      onSelect={() => {
+                        onChange(suggestion);
+                        setOpen(false);
+                      }}
+                    >
+                      <Check
+                        className={cn(
+                          "h-4 w-4",
+                          value === suggestion ? "opacity-100" : "opacity-0",
+                        )}
+                      />
+                      {label}
+                    </CommandItem>
+                  );
+                })}
               </CommandGroup>
             </CommandList>
           </Command>
