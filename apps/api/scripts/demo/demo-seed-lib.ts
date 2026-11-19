@@ -7,12 +7,65 @@ assertDemoEnvironment();
 // login, a tiny API client, the cast of existing accounts (read only — we log
 // in as them, we never write to the users table), and which account is staffed
 // on which of the seven projects.
+import fs from "node:fs";
+import path from "node:path";
 import "dotenv/config";
 import pg from "pg";
 import { assertDemoApi, assertDemoDatabase } from "./demo-guard.js";
 
 export const BASE = process.env.SMOKE_BASE_URL ?? "http://localhost:8000/api";
 export const PASSWORD = "Demo@12345";
+
+// demo:seed-roles chains 7 separate scripts (tsx scriptA && tsx scriptB && ...),
+// each its own process, each opening a fresh Session for up to 15 accounts
+// (openSession() below). That is up to 105 real logins for one chain run against
+// a 40-per-15-minutes limiter (auth/routes.ts) that exists to slow credential
+// guessing, not this. Without caching, the chain always trips the limiter partway
+// through, restart the API or not — the one run itself needs more logins than the
+// window allows. Cache tokens on disk, keyed by email, and reuse a cached token
+// across scripts for the rest of the run instead of logging in again; a cached
+// token is checked with one side-effect-free authenticated GET (not rate-limited)
+// before use, so a cache left over from before a db:reset self-heals instead of
+// silently authenticating as a stale user.
+const TOKEN_CACHE_PATH = path.join(process.cwd(), ".demo-session-cache.json");
+
+function readTokenCache(): Record<string, string> {
+  try {
+    return JSON.parse(fs.readFileSync(TOKEN_CACHE_PATH, "utf8")) as Record<string, string>;
+  } catch {
+    return {};
+  }
+}
+
+// Callers (openSession() below, and several demo-verify-*.ts scripts) log in many
+// accounts at once with Promise.all. Without serializing the update, two concurrent
+// read-modify-writes race: each reads the cache before the other's write lands, so
+// whichever write finishes last wins and every other account's token from that batch
+// is lost. Chaining every update through one promise makes each read-modify-write
+// wait for the previous one, so none of them clobber each other.
+let cacheWriteQueue: Promise<void> = Promise.resolve();
+
+function cacheToken(email: string, token: string): Promise<void> {
+  cacheWriteQueue = cacheWriteQueue.then(() => {
+    const cache = readTokenCache();
+    cache[email] = token;
+    try {
+      fs.writeFileSync(TOKEN_CACHE_PATH, JSON.stringify(cache));
+    } catch {
+      // Best-effort: a cache we can't write just means the next script re-logs in.
+    }
+  });
+  return cacheWriteQueue;
+}
+
+async function isTokenStillValid(token: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${BASE}/me/settings`, { headers: { Authorization: `Bearer ${token}` } });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
 
 /** Existing demo accounts. Passwords/emails come from seed-demo-accounts.ts and are never changed. */
 export const EMAILS = {
@@ -72,6 +125,10 @@ export function requireLinkedEmployees(links: Map<string, string>, emails: reado
 }
 
 export async function login(email: string): Promise<string> {
+  const cache = readTokenCache();
+  const cached = cache[email];
+  if (cached && (await isTokenStillValid(cached))) return cached;
+
   const res = await fetch(`${BASE}/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -80,7 +137,9 @@ export async function login(email: string): Promise<string> {
   const json = (await res.json()) as { data?: { token?: string }; message?: string };
   if (res.status === 429 || /too many sign-in attempts/i.test(json.message ?? "")) throw new SignInLimiterError(email, json.message);
   if (!res.ok) throw new Error(`Login failed for ${email}: ${json.message}`);
-  return json.data!.token!;
+  const token = json.data!.token!;
+  await cacheToken(email, token);
+  return token;
 }
 
 /**
