@@ -6,6 +6,7 @@ import fs from "node:fs";
 import pg from "pg";
 import { assertDemoDatabase } from "./demo-guard.js";
 import { seedMissing as seedMissingDocumentTypes } from "../../src/modules/documents/document-types/repository.js";
+import { seedMissing as seedMissingMaterialPrices } from "../../src/modules/finance/material-prices/repository.js";
 
 const { Pool } = pg;
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
@@ -750,6 +751,20 @@ async function main() {
   // db:seed-document-types script uses, so a fresh reset never lands without them.
   const addedDocTypes = await seedMissingDocumentTypes("ensure-demo-schema");
   if (addedDocTypes > 0) console.log(`Document types: ${addedDocTypes} added.`);
+
+  // Material price references: migration 0054 creates the table and 0055 reshapes it to a
+  // low/typical/high range (both idempotent -- IF NOT EXISTS / IF EXISTS guards throughout), so
+  // run both files in order; then seed it the same insert-if-missing way as document types
+  // above, so demo-seed-procurement.ts always has unit costs to read.
+  await pool.query(fs.readFileSync(new URL("../../drizzle/0054_material_price_references.sql", import.meta.url), "utf8"));
+  await pool.query(fs.readFileSync(new URL("../../drizzle/0055_material_price_reference_ranges.sql", import.meta.url), "utf8"));
+  const addedPrices = await seedMissingMaterialPrices();
+  if (addedPrices > 0) console.log(`Material price references: ${addedPrices} added.`);
+
+  // validation_results: migration 0056 lets a row point at a Purchase Request instead of a
+  // workflow (idempotent, additive only), so a fresh/reset demo database has the column and
+  // constraints Purchase Requests' own decision-support check needs before any PR is raised.
+  await pool.query(fs.readFileSync(new URL("../../drizzle/0056_validation_results_purchase_requests.sql", import.meta.url), "utf8"));
 
   console.log("Demo schema tables and compatibility columns are ready.");
 }

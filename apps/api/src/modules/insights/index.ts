@@ -8,4 +8,4 @@ export { dice } from "./ai-validation/matcher.js";
 export { evaluateSignals } from "./signals/index.js";
 export { findingKey } from "./signals/findings.js";
 export { runSignalScan } from "./signals/scan.js";
-export { validateWorkflowLineItems } from "./ai-validation/service.js";
+export { validateWorkflowLineItems, validatePurchaseRequestLineItems } from "./ai-validation/service.js";

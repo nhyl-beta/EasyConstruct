@@ -1,6 +1,7 @@
 // Purchase requests and procurement orders.
 // Statuses are strict unions here; the repository normalizes whatever the
 // server sends (legacy free-text rows included) into them.
+import type { LineItemValidationSummary } from "@/features/workflows/types/workflow.types";
 
 export const PR_STATUSES = ["pending-pm", "pending-finance", "approved", "rejected", "ordered", "cancelled"] as const;
 export type PurchaseRequestStatus = (typeof PR_STATUSES)[number];
@@ -14,6 +15,8 @@ export interface LineItem {
   qty: number;
   unit: string;
   unitCost: number;
+  /** Only on the detail response (same as budgetImpact below); absent elsewhere and when there's no comparable reference yet. */
+  validation?: LineItemValidationSummary | null;
 }
 
 export interface BudgetImpact {

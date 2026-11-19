@@ -29,6 +29,9 @@ import {
 } from "../purchasing/rules.js";
 import { purchaseRequestsRepository as repo, type PurchaseRequestRow } from "./repository.js";
 import type { PurchaseLineItem } from "../../../core/db/schema/finance.js";
+import { FEATURES } from "../../../core/config/features.js";
+import { validatePurchaseRequestLineItems, validationRepo } from "../../insights/index.js";
+import type { LineItemValidationSummary } from "../../insights/index.js";
 
 export interface CreatePurchaseRequestInput {
   requirementId: number;
@@ -104,6 +107,15 @@ export const purchaseRequestsService = {
       requestedByRole: actor.role,
     });
 
+    // Decision support only, never a gate — same posture as the workflow equivalent
+    // (ai-signals C5): a thrown error here must not stop the request that already exists
+    // above from being returned to the caller, so this is awaited but never allowed to propagate.
+    if (FEATURES.ai) {
+      await validatePurchaseRequestLineItems(id).catch((error) =>
+        console.error(`[ai-validation] validatePurchaseRequestLineItems(${id}) threw:`, error),
+      );
+    }
+
     await logAudit({
       entityType: ENTITY,
       entityId: id,
@@ -135,7 +147,29 @@ export const purchaseRequestsService = {
     // Once it is approved its own amount sits in `committed`; show the line without it.
     const own = row.status === "approved" ? row.committedAmount : 0;
     const base = line ? { planned: line.planned, committed: Math.max(0, line.committed - own), actual: line.actual } : null;
-    return { ...row, budgetImpact: budgetImpact(base, row.amount) };
+
+    // ai-signals C7 equivalent for Procurement: decision support only, read-only — never
+    // changes amount/status/budgetImpact above.
+    let lineItems = row.lineItems;
+    if (FEATURES.ai && lineItems.length > 0) {
+      const validationByIndex = await validationRepo.findLatestForPurchaseRequest(row.id);
+      lineItems = lineItems.map((item, index) => {
+        const result = validationByIndex.get(index);
+        if (!result) return item;
+        const validation: LineItemValidationSummary = {
+          verdict: result.verdict as LineItemValidationSummary["verdict"],
+          variancePct: result.variancePct != null ? Number(result.variancePct) : null,
+          referenceLowPhp: result.referenceLowPhp != null ? Number(result.referenceLowPhp) : null,
+          referenceMidPhp: result.referenceMidPhp != null ? Number(result.referenceMidPhp) : null,
+          referenceHighPhp: result.referenceHighPhp != null ? Number(result.referenceHighPhp) : null,
+          basisSummary: result.basisSummary,
+          sources: result.sources as LineItemValidationSummary["sources"],
+        };
+        return { ...item, validation };
+      });
+    }
+
+    return { ...row, lineItems, budgetImpact: budgetImpact(base, row.amount) };
   },
 
   /** The requester edits while it is still waiting for the PM. */

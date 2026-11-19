@@ -176,7 +176,7 @@ const attachStages = async (rows: (typeof import("../../../core/db/schema/workfl
   // returns for approval purposes (stages/status/amount are untouched).
   const validationByLineItemId = new Map<number, LineItemValidationSummary>();
   if (FEATURES.ai) {
-    const latest = await validationRepo.findLatestByLineItemIds(lineItemRows.map((li) => li.id));
+    const latest = await validationRepo.findLatestByLineItemIds("workflow_line_item", lineItemRows.map((li) => li.id));
     for (const [lineItemId, row] of latest) {
       validationByLineItemId.set(lineItemId, {
         verdict: row.verdict as LineItemValidationSummary["verdict"],

@@ -10,6 +10,7 @@ export { default as reviewRouter } from "./payroll-review/routes.js";
 export { expensesRepository } from "./expenses/repository.js";
 export { monthKey } from "./cash-flow/months.js";
 export { projectProfitabilityRepository } from "./project-profitability/repository.js";
+export { purchaseRequestsRepository } from "./purchase-requests/repository.js";
 export { refreshMonth } from "./cash-flow/service.js";
 export { summaryRepository } from "./summary/repository.js";
 export { unsettledIds } from "./purchasing/rules.js";
