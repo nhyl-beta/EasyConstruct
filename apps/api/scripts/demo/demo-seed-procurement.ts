@@ -39,6 +39,7 @@ import { requirements } from "../../src/core/db/schema/requirements.js";
 import { users } from "../../src/core/db/schema/users.js";
 import { monthKey } from "../../src/modules/finance/cash-flow/months.js";
 import { refreshMonth } from "../../src/modules/finance/cash-flow/service.js";
+import { unitCostMap } from "../../src/modules/finance/material-prices/repository.js";
 import { lineItemsTotal } from "../../src/modules/finance/purchasing/rules.js";
 import { assertDemoDatabase } from "./demo-guard.js";
 import { storePdf } from "./demo-files.js";
@@ -51,8 +52,17 @@ const ago = (days: number) => new Date(Date.now() - days * DAY);
 const isoDay = (days: number) => ago(days).toISOString().slice(0, 10);
 
 type Person = { id: number; name: string; role: string };
-const lines = (...l: [string, number, string, number][]): PurchaseLineItem[] =>
-  l.map(([description, qty, unit, unitCost]) => ({ description, qty, unit, unitCost }));
+
+/**
+ * `lines()` builds purchase-request line items. For a material with a row in
+ * material_price_references (seed-material-prices.ts; DPWH/DTI/market-cited, editable without a
+ * code change) the 4th tuple value is unused and only documents the cost at the time this plan was
+ * written. For PPE, equipment rental and transport, which that table doesn't cover, it's still the
+ * live price: those categories have no official construction-material-price index to look up.
+ */
+const makeLines = (prices: ReadonlyMap<string, number>) =>
+  (...l: [string, number, string, number][]): PurchaseLineItem[] =>
+    l.map(([description, qty, unit, fallbackUnitCost]) => ({ description, qty, unit, unitCost: prices.get(`${description}|${unit}`) ?? fallbackUnitCost }));
 
 interface OrderPlan {
   id: string;
@@ -79,20 +89,23 @@ interface PrPlan {
   order?: OrderPlan;
 }
 
-const PLANS: PrPlan[] = [
-  { id: "PR-D001", title: "Rebar for level 3 slab", category: "Materials", status: "pending-pm", raisedBy: "engineer", ageDays: 1, lines: lines(["16mm rebar", 6, "ton", 52_000]) },
-  { id: "PR-D002", title: "Formwork plywood", category: "Materials", status: "pending-finance", raisedBy: "engineer", ageDays: 3, lines: lines(["Marine plywood 3/4in", 120, "sheet", 1_450]) },
-  { id: "PR-D003", title: "Concrete pump rental", category: "Equipment", status: "pending-finance", raisedBy: "pm", ageDays: 2, lines: lines(["Boom pump, 2 days", 2, "day", 38_000]) },
-  { id: "PR-D004", title: "Safety helmets and harnesses", category: "PPE", status: "approved", raisedBy: "engineer", ageDays: 6, overBudget: true, note: "No PPE budget line on this project; approved against contingency by agreement.", lines: lines(["Safety helmet", 40, "pc", 450], ["Full-body harness", 12, "pc", 2_800]) },
-  { id: "PR-D005", title: "Cement, 40 kg bags", category: "Materials", status: "approved", raisedBy: "engineer", ageDays: 5, lines: lines(["Portland cement 40kg", 800, "bag", 285]) },
-  { id: "PR-D006", title: "Aggregate delivery", category: "Materials", status: "ordered", raisedBy: "engineer", ageDays: 12, lines: lines(["3/4in gravel", 60, "cu.m", 1_300]), order: { id: "PO-D001", vendor: "Pasig Aggregates", status: "in-transit", etaInDays: 2 } },
-  { id: "PR-D007", title: "Hollow blocks", category: "Materials", status: "ordered", raisedBy: "engineer", ageDays: 14, lines: lines(["CHB 6in", 4_000, "pc", 16]), order: { id: "PO-D002", vendor: "Marikina Blockworks", status: "delivered", etaInDays: -1 } },
-  { id: "PR-D008", title: "Steel tie wire and nails", category: "Materials", status: "ordered", raisedBy: "pm", ageDays: 25, lines: lines(["Tie wire #16", 30, "roll", 2_100], ["Common nails", 40, "kg", 95]), order: { id: "PO-D003", vendor: "ABC Steel Supply", status: "paid", etaInDays: -10, invoiceAmount: 69_400, varianceNote: "Invoice includes P3,300 fuel surcharge.", expenseId: "EXP-D001" } },
-  { id: "PR-D009", title: "Waterproofing membrane", category: "Materials", status: "ordered", raisedBy: "engineer", ageDays: 2, lines: lines(["Torch-on membrane", 90, "roll", 1_850]), order: { id: "PO-D004", vendor: "Sealtech Trading", status: "ordered", etaInDays: 9 } },
-  { id: "PR-D010", title: "Scaffolding set", category: "Equipment", status: "approved", raisedBy: "pm", ageDays: 9, lines: lines(["Scaffolding frame set", 24, "set", 3_900]), order: { id: "PO-D005", vendor: "Rizal Rentals", status: "cancelled", etaInDays: 0 } },
-  { id: "PR-D011", title: "Decorative tiles", category: "Materials", status: "rejected", raisedBy: "engineer", ageDays: 8, note: "Not in the approved scope for this phase.", lines: lines(["Ceramic tile 60x60", 300, "box", 780]) },
-  { id: "PR-D012", title: "Hauling of excavated soil", category: "Transport", status: "cancelled", raisedBy: "engineer", ageDays: 11, lines: lines(["Dump truck trips", 20, "trip", 2_500]) },
-];
+const buildPlans = (prices: ReadonlyMap<string, number>): PrPlan[] => {
+  const lines = makeLines(prices);
+  return [
+    { id: "PR-D001", title: "Rebar for level 3 slab", category: "Materials", status: "pending-pm", raisedBy: "engineer", ageDays: 1, lines: lines(["16mm rebar", 6, "ton", 40_000]) },
+    { id: "PR-D002", title: "Formwork plywood", category: "Materials", status: "pending-finance", raisedBy: "engineer", ageDays: 3, lines: lines(["Marine plywood 3/4in", 120, "sheet", 1_450]) },
+    { id: "PR-D003", title: "Concrete pump rental", category: "Equipment", status: "pending-finance", raisedBy: "pm", ageDays: 2, lines: lines(["Boom pump, 2 days", 2, "day", 38_000]) },
+    { id: "PR-D004", title: "Safety helmets and harnesses", category: "PPE", status: "approved", raisedBy: "engineer", ageDays: 6, overBudget: true, note: "No PPE budget line on this project; approved against contingency by agreement.", lines: lines(["Safety helmet", 40, "pc", 450], ["Full-body harness", 12, "pc", 2_800]) },
+    { id: "PR-D005", title: "Cement, 40 kg bags", category: "Materials", status: "approved", raisedBy: "engineer", ageDays: 5, lines: lines(["Portland cement 40kg", 800, "bag", 213]) },
+    { id: "PR-D006", title: "Aggregate delivery", category: "Materials", status: "ordered", raisedBy: "engineer", ageDays: 12, lines: lines(["3/4in gravel", 60, "cu.m", 650]), order: { id: "PO-D001", vendor: "Pasig Aggregates", status: "in-transit", etaInDays: 2 } },
+    { id: "PR-D007", title: "Hollow blocks", category: "Materials", status: "ordered", raisedBy: "engineer", ageDays: 14, lines: lines(["CHB 6in", 4_000, "pc", 26]), order: { id: "PO-D002", vendor: "Marikina Blockworks", status: "delivered", etaInDays: -1 } },
+    { id: "PR-D008", title: "Steel tie wire and nails", category: "Materials", status: "ordered", raisedBy: "pm", ageDays: 25, lines: lines(["Tie wire #16", 30, "roll", 2_100], ["Common nails", 40, "kg", 95]), order: { id: "PO-D003", vendor: "ABC Steel Supply", status: "paid", etaInDays: -10, invoiceAmount: 69_400, varianceNote: "Invoice includes P3,300 fuel surcharge.", expenseId: "EXP-D001" } },
+    { id: "PR-D009", title: "Waterproofing membrane", category: "Materials", status: "ordered", raisedBy: "engineer", ageDays: 2, lines: lines(["Torch-on membrane", 90, "roll", 1_850]), order: { id: "PO-D004", vendor: "Sealtech Trading", status: "ordered", etaInDays: 9 } },
+    { id: "PR-D010", title: "Scaffolding set", category: "Equipment", status: "approved", raisedBy: "pm", ageDays: 9, lines: lines(["Scaffolding frame set", 24, "set", 3_900]), order: { id: "PO-D005", vendor: "Rizal Rentals", status: "cancelled", etaInDays: 0 } },
+    { id: "PR-D011", title: "Decorative tiles", category: "Materials", status: "rejected", raisedBy: "engineer", ageDays: 8, note: "Not in the approved scope for this phase.", lines: lines(["Ceramic tile 60x60", 300, "box", 780]) },
+    { id: "PR-D012", title: "Hauling of excavated soil", category: "Transport", status: "cancelled", raisedBy: "engineer", ageDays: 11, lines: lines(["Dump truck trips", 20, "trip", 2_500]) },
+  ];
+};
 
 const key = (category: string) => `${PROJECT}|${category}`;
 
@@ -104,6 +117,7 @@ async function person(email: string): Promise<Person> {
 
 async function main() {
   assertDemoDatabase();
+  const PLANS = buildPlans(await unitCostMap());
   const engineer = await person(EMAILS.engineer);
   const site = await person(EMAILS.site);
   const pm = await person(EMAILS.pm);

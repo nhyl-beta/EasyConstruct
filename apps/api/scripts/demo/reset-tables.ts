@@ -4,11 +4,12 @@
 //
 // owner_action_requests and support_requests are account history (it hangs off users, which the reset never touches), so it is kept.
 // document_types is reference data: its system rows are read by name (lifecycle/gates.ts, the report types), so it is kept.
+// material_price_references is reference data too (editable unit costs demo-seed-procurement.ts prices its lines from), so it is kept.
 
 /** Never written. Checksummed before/after. */
 export const ACCOUNT_TABLES = ["users", "password_reset_tokens", "roles"];
 /** Never deleted (config / reference / history). */
-export const PRESERVE = [...ACCOUNT_TABLES, "workflow_templates", "reference_snapshots", "audit_logs", "expense_categories", "document_types", "owner_action_requests", "support_requests", "employee_documents", "departments"];
+export const PRESERVE = [...ACCOUNT_TABLES, "workflow_templates", "reference_snapshots", "audit_logs", "expense_categories", "document_types", "owner_action_requests", "support_requests", "employee_documents", "departments", "material_price_references"];
 /** Handled specially. */
 export const SPECIAL = ["notifications", "employees"];
 

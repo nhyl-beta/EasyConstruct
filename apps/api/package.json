@@ -21,6 +21,7 @@
     "reconcile": "tsx scripts/ops/reconcile.ts",
     "db:backfill-reference": "tsx scripts/ops/backfill-reference-data.ts",
     "db:seed-document-types": "tsx scripts/ops/seed-document-types.ts",
+    "db:seed-material-prices": "tsx scripts/ops/seed-material-prices.ts",
     "db:backfill-stakeholders": "tsx scripts/ops/backfill-stakeholders.ts",
     "db:remove-claims": "tsx scripts/ops/remove-claims-data.ts",
     "ai:seed-references": "tsx scripts/ops/seed-reference-data.ts",

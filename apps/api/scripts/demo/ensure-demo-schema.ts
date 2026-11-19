@@ -6,6 +6,7 @@ import fs from "node:fs";
 import pg from "pg";
 import { assertDemoDatabase } from "./demo-guard.js";
 import { seedMissing as seedMissingDocumentTypes } from "../../src/modules/documents/document-types/repository.js";
+import { seedMissing as seedMissingMaterialPrices } from "../../src/modules/finance/material-prices/repository.js";
 
 const { Pool } = pg;
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
@@ -750,6 +751,13 @@ async function main() {
   // db:seed-document-types script uses, so a fresh reset never lands without them.
   const addedDocTypes = await seedMissingDocumentTypes("ensure-demo-schema");
   if (addedDocTypes > 0) console.log(`Document types: ${addedDocTypes} added.`);
+
+  // Material price references: migration 0054 creates the table, additive and idempotent
+  // (CREATE TABLE IF NOT EXISTS), so run the same file; then seed it the same insert-if-missing
+  // way as document types above, so demo-seed-procurement.ts always has unit costs to read.
+  await pool.query(fs.readFileSync(new URL("../../drizzle/0054_material_price_references.sql", import.meta.url), "utf8"));
+  const addedPrices = await seedMissingMaterialPrices();
+  if (addedPrices > 0) console.log(`Material price references: ${addedPrices} added.`);
 
   console.log("Demo schema tables and compatibility columns are ready.");
 }
