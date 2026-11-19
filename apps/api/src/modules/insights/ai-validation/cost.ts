@@ -11,7 +11,10 @@ import { SIGNAL_THRESHOLDS } from "../../../core/config/signals.js";
 
 export interface LineItemForCost {
   id: number;
-  workflowId: number;
+  /** Set for a workflow line item; leave unset/null when purchaseRequestId is set instead. */
+  workflowId?: number | null;
+  /** Set for a Purchase Request line item (id = that line's index within its own lineItems array); leave unset/null when workflowId is set instead. */
+  purchaseRequestId?: string | null;
   projectCode: string;
   description: string;
   requestedAmount: number;
@@ -24,12 +27,18 @@ export interface FxRate {
   asOf: string;
 }
 
-const round2 = (n: number): number => Math.round(n * 100) / 100;
+export const round2 = (n: number): number => Math.round(n * 100) / 100;
+
+// Exactly one of workflowId/purchaseRequestId is ever set on a LineItemForCost — this is the
+// one place that decides entityType and which FK column a row points at from it.
+const parentFields = (line: LineItemForCost) =>
+  line.purchaseRequestId != null
+    ? { entityType: "purchase_request_line_item", workflowId: null, purchaseRequestId: line.purchaseRequestId }
+    : { entityType: "workflow_line_item", workflowId: line.workflowId ?? null, purchaseRequestId: null };
 
 const noMatchResult = (line: LineItemForCost, fx: FxRate, basisSummary: string): NewValidationResultRow => ({
-  entityType: "workflow_line_item",
+  ...parentFields(line),
   entityId: line.id,
-  workflowId: line.workflowId,
   projectCode: line.projectCode,
   lineDescription: line.description,
   lineQuantity: line.quantity != null ? String(line.quantity) : null,
@@ -114,9 +123,8 @@ export const compareLineItem = (
     `(typical ${peso(midPhp)}) · submitted ${peso(line.requestedAmount)} · ${signedVariance}.`;
 
   return {
-    entityType: "workflow_line_item",
+    ...parentFields(line),
     entityId: line.id,
-    workflowId: line.workflowId,
     projectCode: line.projectCode,
     lineDescription: line.description,
     lineQuantity: String(line.quantity),

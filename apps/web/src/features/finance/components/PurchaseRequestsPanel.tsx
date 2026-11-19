@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatCurrency } from "@/lib/format-currency";
+import { ReferenceBasisBadge } from "@/components/workflows/reference-basis-badge";
 import type { usePurchaseRequests } from "../hooks/use-purchase-requests";
 import type { useProcurement } from "../hooks/use-procurement";
 import { PR_LABELS, shortDate } from "../lib/purchasing-labels";
@@ -73,6 +74,7 @@ function BudgetImpactCard({ impact, amount }: { impact: BudgetImpact | null | un
 
 function LineItemsTable({ items }: { items: LineItem[] }) {
   if (items.length === 0) return <p className="text-sm text-muted-foreground">No line items recorded.</p>;
+  const hasValidation = items.some((l) => l.validation);
   return (
     <Table>
       <TableHeader>
@@ -82,6 +84,7 @@ function LineItemsTable({ items }: { items: LineItem[] }) {
           <TableHead>Unit</TableHead>
           <TableHead className="text-right">Unit cost</TableHead>
           <TableHead className="text-right">Total</TableHead>
+          {hasValidation && <TableHead>Decision support</TableHead>}
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -92,6 +95,7 @@ function LineItemsTable({ items }: { items: LineItem[] }) {
             <TableCell className="text-xs text-muted-foreground">{l.unit}</TableCell>
             <TableCell className="text-right tabular-nums">{formatCurrency(l.unitCost)}</TableCell>
             <TableCell className="text-right tabular-nums">{formatCurrency(l.qty * l.unitCost)}</TableCell>
+            {hasValidation && <TableCell>{l.validation && <ReferenceBasisBadge validation={l.validation} />}</TableCell>}
           </TableRow>
         ))}
       </TableBody>

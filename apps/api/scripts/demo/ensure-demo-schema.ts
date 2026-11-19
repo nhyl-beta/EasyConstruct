@@ -761,6 +761,11 @@ async function main() {
   const addedPrices = await seedMissingMaterialPrices();
   if (addedPrices > 0) console.log(`Material price references: ${addedPrices} added.`);
 
+  // validation_results: migration 0056 lets a row point at a Purchase Request instead of a
+  // workflow (idempotent, additive only), so a fresh/reset demo database has the column and
+  // constraints Purchase Requests' own decision-support check needs before any PR is raised.
+  await pool.query(fs.readFileSync(new URL("../../drizzle/0056_validation_results_purchase_requests.sql", import.meta.url), "utf8"));
+
   console.log("Demo schema tables and compatibility columns are ready.");
 }
 

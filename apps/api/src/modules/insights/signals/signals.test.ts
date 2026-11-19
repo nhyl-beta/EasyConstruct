@@ -61,6 +61,7 @@ function emptySnapshot(status = "Construction"): LifecycleSnapshot {
     staffedEmployees: [],
     closeoutTemplateId: null,
     validationResults: [],
+    purchaseRequests: [],
     issuePrecedents: [],
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any;
@@ -113,6 +114,35 @@ describe("cost-variance", () => {
         { id: 1, workflowId: 1, verdict: "above-typical", variancePct: "0.05", lineDescription: "A", basisSummary: "x", sources: null },
         { id: 2, workflowId: 1, verdict: "within-range", variancePct: "0.50", lineDescription: "B", basisSummary: "x", sources: null },
         { id: 3, workflowId: 1, verdict: "no-match", variancePct: null, lineDescription: "C", basisSummary: "x", sources: null },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ] as any,
+    });
+    const signals = runSignals(snapshot, { now: NOW });
+    assert.equal(signals.filter((s) => s.rule === "cost-variance").length, 0);
+  });
+
+  test("fires for a Purchase Request line too, labeled with the request id and linked to /expenses", () => {
+    const snapshot = withOverrides({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      purchaseRequests: [{ id: "PR-1", project: "TEST-000", status: "pending-finance" }] as any,
+      validationResults: [
+        { id: 1, workflowId: null, purchaseRequestId: "PR-1", verdict: "above-typical", variancePct: "0.20", lineDescription: "Cement", basisSummary: "citation 20%", sources: null },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ] as any,
+    });
+    const signals = runSignals(snapshot, { now: NOW });
+    const found = signals.find((s) => s.rule === "cost-variance");
+    assert.ok(found);
+    assert.match(found!.label, /PR-1/);
+    assert.equal(found!.link, "/expenses");
+  });
+
+  test("silent for a Purchase Request that is no longer live (rejected/cancelled/ordered)", () => {
+    const snapshot = withOverrides({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      purchaseRequests: [{ id: "PR-2", project: "TEST-000", status: "rejected" }] as any,
+      validationResults: [
+        { id: 1, workflowId: null, purchaseRequestId: "PR-2", verdict: "above-typical", variancePct: "0.20", lineDescription: "Cement", basisSummary: "citation 20%", sources: null },
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ] as any,
     });

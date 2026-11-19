@@ -10,9 +10,10 @@ import { workflowLineItems } from "../../../core/db/schema/workflows.js";
 import { eq } from "drizzle-orm";
 import { getReferenceItems } from "./cache.js";
 import { bestMatch } from "./matcher.js";
-import { compareLineItem, type LineItemForCost, type FxRate } from "./cost.js";
+import { compareLineItem, round2, type LineItemForCost, type FxRate } from "./cost.js";
 import { env } from "../../../core/config/env.js";
 import { repo } from "../../workflow/index.js";
+import { purchaseRequestsRepository } from "../../finance/index.js";
 
 const MAX_NOTE_LENGTH = 500;
 
@@ -86,5 +87,42 @@ export const validateWorkflowLineItems = async (workflowId: number): Promise<voi
     await repo.updateWorkflow(workflowId, { aiNote: summarize(results) });
   } catch (error) {
     console.error(`[ai-validation] validateWorkflowLineItems(${workflowId}) failed:`, error);
+  }
+};
+
+// Same comparison, for a Purchase Request's own lineItems (a JSONB array on the request row,
+// not a child table) instead of a workflow's. Each line's entityId is its index within that
+// array — unique only within this one purchaseRequestId, which is why it's a FK column of its
+// own rather than reusing workflowId. There is no purchase_requests.aiNote column, so unlike
+// validateWorkflowLineItems this only persists the per-line rows; the UI reads those directly
+// (ReferenceBasisBadge per line), there's no request-level summary sentence to write.
+// Never throws, for the same reason: decision support can never block raising a request.
+export const validatePurchaseRequestLineItems = async (purchaseRequestId: string): Promise<void> => {
+  try {
+    const request = await purchaseRequestsRepository.findById(purchaseRequestId);
+    if (!request || request.lineItems.length === 0) return;
+
+    const referenceItems = await getReferenceItems();
+    const fx: FxRate = { rate: env.FX_RATE_USD_PHP, asOf: env.FX_RATE_AS_OF };
+
+    const results: NewValidationResultRow[] = request.lineItems.map((li, index) => {
+      const line: LineItemForCost = {
+        id: index,
+        purchaseRequestId: request.id,
+        projectCode: request.project,
+        description: li.description,
+        requestedAmount: round2(li.qty * li.unitCost),
+        quantity: li.qty,
+        unit: li.unit,
+      };
+      const match = referenceItems.length > 0 ? bestMatch(line.description, referenceItems) : null;
+      return compareLineItem(line, match, fx);
+    });
+
+    if (results.length > 0) {
+      await db.insert(validationResults).values(results);
+    }
+  } catch (error) {
+    console.error(`[ai-validation] validatePurchaseRequestLineItems(${purchaseRequestId}) failed:`, error);
   }
 };

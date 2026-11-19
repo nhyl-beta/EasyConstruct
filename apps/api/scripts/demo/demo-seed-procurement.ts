@@ -41,6 +41,8 @@ import { monthKey } from "../../src/modules/finance/cash-flow/months.js";
 import { refreshMonth } from "../../src/modules/finance/cash-flow/service.js";
 import { unitCostMap } from "../../src/modules/finance/material-prices/repository.js";
 import { lineItemsTotal } from "../../src/modules/finance/purchasing/rules.js";
+import { FEATURES } from "../../src/core/config/features.js";
+import { validatePurchaseRequestLineItems } from "../../src/modules/insights/index.js";
 import { assertDemoDatabase } from "./demo-guard.js";
 import { storePdf } from "./demo-files.js";
 import { EMAILS } from "./demo-seed-lib.js";
@@ -290,6 +292,13 @@ async function main() {
     }
     if (actual.size > 0) await refreshMonth(monthKey(new Date()), tx);
   });
+
+  // Decision support, same path a real raise goes through (purchaseRequestsService.create ->
+  // validatePurchaseRequestLineItems), just run here after the insert since this script writes
+  // rows directly instead of calling the service. Never throws; see that function's own comment.
+  if (FEATURES.ai) {
+    for (const plan of fresh.requests) await validatePurchaseRequestLineItems(plan.id);
+  }
 
   console.log("\nDone. The Finance tabs, the PM Purchasing panel, and Requirements now have data on DEMO-S4.");
 }

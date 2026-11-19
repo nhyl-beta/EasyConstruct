@@ -17,6 +17,7 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 import { workflows } from "./workflows.js";
+import { purchaseRequests } from "./finance.js";
 
 // ── Reference snapshots ──────────────────────────────────────────────────
 // A cached copy of one EstimationPro.ai catalog item. Refreshed by
@@ -67,13 +68,16 @@ export const VALIDATION_VERDICTS = [
 ] as const;
 export type ValidationVerdict = (typeof VALIDATION_VERDICTS)[number];
 
+// entityType is "workflow_line_item" (entityId = workflowLineItems.id, globally unique,
+// workflowId set) or "purchase_request_line_item" (entityId = that line's index within the
+// request's own lineItems array, unique only within purchaseRequestId, which is set instead).
+// Exactly one of workflowId/purchaseRequestId is set per row (validation_results_one_parent_chk).
 export const validationResults = pgTable("validation_results", {
   id: serial("id").primaryKey(),
   entityType: varchar("entity_type", { length: 30 }).notNull().default("workflow_line_item"),
   entityId: integer("entity_id").notNull(),
-  workflowId: integer("workflow_id")
-    .notNull()
-    .references(() => workflows.id, { onDelete: "cascade" }),
+  workflowId: integer("workflow_id").references(() => workflows.id, { onDelete: "cascade" }),
+  purchaseRequestId: varchar("purchase_request_id", { length: 32 }).references(() => purchaseRequests.id, { onDelete: "cascade" }),
   projectCode: varchar("project_code", { length: 50 }).notNull(),
   lineDescription: varchar("line_description", { length: 255 }).notNull(),
   lineQuantity: numeric("line_quantity", { precision: 14, scale: 3 }),
