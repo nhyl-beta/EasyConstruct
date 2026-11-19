@@ -65,15 +65,17 @@ export interface PayrollReviewPage {
   periods: string[];
 }
 
-/** One page of batches, optionally for a single period (GET ...?page&limit&period). */
+/** One page of batches, optionally for a single period and/or a text search (GET ...?page&limit&period&search). */
 export async function listPayrollReviewPage(
   page: number,
   limit: number,
   period: string | null,
   signal?: AbortSignal,
+  search?: string | null,
 ): Promise<PayrollReviewPage> {
   const qs = new URLSearchParams({ page: String(page), limit: String(limit) });
   if (period) qs.set("period", period);
+  if (search) qs.set("search", search);
   const json = (await apiClient.get(`${BASE_PATH}?${qs.toString()}`, { signal })) as {
     data?: PayrollReviewBatch[];
     meta?: { total?: number; pages?: number; periods?: string[] };

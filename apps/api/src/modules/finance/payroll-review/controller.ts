@@ -37,7 +37,13 @@ export const listPayrollBatches = async (
     };
     const paging = parsePageRequest(req.query, { sortable: Object.keys(sorters) });
     const period = typeof req.query.period === "string" && req.query.period.trim() ? req.query.period.trim() : undefined;
-    const rows = period ? batches.filter((b) => b.period === period) : batches;
+    const search = typeof req.query.search === "string" && req.query.search.trim() ? req.query.search.trim().toLowerCase() : undefined;
+    let rows = period ? batches.filter((b) => b.period === period) : batches;
+    if (search) {
+      rows = rows.filter((b) =>
+        [b.id, b.projectCode, b.period, b.group].some((field) => field?.toLowerCase().includes(search)),
+      );
+    }
     if (!paging.requested) return res.json(formatSuccess(rows, "OK"));
     const { items, meta } = paginateRows(rows, paging, sorters);
     // The period choices come from every batch, so they do not shrink once one is picked.
