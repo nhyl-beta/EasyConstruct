@@ -10,7 +10,7 @@
 import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
 import { usePagination } from "@/hooks/use-pagination";
 import { useMemo, useState } from "react";
-import { Check, FileCheck2, Send, X } from "lucide-react";
+import { Check, Eye, FileCheck2, Send, X } from "lucide-react";
 
 import { PageContainer } from "@/components/refine-ui/views/page-container";
 import { PageHeader } from "@/components/refine-ui/views/page-header";
@@ -18,8 +18,10 @@ import { PageContent } from "@/components/refine-ui/views/page-content";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { FilePreviewDialog } from "@/components/shared/file-preview-dialog";
 import { useBlueprints } from "@/features/blueprint/hooks/useBlueprints";
 import { useAuth } from "@/auth/auth-context";
+import type { Blueprint } from "@/features/blueprint/types/blueprint.types";
 
 type Tab = "pending" | "approved" | "other";
 
@@ -36,6 +38,7 @@ export default function SharedBlueprintReviewsPage() {
   const canDecide = user?.role === "consultant" || user?.role === "project-manager" || user?.role === "admin";
   const { blueprints, loading, decide, deciding, decideError } = useBlueprints();
   const [tab, setTab] = useState<Tab>("pending");
+  const [previewing, setPreviewing] = useState<Blueprint | null>(null);
 
   const filtered = useMemo(() => {
     if (tab === "pending") {
@@ -90,7 +93,12 @@ export default function SharedBlueprintReviewsPage() {
                           </div>
                         </div>
                       </div>
-                      <Badge variant={APPROVAL_TONE[b.approval] ?? "outline"}>{b.approval}</Badge>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <Button size="sm" variant="outline" onClick={() => setPreviewing(b)}>
+                          <Eye className="h-4 w-4" /> View
+                        </Button>
+                        <Badge variant={APPROVAL_TONE[b.approval] ?? "outline"}>{b.approval}</Badge>
+                      </div>
                     </div>
                     {canDecide && tab === "pending" && (
                       <div className="mt-3 flex flex-wrap items-center gap-2 border-t pt-3">
@@ -133,6 +141,14 @@ export default function SharedBlueprintReviewsPage() {
           </TabsContent>
         </Tabs>
       </PageContent>
+
+      <FilePreviewDialog
+        open={previewing !== null}
+        onOpenChange={(open) => !open && setPreviewing(null)}
+        url={previewing?.fileUrl}
+        title={previewing ? `${previewing.drawingNumber} — ${previewing.title}` : "Blueprint"}
+        description={previewing ? `${previewing.folder} · by ${previewing.author}${previewing.projectCode ? ` · ${previewing.projectCode}` : ""}` : undefined}
+      />
     </PageContainer>
   );
 }
