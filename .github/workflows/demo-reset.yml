@@ -7,7 +7,8 @@ name: Reset and reseed demo data
 #   roles and templates are never touched), seeds the price catalog, starts a throwaway API on the runner
 #   (port 8123, no real file storage), runs demo:seed and demo:verify.
 # Make a Neon branch (before-reset-YYYYMMDD) first. Secret used (name only): DATABASE_URL.
-# Files the seed uploads land on the runner's disk and vanish with it, so seeded documents show "file not available".
+# The throwaway API uploads to the Filebase bucket (same bucket and keys the backup workflow uses), so seeded files
+# exist for real. With clear_files on, everything under easyconstruct/ is deleted first; db/ is never touched.
 on:
   workflow_dispatch:
     inputs:
@@ -19,6 +20,10 @@ on:
         description: 'Real run only: type exactly "reset neon demo data"'
         type: string
         default: ""
+      clear_files:
+        description: "Real run only: also delete the app files under easyconstruct/ in the Filebase bucket (db/ backups are never touched)"
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -37,6 +42,16 @@ jobs:
       SECRET_URL: ${{ secrets.DATABASE_URL }}
       ALLOW_DEMO_RESET: "true"
       DISABLE_SCHEDULER: "true"
+      S3_ENDPOINT: ${{ secrets.S3_ENDPOINT }}
+      S3_REGION: ${{ secrets.S3_REGION }}
+      S3_BUCKET: ${{ secrets.BACKUP_BUCKET }}
+      S3_ACCESS_KEY_ID: ${{ secrets.BACKUP_S3_ACCESS_KEY_ID }}
+      S3_SECRET_ACCESS_KEY: ${{ secrets.BACKUP_S3_SECRET_ACCESS_KEY }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.BACKUP_S3_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.BACKUP_S3_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: ${{ secrets.S3_REGION }}
+      AWS_REQUEST_CHECKSUM_CALCULATION: WHEN_REQUIRED
+      AWS_RESPONSE_CHECKSUM_VALIDATION: WHEN_REQUIRED
     steps:
       - name: Check inputs
         run: |
@@ -63,6 +78,10 @@ jobs:
         run: |
           npm run db:migrate -- --dry-run
           npm run demo:reset -- --dry-run
+      - name: Count the app files in Filebase (read-only)
+        run: |
+          aws s3 ls "s3://$S3_BUCKET/easyconstruct/" --recursive --summarize --endpoint-url "$S3_ENDPOINT" | tail -3 \
+            || echo "::warning::could not list the bucket (check the S3 secrets)"
       - name: Migrate
         if: ${{ inputs.dry_run != true }}
         working-directory: apps/api
@@ -71,6 +90,9 @@ jobs:
         if: ${{ inputs.dry_run != true }}
         working-directory: apps/api
         run: npm run demo:reset
+      - name: Delete app files in Filebase (easyconstruct/ only)
+        if: ${{ inputs.dry_run != true && inputs.clear_files }}
+        run: aws s3 rm "s3://$S3_BUCKET/easyconstruct/" --recursive --only-show-errors --endpoint-url "$S3_ENDPOINT"
       - name: Seed price catalog
         if: ${{ inputs.dry_run != true }}
         working-directory: apps/api
