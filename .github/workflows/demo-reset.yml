@@ -78,10 +78,15 @@ jobs:
         run: |
           npm run db:migrate -- --dry-run
           npm run demo:reset -- --dry-run
-      - name: Count the app files in Filebase (read-only)
+      - name: Check Filebase access (read-only)
         run: |
-          aws s3 ls "s3://$S3_BUCKET/easyconstruct/" --recursive --summarize --endpoint-url "$S3_ENDPOINT" | tail -3 \
-            || echo "::warning::could not list the bucket (check the S3 secrets)"
+          if aws s3api list-objects-v2 --bucket "$S3_BUCKET" --prefix easyconstruct/ --max-keys 1 --endpoint-url "$S3_ENDPOINT" >/dev/null 2>/tmp/s3err; then
+            echo "S3_OK=true" >> "$GITHUB_ENV"
+            aws s3 ls "s3://$S3_BUCKET/easyconstruct/" --recursive --summarize --endpoint-url "$S3_ENDPOINT" | tail -2
+          else
+            echo "S3_OK=false" >> "$GITHUB_ENV"; cat /tmp/s3err
+            echo "::warning::Filebase refused these keys: files will NOT be cleared and the seed uploads to the runner's disk. Fix the BACKUP_S3_* / BACKUP_BUCKET secrets."
+          fi
       - name: Migrate
         if: ${{ inputs.dry_run != true }}
         working-directory: apps/api
@@ -91,7 +96,7 @@ jobs:
         working-directory: apps/api
         run: npm run demo:reset
       - name: Delete app files in Filebase (easyconstruct/ only)
-        if: ${{ inputs.dry_run != true && inputs.clear_files }}
+        if: ${{ inputs.dry_run != true && inputs.clear_files && env.S3_OK == 'true' }}
         run: aws s3 rm "s3://$S3_BUCKET/easyconstruct/" --recursive --only-show-errors --endpoint-url "$S3_ENDPOINT"
       - name: Seed price catalog
         if: ${{ inputs.dry_run != true }}
@@ -104,6 +109,11 @@ jobs:
           PORT: "8123"
           DOTENV_CONFIG_PATH: .env.check
           SMOKE_BASE_URL: http://localhost:8123/api
+          # blank when Filebase refused the keys, so the API falls back to disk instead of failing every upload
+          S3_ENDPOINT: ${{ env.S3_OK == 'true' && secrets.S3_ENDPOINT || '' }}
+          S3_BUCKET: ${{ env.S3_OK == 'true' && secrets.BACKUP_BUCKET || '' }}
+          S3_ACCESS_KEY_ID: ${{ env.S3_OK == 'true' && secrets.BACKUP_S3_ACCESS_KEY_ID || '' }}
+          S3_SECRET_ACCESS_KEY: ${{ env.S3_OK == 'true' && secrets.BACKUP_S3_SECRET_ACCESS_KEY || '' }}
         run: |
           cp .env.check.example .env.check
           npx tsx src/main.ts > /tmp/api.log 2>&1 &

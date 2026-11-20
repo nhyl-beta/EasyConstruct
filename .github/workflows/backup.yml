@@ -20,7 +20,7 @@ concurrency:
 env:
   # ONE place to set the Postgres major version. It must equal the Neon server's major version (Neon console >
   # Project > Settings). The "Check server version" step fails the run with a clear message if it does not.
-  PG_MAJOR: "17"
+  PG_MAJOR: "18"
   KEEP: "8"
   # Filebase accepts only SHA-256 checksums; do not let the AWS CLI add CRC32 ones.
   AWS_REQUEST_CHECKSUM_CALCULATION: WHEN_REQUIRED
