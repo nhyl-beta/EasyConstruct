@@ -6,6 +6,7 @@ name: Reset and reseed demo data
 #   real run: needs confirm = "reset neon demo data". Migrates, demo:reset (backup + one transaction; accounts,
 #   roles and templates are never touched), seeds the price catalog, starts a throwaway API on the runner
 #   (port 8123, no real file storage), runs demo:seed and demo:verify.
+# The seed goes through the API from a US runner to Neon in Singapore, so it is slow (about 45 to 60 minutes).
 # Make a Neon branch (before-reset-YYYYMMDD) first. Secret used (name only): DATABASE_URL.
 # The throwaway API uploads to the Filebase bucket (same bucket and keys the backup workflow uses), so seeded files
 # exist for real. With clear_files on, everything under easyconstruct/ is deleted first; db/ is never touched.
@@ -35,7 +36,7 @@ concurrency:
 jobs:
   reset:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 150
     env:
       DRY_RUN: ${{ inputs.dry_run }}
       CONFIRM: ${{ inputs.confirm }}
