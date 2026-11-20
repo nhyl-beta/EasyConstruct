@@ -1,0 +1,102 @@
+name: Reset and reseed demo data
+
+# Manual only. Runs the same steps as the PowerShell guide (merge-repoint-and-reset-data-steps.md, Part 2) on a
+# GitHub runner, because the runner can reach Neon and a laptop shell may not.
+#   dry_run (default on): lists pending migrations and the row counts demo:reset would delete. Changes nothing.
+#   real run: needs confirm = "reset neon demo data". Migrates, demo:reset (backup + one transaction; accounts,
+#   roles and templates are never touched), seeds the price catalog, starts a throwaway API on the runner
+#   (port 8123, no real file storage), runs demo:seed and demo:verify.
+# Make a Neon branch (before-reset-YYYYMMDD) first. Secret used (name only): DATABASE_URL.
+# Files the seed uploads land on the runner's disk and vanish with it, so seeded documents show "file not available".
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run: change nothing, only print what would happen"
+        type: boolean
+        default: true
+      confirm:
+        description: 'Real run only: type exactly "reset neon demo data"'
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: db-migrate
+  cancel-in-progress: false
+
+jobs:
+  reset:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DRY_RUN: ${{ inputs.dry_run }}
+      CONFIRM: ${{ inputs.confirm }}
+      SECRET_URL: ${{ secrets.DATABASE_URL }}
+      ALLOW_DEMO_RESET: "true"
+      DISABLE_SCHEDULER: "true"
+    steps:
+      - name: Check inputs
+        run: |
+          if [ -z "$SECRET_URL" ]; then echo "::error::Add the DATABASE_URL repository secret"; exit 1; fi
+          if [ "$DRY_RUN" != "true" ] && [ "$CONFIRM" != "reset neon demo data" ]; then
+            echo '::error::Real run needs confirm = "reset neon demo data"'; exit 1
+          fi
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Point the scripts at the direct Neon host
+        run: |
+          # the reset scripts want the direct host, not the -pooler one (same credentials)
+          url="${SECRET_URL/-pooler/}"
+          host="$(node -e 'console.log(new URL(process.argv[1]).hostname)' "$url")"
+          echo "::add-mask::$url"
+          echo "DATABASE_URL=$url" >> "$GITHUB_ENV"
+          echo "DEMO_RESET_ALLOWED_HOSTS=$host" >> "$GITHUB_ENV"
+      - name: Dry run (migrations pending, rows that would go)
+        working-directory: apps/api
+        run: |
+          npm run db:migrate -- --dry-run
+          npm run demo:reset -- --dry-run
+      - name: Migrate
+        if: ${{ inputs.dry_run != true }}
+        working-directory: apps/api
+        run: npm run db:migrate
+      - name: Reset (backup first, one transaction)
+        if: ${{ inputs.dry_run != true }}
+        working-directory: apps/api
+        run: npm run demo:reset
+      - name: Seed price catalog
+        if: ${{ inputs.dry_run != true }}
+        working-directory: apps/api
+        run: npm run ai:seed-references
+      - name: Seed demo data and verify
+        if: ${{ inputs.dry_run != true }}
+        working-directory: apps/api
+        env:
+          PORT: "8123"
+          DOTENV_CONFIG_PATH: .env.check
+          SMOKE_BASE_URL: http://localhost:8123/api
+        run: |
+          cp .env.check.example .env.check
+          npx tsx src/main.ts > /tmp/api.log 2>&1 &
+          api=$!
+          for i in $(seq 1 60); do curl -fsS http://localhost:8123/api/health >/dev/null 2>&1 && break; sleep 2; done
+          curl -fsS http://localhost:8123/api/health || { cat /tmp/api.log; exit 1; }
+          status=0
+          npm run demo:seed && npm run demo:verify || status=1
+          kill $api || true
+          [ $status -eq 0 ] || { tail -50 /tmp/api.log; exit 1; }
+      - name: Keep the pre-reset backup for 7 days
+        if: ${{ always() && inputs.dry_run != true }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: demo-reset-backup
+          path: apps/api/backups/
+          retention-days: 7
+          if-no-files-found: ignore
