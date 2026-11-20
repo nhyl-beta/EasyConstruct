@@ -81,12 +81,23 @@ jobs:
           npm run demo:reset -- --dry-run
       - name: Check Filebase access (read-only)
         run: |
-          if aws s3api list-objects-v2 --bucket "$S3_BUCKET" --prefix easyconstruct/ --max-keys 1 --endpoint-url "$S3_ENDPOINT" >/dev/null 2>/tmp/s3err; then
-            echo "S3_OK=true" >> "$GITHUB_ENV"
-            aws s3 ls "s3://$S3_BUCKET/easyconstruct/" --recursive --summarize --endpoint-url "$S3_ENDPOINT" | tail -2
+          # secrets pasted with a trailing space or newline are a common cause of AccessDenied: use trimmed copies
+          clean() { printf %s "$1" | tr -d '[:space:]'; }
+          export AWS_ACCESS_KEY_ID="$(clean "$AWS_ACCESS_KEY_ID")" AWS_SECRET_ACCESS_KEY="$(clean "$AWS_SECRET_ACCESS_KEY")"
+          bucket="$(clean "$S3_BUCKET")"; endpoint="$(clean "$S3_ENDPOINT")"; region="$(clean "$AWS_DEFAULT_REGION")"
+          export AWS_DEFAULT_REGION="$region"
+          echo "lengths (raw/trimmed): key ${#S3_ACCESS_KEY_ID}/${#AWS_ACCESS_KEY_ID}, secret ${#S3_SECRET_ACCESS_KEY}/${#AWS_SECRET_ACCESS_KEY}, bucket ${#S3_BUCKET}/${#bucket}, endpoint ${#S3_ENDPOINT}/${#endpoint}, region ${#region}"
+          case "$endpoint" in https://s3.filebase.io|https://s3.filebase.com) echo "endpoint: looks right";; *) echo "::warning::endpoint is not https://s3.filebase.io (a bucket name or path in it breaks signing)";; esac
+          if aws s3api list-buckets --endpoint-url "$endpoint" --query 'Buckets[].Name' --output text >/tmp/buckets 2>/tmp/s3err; then
+            echo "key is valid; buckets it can see: $(wc -w < /tmp/buckets)"
+            tr '\t' '\n' < /tmp/buckets | grep -Fxq "$bucket" && echo "BACKUP_BUCKET is one of them" || echo "::warning::BACKUP_BUCKET is NOT one of the buckets this key can see"
+          else echo "list-buckets failed (the key itself may be wrong):"; cat /tmp/s3err; fi
+          if aws s3api list-objects-v2 --bucket "$bucket" --prefix easyconstruct/ --max-keys 1 --endpoint-url "$endpoint" >/dev/null 2>/tmp/s3err; then
+            { echo "S3_OK=true"; echo "C_KEY=$AWS_ACCESS_KEY_ID"; echo "C_SECRET=$AWS_SECRET_ACCESS_KEY"; echo "C_BUCKET=$bucket"; echo "C_ENDPOINT=$endpoint"; echo "C_REGION=$region"; } >> "$GITHUB_ENV"
+            aws s3 ls "s3://$bucket/easyconstruct/" --recursive --summarize --endpoint-url "$endpoint" | tail -2
           else
             echo "S3_OK=false" >> "$GITHUB_ENV"; cat /tmp/s3err
-            echo "::warning::Filebase refused these keys: files will NOT be cleared and the seed uploads to the runner's disk. Fix the BACKUP_S3_* / BACKUP_BUCKET secrets."
+            echo "::warning::Filebase refused these keys: files will NOT be cleared and the seed uploads to the runner's disk. See the lines above."
           fi
       - name: Migrate
         if: ${{ inputs.dry_run != true }}
@@ -98,7 +109,11 @@ jobs:
         run: npm run demo:reset
       - name: Delete app files in Filebase (easyconstruct/ only)
         if: ${{ inputs.dry_run != true && inputs.clear_files && env.S3_OK == 'true' }}
-        run: aws s3 rm "s3://$S3_BUCKET/easyconstruct/" --recursive --only-show-errors --endpoint-url "$S3_ENDPOINT"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ env.C_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ env.C_SECRET }}
+          AWS_DEFAULT_REGION: ${{ env.C_REGION }}
+        run: aws s3 rm "s3://${{ env.C_BUCKET }}/easyconstruct/" --recursive --only-show-errors --endpoint-url "${{ env.C_ENDPOINT }}"
       - name: Seed price catalog
         if: ${{ inputs.dry_run != true }}
         working-directory: apps/api
@@ -111,10 +126,10 @@ jobs:
           DOTENV_CONFIG_PATH: .env.check
           SMOKE_BASE_URL: http://localhost:8123/api
           # blank when Filebase refused the keys, so the API falls back to disk instead of failing every upload
-          S3_ENDPOINT: ${{ env.S3_OK == 'true' && secrets.S3_ENDPOINT || '' }}
-          S3_BUCKET: ${{ env.S3_OK == 'true' && secrets.BACKUP_BUCKET || '' }}
-          S3_ACCESS_KEY_ID: ${{ env.S3_OK == 'true' && secrets.BACKUP_S3_ACCESS_KEY_ID || '' }}
-          S3_SECRET_ACCESS_KEY: ${{ env.S3_OK == 'true' && secrets.BACKUP_S3_SECRET_ACCESS_KEY || '' }}
+          S3_ENDPOINT: ${{ env.S3_OK == 'true' && env.C_ENDPOINT || '' }}
+          S3_BUCKET: ${{ env.S3_OK == 'true' && env.C_BUCKET || '' }}
+          S3_ACCESS_KEY_ID: ${{ env.S3_OK == 'true' && env.C_KEY || '' }}
+          S3_SECRET_ACCESS_KEY: ${{ env.S3_OK == 'true' && env.C_SECRET || '' }}
         run: |
           cp .env.check.example .env.check
           npx tsx src/main.ts > /tmp/api.log 2>&1 &
