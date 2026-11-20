@@ -8,6 +8,7 @@ assertDemoEnvironment();
 // through the app's own POST /api/uploads path — so they land wherever the app
 // stores files (private Vercel Blob when configured, local disk otherwise) and
 // download through the authenticated GET /api/uploads/file route.
+import fs from "node:fs";
 import zlib from "node:zlib";
 
 // ── PDF ────────────────────────────────────────────────────────────────────
@@ -154,6 +155,37 @@ export function titlePng(lines: string[], variant = 0): Buffer {
   ]);
 }
 
+// ── Real sample files (./samples, from the EasyConstruct-Demo folder) ───────
+// A seeded file whose name says what it is (proposal, contract, blueprint, ...) uploads the matching sample
+// instead of a generated placeholder, so every preview shows a real document. Anything else is generated.
+// shortcut: first keyword match wins on the file name alone, and the samples all show one project's name, so
+// the content is a believable stand-in, not that record's own data. Add a row here to cover another kind.
+const PDF_SAMPLES: [RegExp, string][] = [
+  [/proposal/i, "01_Proposal_Cost_Estimate.pdf"],
+  [/award/i, "02_Notice_of_Award.pdf"],
+  [/contract/i, "03_Contract.pdf"],
+  [/blueprint/i, "05_Blueprint.pdf"],
+  [/notice-to-proceed|ntp/i, "06_Notice_to_Proceed.pdf"],
+  [/completion/i, "07_Certificate_of_Completion.pdf"],
+  [/turnover/i, "08_Turnover_Document.pdf"],
+  [/acceptance/i, "09_Client_Acceptance.pdf"],
+  [/architectural/i, "10_Plan_Set_Architectural.pdf"],
+  [/structural/i, "11_Plan_Set_Structural.pdf"],
+  [/design|drawing/i, "04_Design_Drawing_Set.pdf"],
+  [/material|spec/i, "15_Materials_and_Specifications.pdf"],
+];
+const IMAGE_SAMPLES: [RegExp, string][] = [
+  [/^att-|attendance|clock/i, "12_Clock_In_Verification_Photo.jpg"],
+  [/evidence|completion/i, "13_Task_Completion_Photo.jpg"],
+  [/issue/i, "14_Issue_Report_Photo.jpg"],
+];
+
+export function sampleFor(filename: string, rules: [RegExp, string][]): { name: string; bytes: Buffer } | null {
+  const hit = rules.find(([re]) => re.test(filename));
+  return hit ? { name: hit[1], bytes: fs.readFileSync(new URL(`./samples/${hit[1]}`, import.meta.url)) } : null;
+}
+export const samplePdf = (filename: string) => sampleFor(filename, PDF_SAMPLES)?.bytes ?? null;
+
 // ── Upload through the app's own endpoint ──────────────────────────────────
 
 export interface StoredUpload {
@@ -181,7 +213,7 @@ export async function uploadBytes(
 }
 
 export const uploadPdf = (base: string, token: string, filename: string, title: string, lines: string[]) =>
-  uploadBytes(base, token, filename, "application/pdf", textPdf(title, lines));
+  uploadBytes(base, token, filename, "application/pdf", samplePdf(filename) ?? textPdf(title, lines));
 
 // ── In-process storage, for scripts with no HTTP session (direct-DB seeders
 // like demo-seed-procurement.ts, which insert rows straight through drizzle
@@ -194,7 +226,11 @@ export async function storeBytes(filename: string, contentType: string, bytes: B
 }
 
 export const storePdf = (filename: string, title: string, lines: string[]) =>
-  storeBytes(filename, "application/pdf", textPdf(title, lines));
+  storeBytes(filename, "application/pdf", samplePdf(filename) ?? textPdf(title, lines));
 
-export const uploadPng = (base: string, token: string, filename: string, lines: string[], variant = 0) =>
-  uploadBytes(base, token, filename, "image/png", titlePng(lines, variant));
+export function uploadPng(base: string, token: string, filename: string, lines: string[], variant = 0) {
+  const sample = sampleFor(filename, IMAGE_SAMPLES);
+  return sample
+    ? uploadBytes(base, token, filename.replace(/\.png$/i, ".jpg"), "image/jpeg", sample.bytes)
+    : uploadBytes(base, token, filename, "image/png", titlePng(lines, variant));
+}
