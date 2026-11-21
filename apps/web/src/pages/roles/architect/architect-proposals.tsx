@@ -59,6 +59,23 @@ import { SubmittedFiles } from "@/components/shared/submitted-files";
 import { fileTypeLabel } from "@/lib/file-type-label";
 import { formatRelativeTime } from "@/lib/format-relative-time";
 import { useProposalFiles } from "@/features/proposals/hooks/useProposalFiles";
+import {
+  CostBreakdownInput,
+  breakdownTotal,
+  emptyBreakdownRow,
+  formatBreakdownText,
+  hasCostBreakdown,
+  type CostBreakdownRow,
+} from "@/features/proposals/components/cost-breakdown-input";
+import { formatCurrency } from "@/lib/format-currency";
+import { SUPPORTING_FILE_TYPES } from "@/features/proposals/lib/supporting-file-types";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface ValidationResult {
   passed: boolean;
@@ -340,13 +357,13 @@ export default function ArchitectProposals() {
   const [projectCode, setProjectCode] =
     useState("");
 
-  const [amount, setAmount] =
-    useState("");
+  const [breakdown, setBreakdown] = useState<CostBreakdownRow[]>([emptyBreakdownRow()]);
 
   const [content, setContent] =
     useState("");
 
   const [file, setFile] = useState<File | null>(null);
+  const [fileType, setFileType] = useState("");
 
   const [formError, setFormError] =
     useState<string | null>(null);
@@ -371,6 +388,25 @@ export default function ArchitectProposals() {
       return;
     }
 
+    if (!hasCostBreakdown(breakdown)) {
+      setFormError(
+        "Please add at least one cost breakdown line item — the estimated amount needs a basis, not just a number.",
+      );
+
+      return;
+    }
+
+    if (file && !fileType) {
+      setFormError(
+        "Please select what kind of document the attached file is.",
+      );
+
+      return;
+    }
+
+    const breakdownText = formatBreakdownText(breakdown);
+    const computedAmount = formatCurrency(breakdownTotal(breakdown));
+
     const result = await designSubmission.submit({
       proposalId: `PROP-${Date.now()}`,
 
@@ -382,12 +418,15 @@ export default function ArchitectProposals() {
       // register and the consultant's review screen both show this.
       submittedBy: user?.name ?? "Architect",
 
-      amount: amount.trim() || undefined,
+      amount: computedAmount,
 
-      content: content.trim() || undefined,
+      // The breakdown is the proof behind the computed amount — folded into
+      // the description (no separate column) so reviewers see it right next
+      // to the rest of the proposal, aside from whatever file is attached.
+      content: [content.trim(), breakdownText].filter(Boolean).join("\n\n") || undefined,
 
       assignedReviewer: "consultant",
-    }, file);
+    }, file, file ? fileType : undefined);
 
     if (!result) {
       return;
@@ -403,9 +442,10 @@ export default function ArchitectProposals() {
 
     setTitle("");
     setProjectCode("");
-    setAmount("");
+    setBreakdown([emptyBreakdownRow()]);
     setContent("");
     setFile(null);
+    setFileType("");
 
     setShowCreateForm(false);
   }
@@ -544,20 +584,17 @@ export default function ArchitectProposals() {
                 className="mt-2 w-full"
               />
             </div>
+          </div>
 
-            <div>
-              <label className="text-sm font-medium">
-                Estimated Amount
-              </label>
-
-              <Input
-                value={amount}
-                onChange={(event) =>
-                  setAmount(event.target.value)
-                }
-                placeholder="₱500,000"
-                className="mt-2"
-              />
+          <div className="mt-4">
+            <label className="text-sm font-medium">
+              Estimated Amount — cost breakdown
+            </label>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              List what the amount covers; the total is computed from these lines, not typed.
+            </p>
+            <div className="mt-2">
+              <CostBreakdownInput rows={breakdown} onChange={setBreakdown} />
             </div>
           </div>
 
@@ -590,9 +627,32 @@ export default function ArchitectProposals() {
                 type="file"
                 accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.dwg,.dxf"
                 className="hidden"
-                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                onChange={(e) => {
+                  setFile(e.target.files?.[0] ?? null);
+                  setFileType("");
+                }}
               />
             </label>
+
+            {file && (
+              <div className="mt-2 max-w-sm">
+                <label className="text-xs font-medium text-muted-foreground">
+                  What is this file?
+                </label>
+                <Select value={fileType} onValueChange={setFileType}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Select a document type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SUPPORTING_FILE_TYPES.map((t) => (
+                      <SelectItem key={t} value={t}>
+                        {t}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
 
           <div className="mt-6 flex gap-2">
