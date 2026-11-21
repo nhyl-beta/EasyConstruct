@@ -82,18 +82,26 @@ export function ProposalAttachments({ proposal }: { proposal: Proposal }) {
           error={submitted.error}
           emptyText="No files were submitted with this proposal."
           onRetry={submitted.reload}
-          files={submitted.files.map((f) => ({
-            key: f.id,
-            name: f.name,
-            url: f.url,
-            meta: [fileTypeLabel(f.name), f.size, f.uploadedBy, f.filedAt ? formatRelativeTime(f.filedAt) : null]
-              .filter(Boolean)
-              .join(" · "),
-            unavailableNote:
-              f.available === false
-                ? "This file is no longer stored (it was uploaded before storage was fixed). Ask the Architect to attach it again."
-                : undefined,
-          }))}
+          files={submitted.files.map((f) => {
+            // A real document type (chosen at upload, e.g. "Cost Estimate") is
+            // the proof a reviewer is looking for — lead with it and keep the
+            // actual filename as a detail, not the other way around. Older
+            // attachments with no type chosen fall back to the filename, same
+            // as before.
+            const hasType = f.label && f.label !== f.name;
+            return {
+              key: f.id,
+              name: hasType ? f.label : f.name,
+              url: f.url,
+              meta: [hasType ? f.name : null, fileTypeLabel(f.name), f.size, f.uploadedBy, f.filedAt ? formatRelativeTime(f.filedAt) : null]
+                .filter(Boolean)
+                .join(" · "),
+              unavailableNote:
+                f.available === false
+                  ? "This file is no longer stored (it was uploaded before storage was fixed). Ask the Architect to attach it again."
+                  : undefined,
+            };
+          })}
         />
       </div>
 

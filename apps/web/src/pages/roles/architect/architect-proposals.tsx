@@ -68,6 +68,14 @@ import {
   type CostBreakdownRow,
 } from "@/features/proposals/components/cost-breakdown-input";
 import { formatCurrency } from "@/lib/format-currency";
+import { SUPPORTING_FILE_TYPES } from "@/features/proposals/lib/supporting-file-types";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface ValidationResult {
   passed: boolean;
@@ -355,6 +363,7 @@ export default function ArchitectProposals() {
     useState("");
 
   const [file, setFile] = useState<File | null>(null);
+  const [fileType, setFileType] = useState("");
 
   const [formError, setFormError] =
     useState<string | null>(null);
@@ -387,6 +396,14 @@ export default function ArchitectProposals() {
       return;
     }
 
+    if (file && !fileType) {
+      setFormError(
+        "Please select what kind of document the attached file is.",
+      );
+
+      return;
+    }
+
     const breakdownText = formatBreakdownText(breakdown);
     const computedAmount = formatCurrency(breakdownTotal(breakdown));
 
@@ -409,7 +426,7 @@ export default function ArchitectProposals() {
       content: [content.trim(), breakdownText].filter(Boolean).join("\n\n") || undefined,
 
       assignedReviewer: "consultant",
-    }, file);
+    }, file, file ? fileType : undefined);
 
     if (!result) {
       return;
@@ -428,6 +445,7 @@ export default function ArchitectProposals() {
     setBreakdown([emptyBreakdownRow()]);
     setContent("");
     setFile(null);
+    setFileType("");
 
     setShowCreateForm(false);
   }
@@ -609,9 +627,32 @@ export default function ArchitectProposals() {
                 type="file"
                 accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.dwg,.dxf"
                 className="hidden"
-                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                onChange={(e) => {
+                  setFile(e.target.files?.[0] ?? null);
+                  setFileType("");
+                }}
               />
             </label>
+
+            {file && (
+              <div className="mt-2 max-w-sm">
+                <label className="text-xs font-medium text-muted-foreground">
+                  What is this file?
+                </label>
+                <Select value={fileType} onValueChange={setFileType}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Select a document type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SUPPORTING_FILE_TYPES.map((t) => (
+                      <SelectItem key={t} value={t}>
+                        {t}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
 
           <div className="mt-6 flex gap-2">

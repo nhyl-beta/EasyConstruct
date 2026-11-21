@@ -28,6 +28,7 @@ export interface PendingUpload {
   proposalId: string;
   workflowId: number;
   file: File;
+  fileLabel?: string;
   message: string;
 }
 
@@ -50,6 +51,10 @@ export function useDesignProposalSubmission(
     async (
       input: CreateProposalInput,
       file?: File | null,
+      // What the file actually is (e.g. "Cost Estimate"), so a reviewer sees the
+      // document's type, not just its filename. Falls back to the filename when
+      // the caller has no type to offer.
+      fileLabel?: string,
     ): Promise<DesignProposalSubmissionResult | null> => {
       setSubmitting(true);
       setPendingUpload(null);
@@ -64,13 +69,14 @@ export function useDesignProposalSubmission(
 
         if (file) {
           try {
-            workflow = await WorkflowRepository.uploadAttachment(result.workflow.id, file, file.name);
+            workflow = await WorkflowRepository.uploadAttachment(result.workflow.id, file, fileLabel?.trim() || file.name);
           } catch (uploadErr) {
             fileAttached = false;
             setPendingUpload({
               proposalId: result.proposal.proposalId,
               workflowId: result.workflow.id,
               file,
+              fileLabel,
               message: messageOf(uploadErr),
             });
           }
@@ -85,16 +91,16 @@ export function useDesignProposalSubmission(
   );
 
   /** Uploads a file to an existing proposal's workflow. Returns true when it was stored. */
-  const attachFile = useCallback(async (proposalId: string, workflowId: number, file: File): Promise<boolean> => {
+  const attachFile = useCallback(async (proposalId: string, workflowId: number, file: File, fileLabel?: string): Promise<boolean> => {
     setUploading(true);
     setUploadedNotice(null);
     try {
-      await WorkflowRepository.uploadAttachment(workflowId, file, file.name);
+      await WorkflowRepository.uploadAttachment(workflowId, file, fileLabel?.trim() || file.name);
       setPendingUpload(null);
       setUploadedNotice(`${file.name} was attached to ${proposalId}.`);
       return true;
     } catch (err) {
-      setPendingUpload({ proposalId, workflowId, file, message: messageOf(err) });
+      setPendingUpload({ proposalId, workflowId, file, fileLabel, message: messageOf(err) });
       return false;
     } finally {
       setUploading(false);
@@ -103,7 +109,7 @@ export function useDesignProposalSubmission(
 
   const retryUpload = useCallback(async () => {
     if (!pendingUpload) return false;
-    return attachFile(pendingUpload.proposalId, pendingUpload.workflowId, pendingUpload.file);
+    return attachFile(pendingUpload.proposalId, pendingUpload.workflowId, pendingUpload.file, pendingUpload.fileLabel);
   }, [pendingUpload, attachFile]);
 
   return {
