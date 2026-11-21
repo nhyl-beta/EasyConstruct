@@ -9,12 +9,18 @@ import { Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatCurrency } from "@/lib/format-currency";
+
+// Standard construction units of measure — fixed list, not free text, so a
+// rate stays comparable (₱/m³ means something; a made-up unit doesn't).
+export const BREAKDOWN_UNITS = ["m", "m²", "m³", "kg", "ton", "bag", "pcs", "set", "lot", "l.s."] as const;
 
 export interface CostBreakdownRow {
   id: string;
   description: string;
   quantity: string;
+  unit: string;
   unitCost: string;
 }
 
@@ -22,6 +28,7 @@ export const emptyBreakdownRow = (): CostBreakdownRow => ({
   id: crypto.randomUUID(),
   description: "",
   quantity: "",
+  unit: "",
   unitCost: "",
 });
 
@@ -33,7 +40,7 @@ function rowSubtotal(row: CostBreakdownRow): number {
 }
 
 /** A row counts toward the total only once it is actually filled in. */
-const isComplete = (row: CostBreakdownRow) => row.description.trim().length > 0 && rowSubtotal(row) > 0;
+const isComplete = (row: CostBreakdownRow) => row.description.trim().length > 0 && row.unit.trim().length > 0 && rowSubtotal(row) > 0;
 
 export function breakdownTotal(rows: CostBreakdownRow[]): number {
   return rows.filter(isComplete).reduce((sum, r) => sum + rowSubtotal(r), 0);
@@ -48,7 +55,7 @@ export function formatBreakdownText(rows: CostBreakdownRow[]): string {
   const complete = rows.filter(isComplete);
   if (complete.length === 0) return "";
   const lines = complete.map(
-    (r) => `- ${r.description.trim()} — ${r.quantity} × ${formatCurrency(Number(r.unitCost))} = ${formatCurrency(rowSubtotal(r))}`,
+    (r) => `- ${r.description.trim()} — ${r.quantity} ${r.unit} × ${formatCurrency(Number(r.unitCost))}/${r.unit} = ${formatCurrency(rowSubtotal(r))}`,
   );
   return ["Cost breakdown:", ...lines, `Estimated amount (computed): ${formatCurrency(breakdownTotal(complete))}`].join("\n");
 }
@@ -73,10 +80,10 @@ export function CostBreakdownInput({
         {rows.map((row) => (
           <div key={row.id} className="grid grid-cols-12 items-center gap-2">
             <Input
-              className="col-span-6"
+              className="col-span-5"
               value={row.description}
               onChange={(e) => update(row.id, { description: e.target.value })}
-              placeholder="e.g. Structural steel framing"
+              placeholder="e.g. Ready-mix concrete, Class A"
             />
             <Input
               className="col-span-2"
@@ -86,13 +93,25 @@ export function CostBreakdownInput({
               onChange={(e) => update(row.id, { quantity: e.target.value })}
               placeholder="Qty"
             />
+            <Select value={row.unit} onValueChange={(v) => update(row.id, { unit: v })}>
+              <SelectTrigger className="col-span-2">
+                <SelectValue placeholder="Unit" />
+              </SelectTrigger>
+              <SelectContent>
+                {BREAKDOWN_UNITS.map((u) => (
+                  <SelectItem key={u} value={u}>
+                    {u}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Input
-              className="col-span-3"
+              className="col-span-2"
               type="number"
               min="0"
               value={row.unitCost}
               onChange={(e) => update(row.id, { unitCost: e.target.value })}
-              placeholder="Unit cost (₱)"
+              placeholder="Rate (₱)"
             />
             <Button
               type="button"
