@@ -22,14 +22,9 @@ export interface CreateProposalInput {
 
   submittedBy: string;
 
-  amount?: string;
-
   content?: string;
 
   assignedReviewer?: ProposalReviewer;
-
-  /** The cost breakdown behind `amount`; compared server-side against EstimationPro.ai reference pricing when available. */
-  breakdown?: { description: string; quantity: number; unit: string; unitCost: number }[];
 }
 
 export interface ReviewProposalInput {
@@ -157,18 +152,27 @@ export const useProposalsController = (options: ProposalsListOptions = {}) => {
    * linking proposal.workflowId instead of the old two-round-trip client
    * composition (create, then separately initiate a workflow) that never
    * recorded the link at all.
+   *
+   * The Bill of Materials file is required and goes in the SAME request —
+   * the server parses it and computes `amount`/the cost breakdown from it;
+   * the client never sends those numbers (see boq-import.ts: the file is the
+   * source of truth, not an architect's typed figure).
    */
   const submitProposal = async (
     input: CreateProposalInput,
+    file: File,
   ): Promise<{ proposal: Proposal; workflow: Workflow } | null> => {
     setSaving(true);
     setError(null);
 
     try {
-      const json = await apiClient.post("/proposals/submit", {
-        ...input,
-        status: "Pending",
+      const form = new FormData();
+      Object.entries({ ...input, status: "Pending" }).forEach(([key, value]) => {
+        if (value != null) form.append(key, String(value));
       });
+      form.append("file", file);
+
+      const json = await apiClient.postFormData("/proposals/submit", form);
 
       const created = unwrap<{ proposal: Proposal; workflow: Workflow }>(json);
       await loadProposals();
