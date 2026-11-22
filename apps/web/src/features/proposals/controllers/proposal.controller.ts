@@ -27,6 +27,9 @@ export interface CreateProposalInput {
   content?: string;
 
   assignedReviewer?: ProposalReviewer;
+
+  /** The cost breakdown behind `amount`; compared server-side against EstimationPro.ai reference pricing when available. */
+  breakdown?: { description: string; quantity: number; unit: string; unitCost: number }[];
 }
 
 export interface ReviewProposalInput {

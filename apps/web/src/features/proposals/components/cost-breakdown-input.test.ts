@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 
-import { breakdownTotal, formatBreakdownText, hasCostBreakdown, type CostBreakdownRow } from "./cost-breakdown-input";
+import {
+  applyTemplate,
+  BOQ_TEMPLATES,
+  breakdownTotal,
+  formatBreakdownText,
+  hasCostBreakdown,
+  toBreakdownPayload,
+  type CostBreakdownRow,
+} from "./cost-breakdown-input";
 
 const row = (description: string, quantity: string, unit: string, unitCost: string): CostBreakdownRow => ({
   id: description || Math.random().toString(),
@@ -46,5 +54,32 @@ describe("cost breakdown math", () => {
 
   it("an empty breakdown renders nothing to fold into the description", () => {
     expect(formatBreakdownText([row("", "", "", "")])).toBe("");
+  });
+
+  it("the API payload includes only complete rows, as numbers", () => {
+    const payload = toBreakdownPayload([row("Rebar", "2", "kg", "15000"), row("", "5", "pcs", "100")]);
+    expect(payload).toEqual([{ description: "Rebar", quantity: 2, unit: "kg", unitCost: 15000 }]);
+  });
+});
+
+describe("BOQ templates", () => {
+  it("a template replaces a single still-blank starter row with its line items, quantity and rate left blank", () => {
+    const rows = applyTemplate([row("", "", "", "")], "Structural");
+    expect(rows).toHaveLength(BOQ_TEMPLATES.Structural!.length);
+    expect(rows[0]!.description).toBe("Ready-mix concrete, Class A");
+    expect(rows[0]!.unit).toBe("m³");
+    expect(rows[0]!.quantity).toBe("");
+    expect(rows[0]!.unitCost).toBe("");
+  });
+
+  it("a template adds to rows that already have real data, instead of replacing them", () => {
+    const rows = applyTemplate([row("Rebar", "2", "kg", "15000")], "Electrical");
+    expect(rows).toHaveLength(1 + BOQ_TEMPLATES.Electrical!.length);
+    expect(rows[0]!.description).toBe("Rebar");
+  });
+
+  it("an unknown template name leaves the rows unchanged", () => {
+    const rows = [row("Rebar", "2", "kg", "15000")];
+    expect(applyTemplate(rows, "Nope")).toBe(rows);
   });
 });

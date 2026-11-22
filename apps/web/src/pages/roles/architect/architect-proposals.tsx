@@ -65,6 +65,7 @@ import {
   emptyBreakdownRow,
   formatBreakdownText,
   hasCostBreakdown,
+  toBreakdownPayload,
   type CostBreakdownRow,
 } from "@/features/proposals/components/cost-breakdown-input";
 import { formatCurrency } from "@/lib/format-currency";
@@ -426,6 +427,10 @@ export default function ArchitectProposals() {
       content: [content.trim(), breakdownText].filter(Boolean).join("\n\n") || undefined,
 
       assignedReviewer: "consultant",
+
+      // Compared server-side against EstimationPro.ai reference pricing when a catalog is
+      // available — surfaces as a warning on this proposal's validation summary, not a gate.
+      breakdown: toBreakdownPayload(breakdown),
     }, file, file ? fileType : undefined);
 
     if (!result) {
