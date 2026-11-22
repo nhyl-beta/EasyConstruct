@@ -1,16 +1,16 @@
 // apps/web/src/features/proposals/hooks/useDesignProposalSubmission.ts
 //
-// Submitting a design proposal, opening its approval workflow, AND filing its
-// required Bill of Materials file are now one atomic server call (POST
-// /api/proposals/submit — see apps/api/src/proposals/service.ts submit()):
-// the file travels in the same multipart request, and the server parses it
-// to compute the estimated amount — never a second, separate upload step.
+// Submitting a design proposal and opening its approval workflow are one
+// server call (POST /api/proposals/submit — see apps/api/src/proposals/service.ts
+// submit()), which also links proposals.workflow_id (D2). The Bill of
+// Materials file travels in that SAME request (it's required, so the server
+// rejects the whole submission without it — see proposal.controller.ts).
 //
-// `attachFile`/`retryUpload`/`pendingUpload` below are for a DIFFERENT,
-// still-two-step flow: attaching a (non-BOQ) file to an *already submitted*
-// proposal from the proposals table (architect-proposals.tsx's register-row
-// AttachFileButton). That use case still needs the upload-can-fail-after-
-// creation recovery path, so it is left untouched.
+// Any OTHER supporting file is optional and is a SECOND request (it needs the
+// workflow id). If it fails the proposal and workflow already exist, so
+// nothing is rolled back; instead the failure is kept as `pendingUpload`
+// (with the File still in memory) so the Architect can press "Retry upload",
+// or attach a file later from the proposals table with `attachFile`.
 import { useCallback, useState } from "react";
 
 import { WorkflowRepository } from "@/features/workflows/repositories/workflow.repository";
@@ -22,6 +22,8 @@ export interface DesignProposalSubmissionResult {
   proposal: Proposal;
   /** null when the proposal saved but the workflow could not be opened. */
   workflow: Workflow | null;
+  /** True when the optional supporting file was attached (or none was chosen). */
+  fileAttached: boolean;
 }
 
 /** A file that did not upload, kept so it can be retried. */
@@ -41,7 +43,7 @@ const messageOf = (err: unknown) =>
 export function useDesignProposalSubmission(
   submitProposal: (
     input: CreateProposalInput,
-    file: File,
+    boqFile: File,
   ) => Promise<{ proposal: Proposal; workflow: Workflow } | null>,
 ) {
   const [submitting, setSubmitting] = useState(false);
@@ -52,14 +54,41 @@ export function useDesignProposalSubmission(
   const submit = useCallback(
     async (
       input: CreateProposalInput,
-      file: File,
+      boqFile: File,
+      // A different, optional file (e.g. a quotation or permit) — not the required BOQ above.
+      file?: File | null,
+      // What that other file actually is (e.g. "Cost Estimate"), so a reviewer sees the
+      // document's type, not just its filename. Falls back to the filename when
+      // the caller has no type to offer.
+      fileLabel?: string,
     ): Promise<DesignProposalSubmissionResult | null> => {
       setSubmitting(true);
+      setPendingUpload(null);
+      setUploadedNotice(null);
 
       try {
-        const result = await submitProposal(input, file);
+        const result = await submitProposal(input, boqFile);
         if (!result) return null;
-        return { proposal: result.proposal, workflow: result.workflow };
+
+        let workflow: Workflow | null = result.workflow;
+        let fileAttached = true;
+
+        if (file) {
+          try {
+            workflow = await WorkflowRepository.uploadAttachment(result.workflow.id, file, fileLabel?.trim() || file.name);
+          } catch (uploadErr) {
+            fileAttached = false;
+            setPendingUpload({
+              proposalId: result.proposal.proposalId,
+              workflowId: result.workflow.id,
+              file,
+              fileLabel,
+              message: messageOf(uploadErr),
+            });
+          }
+        }
+
+        return { proposal: result.proposal, workflow, fileAttached };
       } finally {
         setSubmitting(false);
       }
