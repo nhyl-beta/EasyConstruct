@@ -1,5 +1,4 @@
 import { Router } from "express";
-import multer from "multer";
 
 import { proposalController } from "./controller.js";
 
@@ -12,22 +11,9 @@ import {
 import { PROPOSAL_VALIDATE_ROLES } from "./validation.js";
 import { validate } from "../../../core/http/validate.js";
 import { authenticate, requireRole } from "../../../core/auth/middleware.js";
-import { ValidationError } from "../../../core/utils/errors.js";
+import { advisoryDocumentUpload } from "../../documents/index.js";
 
 const router = Router();
-
-// The Bill of Materials sheet is read straight from memory and parsed —
-// never trusted from client-echoed JSON. See boq-import.ts.
-const boqUpload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024, files: 1 },
-  fileFilter: (_req, file, cb) => {
-    if (!/\.xlsx$/i.test(file.originalname)) {
-      return cb(new ValidationError("Upload an Excel workbook (.xlsx). Start from the template if you're unsure."));
-    }
-    cb(null, true);
-  },
-});
 
 router.use(authenticate);
 
@@ -61,14 +47,10 @@ router.post(
 router.post(
   "/submit",
   canAuthor,
-  boqUpload.single("file"),
+  advisoryDocumentUpload.single("boqFile"),
   validate(createProposalSchema),
   proposalController.submit,
 );
-
-// Declared before "/:id" so "boq-template" and "boq" aren't read as ids.
-router.get("/boq-template", proposalController.boqTemplate);
-router.post("/boq/preview", canAuthor, boqUpload.single("file"), proposalController.boqPreview);
 
 router.get(
   "/:id",
