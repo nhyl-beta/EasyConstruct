@@ -2,7 +2,7 @@ import { NotFoundError, ValidationError } from "../../../core/utils/errors.js";
 import { db } from "../../../core/db/connection.js";
 import { projects } from "../../../core/db/schema/projects.js";
 import { eq } from "drizzle-orm";
-import { ensureValidation, validateProposal } from "./validation.js";
+import { ensureValidation, validateProposal, parseAmount } from "./validation.js";
 import { loadValidationContext } from "./validation-context.js";
 import { FEATURES } from "../../../core/config/features.js";
 import { assertProjectWritable, refreshProjectProgress } from "../../projects/index.js";
@@ -95,6 +95,9 @@ export const proposalService = {
   },
 
   async create(data: any) {
+    // breakdown is only an input to validation below, not a stored column — kept out of the
+    // insert so it never reaches proposalRepository.create.
+    const { breakdown, ...proposalData } = data;
     const [project] = await db
       .select()
       .from(projects)
@@ -112,7 +115,7 @@ export const proposalService = {
     const aiValidation = FEATURES.ai
       ? JSON.stringify(
           validateProposal(
-            { title: data.title, content: data.content, amount: data.amount },
+            { title: data.title, content: data.content, amount: data.amount, breakdown },
             true,
             data.projectCode,
             await loadValidationContext({ projectCode: data.projectCode }),
@@ -123,7 +126,7 @@ export const proposalService = {
     await assertProjectWritable(data.projectCode);
 
     const proposal = await proposalRepository.create({
-      ...data,
+      ...proposalData,
       aiValidation,
     });
     if (!proposal) {
@@ -150,6 +153,9 @@ export const proposalService = {
     createdByRole: string,
     createdByUserId?: number,
   ) {
+    // breakdown is only an input to validation below, not a stored column — kept out of the
+    // insert so it never reaches proposalRepository.create.
+    const { breakdown, ...proposalData } = data;
     const [project] = await db.select().from(projects).where(eq(projects.code, data.projectCode));
     if (!project) {
       throw new ValidationError(
@@ -168,7 +174,7 @@ export const proposalService = {
     const aiValidation = FEATURES.ai
       ? JSON.stringify(
           validateProposal(
-            { title: data.title, content: data.content, amount: data.amount },
+            { title: data.title, content: data.content, amount: data.amount, breakdown },
             true,
             data.projectCode,
             await loadValidationContext({ projectCode: data.projectCode }),
@@ -176,7 +182,7 @@ export const proposalService = {
         )
       : null;
 
-    const proposal = await proposalRepository.create({ ...data, aiValidation });
+    const proposal = await proposalRepository.create({ ...proposalData, aiValidation });
     if (!proposal) throw new Error("Failed to create proposal");
 
     const workflow = await createWorkflow(
@@ -185,7 +191,11 @@ export const proposalService = {
         projectCode: proposal.projectCode,
         templateId: template.id,
         type: "Design Proposal",
-        amount: proposal.amount ? Number(proposal.amount) : undefined,
+        // proposal.amount is always currency-formatted (e.g. "₱445,000.00") by the cost
+        // breakdown UI, which Number() can't parse (→ NaN, stored as the literal string
+        // "NaN" on workflows.amount). parseAmount already strips the symbol/commas for
+        // exactly this reason — reuse it instead of raw Number().
+        amount: proposal.amount ? (parseAmount(proposal.amount) ?? undefined) : undefined,
         attachments: [
           {
             kind: "note",

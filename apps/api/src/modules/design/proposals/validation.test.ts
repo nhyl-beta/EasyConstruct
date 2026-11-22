@@ -9,6 +9,26 @@ import {
   validateProposal,
   type ValidationContext,
 } from "./validation.js";
+import type { ReferenceSnapshotRow } from "../../../core/db/schema/ai-validation.js";
+
+const makeReferenceItem = (overrides: Partial<ReferenceSnapshotRow> = {}): ReferenceSnapshotRow => ({
+  id: 1,
+  source: "estimationpro",
+  sourceItemId: "rebar-4",
+  trade: "concrete",
+  description: "Reinforcing steel bars",
+  unit: "kg",
+  lowUsd: "0.70",
+  typicalUsd: "0.90",
+  highUsd: "1.10",
+  regionMultiplier: "1.000",
+  volatility: "stable",
+  currency: "USD",
+  sourceUrl: "https://estimationpro.ai/api",
+  rawPayload: null,
+  fetchedAt: new Date("2026-09-22T00:00:00Z"),
+  ...overrides,
+});
 
 const NOW = new Date("2026-10-12T04:00:00Z");
 const FULL =
@@ -121,6 +141,52 @@ describe("required sections by project type", () => {
     const r = validateProposal({ ...input, content: "Short." }, true, "P-1", ctx({ similarAmounts: [], contractValue: null }));
     assert.equal(r.warnings.filter((x) => x.includes("very brief")).length, 1);
     assert.ok(!r.warnings.some((x) => x.includes("does not seem to cover")));
+  });
+});
+
+describe("cost breakdown against the EstimationPro.ai catalog", () => {
+  const fx = { rate: 56, asOf: "2026-09-22" };
+
+  test("a rate within range of the catalog raises nothing, but is recorded in the basis", () => {
+    const r = validateProposal(
+      { ...input, breakdown: [{ description: "Reinforcing steel bars", quantity: 100, unit: "kg", unitCost: 50 }] },
+      true,
+      "P-1",
+      ctx({ referenceItems: [makeReferenceItem()], fx }),
+    );
+    assert.deepEqual(r.warnings, []);
+    assert.ok(r.basis!.some((b) => b.includes("compared with EstimationPro.ai")));
+  });
+
+  test("a rate far above the catalog's typical price is flagged", () => {
+    const r = validateProposal(
+      { ...input, breakdown: [{ description: "Reinforcing steel bars", quantity: 100, unit: "kg", unitCost: 100 }] },
+      true,
+      "P-1",
+      ctx({ referenceItems: [makeReferenceItem()], fx }),
+    );
+    assert.equal(r.warnings.filter((w) => w.includes("Reinforcing steel bars")).length, 1);
+  });
+
+  test("with no reference catalog, the check is skipped — not an error, not a warning", () => {
+    const r = validateProposal(
+      { ...input, breakdown: [{ description: "Reinforcing steel bars", quantity: 100, unit: "kg", unitCost: 9999 }] },
+      true,
+      "P-1",
+      ctx({ referenceItems: [], fx }),
+    );
+    assert.deepEqual(r.warnings, []);
+    assert.ok(!r.basis!.some((b) => b.includes("EstimationPro.ai")));
+  });
+
+  test("a breakdown line the catalog can't match stays a no-match, not a warning", () => {
+    const r = validateProposal(
+      { ...input, breakdown: [{ description: "Bespoke custom ironwork nobody stocks", quantity: 5, unit: "pcs", unitCost: 500 }] },
+      true,
+      "P-1",
+      ctx({ referenceItems: [makeReferenceItem()], fx }),
+    );
+    assert.deepEqual(r.warnings, []);
   });
 });
 

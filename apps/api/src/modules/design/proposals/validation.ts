@@ -13,11 +13,12 @@
 // says what it was compared with, and `basis` lists the evidence used. The
 // stored JSON stays backward compatible: `passed`, `issues`, `warnings` and
 // `checkedAt` are unchanged; `version` and `basis` are additions.
-import { dice } from "../../insights/index.js";
+import { dice, bestMatch, compareLineItem, type FxRate } from "../../insights/index.js";
+import type { ReferenceSnapshotRow } from "../../../core/db/schema/ai-validation.js";
 import { PROPOSAL_CHECKS } from "../../../core/config/signals.js";
 
 /** Bump when the checks change; a stored result with an older version is recomputed. */
-export const VALIDATION_VERSION = 2;
+export const VALIDATION_VERSION = 3;
 
 export interface ProposalValidationResult {
   passed: boolean;
@@ -34,6 +35,8 @@ export interface ProposalValidationInput {
   title: string;
   content?: string | null;
   amount?: string | null;
+  /** The cost breakdown line items behind the proposal's estimated amount, if any. */
+  breakdown?: { description: string; quantity: number; unit: string; unitCost: number }[];
 }
 
 /** What the comparison checks need from the rest of the database. All optional: a missing piece skips its check. */
@@ -45,6 +48,9 @@ export interface ValidationContext {
   /** Other proposals on the same project (this proposal excluded). */
   siblings?: { proposalId: string; title: string; amount: number | null; createdAt: Date | null }[];
   now?: Date;
+  /** The cached EstimationPro.ai catalog, for comparing breakdown line rates (ai-signals reuse — same matcher as Budget Change Request/Purchase Request line items). */
+  referenceItems?: ReferenceSnapshotRow[];
+  fx?: FxRate;
 }
 
 export const parseAmount = (amount: string | null | undefined): number | null => {
@@ -172,6 +178,38 @@ export function validateProposal(
       warnings.push(
         `Description does not seem to cover "${section.name}" (looked for: ${section.keywords.slice(0, 4).join(", ")}).`,
       );
+    }
+  }
+
+  // 5. Each breakdown line's rate against the EstimationPro.ai reference catalog — the same
+  // matcher and pricing math already used to check Budget Change Request and Purchase
+  // Request line items (bestMatch/compareLineItem), just not persisted to validation_results:
+  // a proposal has no workflow line items yet at this point, only its own breakdown rows.
+  const breakdown = (input.breakdown ?? []).filter((r) => r.quantity > 0 && r.unit && r.description.trim());
+  if (breakdown.length > 0 && context.referenceItems?.length) {
+    const fx = context.fx ?? { rate: 1, asOf: now.toISOString().slice(0, 10) };
+    const compared = breakdown.map((row, index) =>
+      compareLineItem(
+        {
+          id: index,
+          projectCode,
+          description: row.description,
+          requestedAmount: row.quantity * row.unitCost,
+          quantity: row.quantity,
+          unit: row.unit,
+        },
+        bestMatch(row.description, context.referenceItems!),
+        fx,
+      ),
+    );
+    const matched = compared.filter((r) => r.verdict !== "no-match");
+    if (matched.length > 0) {
+      basis.push(`${matched.length} of ${breakdown.length} cost breakdown line(s) compared with EstimationPro.ai reference pricing.`);
+      for (const r of matched) {
+        if (r.verdict !== "within-range") {
+          warnings.push(`Breakdown line "${r.lineDescription}": ${r.basisSummary}`);
+        }
+      }
     }
   }
 

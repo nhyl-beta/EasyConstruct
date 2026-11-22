@@ -60,6 +60,62 @@ export function formatBreakdownText(rows: CostBreakdownRow[]): string {
   return ["Cost breakdown:", ...lines, `Estimated amount (computed): ${formatCurrency(breakdownTotal(complete))}`].join("\n");
 }
 
+/** The breakdown rows in the shape the API compares against the EstimationPro.ai reference catalog (validation.ts check 5). */
+export function toBreakdownPayload(rows: CostBreakdownRow[]): { description: string; quantity: number; unit: string; unitCost: number }[] {
+  return rows.filter(isComplete).map((r) => ({
+    description: r.description.trim(),
+    quantity: Number(r.quantity),
+    unit: r.unit,
+    unitCost: Number(r.unitCost),
+  }));
+}
+
+interface BreakdownTemplateItem {
+  description: string;
+  unit: (typeof BREAKDOWN_UNITS)[number];
+}
+
+// A handful of standard trade line items to start a breakdown from. Quantity and rate are
+// always left blank — a template is a starting checklist of what a BOQ line for this trade
+// usually covers, never a stand-in number for the architect's own figures.
+export const BOQ_TEMPLATES: Record<string, BreakdownTemplateItem[]> = {
+  Structural: [
+    { description: "Ready-mix concrete, Class A", unit: "m³" },
+    { description: "Reinforcing steel bars", unit: "kg" },
+    { description: "Formworks", unit: "m²" },
+    { description: "Structural steel framing", unit: "kg" },
+  ],
+  Electrical: [
+    { description: "Wiring and conduits", unit: "lot" },
+    { description: "Panel boards and breakers", unit: "set" },
+    { description: "Lighting fixtures", unit: "pcs" },
+  ],
+  Plumbing: [
+    { description: "PVC piping and fittings", unit: "lot" },
+    { description: "Plumbing fixtures (water closets, lavatories)", unit: "pcs" },
+    { description: "Water tank and pump system", unit: "set" },
+  ],
+  "Architectural / Finishing": [
+    { description: "Floor tiles", unit: "m²" },
+    { description: "Paint and finishing works", unit: "m²" },
+    { description: "Doors and windows", unit: "pcs" },
+  ],
+};
+
+const isBlankRow = (row: CostBreakdownRow) =>
+  !row.description.trim() && !row.quantity.trim() && !row.unit.trim() && !row.unitCost.trim();
+
+/** Inserts a template's starter line items. A single still-blank starter row is dropped first
+ * so picking a template doesn't leave a stray empty line above it; real rows are kept and
+ * added to. */
+export function applyTemplate(rows: CostBreakdownRow[], templateName: string): CostBreakdownRow[] {
+  const template = BOQ_TEMPLATES[templateName];
+  if (!template) return rows;
+  const kept = rows.length === 1 && isBlankRow(rows[0]!) ? [] : rows;
+  const added = template.map((item) => ({ ...emptyBreakdownRow(), description: item.description, unit: item.unit }));
+  return [...kept, ...added];
+}
+
 export function CostBreakdownInput({
   rows,
   onChange,
@@ -126,9 +182,23 @@ export function CostBreakdownInput({
           </div>
         ))}
       </div>
-      <Button type="button" variant="outline" size="sm" onClick={() => onChange([...rows, emptyBreakdownRow()])}>
-        <Plus className="mr-1 h-3.5 w-3.5" /> Add line item
-      </Button>
+      <div className="flex flex-wrap items-center gap-2">
+        <Button type="button" variant="outline" size="sm" onClick={() => onChange([...rows, emptyBreakdownRow()])}>
+          <Plus className="mr-1 h-3.5 w-3.5" /> Add line item
+        </Button>
+        <Select onValueChange={(templateName) => onChange(applyTemplate(rows, templateName))}>
+          <SelectTrigger className="h-8 w-auto gap-1 border-dashed text-xs">
+            <SelectValue placeholder="Use a template…" />
+          </SelectTrigger>
+          <SelectContent>
+            {Object.keys(BOQ_TEMPLATES).map((name) => (
+              <SelectItem key={name} value={name}>
+                {name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
       <div className="flex items-center justify-between rounded-lg border bg-muted/40 px-3 py-2 text-sm">
         <span className="text-muted-foreground">Estimated amount (computed from the breakdown above)</span>
         <span className="font-semibold">{total > 0 ? formatCurrency(total) : "—"}</span>
