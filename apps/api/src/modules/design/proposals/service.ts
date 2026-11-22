@@ -152,6 +152,9 @@ export const proposalService = {
     createdBy: string,
     createdByRole: string,
     createdByUserId?: number,
+    /** The required Bill of Materials file — already parsed and stored by the controller
+     * (boq-import.ts), filed as a second attachment alongside the narrative note below. */
+    boqFile?: { fileUrl: string; fileName: string; fileSize: string },
   ) {
     // breakdown is only an input to validation below, not a stored column — kept out of the
     // insert so it never reaches proposalRepository.create.
@@ -204,6 +207,17 @@ export const proposalService = {
               proposal.content?.trim() ||
               "No design description was provided with this proposal.",
           },
+          ...(boqFile
+            ? [
+                {
+                  kind: "document" as const,
+                  label: "Bill of Materials (BOQ)",
+                  fileUrl: boqFile.fileUrl,
+                  fileName: boqFile.fileName,
+                  fileSize: boqFile.fileSize,
+                },
+              ]
+            : []),
         ],
       },
       createdBy,

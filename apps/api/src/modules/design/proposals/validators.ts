@@ -31,20 +31,6 @@ export const createProposalSchema = z.object({
   aiValidation: z
     .string()
     .optional(),
-
-  // The cost breakdown behind `amount` — compared server-side against EstimationPro.ai
-  // reference pricing when a catalog is available (validation.ts check 5). Not a stored
-  // column: used only while computing aiValidation, then dropped.
-  breakdown: z
-    .array(
-      z.object({
-        description: z.string().min(1),
-        quantity: z.number().positive(),
-        unit: z.string().min(1),
-        unitCost: z.number().positive(),
-      }),
-    )
-    .optional(),
 });
 
 export const updateProposalSchema =

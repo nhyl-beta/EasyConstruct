@@ -7,12 +7,20 @@ import { cached } from "../../../core/cache/index.js";
 import { userScope } from "../../../core/cache/scope.js";
 import { PROPOSAL_SORT_COLUMNS } from "./repository.js";
 import { canSeeProposalFiles } from "./files.js";
-import { ForbiddenError } from "../../../core/utils/errors.js";
+import { ForbiddenError, ValidationError } from "../../../core/utils/errors.js";
+import { assertContentMatches, storeBuffer } from "../../documents/index.js";
+import { buildBoqTemplate, formatBoqText, parseBoqSheet } from "./boq-import.js";
 
 import {
   proposalService,
 } from "./service.js";
 import { parseIdParam } from "../../../core/utils/params.js";
+
+/** "2.44 MB" / "180 KB" — mirrors workflows/controller.ts's uploadAttachment inline calc. */
+const describeFileSize = (bytes: number): string => {
+  const mb = bytes / (1024 * 1024);
+  return mb >= 1 ? `${mb.toFixed(2)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
+};
 
 export const proposalController = {
   async getAll(
@@ -137,16 +145,76 @@ export const proposalController = {
     });
   },
 
+  async boqTemplate(
+    _req: Request,
+    res: Response,
+  ) {
+    const buffer = await buildBoqTemplate();
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Content-Disposition", 'attachment; filename="bill-of-materials-template.xlsx"');
+    return res.send(buffer);
+  },
+
+  async boqPreview(
+    req: Request,
+    res: Response,
+  ) {
+    if (!req.file) throw new ValidationError("Upload the filled-in Bill of Materials file.");
+    assertContentMatches(req.file.originalname, req.file.mimetype || "", req.file.buffer);
+    const report = await parseBoqSheet(req.file.buffer, req.file.originalname);
+
+    return res.json({
+      success: true,
+      data: report,
+    });
+  },
+
   async submit(
     req: AuthedRequest,
     res: Response,
   ) {
     await assertAssignedToProject(req.authUser, req.body.projectCode, "proposals");
+
+    if (!req.file) {
+      throw new ValidationError("A Bill of Materials file is required — download the template, fill it in, and upload it.");
+    }
+    assertContentMatches(req.file.originalname, req.file.mimetype || "", req.file.buffer);
+
+    const report = await parseBoqSheet(req.file.buffer, req.file.originalname);
+    if (report.validRows === 0 || report.invalidRows > 0) {
+      const issues = report.rows
+        .filter((r) => r.errors.length > 0)
+        .slice(0, 5)
+        .map((r) => `Row ${r.row}: ${r.errors.join("; ")}`);
+      throw new ValidationError(
+        report.validRows === 0
+          ? "The Bill of Materials has no valid rows. Fix the sheet and upload again."
+          : `The Bill of Materials has ${report.invalidRows} invalid row${report.invalidRows === 1 ? "" : "s"}: ${issues.join(" | ")}`,
+      );
+    }
+
+    const stored = await storeBuffer({
+      buffer: req.file.buffer,
+      filename: req.file.originalname,
+      contentType: req.file.mimetype,
+      uploadedByUserId: req.authUser?.id,
+    });
+    const fileSize = describeFileSize(req.file.size);
+
+    const breakdown = report.rows.map((r) => ({
+      description: r.description,
+      quantity: r.quantity!,
+      unit: r.unit!,
+      unitCost: r.unitCost!,
+    }));
+    const content = [req.body.content?.trim(), formatBoqText(report)].filter(Boolean).join("\n\n");
+
     const data = await proposalService.submit(
-      req.body,
+      { ...req.body, amount: report.total.toFixed(2), content, breakdown },
       req.authUser?.name ?? req.body.submittedBy ?? "unknown",
       req.authUser?.role ?? "",
       req.authUser?.id,
+      { fileUrl: stored.url, fileName: req.file.originalname, fileSize },
     );
 
     await logAudit({
