@@ -31,6 +31,15 @@ export const createProposalSchema = z.object({
   aiValidation: z
     .string()
     .optional(),
+
+  // The cost breakdown behind `amount` — compared server-side against EstimationPro.ai
+  // reference pricing when a catalog is available (validation.ts check 5). Sent as a
+  // JSON-encoded string because /submit is a multipart request (it also carries the
+  // required Bill of Materials file); the controller parses it before use. Not a stored
+  // column: used only while computing aiValidation, then dropped.
+  breakdown: z
+    .string()
+    .optional(),
 });
 
 export const updateProposalSchema =

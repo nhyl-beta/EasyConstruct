@@ -59,7 +59,24 @@ import { SubmittedFiles } from "@/components/shared/submitted-files";
 import { fileTypeLabel } from "@/lib/file-type-label";
 import { formatRelativeTime } from "@/lib/format-relative-time";
 import { useProposalFiles } from "@/features/proposals/hooks/useProposalFiles";
-import { BoqFileUpload, boqReportIsReady, type BoqReport } from "@/features/proposals/components/boq-file-upload";
+import {
+  CostBreakdownInput,
+  breakdownTotal,
+  emptyBreakdownRow,
+  formatBreakdownText,
+  hasCostBreakdown,
+  toBreakdownPayload,
+  type CostBreakdownRow,
+} from "@/features/proposals/components/cost-breakdown-input";
+import { formatCurrency } from "@/lib/format-currency";
+import { SUPPORTING_FILE_TYPES } from "@/features/proposals/lib/supporting-file-types";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface ValidationResult {
   passed: boolean;
@@ -341,12 +358,17 @@ export default function ArchitectProposals() {
   const [projectCode, setProjectCode] =
     useState("");
 
+  const [breakdown, setBreakdown] = useState<CostBreakdownRow[]>([emptyBreakdownRow()]);
+
   const [content, setContent] =
     useState("");
 
+  // The Bill of Materials: required, separate from the optional supporting file below —
+  // proof filed alongside the typed breakdown, not parsed to compute the amount.
   const [boqFile, setBoqFile] = useState<File | null>(null);
-  const [boqReport, setBoqReport] = useState<BoqReport | null>(null);
-  const [boqResetKey, setBoqResetKey] = useState(0);
+
+  const [file, setFile] = useState<File | null>(null);
+  const [fileType, setFileType] = useState("");
 
   const [formError, setFormError] =
     useState<string | null>(null);
@@ -371,13 +393,32 @@ export default function ArchitectProposals() {
       return;
     }
 
-    if (!boqFile || !boqReportIsReady(boqReport)) {
+    if (!hasCostBreakdown(breakdown)) {
       setFormError(
-        "Please upload a filled-in Bill of Materials with no row errors — it is the basis of the estimated amount, not a typed figure.",
+        "Please add at least one cost breakdown line item — the estimated amount needs a basis, not just a number.",
       );
 
       return;
     }
+
+    if (!boqFile) {
+      setFormError(
+        "Please upload a Bill of Materials file — it is required, separate from any other supporting document.",
+      );
+
+      return;
+    }
+
+    if (file && !fileType) {
+      setFormError(
+        "Please select what kind of document the attached file is.",
+      );
+
+      return;
+    }
+
+    const breakdownText = formatBreakdownText(breakdown);
+    const computedAmount = formatCurrency(breakdownTotal(breakdown));
 
     const result = await designSubmission.submit(
       {
@@ -391,11 +432,22 @@ export default function ArchitectProposals() {
         // register and the consultant's review screen both show this.
         submittedBy: user?.name ?? "Architect",
 
-        content: content.trim() || undefined,
+        amount: computedAmount,
+
+        // The breakdown is the proof behind the computed amount — folded into
+        // the description (no separate column) so reviewers see it right next
+        // to the rest of the proposal, aside from whatever file is attached.
+        content: [content.trim(), breakdownText].filter(Boolean).join("\n\n") || undefined,
 
         assignedReviewer: "consultant",
+
+        // Compared server-side against EstimationPro.ai reference pricing when a catalog is
+        // available — surfaces as a warning on this proposal's validation summary, not a gate.
+        breakdown: toBreakdownPayload(breakdown),
       },
       boqFile,
+      file,
+      file ? fileType : undefined,
     );
 
     if (!result) {
@@ -403,19 +455,20 @@ export default function ArchitectProposals() {
     }
 
     setSubmitNotice(
-      result.workflow
+      (result.workflow
         ? `${result.proposal.proposalId} submitted — approval workflow ${result.workflow.code} started (${result.workflow.stages
             .map((stage) => stage.roleLabel)
             .join(" → ")}).`
-        : `${result.proposal.proposalId} submitted.`,
+        : `${result.proposal.proposalId} submitted.`) + (result.fileAttached ? "" : " The file was not attached; see below."),
     );
 
     setTitle("");
     setProjectCode("");
+    setBreakdown([emptyBreakdownRow()]);
     setContent("");
     setBoqFile(null);
-    setBoqReport(null);
-    setBoqResetKey((k) => k + 1);
+    setFile(null);
+    setFileType("");
 
     setShowCreateForm(false);
   }
@@ -558,14 +611,13 @@ export default function ArchitectProposals() {
 
           <div className="mt-4">
             <label className="text-sm font-medium">
-              Bill of Materials
+              Estimated Amount — cost breakdown
             </label>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              Download the template, fill it in, and upload it back — the estimated amount is computed from this
-              file, not typed.
+              List what the amount covers; the total is computed from these lines, not typed.
             </p>
             <div className="mt-2">
-              <BoqFileUpload key={boqResetKey} onChange={(f, r) => { setBoqFile(f); setBoqReport(r); }} />
+              <CostBreakdownInput rows={breakdown} onChange={setBreakdown} />
             </div>
           </div>
 
@@ -582,6 +634,70 @@ export default function ArchitectProposals() {
               placeholder="Describe the proposal, design considerations, materials, scope, and other relevant information."
               className="mt-2 min-h-32"
             />
+          </div>
+
+          <div className="mt-4">
+            <label className="text-sm font-medium">
+              Bill of Materials
+            </label>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Required — proof behind the cost breakdown above, separate from any other supporting document.
+            </p>
+
+            <label className="mt-2 flex h-9 w-full max-w-sm cursor-pointer items-center gap-2 rounded-lg border border-input bg-transparent px-3 text-sm hover:border-primary/40">
+              <Paperclip className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <span className="truncate text-muted-foreground">
+                {boqFile ? boqFile.name : "Upload the Bill of Materials"}
+              </span>
+              <input
+                type="file"
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.dwg,.dxf"
+                className="hidden"
+                onChange={(e) => setBoqFile(e.target.files?.[0] ?? null)}
+              />
+            </label>
+          </div>
+
+          <div className="mt-4">
+            <label className="text-sm font-medium">
+              Supporting file
+            </label>
+
+            <label className="mt-2 flex h-9 w-full max-w-sm cursor-pointer items-center gap-2 rounded-lg border border-input bg-transparent px-3 text-sm hover:border-primary/40">
+              <Paperclip className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <span className="truncate text-muted-foreground">
+                {file ? file.name : "Attach a design file (optional)"}
+              </span>
+              <input
+                type="file"
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.dwg,.dxf"
+                className="hidden"
+                onChange={(e) => {
+                  setFile(e.target.files?.[0] ?? null);
+                  setFileType("");
+                }}
+              />
+            </label>
+
+            {file && (
+              <div className="mt-2 max-w-sm">
+                <label className="text-xs font-medium text-muted-foreground">
+                  What is this file?
+                </label>
+                <Select value={fileType} onValueChange={setFileType}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Select a document type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SUPPORTING_FILE_TYPES.map((t) => (
+                      <SelectItem key={t} value={t}>
+                        {t}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
 
           <div className="mt-6 flex gap-2">
