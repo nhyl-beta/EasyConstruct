@@ -22,14 +22,9 @@ export interface CreateProposalInput {
 
   submittedBy: string;
 
-  amount?: string;
-
   content?: string;
 
   assignedReviewer?: ProposalReviewer;
-
-  /** The cost breakdown behind `amount`; compared server-side against EstimationPro.ai reference pricing when available. */
-  breakdown?: { description: string; quantity: number; unit: string; unitCost: number }[];
 }
 
 export interface ReviewProposalInput {
@@ -158,26 +153,24 @@ export const useProposalsController = (options: ProposalsListOptions = {}) => {
    * composition (create, then separately initiate a workflow) that never
    * recorded the link at all.
    *
-   * The architect still types the cost breakdown (amount/breakdown below);
-   * the required Bill of Materials file is separate proof, filed alongside
-   * it in the same multipart request — it is stored and attached, never
-   * parsed to compute the amount.
+   * The Bill of Materials file is required and goes in the SAME request —
+   * the server parses it and computes `amount`/the cost breakdown from it;
+   * the client never sends those numbers (see boq-import.ts: the file is the
+   * source of truth, not an architect's typed figure).
    */
   const submitProposal = async (
     input: CreateProposalInput,
-    boqFile: File,
+    file: File,
   ): Promise<{ proposal: Proposal; workflow: Workflow } | null> => {
     setSaving(true);
     setError(null);
 
     try {
-      const { breakdown, ...rest } = input;
       const form = new FormData();
-      Object.entries({ ...rest, status: "Pending" }).forEach(([key, value]) => {
+      Object.entries({ ...input, status: "Pending" }).forEach(([key, value]) => {
         if (value != null) form.append(key, String(value));
       });
-      if (breakdown) form.append("breakdown", JSON.stringify(breakdown));
-      form.append("boqFile", boqFile);
+      form.append("file", file);
 
       const json = await apiClient.postFormData("/proposals/submit", form);
 
