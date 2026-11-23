@@ -175,7 +175,7 @@ export function BoqFileUpload({
           </Collapsible>
 
           <div className={cn("flex items-center justify-between px-3 py-2 text-sm", listOpen && "border-t border-border")}>
-            <span className="text-muted-foreground">Estimated amount (computed from the file above)</span>
+            <span className="text-muted-foreground">Total Amount</span>
             <span className="font-semibold">{boqReportIsReady(report) ? formatCurrency(report.total) : "—"}</span>
           </div>
         </div>
