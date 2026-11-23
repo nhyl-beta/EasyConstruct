@@ -1,6 +1,6 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import { compareLineItem, toValidationSummary, type LineItemForCost, type FxRate } from "./cost.js";
+import { compareLineItem, type LineItemForCost, type FxRate } from "./cost.js";
 import type { MatchResult } from "./matcher.js";
 import type { ReferenceSnapshotRow } from "../../../core/db/schema/ai-validation.js";
 
@@ -111,17 +111,5 @@ describe("compareLineItem — no-match reasons", () => {
     assert.doesNotMatch(result.basisSummary, /₱/);
     assert.equal(result.referenceLowPhp, null);
     assert.equal(result.referenceHighPhp, null);
-  });
-
-  test("toValidationSummary trims a row to the client shape, as numbers not strings", () => {
-    const item = makeItem({});
-    const match: MatchResult = { item, score: 0.9 };
-    const row = compareLineItem(baseLine(), match, FX);
-
-    const summary = toValidationSummary(row);
-    assert.equal(summary.verdict, row.verdict);
-    assert.equal(typeof summary.referenceMidPhp, "number");
-    assert.equal(summary.referenceMidPhp, Number(row.referenceMidPhp));
-    assert.equal(summary.basisSummary, row.basisSummary);
   });
 });

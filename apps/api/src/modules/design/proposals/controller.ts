@@ -9,10 +9,7 @@ import { PROPOSAL_SORT_COLUMNS } from "./repository.js";
 import { canSeeProposalFiles } from "./files.js";
 import { ForbiddenError, ValidationError } from "../../../core/utils/errors.js";
 import { assertContentMatches, storeBuffer } from "../../documents/index.js";
-import { buildBoqTemplate, formatBoqText, parseBoqSheet, type BoqReport } from "./boq-import.js";
-import { bestMatch, compareLineItem, getReferenceItems, toValidationSummary, type FxRate } from "../../insights/index.js";
-import { env } from "../../../core/config/env.js";
-import { FEATURES } from "../../../core/config/features.js";
+import { buildBoqTemplate, formatBoqText, parseBoqSheet } from "./boq-import.js";
 
 import {
   proposalService,
@@ -23,31 +20,6 @@ import { parseIdParam } from "../../../core/utils/params.js";
 const describeFileSize = (bytes: number): string => {
   const mb = bytes / (1024 * 1024);
   return mb >= 1 ? `${mb.toFixed(2)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
-};
-
-// Same bestMatch/compareLineItem cost-reference check as validation.ts's check 5 (which runs
-// after submit, for the reviewer), run here on the preview so the architect sees it too, before
-// submitting. Best effort, like all of ai-validation: a catalog hiccup just means no badges.
-const withReferenceCosts = async (report: BoqReport): Promise<BoqReport> => {
-  if (!FEATURES.ai) return report;
-  const referenceItems = await getReferenceItems().catch(() => []);
-  if (referenceItems.length === 0) return report;
-  const fx: FxRate = { rate: env.FX_RATE_USD_PHP, asOf: env.FX_RATE_AS_OF };
-  return {
-    ...report,
-    rows: report.rows.map((r) => {
-      if (r.errors.length > 0 || r.quantity == null || !r.unit) return r;
-      const match = bestMatch(r.description, referenceItems);
-      const validation = toValidationSummary(
-        compareLineItem(
-          { id: r.row, projectCode: "", description: r.description, requestedAmount: r.subtotal, quantity: r.quantity, unit: r.unit },
-          match,
-          fx,
-        ),
-      );
-      return { ...r, validation };
-    }),
-  };
 };
 
 export const proposalController = {
@@ -193,7 +165,7 @@ export const proposalController = {
 
     return res.json({
       success: true,
-      data: await withReferenceCosts(report),
+      data: report,
     });
   },
 

@@ -5,7 +5,7 @@ export * as validationRepo from "./ai-validation/repository.js";
 export type { LineItemValidationSummary } from "./ai-validation/types.js";
 export type { Signal } from "./signals/index.js";
 export { dice, bestMatch } from "./ai-validation/matcher.js";
-export { compareLineItem, toValidationSummary, type LineItemForCost, type FxRate } from "./ai-validation/cost.js";
+export { compareLineItem, type LineItemForCost, type FxRate } from "./ai-validation/cost.js";
 export { getReferenceItems } from "./ai-validation/cache.js";
 export { evaluateSignals } from "./signals/index.js";
 export { findingKey } from "./signals/findings.js";
