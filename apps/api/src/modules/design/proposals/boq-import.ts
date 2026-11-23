@@ -14,7 +14,6 @@
 // and cheap to run twice: once for the preview, once more at submission.
 import ExcelJS from "exceljs";
 import { ValidationError } from "../../../core/utils/errors.js";
-import type { LineItemValidationSummary } from "../../insights/index.js";
 
 export const BOQ_UNITS = ["m", "m²", "m³", "kg", "ton", "bag", "pcs", "set", "lot", "l.s."] as const;
 export const MAX_BOQ_ROWS = 200;
@@ -42,8 +41,6 @@ export interface ParsedBoqRow {
   /** quantity * unitCost — 0 for a row with any error, so a half-broken row never contributes to the total. */
   subtotal: number;
   errors: string[];
-  /** Set by the controller after parsing (EstimationPro.ai cost-reference check), never by parseBoqSheet itself — this file stays a pure read of the sheet. */
-  validation?: LineItemValidationSummary | null;
 }
 
 export interface BoqReport {
