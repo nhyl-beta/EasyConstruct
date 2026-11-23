@@ -59,6 +59,11 @@ const UNIT_ALIASES: Record<string, NormalizedUnit> = {
   lbs: { family: "mass", canonical: "lb" },
   pound: { family: "mass", canonical: "lb" },
   pounds: { family: "mass", canonical: "lb" },
+  // Metric tonne (1000 kg) — the "ton" a BOQ_UNITS row actually means (proposals/boq-import.ts), not the US short ton.
+  ton: { family: "mass", canonical: "ton" },
+  tons: { family: "mass", canonical: "ton" },
+  tonne: { family: "mass", canonical: "ton" },
+  tonnes: { family: "mass", canonical: "ton" },
 
   // Count
   each: { family: "count", canonical: "each" },
@@ -75,8 +80,18 @@ const UNIT_ALIASES: Record<string, NormalizedUnit> = {
 };
 
 // Lowercase, strip everything but letters/digits so "sq. ft.", "Sq Ft",
-// "SQ-FT" and "sqft" all key the same lookup.
-const cleanKey = (raw: string): string => raw.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+// "SQ-FT" and "sqft" all key the same lookup. Superscript ² / ³ (the actual
+// characters BOQ_UNITS uses for "m²"/"m³" in proposals/boq-import.ts) are
+// folded to "2"/"3" first — otherwise the plain strip below drops them
+// silently and "m²"/"m³" both collapse onto "m" (length), a different unit
+// family than the area/volume they actually are.
+const cleanKey = (raw: string): string =>
+  raw
+    .trim()
+    .toLowerCase()
+    .replace(/²/g, "2")
+    .replace(/³/g, "3")
+    .replace(/[^a-z0-9]/g, "");
 
 export const normalizeUnit = (raw: string): NormalizedUnit | null => {
   const key = cleanKey(raw);
@@ -95,6 +110,10 @@ const CONVERSIONS: Record<string, number> = {
   "cy->m3": 1 / 1.30795,
   "kg->lb": 2.20462,
   "lb->kg": 1 / 2.20462,
+  "ton->kg": 1000,
+  "kg->ton": 1 / 1000,
+  "ton->lb": 2204.62,
+  "lb->ton": 1 / 2204.62,
 };
 
 // Converts a quantity from one unit string to another. Returns null when

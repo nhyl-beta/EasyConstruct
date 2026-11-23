@@ -4,7 +4,7 @@ import { normalizeUnit, convertQuantity } from "./units.js";
 
 describe("normalizeUnit", () => {
   test("area aliases", () => {
-    for (const alias of ["sqm", "m2", "m²".replace("²", "2"), "sq meter", "square meters"]) {
+    for (const alias of ["sqm", "m2", "m²", "sq meter", "square meters"]) {
       assert.equal(normalizeUnit(alias)?.canonical, "sqm", alias);
     }
     for (const alias of ["sq ft", "sqft", "sf", "square foot", "SQ. FT."]) {
@@ -25,15 +25,24 @@ describe("normalizeUnit", () => {
     for (const alias of ["cy", "cu yd", "cubic yard", "cubic yards"]) {
       assert.equal(normalizeUnit(alias)?.canonical, "cy", alias);
     }
-    for (const alias of ["m3", "cu m", "cubic meter"]) {
+    for (const alias of ["m3", "m³", "cu m", "cubic meter"]) {
       assert.equal(normalizeUnit(alias)?.canonical, "m3", alias);
     }
+  });
+
+  test("m² and m³ are not the length unit 'm' — distinct families", () => {
+    assert.equal(normalizeUnit("m²")?.family, "area");
+    assert.equal(normalizeUnit("m³")?.family, "volume");
+    assert.equal(normalizeUnit("m")?.family, "length");
   });
 
   test("mass aliases", () => {
     assert.equal(normalizeUnit("kg")?.canonical, "kg");
     assert.equal(normalizeUnit("lb")?.canonical, "lb");
     assert.equal(normalizeUnit("lbs")?.canonical, "lb");
+    for (const alias of ["ton", "tons", "tonne", "tonnes"]) {
+      assert.equal(normalizeUnit(alias)?.canonical, "ton", alias);
+    }
   });
 
   test("count aliases", () => {
@@ -75,6 +84,19 @@ describe("convertQuantity", () => {
     const result = convertQuantity(1, "kg", "lb");
     assert.ok(result !== null);
     assert.ok(Math.abs(result! - 2.20462) < 1e-6);
+  });
+
+  test("ton -> kg uses the exact factor (metric tonne)", () => {
+    const result = convertQuantity(1, "ton", "kg");
+    assert.ok(result !== null);
+    assert.equal(result, 1000);
+  });
+
+  test("m³ converts within the volume family, not as length", () => {
+    const result = convertQuantity(1, "m³", "cy");
+    assert.ok(result !== null);
+    assert.ok(Math.abs(result! - 1.30795) < 1e-6);
+    assert.equal(convertQuantity(1, "m³", "lf"), null);
   });
 
   test("conversion is reversible within floating-point tolerance", () => {
