@@ -21,11 +21,27 @@ export const tokenize = (text: string): string[] =>
     .split(/\s+/)
     .filter((t) => t.length > 0 && !STOPWORDS.has(t));
 
+// Abbreviations/synonyms common in Philippine construction BOQs that a generic trade-pricing
+// catalog may spell out differently (e.g. "CHB" vs "concrete hollow block"). Only ever adds
+// tokens, never removes or replaces, and runs identically on both sides of every comparison
+// (dice() below applies it after tokenizing each text) — so it can only help two descriptions of
+// the same thing share more tokens, never manufacture overlap between unrelated descriptions.
+const SYNONYMS: Record<string, string[]> = {
+  chb: ["concrete", "hollow", "block"],
+  rebar: ["reinforcing", "steel"],
+  reinforcing: ["rebar"],
+};
+
+const withSynonyms = (tokens: string[]): string[] => {
+  const extra = tokens.flatMap((t) => SYNONYMS[t] ?? []);
+  return extra.length > 0 ? [...tokens, ...extra] : tokens;
+};
+
 // Dice coefficient over token multisets (repeated tokens count multiple
 // times in the intersection, up to the smaller multiplicity).
 export const dice = (a: string, b: string): number => {
-  const tokensA = tokenize(a);
-  const tokensB = tokenize(b);
+  const tokensA = withSynonyms(tokenize(a));
+  const tokensB = withSynonyms(tokenize(b));
   if (tokensA.length === 0 || tokensB.length === 0) return 0;
 
   const countsA = new Map<string, number>();
