@@ -14,11 +14,13 @@ import { ChevronDown, Download, FileSpreadsheet, Loader2, Upload } from "lucide-
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
+import { ReferenceBasisBadge } from "@/components/workflows/reference-basis-badge";
 import { usePagination } from "@/hooks/use-pagination";
 import { apiClient } from "@/services/api.client";
 import { saveBlob } from "@/lib/file-url";
 import { formatCurrency } from "@/lib/format-currency";
 import { cn } from "@/lib/utils";
+import type { LineItemValidationSummary } from "@/features/workflows/types/workflow.types";
 
 export interface BoqRow {
   row: number;
@@ -28,6 +30,8 @@ export interface BoqRow {
   unitCost: number | null;
   subtotal: number;
   errors: string[];
+  /** EstimationPro.ai cost-reference check, same badge already shown on Budget Change Requests and Purchase Requests — absent when decision support is off or the row has errors. */
+  validation?: LineItemValidationSummary | null;
 }
 
 export interface BoqReport {
@@ -55,6 +59,7 @@ export function BoqFileUpload({
   const [error, setError] = useState<string | null>(null);
   const [listOpen, setListOpen] = useState(true);
   const pg = usePagination(report?.rows ?? [], 10, report?.fileName);
+  const hasValidation = !!report?.rows.some((r) => r.validation);
 
   const downloadTemplate = async () => {
     try {
@@ -147,6 +152,7 @@ export function BoqFileUpload({
                       <th className="px-3 py-2">Unit</th>
                       <th className="px-3 py-2">Rate</th>
                       <th className="px-3 py-2">Amount</th>
+                      {hasValidation && <th className="px-3 py-2">Decision support</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -163,6 +169,9 @@ export function BoqFileUpload({
                             formatCurrency(r.subtotal)
                           )}
                         </td>
+                        {hasValidation && (
+                          <td className="px-3 py-2">{r.validation && <ReferenceBasisBadge validation={r.validation} />}</td>
+                        )}
                       </tr>
                     ))}
                   </tbody>

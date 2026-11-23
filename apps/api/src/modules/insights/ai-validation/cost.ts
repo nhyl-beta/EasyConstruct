@@ -8,6 +8,7 @@ import type { NewValidationResultRow, ReferenceSnapshotRow } from "../../../core
 import { convertQuantity } from "./units.js";
 import type { MatchResult } from "./matcher.js";
 import { SIGNAL_THRESHOLDS } from "../../../core/config/signals.js";
+import type { LineItemValidationSummary } from "./types.js";
 
 export interface LineItemForCost {
   id: number;
@@ -157,3 +158,17 @@ export const compareLineItem = (
     ],
   };
 };
+
+// What the client needs to render a ReferenceBasisBadge — the same trim
+// workflows/service.ts and purchase-requests/service.ts each do by hand for
+// a persisted row; pulled out here so a caller with a fresh (unpersisted)
+// compareLineItem result, like a BOQ preview, doesn't have to repeat it.
+export const toValidationSummary = (row: NewValidationResultRow): LineItemValidationSummary => ({
+  verdict: row.verdict as LineItemValidationSummary["verdict"],
+  variancePct: row.variancePct != null ? Number(row.variancePct) : null,
+  referenceLowPhp: row.referenceLowPhp != null ? Number(row.referenceLowPhp) : null,
+  referenceMidPhp: row.referenceMidPhp != null ? Number(row.referenceMidPhp) : null,
+  referenceHighPhp: row.referenceHighPhp != null ? Number(row.referenceHighPhp) : null,
+  basisSummary: row.basisSummary,
+  sources: row.sources as LineItemValidationSummary["sources"],
+});
