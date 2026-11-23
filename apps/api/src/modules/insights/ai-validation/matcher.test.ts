@@ -56,6 +56,15 @@ describe("dice", () => {
     assert.equal(dice("", "rebar"), 0);
     assert.equal(dice("rebar", ""), 0);
   });
+
+  test("known PH construction abbreviations score as their spelled-out synonym", () => {
+    const abbreviated = dice("CHB, 6 inches", "Concrete hollow block, 6 in. wall");
+    assert.ok(abbreviated > 0.4, `expected CHB to match its spelled-out form, got ${abbreviated}`);
+  });
+
+  test("synonym expansion never creates overlap between unrelated descriptions", () => {
+    assert.equal(dice("CHB, 6 inches", "paint interior labor"), 0);
+  });
 });
 
 describe("bestMatch", () => {
