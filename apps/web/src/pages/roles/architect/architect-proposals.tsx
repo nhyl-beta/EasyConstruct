@@ -349,6 +349,9 @@ export default function ArchitectProposals() {
   const [boqFile, setBoqFile] = useState<File | null>(null);
   const [boqReport, setBoqReport] = useState<BoqReport | null>(null);
   const [boqResetKey, setBoqResetKey] = useState(0);
+  // Required supporting file (drawings, plans, permits…), stored as a workflow attachment after the submit.
+  const [otherFile, setOtherFile] = useState<File | null>(null);
+  const otherFileRef = useRef<HTMLInputElement>(null);
 
   const [formError, setFormError] =
     useState<string | null>(null);
@@ -381,6 +384,12 @@ export default function ArchitectProposals() {
       return;
     }
 
+    if (!otherFile) {
+      setFormError("Please attach the supporting file for this proposal (drawings, plans or other documents).");
+
+      return;
+    }
+
     const result = await designSubmission.submit(
       {
         proposalId: `PROP-${Date.now()}`,
@@ -404,6 +413,9 @@ export default function ArchitectProposals() {
       return;
     }
 
+    // shortcut: a second request after the submit; if it fails the existing retry banner offers the upload again.
+    if (result.workflow) await designSubmission.attachFile(result.proposal.proposalId, result.workflow.id, otherFile);
+
     setSubmitNotice(
       result.workflow
         ? `${result.proposal.proposalId} submitted — approval workflow ${result.workflow.code} started (${result.workflow.stages
@@ -418,6 +430,7 @@ export default function ArchitectProposals() {
     setBoqFile(null);
     setBoqReport(null);
     setBoqResetKey((k) => k + 1);
+    setOtherFile(null);
 
     setShowCreateForm(false);
   }
@@ -568,6 +581,32 @@ export default function ArchitectProposals() {
             </p>
             <div className="mt-2">
               <BoqFileUpload key={boqResetKey} onChange={(f, r) => { setBoqFile(f); setBoqReport(r); }} />
+            </div>
+          </div>
+
+          <div className="mt-4">
+            <label className="text-sm font-medium">
+              Attachment <span className="text-destructive-strong">*</span>
+            </label>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Required. Attach the supporting file for this proposal, such as drawings, plans or other documents.
+            </p>
+            <input
+              ref={otherFileRef}
+              type="file"
+              className="sr-only"
+              tabIndex={-1}
+              aria-label="Choose the supporting attachment"
+              onChange={(e) => {
+                setOtherFile(e.target.files?.[0] ?? null);
+                e.target.value = "";
+              }}
+            />
+            <div className="mt-2 flex items-center gap-2">
+              <Button type="button" variant="outline" size="sm" onClick={() => otherFileRef.current?.click()}>
+                <Paperclip className="h-3.5 w-3.5" /> {otherFile ? "Change file" : "Choose file"}
+              </Button>
+              <span className="truncate text-sm text-muted-foreground">{otherFile ? otherFile.name : "No file chosen"}</span>
             </div>
           </div>
 
