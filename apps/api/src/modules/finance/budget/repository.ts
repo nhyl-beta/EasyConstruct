@@ -1,6 +1,7 @@
 import { and, desc, eq, ilike, or, type SQL } from "drizzle-orm";
 import { db } from "../../../core/db/connection.js";
 import { budgets } from "../../../core/db/schema/finance.js";
+import { proposals } from "../../../core/db/schema/proposals.js";
 
 import type {
   BudgetFilters,
@@ -147,4 +148,14 @@ export const remove = async (id: number) => {
     .returning();
 
   return deleted ? toDto(deleted) : null;
+};
+
+/** Approved design proposals of a project, newest first. Their amount is the total of the Bill of Materials file the Architect uploaded. */
+export const findApprovedProposalBoqs = async (projectCode: string) => {
+  const rows = await db
+    .select({ proposalId: proposals.proposalId, title: proposals.title, amount: proposals.amount })
+    .from(proposals)
+    .where(and(eq(proposals.projectCode, projectCode), eq(proposals.status, "Approved")))
+    .orderBy(desc(proposals.id));
+  return rows.map((r) => ({ ...r, amount: Number(r.amount) })).filter((r) => Number.isFinite(r.amount) && r.amount > 0);
 };

@@ -14,6 +14,7 @@ export const budgetsRoutes = Router();
 // (the controller filters). Writes: finance-manager only (Admin is read-only) — finance-budget.tsx is the
 // only screen that creates/edits/deletes budget lines.
 budgetsRoutes.get("/", requireRole(...FINANCE_PROJECT_READERS), controller.getAll);
+budgetsRoutes.get("/boq-reference", requireRole(...FINANCE_PROJECT_READERS), controller.boqReference);
 budgetsRoutes.get("/:id", requireRole(...FINANCE_PROJECT_READERS), controller.getById);
 
 budgetsRoutes.post(
