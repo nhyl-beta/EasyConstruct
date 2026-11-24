@@ -224,7 +224,7 @@ function NewBudgetDialog({
               onChange={(e) => setPlanned(e.target.value)}
               placeholder="500000"
             />
-            {project && (
+            {project && category.trim().toLowerCase() === "materials" && (
               <div className="space-y-1 rounded-md border border-border/60 bg-muted/30 p-2 text-xs">
                 <p className="font-medium">Bill of Materials reference</p>
                 {boqRefs.length === 0 ? (
