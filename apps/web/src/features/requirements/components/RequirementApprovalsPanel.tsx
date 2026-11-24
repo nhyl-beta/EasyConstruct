@@ -5,7 +5,7 @@ import { Check, ClipboardList, Paperclip, X } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { openFileUrl } from "@/lib/file-url";
+import { FilePreviewDialog } from "@/components/shared/file-preview-dialog";
 import { RequirementRepository } from "../repositories/requirement.repository";
 import type { Requirement } from "../types/requirements.types";
 import { FileIntegrityBadge } from "@/features/uploads/components/FileIntegrityBadge";
@@ -21,6 +21,7 @@ import { OverrideReasonDialog } from "@/components/shared/override-reason-dialog
 export function RequirementApprovalsPanel() {
   const [items, setItems] = useState<Requirement[]>([]);
   const pg = usePagination(items, 8);
+  const [preview, setPreview] = useState<{ url: string; name: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
@@ -95,7 +96,7 @@ export function RequirementApprovalsPanel() {
                       <button
                         type="button"
                         className="flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-xs text-primary-strong hover:bg-muted/40"
-                        onClick={() => void openFileUrl(a.url).catch((err: Error) => setError(err.message))}
+                        onClick={() => setPreview({ url: a.url, name: a.filename })}
                       >
                         <Paperclip className="h-3 w-3" /> {a.filename}
                       </button>
@@ -124,6 +125,12 @@ export function RequirementApprovalsPanel() {
           </div>
         </ul>
       )}
+      <FilePreviewDialog
+        open={preview !== null}
+        onOpenChange={(open) => !open && setPreview(null)}
+        url={preview?.url}
+        title={preview?.name ?? "File"}
+      />
       <OverrideReasonDialog
         open={overriding !== null}
         onOpenChange={(o) => !o && setOverriding(null)}
