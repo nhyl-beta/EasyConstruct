@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useLiveRefresh } from "@/hooks/use-live-refresh";
 import { LifecycleRepository } from "../repositories/lifecycle.repository";
 import type { GateCheck, LifecycleView } from "../types/lifecycle.types";
 
@@ -22,9 +23,9 @@ export function useProjectLifecycle(projectId: string | number | undefined) {
   const [acting, setActing] = useState(false);
   const [actionError, setActionError] = useState<LifecycleActionError | null>(null);
 
-  const reload = useCallback(async () => {
+  const reload = useCallback(async (silent = false) => {
     if (!projectId) return;
-    setLoading(true);
+    if (!silent) setLoading(true);
     setError(null);
     try {
       const data = await LifecycleRepository.get(projectId);
@@ -39,6 +40,9 @@ export function useProjectLifecycle(projectId: string | number | undefined) {
   useEffect(() => {
     void reload();
   }, [reload]);
+
+  // Another role approving a proposal, uploading a contract… changes the checks: follow it quietly.
+  useLiveRefresh(() => void reload(true));
 
   const runAction = useCallback(
     async (action: () => Promise<LifecycleView>) => {

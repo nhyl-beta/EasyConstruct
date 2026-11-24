@@ -24,8 +24,11 @@ export const queryClient = new QueryClient({
     queries: {
       staleTime: STALE.list,
       gcTime: 10 * 60_000,
-      // Data does not change because the tab got focus; writes invalidate what they touch.
-      refetchOnWindowFocus: false,
+      // Several people work at once (one per role): what another role just did must show up without a
+      // page refresh. Visible tabs re-ask every 15 s and when they regain focus; hidden tabs stay quiet.
+      refetchOnWindowFocus: true,
+      refetchInterval: 15_000,
+      refetchIntervalInBackground: false,
       refetchOnReconnect: true,
       retry: (failureCount, error) => {
         const status = (error as { status?: number } | undefined)?.status;
