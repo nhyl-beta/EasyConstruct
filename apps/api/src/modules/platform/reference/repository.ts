@@ -2,6 +2,7 @@
 import { asc, eq, ilike, sql } from "drizzle-orm";
 import { db } from "../../../core/db/connection.js";
 import { clients, vendors } from "../../../core/db/schema/reference.js";
+import { projects } from "../../../core/db/schema/projects.js";
 
 export type ReferenceKind = "clients" | "vendors";
 
@@ -43,4 +44,14 @@ export const count = async (kind: ReferenceKind) => {
   const t = table(kind);
   const [row] = await db.select({ n: sql<number>`count(*)::int` }).from(t);
   return row?.n ?? 0;
+};
+
+/** Projects that point at this client (projects.client_id is a restrict FK). */
+export const countClientProjects = async (id: number) => {
+  const [row] = await db.select({ n: sql<number>`count(*)::int` }).from(projects).where(eq(projects.clientId, id));
+  return row?.n ?? 0;
+};
+
+export const removeClient = async (id: number) => {
+  await db.delete(clients).where(eq(clients.id, id));
 };

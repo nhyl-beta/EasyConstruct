@@ -1,5 +1,5 @@
 // apps/api/src/reference/service.ts (objectives fix 1.2)
-import { AppError, ValidationError } from "../../../core/utils/errors.js";
+import { AppError, NotFoundError, ValidationError } from "../../../core/utils/errors.js";
 import * as repo from "./repository.js";
 import { findNameMatches, normalizeName, type NameMatch } from "./names.js";
 
@@ -54,3 +54,15 @@ export const create = async (
 /** Other names that look like `candidate`, for create forms that only warn (employees, projects). */
 export const matchesIn = (candidate: string, existing: { id: number; name: string }[]): NameMatch[] =>
   findNameMatches(candidate, existing);
+
+/** Deletes a client nobody uses. A client on any project is kept (409 CLIENT_IN_USE). */
+export const removeClient = async (id: number) => {
+  const client = await repo.findById("clients", id);
+  if (!client) throw new NotFoundError("Client", String(id));
+  const used = await repo.countClientProjects(id);
+  if (used > 0) {
+    throw new AppError(409, "CLIENT_IN_USE", `"${client.name}" is on ${used} project${used === 1 ? "" : "s"}, so it cannot be deleted.`);
+  }
+  await repo.removeClient(id);
+  return client;
+};

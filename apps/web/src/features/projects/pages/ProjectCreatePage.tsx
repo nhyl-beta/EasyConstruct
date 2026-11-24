@@ -383,6 +383,7 @@ export default function ProjectCreatePage() {
           errors={fieldErrors}
           onClientId={setClientId}
           canAddClient={["project-manager", "admin", "it_designer", "it-designer"].includes(user?.role ?? "")}
+          canDeleteClient={user?.role === "admin"}
         />
       )}
       {step === 2 && <StepScopeSchedule data={data} set={set} milestones={milestones} setMilestones={setMilestones} error={fieldErrors.milestones} />}
@@ -440,6 +441,7 @@ function StepProjectInfo({
   errors,
   onClientId,
   canAddClient,
+  canDeleteClient,
 }: {
   data: ProjectFormData;
   set: <K extends keyof ProjectFormData>(
@@ -449,6 +451,7 @@ function StepProjectInfo({
   errors: FieldErrors;
   onClientId: (id: number | undefined) => void;
   canAddClient: boolean;
+  canDeleteClient: boolean;
 }) {
   // Part B item 6: the free-text Location input wasn't wired to the map at
   // all — typing an address did nothing until the pin was dragged by hand.
@@ -562,6 +565,7 @@ function StepProjectInfo({
             }}
             invalid={!!errors.client}
             canAdd={canAddClient}
+            canDelete={canDeleteClient}
             placeholder="Select a client"
           />
           <FieldError message={errors.client} />

@@ -19,4 +19,5 @@ export const referenceRepository = {
   list: (kind: ReferenceKind) => unwrap<ReferenceItem[]>(apiClient.get(`/reference/${kind}`, { staleTime: 30_000 })),
   create: (kind: ReferenceKind, name: string, confirmSimilar = false) =>
     unwrap<ReferenceItem>(apiClient.post(`/reference/${kind}`, { name, confirmSimilar })),
+  removeClient: (id: number) => unwrap<ReferenceItem>(apiClient.del(`/reference/clients/${id}`)),
 };

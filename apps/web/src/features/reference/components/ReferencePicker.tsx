@@ -3,11 +3,12 @@
 // exists, or looks like one that does, is stopped with the matches so the person
 // can use the existing record instead.
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
-import { SearchableSelect } from "@/components/ui/searchable-select";
+import { SearchableSelect, type SearchableSelectOption } from "@/components/ui/searchable-select";
 import { errorBody, errorCode } from "@/lib/api-error";
 import { referenceRepository, type ReferenceItem, type ReferenceKind } from "../repositories/reference.repository";
 
@@ -20,6 +21,7 @@ export function ReferencePicker({
   value,
   onChange,
   canAdd = true,
+  canDelete = false,
   placeholder,
   invalid,
   id,
@@ -31,6 +33,8 @@ export function ReferencePicker({
   onChange: (name: string, id?: number) => void;
   /** Whether this person's role may add a new one (the server also checks). */
   canAdd?: boolean;
+  /** Show a delete button on each client row (admin only; the server also checks, and refuses a client on a project). */
+  canDelete?: boolean;
   placeholder?: string;
   invalid?: boolean;
   id?: string;
@@ -44,6 +48,7 @@ export function ReferencePicker({
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [similar, setSimilar] = useState<string[] | null>(null);
+  const [deleting, setDeleting] = useState<ReferenceItem | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -61,11 +66,29 @@ export function ReferencePicker({
   }, [load]);
 
   const options = useMemo(() => {
-    const base = items.map((i) => ({ value: String(i.id), label: i.name }));
+    const base: SearchableSelectOption[] = items.map((i) => ({
+      value: String(i.id),
+      label: i.name,
+      trailing:
+        canDelete && kind === "clients" ? (
+          <button
+            type="button"
+            aria-label={`Delete ${i.name}`}
+            className="rounded p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive-strong"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              setDeleting(i);
+            }}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        ) : undefined,
+    }));
     // A value typed before this list existed is still shown until the person picks from it.
     if (value && !items.some((i) => i.name === value)) base.unshift({ value: `text:${value}`, label: value });
     return canAdd ? [...base, { value: ADD_NEW, label: `Add new ${LABEL[kind]}…` }] : base;
-  }, [items, value, canAdd, kind]);
+  }, [items, value, canAdd, canDelete, kind]);
 
   const selected = items.find((i) => i.name === value);
 
@@ -107,6 +130,22 @@ export function ReferencePicker({
       }
     } finally {
       setBusy(false);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!deleting) return;
+    setBusy(true);
+    try {
+      await referenceRepository.removeClient(deleting.id);
+      if (deleting.name === value) onChange("", undefined);
+      setMessage(`"${deleting.name}" was deleted.`);
+      await load();
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : "Couldn't delete the client");
+    } finally {
+      setBusy(false);
+      setDeleting(null);
     }
   };
 
@@ -158,6 +197,15 @@ export function ReferencePicker({
         </div>
       )}
       {message && <p className="text-xs text-muted-foreground">{message}</p>}
+      <ConfirmDialog
+        open={deleting !== null}
+        onOpenChange={(next) => !next && setDeleting(null)}
+        title="Delete client?"
+        description={deleting ? `"${deleting.name}" will be removed from the list. A client that is on a project cannot be deleted.` : undefined}
+        confirmLabel="Delete"
+        loading={busy}
+        onConfirm={() => void confirmDelete()}
+      />
     </div>
   );
 }

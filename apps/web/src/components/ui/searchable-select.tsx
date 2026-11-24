@@ -6,7 +6,7 @@
 // returned them. This gives every such picker type-to-search and a stable
 // alphabetical order, in one place, so nothing is patched dropdown by
 // dropdown. Short fixed enums (risk, currency, status) keep using <Select>.
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Check, ChevronsUpDown } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,8 @@ export interface SearchableSelectOption {
   /** Secondary text shown muted beside the label and matched by the search. */
   description?: string;
   disabled?: boolean;
+  /** Optional control at the row's right edge (e.g. a delete button); it must stop click propagation itself. */
+  trailing?: ReactNode;
 }
 
 interface SearchableSelectProps {
@@ -137,6 +139,7 @@ export function SearchableSelect({
                       <span className="break-all text-xs text-muted-foreground">{option.description}</span>
                     )}
                   </span>
+                  {option.trailing && <span className="ml-auto shrink-0">{option.trailing}</span>}
                 </CommandItem>
               ))}
             </CommandGroup>
