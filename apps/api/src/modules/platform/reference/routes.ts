@@ -55,6 +55,23 @@ const mount = (kind: service.ReferenceKind, writers: string[]) => {
 mount("clients", ["project-manager", "admin", "it-designer"]);
 mount("vendors", ["finance-manager", "engineer", "project-manager", "admin"]);
 
+// Admin only, and only for a client no project uses.
+router.delete("/clients/:id", requireRole("admin"), async (req: AuthedRequest, res: Response, next: NextFunction) => {
+  try {
+    const removed = await service.removeClient(parseIdParam(req.params.id, "id"));
+    await logAudit({
+      entityType: "client",
+      entityId: String(removed.id),
+      action: "deleted",
+      actor: req.authUser?.name ?? "unknown",
+      summary: `Deleted client "${removed.name}"`,
+    });
+    res.json(formatSuccess(removed, "Client deleted"));
+  } catch (err) {
+    next(err);
+  }
+});
+
 // -- Document types (client demo change #1) -------------------------------
 // Everyone signed in reads the active types (they fill the upload dialogs); Only Admin
 // adds, renames, regroup and deactivate. `?all=1` (writers only) includes the inactive ones.
