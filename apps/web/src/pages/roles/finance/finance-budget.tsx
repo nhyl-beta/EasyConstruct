@@ -108,7 +108,7 @@ import { useProjects } from "@/features/projects/hooks/useProjects";
 import { CategorySelect } from "@/features/finance/components/CategorySelect";
 import { ManageCategoriesDialog } from "@/features/finance/components/ManageCategoriesDialog";
 import { useAuth } from "@/auth/auth-context";
-import { apiClient } from "@/services/api.client";
+import { BoqReferenceCard } from "@/features/finance/components/BoqReferenceCard";
 
 function NewBudgetDialog({
   creating,
@@ -132,21 +132,6 @@ function NewBudgetDialog({
   const [owner, setOwner] = useState("");
   const [planned, setPlanned] = useState("");
   const [fiscalYear, setFiscalYear] = useState(String(new Date().getFullYear()));
-
-  // The Bill of Materials the Architect filed with the project's approved proposal(s): what a Materials line is based on.
-  const [boqRefs, setBoqRefs] = useState<{ proposalId: string; title: string; amount: number }[]>([]);
-  useEffect(() => {
-    setBoqRefs([]);
-    if (!project) return;
-    let cancelled = false;
-    apiClient
-      .get(`/finance/budgets/boq-reference?project=${encodeURIComponent(project)}`)
-      .then((json) => !cancelled && setBoqRefs(Array.isArray(json?.data) ? json.data : []))
-      .catch(() => undefined); // a reference is a convenience; the form works without it
-    return () => {
-      cancelled = true;
-    };
-  }, [project]);
 
   const reset = () => {
     setProject("");
@@ -225,23 +210,7 @@ function NewBudgetDialog({
               placeholder="500000"
             />
             {project && category.trim().toLowerCase() === "materials" && (
-              <div className="space-y-1 rounded-md border border-border/60 bg-muted/30 p-2 text-xs">
-                <p className="font-medium">Bill of Materials reference</p>
-                {boqRefs.length === 0 ? (
-                  <p className="text-muted-foreground">No approved proposal with a Bill of Materials for this project yet.</p>
-                ) : (
-                  boqRefs.map((r) => (
-                    <div key={r.proposalId} className="flex items-center justify-between gap-2">
-                      <span className="min-w-0 truncate text-muted-foreground">
-                        {r.proposalId} · {r.title}
-                      </span>
-                      <Button type="button" size="sm" variant="outline" className="h-6 shrink-0 text-xs" onClick={() => setPlanned(String(r.amount))}>
-                        Use {formatCurrency(r.amount, selectedProject?.currency)}
-                      </Button>
-                    </div>
-                  ))
-                )}
-              </div>
+              <BoqReferenceCard project={project} currency={selectedProject?.currency} onUse={(r) => setPlanned(String(r.amount))} />
             )}
           </div>
         </div>
