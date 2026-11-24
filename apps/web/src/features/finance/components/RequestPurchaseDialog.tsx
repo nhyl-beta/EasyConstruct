@@ -13,6 +13,7 @@ import { formatCurrency } from "@/lib/format-currency";
 import { todayIso } from "@/lib/today-iso";
 import { useExpenseCategories } from "../hooks/use-expense-categories";
 import type { ActionResult, CreatePurchaseRequestInput, LineItem } from "../types/purchasing.types";
+import { BoqReferenceCard } from "./BoqReferenceCard";
 import { CategorySelect } from "./CategorySelect";
 import { LINE_ITEM_UNITS } from "@/components/workflows/initiate-workflow-dialog";
 
@@ -172,6 +173,12 @@ export function RequestPurchaseDialog({ requirement, onClose, onSubmit, routingH
               </Button>
               <p className="text-sm font-semibold tabular-nums">Total {formatCurrency(total)}</p>
             </div>
+            {requirement && category.trim().toLowerCase() === "materials" && (
+              <BoqReferenceCard
+                project={requirement.project}
+                onUse={(r) => setLines([{ description: `Bill of Materials — ${r.proposalId} ${r.title}`, qty: 1, unit: "lot", unitCost: r.amount }])}
+              />
+            )}
           </fieldset>
 
           <div className="grid gap-3 sm:grid-cols-2">
