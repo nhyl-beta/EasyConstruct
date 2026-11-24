@@ -6,6 +6,7 @@ import { logAudit } from "../../../core/audit/audit.js";
 import type { AuthedRequest } from "../../../core/auth/middleware.js";
 import { parseIdParam } from "../../../core/utils/params.js";
 import * as service from "./service.js";
+import * as repo from "./repository.js";
 import type { BudgetFilters, BudgetStatus } from "./types.js";
 import { byDate, byNumber, byString, respondList } from "../../../core/utils/pagination.js";
 import { assertProjectVisible, scopeRowsToVisible } from "../../projects/index.js";
@@ -131,6 +132,18 @@ export const remove = async (
     const data = await service.remove(parseIdParam(req.params.id, "id"));
 
     res.json(formatSuccess(data, MSG.budgets.deleted));
+  } catch (err) {
+    next(err);
+  }
+};
+
+/** The Bill of Materials totals of the project's approved proposals: the reference a Materials budget line is based on. */
+export const boqReference = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const project = typeof req.query.project === "string" ? req.query.project.trim() : "";
+    if (project) await assertProjectVisible((req as AuthedRequest).authUser, project);
+    const data = project ? await repo.findApprovedProposalBoqs(project) : [];
+    res.json(formatSuccess(data, "Bill of Materials reference retrieved"));
   } catch (err) {
     next(err);
   }
