@@ -18,6 +18,10 @@ on:
         description: 'Real run only: type exactly "rebuild empty database"'
         type: string
         default: ""
+      skip_bootstrap:
+        description: "Real run only: the schema is already built (bootstrap ran but exited on a leftover-difference warning), so only migrate and seed"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -57,6 +61,7 @@ jobs:
           echo "DATABASE_URL=$url" >> "$GITHUB_ENV"
           echo "DEMO_RESET_ALLOWED_HOSTS=$host" >> "$GITHUB_ENV"
       - name: Bootstrap the schema (dry run shows the plan; real run refuses a database that has data)
+        if: ${{ !(inputs.skip_bootstrap && inputs.dry_run != true) }}
         working-directory: apps/api
         run: |
           if [ "$DRY_RUN" = "true" ]; then npm run db:bootstrap -- --dry-run
