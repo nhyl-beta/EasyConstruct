@@ -1,0 +1,75 @@
+name: Rebuild empty database
+
+# Manual only. For a brand-new, EMPTY Neon database (for example after the project was deleted): builds the schema and
+# reference data (db:bootstrap, which refuses any database that already has data), creates the demo accounts
+# (db:seed, password Demo@12345) and fills the price catalog. For the sample projects afterwards, run
+# "Reset and reseed demo data".
+#   dry_run (default on): connects, checks the database is empty and prints what would happen. Changes nothing.
+#   real run: needs confirm = "rebuild empty database".
+# Secret used (name only): DATABASE_URL (either Neon string; the -pooler part is dropped here).
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run: change nothing, only print what would happen"
+        type: boolean
+        default: true
+      confirm:
+        description: 'Real run only: type exactly "rebuild empty database"'
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: db-migrate
+  cancel-in-progress: false
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DRY_RUN: ${{ inputs.dry_run }}
+      CONFIRM: ${{ inputs.confirm }}
+      SECRET_URL: ${{ secrets.DATABASE_URL }}
+      ALLOW_DEMO_RESET: "true"
+      DISABLE_SCHEDULER: "true"
+    steps:
+      - name: Check inputs
+        run: |
+          if [ -z "$SECRET_URL" ]; then echo "::error::Add the DATABASE_URL repository secret"; exit 1; fi
+          if [ "$DRY_RUN" != "true" ] && [ "$CONFIRM" != "rebuild empty database" ]; then
+            echo '::error::Real run needs confirm = "rebuild empty database"'; exit 1
+          fi
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Point the scripts at the direct Neon host
+        run: |
+          url="${SECRET_URL/-pooler/}"
+          host="$(node -e 'console.log(new URL(process.argv[1]).hostname)' "$url")"
+          echo "::add-mask::$url"
+          echo "DATABASE_URL=$url" >> "$GITHUB_ENV"
+          echo "DEMO_RESET_ALLOWED_HOSTS=$host" >> "$GITHUB_ENV"
+      - name: Bootstrap the schema (dry run shows the plan; real run refuses a database that has data)
+        working-directory: apps/api
+        run: |
+          if [ "$DRY_RUN" = "true" ]; then npm run db:bootstrap -- --dry-run
+          else npm run db:bootstrap -- --yes; fi
+      - name: Migrate (should report nothing to apply after a bootstrap)
+        if: ${{ inputs.dry_run != true }}
+        working-directory: apps/api
+        run: npm run db:migrate
+      - name: Create the demo accounts
+        if: ${{ inputs.dry_run != true }}
+        working-directory: apps/api
+        run: npm run db:seed
+      - name: Seed price catalog
+        if: ${{ inputs.dry_run != true }}
+        working-directory: apps/api
+        run: npm run ai:seed-references
